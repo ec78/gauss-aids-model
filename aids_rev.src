@@ -1,0 +1,1292 @@
+/*
+**
+** AIDS.SRC - AI Systems Estimation
+**
+*/
+
+/*******************************************************************************
+** AIDS
+**
+** Purpose:    To estimate AI demand systems
+**
+** Format:     { b1, v1, b2, v2 } = AIDS(w, intcpt, prices, totexp, instr);
+**
+** Input:    w -- budget shares.
+**
+**                       TxN matrix,  the dependent budget shares
+**
+**             intcpt -- independent variables.
+**
+**                        TxK matrix,  the independent variables
+**
+**             prices -- log prices.
+**
+**                        TxN matrix,  the independent variables
+**
+**                        Prices are absolute prices,  not relative.
+**
+**             totexp -- log total expenditure.
+**
+**                        Tx1 vector,  the total expenditure
+**
+**             instr -- instruments for log total expenditure (in general
+**                      log income).
+**
+**                        TxH matrix,  the instruments
+**
+**
+**             Defaults are provided for the following global input
+**             variables so they can be ignored unless you need control
+**             over the other options provided by this procedure.
+**
+**             aCtl.othnam -- global vector,  default 0.
+**
+**                         This is a (K+N+H)x1 or
+**                         vector of alternate variable names for the
+**                         output.
+**                         The names of the variables in the intercept are
+**                         the first elements and the names of instruments put at the end.
+**
+**             aCtl.linear -- global scalar
+**
+**                          = 1  Linear AIDS
+**                          = 0  Quadratic AIDS
+**
+**                         Default = 0
+**
+**             aCtl.maxiter -- maximum number of iterations
+**
+**                          if aCtl.maxiter = 1 then linearized AIDS with Stone
+**                                    price index is estimated
+**
+**              aCtl.homogenous -- global scalar
+**
+**                          = 1  Homogeneity and symmetry constrained parameters
+**                          = 0  Unconstrained
+**
+**                        Default = 1
+**
+**              aCtl.err -- relative parameter difference between two subsequent
+**                     steps required to stop the algorithm
+**                          Default = .0001.
+**
+**
+**  Output:         b1,  b2 -- (1+K+P+2-aCtl.linear)xN matrix,  the estimates of parameters
+**                         columns: the shares
+**                         rows: intercept|z|prices|totexp|totexp^2 (if aCtl.linear==0)|u
+**
+**                      if aCtl.homogenous = 0: b1 corresponds to the unconstrained
+**                                     estimates,  b2 = 0.
+**                                     Note importantly that the printed
+**                                     estimates are not exactly b1,  but
+**                                     a reparametrization of gamma(i, 1),  ..., 
+**                                     gamma(i, p) as gamma(i, 1),  ..., 
+**                                     gamma(i, p-1),  gamma(i, 1)+...gamma(i, p).
+**                                     The last price effect is thus zero if
+**                                     homogeneity is accepted.
+**
+**                      if aCtl.homogenous = 1: b1 is the homogeneity constrained
+**                                     vector of estimates,  b2 is the
+**                                     symmetry constrained estimator.
+**
+**
+**             v1,  v2 -- DxD matrix,  the variance-covariance matrix of
+**                       estimates.
+**
+**
+** Source:     AIDS.SRC
+**
+**
+******************************************************************************/
+
+
+
+
+/*external proc indices2, indexcat;*/
+
+
+
+proc 4 = aids(w,  intcpt,  prices,  totexp,  instr,  struct aidsControl aCtl);
+    
+    local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zz, zzi, ze, u, stone, lx, 
+        nendog, m, ng, gg, gw, b, ok, alpha, gama, a_p, _beta, b_p, lx2, err, iter, df, iw, m_, cov, vnam, 
+        std, cor, tv, z, gz, ww, sse, v, y1, J, lambda, D, iu, O, R, vi, ii, crit, req, rbsq, fstat, Sgma, 
+        pvf, stdest, stderr, t, pvt, vnames, i, str, omat, mask, fmt, ms,  _msym, ic, ig, R1, enam, ie, 
+        S, X, v_s, b_s, nz, mss, u1, ep, er, epc, b0, er1, rsq, stder1, k, sym, pfsym, m_1, m_2, m_3, 
+        z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma, z1nam, z1, nz1;
+    
+    
+    nobs = rows(w);
+    if cols(prices) ne cols(w);
+        "ERROR - not same number of prices and shares.";
+        stop;
+    endif;
+    n = cols(prices);
+    n1 = n - aCtl.homogenous;
+    
+    if intcpt == 0;
+        intcpt = ones(nobs, 1);
+        nint = 0;
+    else;
+        nint = cols(intcpt);
+        intcpt = ones(nobs, 1)~intcpt;
+        if aCtl.othnam $== 0;
+            xnam=0$+"X"$+ftocv(seqa(1, 1, nint), __vpad*(floor(log(nint)+1), 0));
+        else;
+            xnam = aCtl.othnam[1:nint];
+        endif;
+    endif;
+    xnam = "CONSTANT"|xnam;
+    
+    if aCtl.othnam $== 0;
+        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+    else;
+        wnam = aCtl.othnam[nint+1:nint+n];
+    endif;
+    
+    ninst = cols(instr);
+    if aCtl.othnam $== 0;
+        znam=0$+"Z"$+ftocv(seqa(1, 1, ninst), __vpad*(floor(log(ninst)+1), 0));
+    else;
+        znam = aCtl.othnam[nint+n+1:nint+n+ninst];
+    endif;
+    
+    
+    
+    /*****************************************************************/
+    /* INSTRUMENTATION OF ENDOGENOUS VARIABLE */
+    /*****************************************************************/
+
+    lx = totexp ;
+    endog = lx;
+    enam = 0$+"X";
+    
+    
+    /* you may alternatively want: endog = totexp~totexp^2; it will also work. */
+    /*
+    lx = totexp ;
+    endog = lx~lx^2;
+    enam = 0$+"X"|"X^2";
+    */
+    
+    nu = cols(endog);
+    
+    prices[., 1:n-1] = prices[., 1:n-1] - prices[., n];   /* relative prices  */
+    z = intcpt~prices~instr;
+    nz = cols(z);
+    
+    m1 = moment(z~endog, 0);
+    zz = m1[1:nz, 1:nz];
+    zzi = invpd(zz);
+    ze = m1[1:nz, nz+1:nz+nu];
+    b = zzi*ze;
+    u = endog - z*b;   /* residuals of instrumental regression  */
+    clear z, ze, zz;
+    
+    /* output */
+    
+    df = nobs-nz-1;
+    ie = seqa(nz+1, 1, nu);
+    m_ = m1[., 1]/nobs;
+    cov = m1/nobs - m_*m_';
+    std = sqrt(diag(cov));
+    cor = cov[2:nz, ie]./std[2:nz]./std[ie]';
+    tv = nobs*diag(cov[ie, ie]);
+    clear m_, std, cov, ie;
+    
+    sse = moment(u, 0);
+    S=sse/nobs;
+    sse = diag(sse);
+    mss = { . };
+    rsq = (tv - sse)./tv;
+    rbsq = 1-(1-rsq)*((nobs-1)/df);
+    fstat = (rsq./(1-rsq))*(df/(nz-1));
+    if fstat>0;
+        pvf = cdffc(fstat, nz-1, df);
+    else;
+        pvf = {.};
+    endif;
+    
+    stdest = sqrt(sse/df);
+    v = S.*.zzi;
+    stderr = sqrt(diag(v));
+    stderr = reshape(stderr, nu, nz)';
+    t = b./miss(stderr, 0);
+    pvt = 2*cdftc(abs(t), df);
+    
+    
+    print "INSTRUMENTAL REGRESSION(S)";
+    print "    X = log(TOTEXP)";
+    print;
+    
+    i = 1;
+    do while i<=nu;
+        print ftos(nobs, "Observations: %*.*lf", 20, 0);;
+        print ftos(enam[i], "      Dependent variable:%*.*s", 20, 8);
+        print ftos(tv[i], "Total SS:     %*.*lf", 20, 3);;
+        print ftos(df, "      Degrees of freedom:%*.*lf", 20, 0);
+        print ftos(rsq[i], "R-squared:    %*.*lf", 20, 3);;
+        print ftos(rbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
+        print ftos(sse[i], "Residual SS:  %*.*lf", 20, 3);;
+        print ftos(stdest[i], "      Std error of est:  %*.*lf", 20, 3);
+        str = ftos(nz-1, "F(%*.*lf, ", 1, 0) $+ ftos(df, "%*.*lf):             ", 1, 0);
+        str = strsect(str, 1, 15) $+ ftos(fstat[i], "%*.*lf", 19, 3);
+        print str;;
+        print ftos(pvf[i], "      Probability of F:  %*.*lf", 20, 3);
+        
+        print;
+        print "                            Standard                 Prob     "\
+            "Cor with";
+        print "  Variable      Estimate      Error      t-value     >|t|     "\
+            "Dep Var";
+        
+        print "------------------------------------------------------------"\
+            "-----------------";
+        
+        mask = 0~1~1~1~1~1;
+        let fmt[6, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6""\
+            "*.*lf" 10 3 "*.*lf" 12 6;
+        ms = ftos(mss, "%*.*lf", 1, 0);
+        // _msym "---  ";
+        
+        
+        print "                     Intercept variables";
+        omat = xnam~b[1:1+nint, i]~stderr[1:1+nint, i]~t[1:1+nint, i]~pvt[1:1+nint, i];
+        omat = omat~(mss|cor[1:nint, i]);
+        call printfm(omat, mask, fmt);
+        
+        
+        print "                      Relative prices";
+        print "                   Reference = ";;
+        $wnam[n];
+        omat = wnam[1:n-1]~b[1+nint+1:1+nint+n-1, i]~stderr[1+nint+1:1+nint+n-1, i]
+            ~t[1+nint+1:1+nint+n-1, i]~pvt[1+nint+1:1+nint+n-1, i]~cor[nint+1:nint+n-1, i];
+        call printfm(omat, mask, fmt);
+        
+        
+        print "                 Reference price (absolute)";
+        omat = wnam[n]~b[1+nint+n, i]~stderr[1+nint+n, i]
+            ~t[1+nint+n, i]~pvt[1+nint+n, i]~cor[nint+n, i];
+        call printfm(omat, mask, fmt);
+        
+        print;
+        print "                   Identifying instruments ";
+        omat = znam~b[1+nint+n+1:nz, i]~stderr[1+nint+n+1:nz, i]
+            ~t[1+nint+n+1:nz, i]~pvt[1+nint+n+1:nz, i]~cor[nint+n+1:nz-1, i];
+        call printfm(omat, mask, fmt);
+//        // _msym ^ms;
+        i = i+1;
+        print;
+        print;
+    endo;
+    clear tv, df, rsq, rbsq, sse, stdest, str, pvf, stderr, t, pvt, cor, omat, mask, fmt, v, S;
+    
+    
+    
+    /**************************/
+    /* STARTING VALUE  */
+    /***************************/
+    
+    if aCtl.b0==0; /* no proposed starting value; default: estimates linear version of aids */
+        
+        stone = prices*meanc(w);
+        lx = totexp -stone;
+        clear stone;
+        if not aCtl.linear;
+            endog = lx~lx^2;
+        else;
+            endog = lx;
+        endif;
+        nendog = cols(endog);
+        unam = 0$+"U"$+ftocv(seqa(1, 1, nu), __vpad*(floor(log(nu)+1), 0));
+        m = moment(intcpt~prices[., 1:n1]~endog~u~w, 0);
+        ng = 1+nint+n1+nendog+nu;
+        gg = m[1:ng, 1:ng];
+        gw = m[1:ng, ng+1:ng+n];
+        b = solpd(gw, gg);
+        
+    else;
+        b = aCtl.b0;
+    endif;
+    
+    
+    /******************************/
+    /* BEGINS ITERATIONS */
+    /*****************************/
+    
+    if aCtl.maxiter == 1;
+        "LINEARIZED AIDS WITH STONE PRICE INDEX";
+        "";
+    else;
+        "PROPER AIDS ESTIMATION WITH FIXED ALPHA0";
+        print;
+        "  Iteration number  ";;
+        "        Convergence criterion";
+        "---------------------------------------------------------";
+    endif;
+    
+    
+    /* STARTS THE ITERATED LEAST SQUARES ITERATIONS */
+    
+    ok = aCtl.maxiter>1; /* only if aCtl.maxiter>1 */
+    iter = 1;
+    do while ok;
+        b0 = b;
+        alpha = intcpt*b[1:1+nint, 1:n-1];
+        if aCtl.homogenous;
+            gama = b[1+nint+1:1+nint+n1, 1:n-1] | zeros(1, n-1);
+        else;
+            gama = b[1+nint+1:1+nint+n, 1:n-1];
+        endif;
+        
+        a_p = aCtl.alpha0 + prices[., n]
+            + sumc((prices[., 1:n-1].*alpha)')
+            + .5*sumc(((prices*gama).*prices[., 1:n-1])');
+        lx = totexp - a_p;
+        if not aCtl.linear;
+            _beta = b[1+nint+n1+1, 1:n-1];
+            b_p = exp(prices[., 1:n-1]*_beta');
+            lx2 = (lx^2)./b_p;
+            endog = lx~lx2;
+        else;
+            endog = lx;
+        endif;
+        m[1+nint+n1+1:1+nint+n1+nendog, .]
+            = endog'(intcpt~prices[., 1:n1]~endog~u~w);
+        m[., 1+nint+n1+1:1+nint+n1+nendog]
+            = m[1+nint+n1+1:1+nint+n1+nendog, .]';
+        gg = m[1:ng, 1:ng];
+        gw = m[1:ng, ng+1:ng+n];
+        b = solpd(gw, gg);
+        
+        err = maxc(maxc(abs((b-b0)./b0)));
+        if err <= aCtl.err or iter>=aCtl.maxiter;
+            ok = 0;
+            print;
+        else;
+            print ftos(iter, "%*.*lf", 10, 0);;
+            print ftos(err, "                        %*.*lf", 10, 8);
+        endif;
+        iter = iter+1;
+    endo;
+    
+    
+    
+    /* VARIANCE */
+    
+    J = eye(n-1).*.gg;
+    if aCtl.maxiter > 1;
+        _beta = b[1+nint+n1+1, 1:n-1];
+        nr = 500;
+        mi = 1;
+        ma = minc(nr|nobs);
+        do while mi<=nobs;
+            ii = seqa(mi, 1, ma-mi+1);
+            g = intcpt[ii, .]~prices[ii, 1:n1]~endog[ii, .]~u[ii, .];
+            y1 = intcpt[ii, .]~.5*prices[ii, 1:n1];
+            y2 = prices[ii, 1:n-1]*~(y1~zeros(ma-mi+1, nendog+nu));
+            J = J - _beta'.*.(g'y2);
+            if not aCtl.linear;
+                lambda = b[1+nint+n1+2, 1:n-1];
+                y2 = prices[ii, 1:n-1]*~( 2*y1.*lx[ii, .]./b_p[ii, .] ~ lx2[ii, .] ~ zeros(ma-mi+1, 1+nu) );
+                J = J - lambda'.*.( g'y2);
+            endif;
+            mi = ma+1;
+            ma = minc(ma+nr|nobs);
+        endo;
+        clear y1, y2, g;
+    endif;
+    
+    iw = seqa(ng+1, 1, n);
+    ww = m[iw, iw];
+    sse = ww-b'gw;
+    S = sse/nobs;
+    D = m1[1:1+nint+n1, 1:nz]
+        |endog'(intcpt~prices~instr);
+    D = D|zeros(nu, nz);
+    iu = seqa(ng-nu+1, 1, nu);
+    R = b[iu, 1:n-1];
+    O = R'm[iu, iu]/nobs*R;
+    Sgma =  S[1:n-1, 1:n-1].*.gg + O.*.(D*zzi*D') ;
+    Ji = inv(J);
+    v = Ji'Sgma*Ji;
+    clear J;
+    
+    ii = -ones(1, n-1).*.eye(ng);
+    v = (v|ii*v)~(v*ii'|ii*v*ii');
+    clear ii;
+    
+    
+    /* PRINTING THE FIRST SET OF ESTIMATES */
+    
+    crit = -ln(det(S[1:n-1, 1:n-1]));
+    df = nobs-ng-1;
+    m_ = m[., 1]/nobs;
+    cov = m/nobs - m_*m_';
+    clear m_;
+    std = sqrt(diag(cov));
+    cor = cov[2:ng, iw]./std[2:ng]./std[iw]';
+    clear std;
+    tv = nobs*diag(cov[iw, iw]);
+    clear cov;
+    mss = { . };
+    sse = diag(sse);
+    rsq = (tv - sse)./tv;
+    rbsq = 1-(1-rsq)*((nobs-1)/df);
+    fstat = (rsq./(1-rsq))*(df/(ng-1));
+    if fstat>0;
+        pvf = cdffc(fstat, ng-1, df);
+    else;
+        pvf = {.};
+    endif;
+    
+    stdest = sqrt(sse/df);
+    stderr = sqrt(diag(v));
+    stderr = reshape(stderr, n, ng)';
+    t = b./miss(stderr, 0);
+    pvt = 2*cdftc(abs(t), df);
+    
+    if aCtl.homogenous;
+        "HOMOGENEITY CONSTRAINED PRICE EFFECTS";
+        print;
+    endif;
+    print ftos(crit, "Log Det Sigma:  %*.*lf", 20, 8);
+    print;
+    i = 1;
+    do while i<=n;
+        print;
+        print ftos(nobs, "Observations: %*.*lf", 20, 0);;
+        print ftos(wnam[i], "      Dependent variable:%*.*s", 20, 8);
+        print ftos(tv[i], "Total SS:     %*.*lf", 20, 3);;
+        print ftos(df, "      Degrees of freedom:%*.*lf", 20, 0);
+        print ftos(rsq[i], "R-squared:    %*.*lf", 20, 3);;
+        print ftos(rbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
+        print ftos(sse[i], "Residual SS:  %*.*lf", 20, 3);;
+        print ftos(stdest[i], "      Std error of est:  %*.*lf", 20, 3);
+        str = ftos(ng-1, "F(%*.*lf, ", 1, 0) $+ ftos(df, "%*.*lf):             ", 1, 0);
+        str = strsect(str, 1, 15) $+ ftos(fstat[i], "%*.*lf", 19, 3);
+        print str;;
+        print ftos(pvf[i], "      Probability of F:  %*.*lf", 20, 3);
+        
+        print;
+        print "                            Standard                 Prob     "\
+            "Cor with";
+        print "  Variable      Estimate      Error      t-value     >|t|     "\
+            "Dep Var";
+        
+        print "------------------------------------------------------------"\
+            "-----------------";
+        
+        mask = 0~1~1~1~1~1;
+        let fmt[6, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6""\
+            "*.*lf" 10 3 "*.*lf" 12 6;
+        
+        print "                     Intercept variables";
+        omat = xnam~b[1:1+nint, i]~stderr[1:1+nint, i]~t[1:1+nint, i]~pvt[1:1+nint, i];
+        omat = omat~(mss|cor[1:nint, i]);
+        call printfm(omat, mask, fmt);
+        
+        print "                      Relative prices";
+        print "                    reference = ";;
+        $wnam[n];
+        omat = wnam[1:n-1]~b[1+nint+1:1+nint+n-1, i]~stderr[1+nint+1:1+nint+n-1, i]
+            ~t[1+nint+1:1+nint+n-1, i]~pvt[1+nint+1:1+nint+n-1, i]~cor[nint+1:nint+n-1, i];
+        call printfm(omat, mask, fmt);
+        
+        if not aCtl.homogenous;
+            print "                     Reference price (absolute)";
+            print "              (if zero effect,  then homogeneity accepted)";
+            omat = wnam[n]~b[1+nint+n, i]~stderr[1+nint+n, i]
+                ~t[1+nint+n, i]~pvt[1+nint+n, i]~cor[nint+n, i];
+            call printfm(omat, mask, fmt);
+            print;
+        endif;
+        print "                     Total expenditure ";
+        print "                   X = log(TOTEXP) - a(P) ";
+        omat = "X"~b[1+nint+n1+1, i]~stderr[1+nint+n1+1, i]
+            ~t[1+nint+n1+1, i]~pvt[1+nint+n1+1, i]~cor[nint+n1+1, i];
+        call printfm(omat, mask, fmt);
+        
+        print;
+        if not aCtl.linear;
+            print "                 Squared total expenditure ";
+            omat = "X^2/b(p)"~b[1+nint+n1+2, i]~stderr[1+nint+n1+2, i]
+                ~t[1+nint+n1+2, i]~pvt[1+nint+n1+2, i]~cor[nint+n1+2, i];
+            call printfm(omat, mask, fmt);
+        endif;
+        
+        print;
+        print "              Residuals of instrumental regressions";
+        omat = unam~b[1+nint+n1+nendog+1:ng, i]~stderr[1+nint+n1+nendog+1:ng, i]
+            ~t[1+nint+n1+nendog+1:ng, i]~pvt[1+nint+n1+nendog+1:ng, i]~cor[nint+n1+nendog+1:ng-1, i];
+        call printfm(omat, mask, fmt);
+//        // _msym ^ms;
+        i = i+1;
+        print;
+        print;
+    endo;
+    clear crit, rsq, rbsq, sse, stdest, str, pvf, stderr, t, pvt, cor, omat, mask, fmt;
+    
+    
+    
+    
+    /**********************************************************/
+    /* TEST OF OVERIDENTIFYING RESTRICTIONS */
+    /**********************************************************/
+    
+    if ninst>nu;
+        
+        
+        z1z1 = m1[1+nint+n+1:nz, 1+nint+n+1:nz];
+        z1z1i = invpd(z1z1);
+        gz1 = m1[1:1+nint+n1, 1+nint+n+1:nz]
+            |endog'instr;
+        gama1 = z1z1i*(instr'w-gz1'b[1:1+nint+n1+nendog, .]);
+        D1 = gz1|zeros(nu, ninst);
+        
+        J1 = eye(n-1).*.gz1';
+        if aCtl.maxiter > 1;
+            nr = 500;
+            mi = 1;
+            ma = minc(nr|nobs);
+            do while mi<=nobs;
+                ii = seqa(mi, 1, ma-mi+1);
+                y1 = intcpt[ii, .]~.5*prices[ii, 1:n1];
+                y2 = prices[ii, 1:n-1]*~(y1~zeros(ma-mi+1, nendog));
+                J1 = J1 - _beta'.*.(instr[ii, .]'y2);
+                if not aCtl.linear;
+                    lambda = b[1+nint+n1+2, 1:n-1];
+                    y2 = prices[ii, 1:n-1]*~( 2*y1.*lx[ii, .]./b_p[ii, .] ~ lx2[ii, .] ~ zeros(ma-mi+1, 1) );
+                    J1 = J1 - lambda'.*.( instr[ii, .]'y2);
+                endif;
+                mi = ma+1;
+                ma = minc(ma+nr|nobs);
+            endo;
+            clear y1, y2;
+        endif;
+        
+        
+        itheta = seqa(1, 1, 1+nint+n1+nendog);
+        itheta = vec(itheta+seqa(0, ng, n-1)');
+        H1 = (eye(n-1).*.z1z1i) * J1*Ji[itheta, .];
+        v2 = H1 * (S[1:n-1, 1:n-1].*.(D1*z1z1i));
+        zz1 = m1[1:nz, 1+nint+n+1:nz];
+        v3 = H1 * (O.*.(D*zzi*zz1*z1z1i));
+        v1 =  ((S[1:n-1, 1:n-1]+O).*.z1z1i )
+            - v2 - v2' - v3 - v3'
+            + H1*Sgma*H1';
+        
+        clear J1, Ji, Sgma, H1, v2, v3, D1, z1, gz1, zz1, z1z1, z1z1i;
+        
+        
+        ii = -ones(1, n-1).*.eye(ninst);
+        v1 = (v1|ii*v1)~(v1*ii'|ii*v1*ii');
+        clear ii;
+        
+        
+        /* output */
+        
+        print;
+        print;
+        print "TEST OF OVERIDENTIFYING RESTRICTIONS";
+        print;
+        print;
+        
+        
+        stderr = sqrt(diag(v1));
+        stderr = reshape(stderr, n, ninst)';
+        t = gama1./miss(stderr, 0);
+        pvt = 2*cdfnc(abs(t));
+        i = 1;
+        
+        do while i<=n;
+            ii = seqa(1, 1, ninst)+ninst*(i-1);
+            fstat = gama1[1:ninst, i]'pinv(v1[ii, ii])*gama1[1:ninst, i];
+            if fstat>0;
+                pvf = cdfchic(fstat, ninst-nu);
+            else;
+                pvf = {.};
+            endif;
+            
+            
+            print ftos(nobs, "Observations: %*.*lf", 12, 0);;
+            print ftos(wnam[i], "   Dependent variable:  %*.*s", 12, 8);
+            str = ftos(ninst-nu, "Chi2(%*.*lf)        ", 1, 0) ;
+            str = strsect(str, 1, 15) $+ ftos(fstat, "%*.*lf", 11, 3);
+            print str;;
+            print ftos(pvf, "   Probability of Chi2: %*.*lf", 12, 3);
+            
+            print;
+            print "                             Standard                 Prob   ";
+            print "   Variable      Estimate      Error      t-value     >|t|   ";
+            
+            print "---------------------------------------------------------------------------";
+            omat = znam~gama1[., i]~stderr[., i]~t[., i]~pvt[., i];
+            mask = 0~1~1~1~1;
+            let fmt[5, 3] = "-*.*s" 12 12 "*.*le" 12 3 "*.*le" 12 3 "*.*lf" 12 6""\
+                "*.*lf" 10 3 ;
+            ms = ftos(mss, "%*.*lf", 1, 0);
+            // _msym "---  ";
+            call printfm(omat, mask, fmt);
+//            // _msym ^ms;
+            i = i+1;
+            print;
+            print;
+        endo;
+        
+    endif;
+    
+    
+    /*********************************************************************************/
+    /* TEST OF SYMMETRY SYMMETRY CONSTRAINED ESTIMATION */
+    /*********************************************************************************/
+    
+    if aCtl.homogenous;
+        ic = seqa(1, 1, 1+nint)|seqa(1+nint+n1+1, 1, nendog+nu);
+        ig = seqa(1+nint+1, 1, n1);
+        ic = vec(ic+seqa(0, ng, n1)');
+        ig = vec(ig+seqa(0, ng, n1)');
+        i = ic|ig;
+        i = sortind(i);
+        
+        R1 = design(vec(xpnd(seqa(1, 1, n1*(n1+1)/2))));
+        /* vec(G) = R1*vech(G) (if G=G') */
+        k = (ng-n1)*n1;
+        X = ( eye(k)          ~zeros(k, cols(R1)) )|
+            ( zeros(rows(R1), k)~     R1           );
+        X = X[i, .];
+        
+        vi = invpd(v[1:n1*ng, 1:n1*ng]);
+        v_s = X*invpd(X'vi*X)*X';
+        b_s = v_s*vi*vec(b[., 1:n1]);
+        u1 = vec(b[., 1:n1]) - b_s;
+        sym = u1'*vi*u1;
+        pfsym = cdfchic(sym, n1*(n1-1)/2);
+        clear i, ic, ig, R1, X, vi;
+        
+        print "TEST OF SYMMETRY GIVEN HOMOGENEITY";
+        print;
+        str = ftos(n1*(n1-1)/2, "chi2(%*.*lf)", 1, 0);
+        str = strsect(str, 1, 15) $+ ftos(sym, "%*.*lf", 19, 8);
+        print str;;
+        print ftos(pfsym, "                    p-value:  %*.*lf", 20, 3);
+        print;
+        
+        ii = -ones(1, n-1).*.eye(ng);
+        v_s = (v_s|ii*v_s)~(v_s*ii'|ii*v_s*ii');
+        b_s = b_s|ii*b_s;
+        b_s = reshape(b_s, n, ng)';
+        b_s[1, n] = 1 + b_s[1, n];
+        
+        "SYMMETRY CONSTRAINED PARAMETERS";
+        sse = ww-b_s'gw-gw'b_s+b_s'gg*b_s;
+        crit = -ln(det(sse[1:n-1, 1:n-1]/nobs));
+        sse = diag(sse);
+        rsq = (tv - sse)./tv;
+        rbsq = 1-(1-rsq)*((nobs-1)/df);
+        stdest = sqrt(sse/df);
+        stderr = sqrt(diag(v_s));
+        stderr = reshape(stderr, n, ng)';
+        t = b_s./stderr;
+        pvt = 2*cdfnc(abs(t));
+        
+        clear i;
+        print ftos(crit, "Log Det Sigma:  %*.*lf", 20, 8);
+        print;
+        i = 1;
+        do while i<=n;
+            print;
+            print ftos(nobs, "Observations: %*.*lf", 20, 0);;
+            print ftos(wnam[i], "      Dependent variable:%*.*s", 20, 8);
+            print ftos(tv[i], "Total SS:     %*.*lf", 20, 3);;
+            print ftos(df, "      Degrees of freedom:%*.*lf", 20, 0);
+            print ftos(rsq[i], "R-squared:    %*.*lf", 20, 3);;
+            print ftos(rbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
+            print ftos(sse[i], "Residual SS:  %*.*lf", 20, 3);;
+            print ftos(stdest[i], "      Std error of est:  %*.*lf", 20, 3);
+            print;
+            print "                            Standard                 Prob   ";
+            print "  Variable      Estimate      Error      t-value     >|t|   ";
+            
+            print "------------------------------------------------------------";
+            
+            
+            mask = 0~1~1~1~1;
+            let fmt[5, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6 ""\
+                "*.*lf" 10 3 ;
+            
+            print "                     Intercept variables                     ";
+            omat = xnam~b_s[1:1+nint, i]~stderr[1:1+nint, i]~t[1:1+nint, i]~pvt[1:1+nint, i];
+            call printfm(omat, mask, fmt);
+            
+            print "                      Relative prices                     ";
+            print "                    reference = ";;
+            $wnam[n];
+            omat = wnam[1:n-1]~b_s[1+nint+1:1+nint+n-1, i]~stderr[1+nint+1:1+nint+n-1, i]
+                ~t[1+nint+1:1+nint+n-1, i]~pvt[1+nint+1:1+nint+n-1, i];
+            call printfm(omat, mask, fmt);
+            
+            print "                     Total expenditure ";
+            print "                   X = log(TOTEXP) - a(P) ";
+            omat = "X"~b_s[1+nint+n1+1, i]~stderr[1+nint+n1+1, i]
+                ~t[1+nint+n1+1, i]~pvt[1+nint+n1+1, i];
+            call printfm(omat, mask, fmt);
+            
+            print;
+            if not aCtl.linear;
+                print "                 Squared total expenditure ";
+                omat = "X^2/b(p)"~b_s[1+nint+n1+2, i]~stderr[1+nint+n1+2, i]
+                    ~t[1+nint+n1+2, i]~pvt[1+nint+n1+2, i];
+                call printfm(omat, mask, fmt);
+            endif;
+            
+            print;
+            print "              Residuals of instrumental regressions";
+            omat = unam~b[1+nint+n1+nendog+1:ng, i]~stderr[1+nint+n1+nendog+1:ng, i]
+                ~t[1+nint+n1+nendog+1:ng, i]~pvt[1+nint+n1+nendog+1:ng, i];
+            call printfm(omat, mask, fmt);
+//            // _msym ^ms;
+            i = i+1;
+            print;
+            print;
+        endo;
+    endif;
+    clear crit, tv, df, rsq, rbsq, sse, stdest, stderr, t, pvt, cor, omat, mask, fmt;
+    
+    
+    
+    /*****************************************************************************/
+    /*  RECOVERS ABSOLUTE PRICE EFFECTS FROM RELATIVE */
+    /****************************************************************************/
+    if not aCtl.homogenous;
+        /* recovers g1, g2, g3 from g1, g2, g1+g2+g3 */
+        ic = seqa(1, 1, 1+nint)|(1+nint+n+seqa(1, 1, 2-aCtl.linear+nu));
+        ig = seqa(1+nint+1, 1, n);
+        ic = vec(ic+seqa(0, ng, n)');
+        ig = vec(ig+seqa(0, ng, n)');
+        i = ic|ig;
+        i = sortind(i);
+        
+        R1 = ( eye(n-1) ~ zeros(n-1, 1) ) |
+            ( -ones(1, n-1) ~ 1 );
+        R1 = eye(n).*.R1;
+        
+        k = (ng-n)*n;
+        X = ( eye(k)          ~zeros(k, cols(R1)) )|
+            ( zeros(rows(R1), k)~     R1           );
+        X = X[i, i];
+        
+        b_s = X*vec(b);
+        b_s = reshape(b_s, n, ng)';
+        v_s = X*v*X';
+        clear i, ic, ig, R1, X;
+        
+        m_[1+nint+1:1+nint+n-1] =
+            m_[1+nint+1:1+nint+n-1] + m_[1+nint+n];
+    else;
+        /* recovers g1, g2, g3 from g1, g2 */
+        ic = seqa(1, 1, 1+nint)|(1+nint+n1+seqa(1, 1, 2-aCtl.linear+nu));
+        ig = seqa(1+nint+1, 1, n1);
+        ic = vec(ic+seqa(0, ng, n)');
+        ig = vec(ig+seqa(0, ng, n)');
+        i = ic|ig;
+        i = sortind(i);
+        
+        R1 =  eye(n1) |
+            -ones(1, n1);
+        R1 = eye(n).*.R1;
+        
+        k = (ng-n1)*n;
+        X = ( eye(k)          ~zeros(k, cols(R1)) )|
+            ( zeros(rows(R1), k)~     R1           );
+        X = X[., i];
+        
+        ic = seqa(1, 1, 1+nint)|(1+nint+n+seqa(1, 1, 2-aCtl.linear+nu));
+        ig = seqa(1+nint+1, 1, n);
+        ic = vec(ic+seqa(0, ng+1, n)');
+        ig = vec(ig+seqa(0, ng+1, n)');
+        i = ic|ig;
+        i = sortind(i);
+        X = X[i, .];
+        
+        b = X*vec(b);
+        b = reshape(b, n, ng+1)';
+        v = X*v*X';
+        b_s = X*vec(b_s);
+        b_s = reshape(b_s, n, ng+1)';
+        v_s = X*v_s*X';
+        clear i, ig, ic, R1, X;
+        
+        
+    endif;
+    
+    
+    /***********************/
+    /*  ELASTICITIES   */
+    /***********************/
+    
+    prices[., 1:n-1] = prices[., 1:n-1] + prices[., n];   /* absolute prices  */
+    m_=meanc(intcpt~prices~totexp~w~instr);
+    m_1=quantile(intcpt~prices~totexp~w~instr, 1/4)';
+    m_2=quantile(intcpt~prices~totexp~w~instr, 2/4)';
+    m_3=quantile(intcpt~prices~totexp~w~instr, 3/4)';
+    
+    
+    print;
+    "ELASTICITIES AT MEAN POINT ";
+    call elas(b_s, v_s, m_[1:1+nint], m_[1+nint+1:1+nint+n], m_[1+nint+n+1], aCtl);
+    print;
+    
+    "ELASTICITIES AT FIRST QUARTILE";
+    print;
+    call elas(b_s, v_s, m_1[1:1+nint], m_1[1+nint+1:1+nint+n], m_1[1+nint+n+1], aCtl);
+    print;
+    
+    "ELASTICITIES AT MEDIAN POINT";
+    print;
+    call elas(b_s, v_s, m_2[1:1+nint], m_2[1+nint+1:1+nint+n], m_2[1+nint+n+1], aCtl);
+    print;
+    
+    "ELASTICITIES AT THIRD QUARTILE";
+    print;
+    call elas(b_s, v_s, m_3[1:1+nint], m_3[1+nint+1:1+nint+n], m_3[1+nint+n+1], aCtl);
+    print;
+    
+    
+    /******************************/
+    "DESCRIPTIVE STATISTICS";
+    /******************************/
+    
+    print;
+    print "Variable       Mean       Median       First       Third";
+    print "                                     quartile     quartile       ";
+    print "-----------------------------------------------------------------";
+    mask = 0~1~1~1~1;
+    let fmt[5, 3] = "-*.*s" 8 8 "*.*lf" 12 4 "*.*lf" 12 4 "*.*lf" 12 4 "*.*lf" 12 4;
+    
+    print "                   Intercept variables";
+    omat = xnam[2:1+nint]~m_[2:1+nint]~m_1[2:1+nint]~m_2[2:1+nint]~m_3[2:1+nint];
+    call printfm(omat, mask, fmt);
+    print "                  Absolute logged prices                        ";
+    omat = wnam~m_[1+nint+1:1+nint+n]~m_1[1+nint+1:1+nint+n]
+        ~m_2[1+nint+1:1+nint+n]~m_3[1+nint+1:1+nint+n];
+    call printfm(omat, mask, fmt);
+    print "                 Logged total expenditure                              ";
+    omat = "X"~m_[1+nint+n+1]~m_1[1+nint+n+1]
+        ~m_2[1+nint+n+1]~m_3[1+nint+n+1];
+    call printfm(omat, mask, fmt);
+    print;
+    print "                         Shares                          ";
+    omat = wnam~m_[1+nint+n+2:1+nint+n+1+n]~m_1[1+nint+n+2:1+nint+n+1+n]
+        ~m_2[1+nint+n+2:1+nint+n+1+n]~m_3[1+nint+n+2:1+nint+n+1+n];
+    call printfm(omat, mask, fmt);
+    print "                 Identifying instruments ";
+    omat = znam~m_[1+nint+n+1+n+1:rows(m_)]~m_1[1+nint+n+1+n+1:rows(m_)]
+        ~m_2[1+nint+n+1+n+1:rows(m_)]~m_3[1+nint+n+1+n+1:rows(m_)];
+    call printfm(omat, mask, fmt);
+    print;
+    
+    
+    /************************************************/
+    /* TEST OF SLUTZKY CONDITIONS       */
+    /************************************************/
+    
+    call slutzky(b_s, intcpt, prices, totexp, aCtl);
+    
+    
+    /***********************************/
+    /* RETURNS OUTPUT           */
+    /*****************************/
+    
+    /* with price effects at the end
+    i = seqa(1, 1, 1+nint)|seqa(1+nint+n+1, 1, 2-aCtl.linear)|seqa(1+nint+1, 1, n);
+    ii = vec(i+seqa(0, 1+nint+n+2-aCtl.linear+nu, n)');
+    b_s = b_s[i, .];
+    v_s = v_s[ii, ii];
+    */
+    
+    if aCtl.homogenous;
+        retp(b, v, b_s, v_s);
+    else;
+        retp(b_s, v_s, 0, 0);
+    endif;
+    
+endp;
+
+
+
+
+
+
+/*******************************************************************************
+**
+** SLUTZKY
+**
+** Purpose:  tests negativity of the Slutzky matrix observation by observation.
+**
+** Format:     slutzky(b, intcpt, prices, totexp);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific share;
+**                order is intcp|prices|lx|lx2|u.
+**
+**             intcpt -- independent variables. Txnint matrix.
+**
+**             prices -- log prices. Txn matrix.
+**
+**             totexp -- total expenditure. Tx1 vector.
+**
+** Output: nothing.
+**
+** Print: descriptive statistics on the eigenvalues of the Slutzky matrix
+**        computed observation by observation.
+**
+*******************************************************************************/
+
+proc 0 = slutzky(b, intcpt, prices, totexp, struct aidsControl aCtl);
+    
+    local nint, n, alpha, gama, _beta, lambda, w, wepc, mu, a_p, 
+        lx, lx2, b_p, omat, mask, fmt, nobs, i, va, min, mean, std, max, Q1, Q2, Q3, vnames;
+    
+    nint =  cols(intcpt);
+    n = cols(prices);
+    nobs = rows(prices);
+    
+    alpha = intcpt*b[1:nint, .];
+    clear intcpt;
+    gama = b[nint+1:nint+n, .];
+    _beta = b[nint+n+1, .];
+    
+    a_p = aCtl.alpha0 + sumc((prices.*alpha)') + .5*sumc(((prices*gama).*prices)');
+    lx = totexp - a_p;
+    
+    w = alpha + prices*gama + lx*_beta;
+    if not aCtl.linear;
+        b_p = exp(prices*_beta');
+        lambda = b[nint+n+2, .];
+        lx2 = (lx^2)./b_p;
+        w = w + lx2*lambda;
+    endif;
+    
+    nobs = rows(w);
+    i=1;
+    do while i<=nobs;
+        
+        if not aCtl.linear;
+            mu = lambda*lx[i]/b_p[i];
+        else;
+            mu = 0;
+        endif;
+        
+        wepc = -diagrv(eye(n), w[i, .]') + w[i, .]'w[i, .] + gama
+            + (_beta'_beta + _beta'mu + mu'_beta + 2*mu'mu)*lx[i];
+        
+        if i==1;
+            va = eigh(wepc)';
+        else;
+            va = va | eigh(wepc)';
+        endif;
+        
+        i = i+1;
+    endo;
+    
+    print;
+    "ANALYSIS OF EIGENVALUES OF SLUTZKY MATRIX";
+    "from smallest to biggest";
+    
+    print;
+    print chrs(45*ones(80, 1));
+    print "Eigenvalue    Mean  Std Dev  Minimum     Q1      Q2"\
+        "     Q3    Maximum  ";
+    print chrs(45*ones(80, 1));
+    vnames = seqa(1, 1, cols(va));
+    mean = meanc(va);
+    std = stdc(va);
+    min = minc(va);
+    max = maxc(va);
+    Q1 = quantile(va, .25)';
+    Q2 = quantile(va, .5)';
+    Q3 = quantile(va, .75)';
+    omat = vnames~mean~std~min~Q1~Q2~Q3~max;
+    mask = 1~1~1~1~1~1~1~1;     /* mask to print first column as strings */
+    let fmt[8, 3]=
+        "-*.*lf" 10 0  /* format info for variable names column */
+        "*.*lf" 8 3   /* format info for mean column           */
+        "*.*lf" 8 3   /* format info for std deviation column  */
+        "*.*lf" 10 3   /* format info for min column       */
+        "*.*lf" 8 3   /* format info for Q1 column            */
+        "*.*lf" 8 3   /* format info for Q2 column            */
+        "*.*lf" 8 3   /* format info for Q3 column          */
+        "*.*lf" 10 3    /* format info for max column        */;
+    call printfm(omat, mask, fmt);
+    print chrs(45*ones(80, 1));
+    print;
+    
+endp;
+
+
+
+/*******************************************************************************
+**
+**  ELAS_
+**
+** Purpose:   computes elasticities at one single point.
+**
+** Format:     { er, ep, epc } = elas_(b, intcpt, prices, totexp);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific share;
+**                order is intcp|prices|lx|lx2|u.
+**
+**             intcpt -- vector of independent variables.
+**
+**             prices -- vector of log prices.
+**
+**             totexp -- log total expenditure.
+**
+** Output: elasticities.
+**         er = vector of income elasticities
+**         ep[i, j] = price j uncompensated elas. of commodity i
+**         epc[i, j] = ... compensated...
+**
+** Print: nothing.
+**
+*******************************************************************************/
+
+proc 3 = elas_(b, intcpt, prices, totexp, struct aidsControl aCtl);
+    
+    local nint, n, alpha, gama, _beta, lambda, w, dw_dx, er, ep, epc, a_p, 
+        lx, lx2, b_p;
+    
+    nint =  rows(intcpt);
+    n = rows(prices);
+    
+    alpha = intcpt'b[1:nint, .];
+    gama = b[nint+1:nint+n, .];
+    _beta = b[nint+n+1, .];
+    
+    a_p = aCtl.alpha0 + alpha*prices + .5*prices'gama*prices;
+    lx = totexp - a_p;
+    w = alpha' + gama'prices + _beta'lx;
+    if not aCtl.linear;
+        b_p = exp(_beta*prices);
+        lambda = b[nint+n+2, .];
+        lx2 = (lx^2)./b_p;
+        w = w + lambda'lx2;
+    endif;
+    
+    dw_dx =  _beta' ;
+    if not aCtl.linear;
+        dw_dx = dw_dx + 2*lambda'lx/b_p;
+    endif;
+    
+    er = 1 + dw_dx./w;
+    ep = gama' - dw_dx*(alpha + .5*prices'(gama+gama'));
+    if not aCtl.linear;
+        ep = ep - lambda'lx2*_beta;
+    endif;
+    ep = -eye(n) + ep./w;
+    epc = ep + er*w';
+    
+    retp(er, ep, epc);
+endp;
+
+
+/*******************************************************************************
+**
+** ELAS
+**
+** Purpose:  compute income and price elasticities,  and asymptotic std,  at one
+**           single point.
+**
+** Format:     elas(b, v, intcpt, prices, totexp);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific share;
+**                order is intcp|prices|lx|lx2|u.
+**                 You may not add the "u" part in b. It is not used to compute elasticities anyway.
+**
+**           v -- variance of vec(b).
+**
+**             intcpt -- vector of independent variables.
+**
+**             prices -- vector of log prices.
+**
+**             totexp -- log total expenditure.
+**
+** Output: nothing.
+**
+** Print: elasticities and their asymptotic std.
+**
+*******************************************************************************/
+
+proc  0=elas(b, v, intcpt, prices, totexp, struct aidsControl aCtl);
+    
+    local nint, n, wnam, er, ep, epc, omat, mask, fmt, t, dt, er_e, ep_e, epc_e, i, j, e, 
+        ver, vep, vepc, vt, be, fmat, dtk, te, k, b0, dab0, ab0;
+    
+    nint =  rows(intcpt);
+    n = rows(prices);
+    
+    if aCtl.othnam $== 0;
+        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+    else;
+        wnam = aCtl.othnam[nint:nint-1+n];
+    endif;
+    
+    { er, ep, epc } = elas_(b, intcpt, prices, totexp, aCtl);
+    t = er|vec(ep')|vec(epc');
+    
+    
+    /* Computation of stepsize (e) for gradient */
+    
+    b0 = vec(b);
+    ab0 = abs(b0);
+    if b0 /= 0;
+        dab0 = b0./ab0;
+    else;
+        dab0 = 1;
+    endif;
+    e = (1e-8)*maxc((ab0~(1e-2)*ones(rows(b0), 1))').*dab0;
+    be = b0+e;
+    e = be-b0;    /* This increases precision slightly */
+    
+    
+    /* computation of Jacobian and elasticities variances */
+    
+    k=1;
+    i=1;
+    do while i<=cols(b);
+        j=1;
+        do while j<=rows(b);
+            be=b;
+            be[j, i]=b[j, i]-e[k];
+            { er_e, ep_e, epc_e } = elas_(be, intcpt, prices, totexp, aCtl);
+            te = er_e|vec(ep_e')|vec(epc_e');
+            dtk = (te-t)/e[k];
+            if k==1;
+                dt=dtk;
+                vt = v[1, 1]*dtk^2;
+            else;
+                vt = vt + 2*dtk.*(dt*v[1:k-1, k]) + v[k, k]*dtk^2;
+                dt = dt~dtk;
+            endif;
+            j=j+1;
+            k=k+1;
+        endo;
+        i=i+1;
+    endo;
+    clear dt;
+    vt = sqrt(vt);
+    
+    
+    /* output */
+    
+    ver = vt[1:n];
+    ver = 0$+"("$+ftocv(ver, 0, 3)$+")";
+    vep = reshape(vt[n+1:n+n^2], n, n);
+    vep = 0$+"("$+ftocv(vep, 0, 3)$+")";
+    vepc = reshape(vt[n*(n+1)+1:rows(vt)], n, n);
+    vepc = 0$+"("$+ftocv(vepc, 0, 3)$+")";
+    
+    er = er~diag(ep)~diag(epc);
+    ver = ver~diag(vep)~diag(vepc);
+    format /rd 7, 0;
+    "INCOME AND OWN-PRICE ELASTICITIES ";
+    print "           income     uncompensated    compensated";
+    print "         elasticity  own-price elas.  own-price elas.";
+    print "--------------------------------------------------------";
+    i=2;
+    omat = wnam[1]~ftocv(er[1, .], 0, 3)|""~ver[1, .];
+    do while i<=n;
+        omat = omat|wnam[i]~ftocv(er[i, .], 0, 3)|""~ver[i, .];
+        i=i+1;
+    endo;
+    mask = 0~0~0~0;
+    let fmt[4, 3] = "-*.*s" 8 8 "*.*s" 9 8 "*.*s" 15 8 "*.*s" 15 8;
+    call printfm(omat, mask, fmt);
+    print;
+    "UNCOMPENSATED PRICE ELASTICITIES";
+    print;
+    format /rd 7, 0;
+    print$ ""~wnam';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i=2;
+    omat = wnam[1]~ftocv(ep[1, .], 0, 3)|""~vep[1, .];
+    do while i<=n;
+        omat = omat|wnam[i]~ftocv(ep[i, .], 0, 3)|""~vep[i, .];
+        i=i+1;
+    endo;
+    mask = zeros(1, n+1);
+    let fmt[1, 3] = "*.*s" 8 8;
+    fmt = ones(n+1, 1).*fmt;
+    call printfm(omat, mask, fmt);
+    print;
+    "COMPENSATED PRICE ELASTICITIES ";
+    print;
+    format /rd 7, 0;
+    print$ ""~wnam';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i=2;
+    omat = wnam[1]~ftocv(epc[1, .], 0, 3)|""~vepc[1, .];
+    do while i<=n;
+        omat = omat|wnam[i]~ftocv(epc[i, .], 0, 3)|""~vepc[i, .];
+        i=i+1;
+    endo;
+    mask = zeros(1, n+1);
+    let fmt[1, 3] = "*.*s" 8 8;
+    fmt = ones(n+1, 1).*fmt;
+    call printfm(omat, mask, fmt);
+    print;
+    
+endp;
+
+/*
+
+/*******************************************************************************
+**
+**  QUANTILE
+**
+**  Purpose:     Computes the quantiles of a set of variables contained in the
+**               columns of a matrix.
+**
+**  Format:      m = quantile(x, s);
+**
+**  Input:       x       NxK matrix.
+**
+**                 0<s<1       scalar; which quantile ?
+**
+**  Output:      m       Kx1 vector containing the s-quantiles of the respective
+**                       columns of x.
+**
+*******************************************************************************/
+
+proc quantile(x, s);
+local k,  n,  med,  mid,  mflag,  i,  v,  svx,  indx,  sv;
+
+k=cols(x); n=rows(x); med=zeros(k, 1); mid=n*s;
+
+if round(mid) eq mid;    /* even */
+mflag=1; mid=mid|(mid+1);
+else;
+mflag=0; mid=ceil(mid);
+endif;
+
+indx=seqa(1, 1, n);
+i=1;
+do until i > k;
+v=submat(x, 0, i);
+svx=sortc((v~indx), 1);
+sv=submat(svx, 0, 1);
+if mflag;      /* even # of elements */
+med[i, 1]=meanc(sv[mid, 1]);
+else;
+med[i, 1]=sv[mid, 1];
+endif;
+i=i+1;
+endo;
+retp(med);
+endp;
+
+*/
+
+

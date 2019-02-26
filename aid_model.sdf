@@ -1,0 +1,30 @@
+
+struct rankControl {
+    matrix pivot;
+    matrix ii;
+    matrix jj;
+    matrix S;
+    matrix print_output;
+};
+
+struct aidsControl {
+    matrix aids;
+    matrix maxiter;
+    matrix alpha0;
+    string othnam;
+    matrix linear;
+    matrix stone;
+    matrix homogenous;
+    matrix err;
+    matrix b0;
+   
+    string varname;
+};
+
+struct latentControl {
+    matrix maxiter;
+    matrix err;
+    matrix othnam;
+};
+
+

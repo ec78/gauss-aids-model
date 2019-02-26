@@ -1,0 +1,41 @@
+proc (1) = rankControlCreate();
+    
+    // Declare structure
+    struct rankControl rCtl;
+    
+    // Fill members
+    rCtl.pivot = 1;
+    rCtl.ii = 0;
+    rCtl.jj = 0;
+    rCtl.S = 100;
+    rCtl.print_output = 1;
+    
+    retp(rCtl);
+endp;
+
+proc (1) = aidsControlCreate();
+    struct aidsControl aCtl;
+    
+    aCtl.varname = "serie";
+    aCtl.aids = 1;
+    aCtl.maxiter = 50;
+    aCtl.alpha0 = 0;
+    aCtl.othnam = "";
+    aCtl.linear = 0;
+    aCtl.stone = 0;
+    aCtl.homogenous = 1;
+    aCtl.err = .0001;
+    aCtl.b0 = 0;
+
+    retp(aCtl);
+endp;
+
+proc (1) = latentControlCreate();
+    
+    struct latentControl lCtl;
+    lCtl.maxiter = 50;
+    lCtl.err = .0001;
+    lCtl.othnam = 0;
+    retp(lCtl);
+endp;
+
