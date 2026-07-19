@@ -1,0 +1,9 @@
+*.gcg
+tmp/
+.claude/
+quaids *.zip
+.DS_Store
+Thumbs.db
+examples/out
+examples/*.log
+*.log

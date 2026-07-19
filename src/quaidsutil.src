@@ -1,0 +1,16 @@
+proc (1) = quaidsControlCreate();
+    struct quaidsControl aCtl;
+
+    aCtl.varname = "serie";
+    aCtl.aids = 1;
+    aCtl.maxiter = 50;
+    aCtl.alpha0 = 0;
+    aCtl.othnam = "";
+    aCtl.linear = 0;
+    aCtl.stone = 0;
+    aCtl.homogenous = 1;
+    aCtl.err = .0001;
+    aCtl.b0 = 0;
+
+    retp(aCtl);
+endp;

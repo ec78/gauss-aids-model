@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use the QUAIDS GAUSS library, please cite it using these metadata and cite the underlying AIDS/QUAIDS methodology."
+title: "QUAIDS for GAUSS: Almost Ideal and Quadratic Almost Ideal Demand System Estimation"
+type: software
+authors:
+  - family-names: Clower
+    given-names: Eric
+version: 0.1.0
+date-released: "2026-07-19"
+repository-code: "https://github.com/ec78/gauss-aids-model"
+url: "https://github.com/ec78/gauss-aids-model"
+abstract: "GAUSS library for estimating linearized AIDS, iterated (nonlinear price index) AIDS, and QUAIDS demand systems, with instrumental-variables treatment of total expenditure, homogeneity/symmetry restriction testing, elasticities, and Slutzky negativity diagnostics."
+keywords:
+  - GAUSS
+  - AIDS
+  - QUAIDS
+  - almost ideal demand system
+  - consumer demand
+  - econometrics
+references:
+  - type: article
+    authors:
+      - family-names: Deaton
+        given-names: Angus
+      - family-names: Muellbauer
+        given-names: John
+    title: "An Almost Ideal Demand System"
+    journal: "American Economic Review"
+    year: 1980
+    volume: 70
+    issue: 3
+    start: 312
+    end: 326
+  - type: article
+    authors:
+      - family-names: Banks
+        given-names: James
+      - family-names: Blundell
+        given-names: Richard
+      - family-names: Lewbel
+        given-names: Arthur
+    title: "Quadratic Engel Curves and Consumer Demand"
+    journal: "Review of Economics and Statistics"
+    year: 1997
+    volume: 79
+    issue: 4
+    start: 527
+    end: 539

@@ -1,4 +1,4 @@
-# CLAUDE.md — GAUSS AIDS Library
+# CLAUDE.md — GAUSS QUAIDS Library
 
 Context file for Claude Code sessions working on this repository.
 
@@ -13,44 +13,62 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.1.0`, two commits as of
-2026-07-19) and is not yet packaged as an installable GAUSS application
-package (`library aids;` does not work yet). See `GOLD_STANDARD_TODO.md` for
-the full roadmap — this file is the quick-orientation companion to it, and
-should be kept synchronized with it.
+The library is **pre-alpha** (package version `0.1.0`) and is not yet
+packaged as an installable GAUSS application package (`library quaids;` does
+not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
+is the quick-orientation companion to it, and should be kept synchronized
+with it.
 
-## Repository layout (current — pre-Milestone-0)
+**Naming**: the package and its public procs use a `quaids` prefix (decided
+at Milestone 0), even though the estimator also covers plain linear AIDS —
+QUAIDS is the more general model actually implemented, and `aids` was judged
+too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
+Demand System" remains the correct term for the model family in docs, papers,
+and comments; only the GAUSS identifier prefix changed.
+
+## Repository layout (post-Milestone-0)
 
 ```
-aid_model.sdf   # Struct definitions: aidsControl (used), plus rankControl
-                #   and latentControl (dead — leftover from an unrelated
-                #   template, not referenced by aids_rev.src; see
-                #   GOLD_STANDARD_TODO.md Milestone 0)
-aidsutil.src    # aidsControlCreate() (used), rankControlCreate() and
-                #   latentControlCreate() (dead, matching the unused structs
-                #   above)
-aids_rev.src    # The entire library: one proc, aids(), plus three helper
-                #   procs it calls: slutzky(), elas_(), elas()
-aids_example.e  # One synthetic 5-good dataset (homogeneity/symmetry true by
-                #   construction), run through aids() with eyeballed
-                #   comparison to true parameters in the console output. Not
-                #   an automated test — no assertions.
-package.json    # GAUSS package manifest (name: aids, version: 0.1.0).
-                #   License is a placeholder ("UNLICENSED") pending a real
-                #   decision — see GOLD_STANDARD_TODO.md Milestone 0.
+src/
+  quaids.sdf      # Struct definition: quaidsControl (renamed from
+                  #   aidsControl). The dead rankControl/latentControl
+                  #   structs from a copy-pasted template were removed here.
+  quaidsutil.src  # quaidsControlCreate() (renamed from aidsControlCreate()).
+                  #   The dead rankControlCreate()/latentControlCreate()
+                  #   constructors were removed here.
+  quaids.src      # The entire estimation library: quaids() (renamed from
+                  #   aids()), plus three helper procs it calls:
+                  #   quaidsSlutzky(), quaidsElas_(), quaidsElas() (renamed
+                  #   from slutzky(), elas_(), elas()).
+examples/
+  quaids_example.e  # One synthetic 5-good dataset (homogeneity/symmetry true
+                  #   by construction), run through quaids() with eyeballed
+                  #   comparison of printed estimates to true parameters.
+                  #   Not an automated test — no assertions. Includes
+                  #   src/*.sdf and src/*.src directly via relative paths
+                  #   (../src/...), matching gauss-qardl's source-tree
+                  #   testing convention, since there is no installable
+                  #   package build yet.
+package.json      # GAUSS package manifest (name: quaids, version: 0.1.0,
+                  #   license: MIT).
+LICENSE           # MIT, copyright Eric Clower.
+CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
+                  #   Banks, Blundell & Lewbel (1997).
+.gitignore        # Compiled .gcg artifacts, tmp/, .claude/, packaged zips.
 GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
-                #   definition of done. Read this before any nontrivial
-                #   change and update it as milestones close.
+                  #   definition of done. Read this before any nontrivial
+                  #   change and update it as milestones close.
 ```
 
-This flat, single-file layout is intentionally being reshaped — see
-`GOLD_STANDARD_TODO.md` Milestones 0–2 for the target `src/`/`examples/`/
-`docs/`/`tests/` split modeled on `gauss-qardl` and `dccelib`.
+Milestone 0 (repo hygiene) is complete: dead code removed, `src/`/`examples/`
+split done, package/proc naming decided (`quaids`), license decided (MIT).
+`docs/` and `tests/` directories do not exist yet — those are Milestones 3
+and 8.
 
-## The `aids()` proc
+## The `quaids()` proc
 
 ```gauss
-{ b1, v1, b2, v2 } = aids(w, intcpt, prices, totexp, instr, struct aidsControl aCtl);
+{ b1, v1, b2, v2 } = quaids(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
 ```
 
 - `w` — `TxN` budget shares.
@@ -60,7 +78,7 @@ This flat, single-file layout is intentionally being reshaped — see
   internally).
 - `totexp` — `Tx1` log total expenditure (treated as endogenous).
 - `instr` — `TxH` instruments for log total expenditure.
-- `aCtl` — `aidsControl` struct (see below).
+- `aCtl` — `quaidsControl` struct (see below).
 
 Returns, if `aCtl.homogenous == 1`: `b1`/`v1` = homogeneity-constrained
 estimates/covariance, `b2`/`v2` = homogeneity+symmetry-constrained
@@ -71,10 +89,10 @@ unconstrained (reparametrized) estimates and `b2`/`v2` are `0`.
 regression tables, iteration log, coefficient tables, an overidentification
 test if `ninst > nu`, a symmetry-given-homogeneity test, elasticities at four
 fixed points, descriptive statistics, and a Slutzky-negativity eigenvalue
-summary). There is currently no way to get `aids()`'s results without that
+summary). There is currently no way to get `quaids()`'s results without that
 output — splitting estimation from printing is Milestone 1.
 
-### `aidsControl` fields (`aid_model.sdf` / `aidsControlCreate()`)
+### `quaidsControl` fields (`src/quaids.sdf` / `quaidsControlCreate()`)
 
 | Field | Default | Meaning |
 |---|---|---|
@@ -85,13 +103,15 @@ output — splitting estimation from printing is Milestone 1.
 | `err` | `.0001` | Relative parameter-change convergence tolerance |
 | `othnam` | `""` | Optional alternate variable names for printed output |
 | `b0` | `0` | Optional user-supplied starting values; `0` = use linearized-AIDS starting values |
-| `stone` | `0` | Present in the struct; not read by `aids_rev.src` today — audit before relying on it |
-| `aids` | `1` | Present in the struct; not read by `aids_rev.src` today — audit before relying on it |
-| `varname` | `"serie"` | Present in the struct; not read by `aids_rev.src` today — audit before relying on it |
+| `stone` | `0` | Present in the struct; not read by `quaids.src` today — audit before relying on it |
+| `aids` | `1` | Present in the struct; not read by `quaids.src` today — audit before relying on it |
+| `varname` | `"serie"` | Present in the struct; not read by `quaids.src` today — audit before relying on it |
 
-`stone`, `aids`, and `varname` are set by `aidsControlCreate()` but not
-referenced anywhere in `aids_rev.src`'s estimation logic — confirm intent
-before documenting them as real API surface.
+`stone`, `aids`, and `varname` are set by `quaidsControlCreate()` but not
+referenced anywhere in `quaids.src`'s estimation logic — confirmed by grep at
+Milestone 0. Left in place deliberately (Milestone 0 scope was dead
+*procs*/*structs*, not unused *fields* on an otherwise-live struct); resolve
+as part of the Milestone 1 output-schema/control-structure audit.
 
 ## What GAUSS already provides — do not duplicate
 
@@ -104,14 +124,14 @@ GAUSS Already Provides." Summary:
   core here is genuinely new — this is the library's reason to exist.
 - **`gmmFitIV`** (`gmm.sdf`/`gmm_est.src`/`gmm_hac.src`) is a full
   single-equation IV-GMM estimator with robust/HAC weighting. It is a
-  candidate to replace the hand-rolled first-stage 2SLS block in `aids()`
-  (the `moment()`/`invpd()`/`solpd()` code around line 178), but this needs
-  an explicit evaluation, not an assumption — the system estimator needs raw
-  residuals/moment blocks in a specific layout.
+  candidate to replace the hand-rolled first-stage 2SLS block in `quaids()`
+  (the `moment()`/`invpd()`/`solpd()` code near the top of the proc), but
+  this needs an explicit evaluation, not an assumption — the system estimator
+  needs raw residuals/moment blocks in a specific layout.
 - **`pubtable`** (`pkgs/pubtable`) is a complete LaTeX/HTML/RTF/CSV/XLS/
   Markdown table-export engine, already used by `gauss-qardl` via a small
   adapter (`pubtable_qardl.src`, guarded by `#ifDef QARDL_SDF_INCLUDED`). Any
-  export/reporting work should add `pubtable_aids.src` the same way, not a
+  export/reporting work should add `pubtable_quaids.src` the same way, not a
   bespoke exporter.
 - **`loadd()`/`asdf()`/formula strings** should back a future dataframe/
   formula entry point (à la `qardl`'s `applyQARDLFormula`), instead of a
@@ -128,8 +148,8 @@ GAUSS Already Provides." Summary:
   preserve it rather than renaming to verbose identifiers.
 - **Locals**: all local variables declared in one `local` statement at the
   top of each proc.
-- **Struct declarations inside procs**: `struct aidsControl aCtl;` appears as
-  a formal parameter, not in the `local` list — standard GAUSS syntax.
+- **Struct declarations inside procs**: `struct quaidsControl aCtl;` appears
+  as a formal parameter, not in the `local` list — standard GAUSS syntax.
 - **Loop style**: `do while ok; ... endo;` / `do while i<=n; ... i=i+1;
   endo;` — not GAUSS's newer `for` loop syntax.
 - **Symmetric-restriction idiom**: `design(vec(xpnd(seqa(1,1,k*(k+1)/2))))`
@@ -138,24 +158,34 @@ GAUSS Already Provides." Summary:
   via minimum distance. Reuse this idiom rather than re-deriving it.
 - **Matrix concatenation**: `~` horizontal, `|` vertical, as usual in GAUSS.
 - **Relative vs. absolute prices**: `prices` is converted to relative
-  (`prices[.,1:n-1] - prices[.,n]`) near the top of `aids()` for estimation,
-  then converted back to absolute before the elasticities section — mutating
-  the input matrix in place. Be careful with this if refactoring; it is a
-  real footgun for anyone reading only part of the proc.
+  (`prices[.,1:n-1] - prices[.,n]`) near the top of `quaids()` for
+  estimation, then converted back to absolute before the elasticities
+  section — mutating the input matrix in place. Be careful with this if
+  refactoring; it is a real footgun for anyone reading only part of the proc.
 
 ## Testing status
 
-There is no automated test suite yet. `aids_example.e` is a manual,
-eyeball-comparison smoke script, not a CI-style test — see
-`GOLD_STANDARD_TODO.md` Milestone 3 for the plan to add deterministic
-fixtures with real assertions.
+There is no automated test suite yet. `examples/quaids_example.e` is a
+manual, eyeball-comparison smoke script (verified to still run correctly
+after the Milestone 0 rename — see `GOLD_STANDARD_TODO.md` for the run log),
+not a CI-style test — see `GOLD_STANDARD_TODO.md` Milestone 3 for the plan to
+add deterministic fixtures with real assertions.
+
+To run the example from a GAUSS 26 console/batch shell:
+
+```
+tgauss -b -x examples/quaids_example.e
+```
+
+(must be run with `examples/` as the working directory, or with paths
+adjusted, since the example includes source files via `../src/...`).
 
 ## Package manifest
 
-`package.json` lists `aid_model.sdf`, `aidsutil.src`, `aids_rev.src` in load
-order (structs first). The package is not yet buildable/installable as a
-GAUSS package (`.lcg`) — that is Milestone 7. If you add a new `.src` file,
-add it to the `"src"` array and bump the version.
+`package.json` lists `quaids.sdf`, `quaidsutil.src`, `quaids.src` (relative
+to `src/`) in load order (structs first). The package is not yet
+buildable/installable as a GAUSS package (`.lcg`) — that is Milestone 7. If
+you add a new `.src` file, add it to the `"src"` array and bump the version.
 
 ## References
 

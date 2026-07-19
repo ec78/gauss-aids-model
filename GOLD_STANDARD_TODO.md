@@ -11,9 +11,15 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha: two commits, four files, no package structure.
+The repository is pre-alpha. **Milestone 0 (repository hygiene) is complete**
+as of 2026-07-19: dead code removed, files moved into `src/`/`examples/`,
+package/proc naming decided (`quaids`), license decided (MIT). `package.json`,
+`LICENSE`, `CITATION.cff`, `.gitignore`, and `CLAUDE.md` now exist at the
+repo root. `docs/` and `tests/` still do not exist — those are Milestones 3
+and 8.
 
-- `aids_rev.src` — one ~1,300-line proc, `aids()`, that does everything:
+- `src/quaids.src` (formerly `aids_rev.src`) — one ~1,300-line proc, `quaids()`
+  (formerly `aids()`), that does everything:
   IV first-stage regression for log total expenditure, iterated FGLS-style
   estimation of the AIDS/QUAIDS share system, homogeneity imposition,
   symmetry-constrained re-estimation via minimum distance, an
@@ -23,17 +29,22 @@ The repository is pre-alpha: two commits, four files, no package structure.
   diagnostic. Estimation and printing are interleaved throughout — there is
   no way to run the model and get back a result object without triggering
   ~10 pages of console output.
-- `aidsutil.src` — `aidsControlCreate()` (used), plus `rankControlCreate()`
-  and `latentControlCreate()`, which build control structures that nothing in
-  this repo calls. Dead code, likely copied from a template.
-- `aid_model.sdf` — three structs: `aidsControl` (used), `rankControl` and
+- `src/quaidsutil.src` (formerly `aidsutil.src`) — `quaidsControlCreate()`
+  (formerly `aidsControlCreate()`, used), plus formerly also
+  `rankControlCreate()` and `latentControlCreate()`, which built control
+  structures that nothing in this repo called. **Removed at Milestone 0** —
+  dead code, likely copied from a template.
+- `src/quaids.sdf` (formerly `aid_model.sdf`) — formerly three structs:
+  `aidsControl` (used, renamed to `quaidsControl`), plus `rankControl` and
   `latentControl` (both dead, matching the unused constructors above).
-- `aids_example.e` — one synthetic 5-good dataset with parameters chosen to
-  satisfy homogeneity/symmetry by construction, run through `aids()` with
+  **`rankControl`/`latentControl` removed at Milestone 0.**
+- `examples/quaids_example.e` (formerly `aids_example.e`) — one synthetic
+  5-good dataset with parameters chosen to satisfy homogeneity/symmetry by
+  construction, run through `quaids()` with
   eyeball comparison of printed estimates to true values. No assertions, no
   pass/fail signal, not runnable as a regression test.
-- No `package.json`, no `docs/`, no `tests/`, no `examples/` directory, no
-  `README`, `CHANGELOG`, `CITATION`, `LICENSE` decision, or `CLAUDE.md`.
+- Still missing: `README.md`, `CHANGELOG.md`, `docs/`, `tests/` — see
+  Milestones 7–8.
 
 ## What GAUSS Already Provides — Do Not Duplicate
 
@@ -43,13 +54,13 @@ packages (`pkgs/`), and against `aptech/gauss-llm-reference`.
 - **No built-in SUR / systems-of-equations estimator and no existing
   AIDS/QUAIDS/demand-system implementation anywhere in the GAUSS runtime or
   shipped packages.** The iterated, cross-equation-restricted (homogeneity +
-  symmetry) FGLS core in `aids_rev.src` is genuinely new functionality — it
+  symmetry) FGLS core in `src/quaids.src` is genuinely new functionality — it
   is this library's reason to exist. Keep and harden it; do not look for a
   built-in replacement.
 - **`gmmFitIV` / `gmm.sdf` / `gmm_est.src` / `gmm_hac.src` /
   `gmm_weight_mat.src`** — a full single-equation IV-GMM estimator with
   robust/HAC weighting and formula-string/dataset support. The hand-rolled
-  first-stage 2SLS block at the top of `aids()` (moment-matrix IV regression
+  first-stage 2SLS block at the top of `quaids()` (moment-matrix IV regression
   of log total expenditure on instruments) is a candidate to route through
   `gmmFitIV` instead of hand-coded `moment()`/`invpd()` algebra — but this
   needs an explicit evaluation (Milestone 2), because the multi-equation
@@ -61,9 +72,9 @@ packages (`pkgs/`), and against `aptech/gauss-llm-reference`.
   significance stars, GOF rows. It already ships an adapter pattern for other
   in-house libraries (`pubtable_qardl.src`, `pubtable_cmlmt.src`,
   `pubtable_maxlikmt.src`, `pubtable_tsmt.src`, `pubtable_optmt.src`) guarded
-  by `#ifDef <LIB>_SDF_INCLUDED`. Build `pubtable_aids.src` the same way
+  by `#ifDef <LIB>_SDF_INCLUDED`. Build `pubtable_quaids.src` the same way
   instead of hand-rolling any LaTeX/CSV/Markdown export. All of the current
-  `printfm()`-based console tables in `aids_rev.src` should eventually be
+  `printfm()`-based console tables in `src/quaids.src` should eventually be
   reachable through `pubtable` model objects as well as the current console
   form.
 - **Dataframes and formula strings** — `loadd()`, `asdf()`, formula parsing
@@ -73,7 +84,7 @@ packages (`pkgs/`), and against `aptech/gauss-llm-reference`.
   aCtl`). Add a formula/dataframe entry point on top of the matrix core,
   mirroring `qardl`'s `applyQARDLFormula()` / `qardlFull(..., formula=...)`
   pattern, rather than writing a bespoke formula parser.
-- **Core primitives already used correctly** in `aids_rev.src` — `moment()`,
+- **Core primitives already used correctly** in `src/quaids.src` — `moment()`,
   `invpd()`, `solpd()`, `design()`/`vech()`/`xpnd()` for the symmetric-matrix
   restriction algebra, `eigh()` for the Slutzky check, `cdfchic`/`cdftc`/
   `cdffc`/`cdfnc`, `printfm()`, `quantile()`. Keep using these; no rewrite
@@ -118,57 +129,108 @@ packages (`pkgs/`), and against `aptech/gauss-llm-reference`.
 Each milestone should exit with source tests, examples, and docs updated
 together — no milestone is "done" with code alone.
 
-### Milestone 0 — Repository Hygiene
+### Milestone 0 — Repository Hygiene — COMPLETE (2026-07-19)
 
-- [ ] Remove or justify `rankControl`/`latentControl` and their constructors
+- [x] Remove or justify `rankControl`/`latentControl` and their constructors
   in `aid_model.sdf`/`aidsutil.src` — dead code from an unrelated template.
-- [ ] Decide the package name/public proc prefix (`aids`, `aidsQuaids`, or a
-  neutral `aidsystem`-style prefix) before any public API is locked in —
-  check for collisions with common variable names like `aids` used as a
-  local control-structure field name today (`aCtl.aids`).
-- [ ] Add `.gitignore`, `LICENSE` decision, `CITATION.cff`.
-- [ ] Move the current root-level `.e`/`.src`/`.sdf` files into `src/` and
-  `examples/` to match `dccelib`/`qardl` layout.
+  Removed both structs and both constructors; `quaidsControl`/
+  `quaidsControlCreate()` are the only surviving struct/constructor.
+- [x] Decide the package name/public proc prefix. **Decision: `quaids`.**
+  QUAIDS is the more general model actually implemented (linear AIDS is a
+  special case), and `aids` was judged too likely to collide/confuse as a
+  bare identifier. All public procs renamed: `aids()` -> `quaids()`,
+  `slutzky()` -> `quaidsSlutzky()`, `elas()` -> `quaidsElas()`, `elas_()` ->
+  `quaidsElas_()`, `aidsControlCreate()` -> `quaidsControlCreate()`. The
+  `aidsControl` struct is renamed to `quaidsControl`. The now-vestigial
+  `aCtl.aids` field is unchanged (still unread; see Milestone 1) and no
+  longer collides with the package name.
+- [x] Add `.gitignore`, `LICENSE` decision, `CITATION.cff`.
+  **License decision: MIT** (matches `gauss-qardl`), copyright Eric Clower.
+- [x] Move the current root-level `.e`/`.src`/`.sdf` files into `src/` and
+  `examples/` to match `dccelib`/`qardl` layout, renaming files to match the
+  new `quaids` prefix: `aid_model.sdf` -> `src/quaids.sdf`, `aidsutil.src` ->
+  `src/quaidsutil.src`, `aids_rev.src` -> `src/quaids.src`, `aids_example.e`
+  -> `examples/quaids_example.e`.
+- [x] Verify `examples/quaids_example.e` still runs correctly against the
+  renamed/relocated source via `tgauss -b -x` after the rename, and that the
+  renamed/relocated codebase compiles cleanly and produces byte-identical
+  output to the pre-Milestone-0 baseline (see Milestone 0 Verification
+  below).
+
+#### Milestone 0 Verification
+
+Two independent checks were run with GAUSS 26.1.1's console runner
+(`tgauss.exe -b -x`), since this repository has no test harness yet
+(Milestone 3/7):
+
+1. **Compile check** — `#include`d `src/quaids.sdf`, `src/quaidsutil.src`,
+   and `src/quaids.src` together from a fresh `tgauss -b -x -e "..."`
+   invocation with no other statements. **Result: PASS** — compiled and ran
+   with no parse/link errors, confirming the renamed procs/structs
+   (`quaids()`, `quaidsSlutzky()`, `quaidsElas()`, `quaidsElas_()`,
+   `quaidsControl`, `quaidsControlCreate()`) all resolve correctly with no
+   duplicate or dangling identifiers left over from the rename.
+2. **Behavioral parity check** — ran the pre-Milestone-0 code
+   (`aids_rev.src`/`aidsutil.src`/`aid_model.sdf`/`aids_example.e`, checked
+   out from commit `ac5d924` into a scratch directory) and the
+   post-Milestone-0 code (`src/quaids.src`/`src/quaidsutil.src`/
+   `src/quaids.sdf`/`examples/quaids_example.e`) side by side, both via
+   `tgauss -b -x`, both against the same fixed-seed (`seed = 11`) synthetic
+   5-good dataset generated inside the example script. Diffed the two
+   captured `output file=out` result files byte-for-byte.
+   **Result: PASS** — `diff` reported zero differences (656/656 lines
+   identical) across the full instrumental-regression tables, iteration log,
+   homogeneity/symmetry-constrained coefficient tables, overidentification
+   test, elasticities at all four evaluation points, descriptive statistics,
+   and Slutzky-eigenvalue diagnostic. This confirms Milestone 0 was a pure
+   rename/reorganization with no change to numerical behavior.
+
+**Standard applied**: Milestone 0 is repository hygiene only (renaming,
+moving files, deleting dead code, adding metadata) — no estimation logic
+should change. The pass bar was therefore "compiles and runs" (compile
+check) plus "identical numerical output on identical input" (parity check),
+rather than a correctness check against an external/published benchmark,
+which is out of scope until Milestone 3.
 
 ### Milestone 1 — API and Output Schema Baseline
 
-Goal: make `aids()` callable without side-effect printing and return a
+Goal: make `quaids()` callable without side-effect printing and return a
 predictable structure, before anything else is built on top of it.
 
-- [ ] Split estimation from printing: `aids()` should return a struct
-  (`aidsOut`) with parameter estimates/covariances/fit stats/residuals/model
-  metadata; printing becomes a separate `printAIDS(aidsOut)` call, following
-  the `qardl`/`printQARDL` split.
-- [ ] Define `aidsOut` fields: model family (LA-AIDS/AIDS/QUAIDS), homogeneity
-  and symmetry flags, `n` goods, sample size, instrument list, alpha/gamma/
-  beta/lambda blocks and their covariances, residuals, first-stage IV
-  diagnostics, log-det-sigma fit criterion, and the raw `b`/`v` matrices for
-  backward compatibility.
-- [ ] Add `getDefaultAidsControl()` alongside the existing
-  `aidsControlCreate()` if naming should align with `qardl`'s
+- [ ] Split estimation from printing: `quaids()` should return a struct
+  (`quaidsOut`) with parameter estimates/covariances/fit stats/residuals/model
+  metadata; printing becomes a separate `printQuaids(quaidsOut)` call,
+  following the `qardl`/`printQARDL` split.
+- [ ] Define `quaidsOut` fields: model family (LA-AIDS/AIDS/QUAIDS),
+  homogeneity and symmetry flags, `n` goods, sample size, instrument list,
+  alpha/gamma/beta/lambda blocks and their covariances, residuals,
+  first-stage IV diagnostics, log-det-sigma fit criterion, and the raw
+  `b`/`v` matrices for backward compatibility.
+- [ ] Add `getDefaultQuaidsControl()` alongside the existing
+  `quaidsControlCreate()` if naming should align with `qardl`'s
   `getDefault...Control` convention — otherwise document why the existing
   name stays.
-- [ ] Add schema tests asserting `aidsOut` field names/shapes.
+- [ ] Add schema tests asserting `quaidsOut` field names/shapes.
 - [ ] Keep the current positional call signature working; do not break
-  `aids_example.e`-style calls while restructuring.
+  `examples/quaids_example.e`-style calls while restructuring.
 
 ### Milestone 2 — Modular Source Split + Formula/Dataframe Entry Point
 
-- [ ] Split `aids_rev.src` into focused files: core estimation, IV first
+- [ ] Split `src/quaids.src` into focused files: core estimation, IV first
   stage, homogeneity/symmetry testing, elasticities, Slutzky diagnostics,
   printing — mirroring how `qardl.src`/`icmean.src`/`wtestlrb.src`/etc. are
   separated in `gauss-qardl`.
 - [ ] Evaluate routing the IV first-stage regression through `gmmFitIV`
   instead of the hand-rolled moment-matrix 2SLS block; document the decision
   either way.
-- [ ] Add a formula/dataframe entry point (e.g. `aidsFull(data, formula,
+- [ ] Add a formula/dataframe entry point (e.g. `quaidsFull(data, formula,
   instFormula, aCtl)`) built on `loadd()`/`asdf()`, matching the
   `applyQARDLFormula` pattern instead of a bespoke parser.
 - [ ] Add formula-vs-matrix parity tests.
 
 ### Milestone 3 — Validation Fixture and Benchmark Harness
 
-- [ ] Add deterministic synthetic fixtures (expand on `aids_example.e` with
+- [ ] Add deterministic synthetic fixtures (expand on `quaids_example.e` with
   actual pass/fail assertions instead of eyeballed printouts), covering
   LA-AIDS, iterated AIDS, and QUAIDS, each with and without IV.
 - [ ] Identify a published-replication target: Deaton & Muellbauer (1980)
@@ -195,7 +257,7 @@ predictable structure, before anything else is built on top of it.
 ### Milestone 5 — Elasticities and Diagnostics Generalization
 
 - [ ] Generalize `elas()`/`elas_()` to accept arbitrary evaluation points
-  (currently hardcoded to mean/Q1/median/Q3 inside `aids()`).
+  (currently hardcoded to mean/Q1/median/Q3 inside `quaids()`).
 - [ ] Keep the Slutzky-eigenvalue negativity diagnostic as the default
   always-on check.
 - [ ] Scope and, if justified, implement optional local curvature imposition
@@ -204,8 +266,8 @@ predictable structure, before anything else is built on top of it.
 
 ### Milestone 6 — Reporting via `pubtable`
 
-- [ ] Add `pubtable_aids.src` following the `pubtable_qardl.src` pattern
-  (`#ifDef AIDS_SDF_INCLUDED` guard, `ptModelFromAids`, `ptFromAids`).
+- [ ] Add `pubtable_quaids.src` following the `pubtable_qardl.src` pattern
+  (`#ifDef QUAIDS_SDF_INCLUDED` guard, `ptModelFromQuaids`, `ptFromQuaids`).
 - [ ] Route elasticity tables and coefficient tables through `pubtable`
   model objects in addition to the console `printfm()` output.
 - [ ] Add LaTeX/Markdown/CSV export examples.
@@ -251,7 +313,7 @@ predictable structure, before anything else is built on top of it.
 
 ## Definition of Done for a Gold Standard Release
 
-- [ ] `aids()` (and formula-based `aidsFull()`) return structured output with
+- [ ] `quaids()` (and formula-based `quaidsFull()`) return structured output with
   no forced console printing.
 - [ ] LA-AIDS, iterated AIDS, and QUAIDS are each documented, tested, and
   independently callable model choices, with and without IV.
@@ -261,7 +323,7 @@ predictable structure, before anything else is built on top of it.
   delta-method standard errors.
 - [ ] Slutzky negativity diagnostics ship by default; curvature imposition is
   either implemented or explicitly documented as future work.
-- [ ] `pubtable_aids.src` provides LaTeX/Markdown/CSV export.
+- [ ] `pubtable_quaids.src` provides LaTeX/Markdown/CSV export.
 - [ ] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
 - [ ] Full doc set (`README`, command reference, usage guide, methodology

@@ -13,13 +13,13 @@
         "consumer demand",
         "econometrics"
     ],
-    "license": "UNLICENSED",
-    "name": "aids",
+    "license": "MIT",
+    "name": "quaids",
     "repo": "https://github.com/ec78/gauss-aids-model",
     "src": [
-        "aid_model.sdf",
-        "aidsutil.src",
-        "aids_rev.src"
+        "quaids.sdf",
+        "quaidsutil.src",
+        "quaids.src"
     ],
     "version": "0.1.0"
 }

@@ -1,15 +1,15 @@
 /*
 **
-** AIDS.SRC - AI Systems Estimation
+** QUAIDS.SRC - Almost Ideal / Quadratic Almost Ideal Demand System Estimation
 **
 */
 
 /*******************************************************************************
-** AIDS
+** QUAIDS
 **
-** Purpose:    To estimate AI demand systems
+** Purpose:    To estimate (Q)AIDS demand systems
 **
-** Format:     { b1, v1, b2, v2 } = AIDS(w, intcpt, prices, totexp, instr);
+** Format:     { b1, v1, b2, v2 } = QUAIDS(w, intcpt, prices, totexp, instr);
 **
 ** Input:    w -- budget shares.
 **
@@ -94,7 +94,7 @@
 **                       estimates.
 **
 **
-** Source:     AIDS.SRC
+** Source:     QUAIDS.SRC
 **
 **
 ******************************************************************************/
@@ -106,7 +106,7 @@
 
 
 
-proc 4 = aids(w,  intcpt,  prices,  totexp,  instr,  struct aidsControl aCtl);
+proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl);
     
     local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zz, zzi, ze, u, stone, lx, 
         nendog, m, ng, gg, gw, b, ok, alpha, gama, a_p, _beta, b_p, lx2, err, iter, df, iw, m_, cov, vnam, 
@@ -834,22 +834,22 @@ proc 4 = aids(w,  intcpt,  prices,  totexp,  instr,  struct aidsControl aCtl);
     
     print;
     "ELASTICITIES AT MEAN POINT ";
-    call elas(b_s, v_s, m_[1:1+nint], m_[1+nint+1:1+nint+n], m_[1+nint+n+1], aCtl);
+    call quaidsElas(b_s, v_s, m_[1:1+nint], m_[1+nint+1:1+nint+n], m_[1+nint+n+1], aCtl);
     print;
-    
+
     "ELASTICITIES AT FIRST QUARTILE";
     print;
-    call elas(b_s, v_s, m_1[1:1+nint], m_1[1+nint+1:1+nint+n], m_1[1+nint+n+1], aCtl);
+    call quaidsElas(b_s, v_s, m_1[1:1+nint], m_1[1+nint+1:1+nint+n], m_1[1+nint+n+1], aCtl);
     print;
-    
+
     "ELASTICITIES AT MEDIAN POINT";
     print;
-    call elas(b_s, v_s, m_2[1:1+nint], m_2[1+nint+1:1+nint+n], m_2[1+nint+n+1], aCtl);
+    call quaidsElas(b_s, v_s, m_2[1:1+nint], m_2[1+nint+1:1+nint+n], m_2[1+nint+n+1], aCtl);
     print;
-    
+
     "ELASTICITIES AT THIRD QUARTILE";
     print;
-    call elas(b_s, v_s, m_3[1:1+nint], m_3[1+nint+1:1+nint+n], m_3[1+nint+n+1], aCtl);
+    call quaidsElas(b_s, v_s, m_3[1:1+nint], m_3[1+nint+1:1+nint+n], m_3[1+nint+n+1], aCtl);
     print;
     
     
@@ -891,7 +891,7 @@ proc 4 = aids(w,  intcpt,  prices,  totexp,  instr,  struct aidsControl aCtl);
     /* TEST OF SLUTZKY CONDITIONS       */
     /************************************************/
     
-    call slutzky(b_s, intcpt, prices, totexp, aCtl);
+    call quaidsSlutzky(b_s, intcpt, prices, totexp, aCtl);
     
     
     /***********************************/
@@ -920,11 +920,11 @@ endp;
 
 /*******************************************************************************
 **
-** SLUTZKY
+** QUAIDSSLUTZKY
 **
 ** Purpose:  tests negativity of the Slutzky matrix observation by observation.
 **
-** Format:     slutzky(b, intcpt, prices, totexp);
+** Format:     quaidsSlutzky(b, intcpt, prices, totexp);
 **
 ** Input:    b -- parameter matrix; each column corresponds to a specific share;
 **                order is intcp|prices|lx|lx2|u.
@@ -942,7 +942,7 @@ endp;
 **
 *******************************************************************************/
 
-proc 0 = slutzky(b, intcpt, prices, totexp, struct aidsControl aCtl);
+proc 0 = quaidsSlutzky(b, intcpt, prices, totexp, struct quaidsControl aCtl);
     
     local nint, n, alpha, gama, _beta, lambda, w, wepc, mu, a_p, 
         lx, lx2, b_p, omat, mask, fmt, nobs, i, va, min, mean, std, max, Q1, Q2, Q3, vnames;
@@ -1027,11 +1027,11 @@ endp;
 
 /*******************************************************************************
 **
-**  ELAS_
+**  QUAIDSELAS_
 **
 ** Purpose:   computes elasticities at one single point.
 **
-** Format:     { er, ep, epc } = elas_(b, intcpt, prices, totexp);
+** Format:     { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp);
 **
 ** Input:    b -- parameter matrix; each column corresponds to a specific share;
 **                order is intcp|prices|lx|lx2|u.
@@ -1051,7 +1051,7 @@ endp;
 **
 *******************************************************************************/
 
-proc 3 = elas_(b, intcpt, prices, totexp, struct aidsControl aCtl);
+proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
     
     local nint, n, alpha, gama, _beta, lambda, w, dw_dx, er, ep, epc, a_p, 
         lx, lx2, b_p;
@@ -1092,12 +1092,12 @@ endp;
 
 /*******************************************************************************
 **
-** ELAS
+** QUAIDSELAS
 **
 ** Purpose:  compute income and price elasticities,  and asymptotic std,  at one
 **           single point.
 **
-** Format:     elas(b, v, intcpt, prices, totexp);
+** Format:     quaidsElas(b, v, intcpt, prices, totexp);
 **
 ** Input:    b -- parameter matrix; each column corresponds to a specific share;
 **                order is intcp|prices|lx|lx2|u.
@@ -1117,7 +1117,7 @@ endp;
 **
 *******************************************************************************/
 
-proc  0=elas(b, v, intcpt, prices, totexp, struct aidsControl aCtl);
+proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
     
     local nint, n, wnam, er, ep, epc, omat, mask, fmt, t, dt, er_e, ep_e, epc_e, i, j, e, 
         ver, vep, vepc, vt, be, fmat, dtk, te, k, b0, dab0, ab0;
@@ -1131,7 +1131,7 @@ proc  0=elas(b, v, intcpt, prices, totexp, struct aidsControl aCtl);
         wnam = aCtl.othnam[nint:nint-1+n];
     endif;
     
-    { er, ep, epc } = elas_(b, intcpt, prices, totexp, aCtl);
+    { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp, aCtl);
     t = er|vec(ep')|vec(epc');
     
     
@@ -1158,7 +1158,7 @@ proc  0=elas(b, v, intcpt, prices, totexp, struct aidsControl aCtl);
         do while j<=rows(b);
             be=b;
             be[j, i]=b[j, i]-e[k];
-            { er_e, ep_e, epc_e } = elas_(be, intcpt, prices, totexp, aCtl);
+            { er_e, ep_e, epc_e } = quaidsElas_(be, intcpt, prices, totexp, aCtl);
             te = er_e|vec(ep_e')|vec(epc_e');
             dtk = (te-t)/e[k];
             if k==1;

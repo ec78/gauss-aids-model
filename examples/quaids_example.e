@@ -1,7 +1,7 @@
 new;
-#include aid_model.sdf;
-#include aidsutil.src
-#include aids_rev.src;
+#include ../src/quaids.sdf;
+#include ../src/quaidsutil.src
+#include ../src/quaids.src;
 
 seed = 11;
 tobs = 1000;
@@ -43,8 +43,8 @@ xnames = { exog,p1,p2,p3,p4,p5,totexp,instr,w1,w2,w3,w4,w5,instr };
 output file=out reset;
 
 // Declare control structure
-struct aidsControl aCtl;
-aCtl = aidsControlCreate;
+struct quaidsControl aCtl;
+aCtl = quaidsControlCreate;
 
 // Set parameters
 aCtl.linear = 0;
@@ -59,7 +59,7 @@ actl.homogenous = 1;
 actl.err = .001;
 
 // Run model
-{ b, v, b_s, v_s } =  aids(w, intcpt, prices, totexp, instr, aCtl);
+{ b, v, b_s, v_s } =  quaids(w, intcpt, prices, totexp, instr, aCtl);
 
 format /ld 5,3;
 

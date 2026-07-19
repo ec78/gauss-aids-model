@@ -1,0 +1,14 @@
+
+struct quaidsControl {
+    matrix aids;
+    matrix maxiter;
+    matrix alpha0;
+    string othnam;
+    matrix linear;
+    matrix stone;
+    matrix homogenous;
+    matrix err;
+    matrix b0;
+
+    string varname;
+};
