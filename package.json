@@ -1,0 +1,25 @@
+{
+    "author": "Eric Clower",
+    "deps": [
+    ],
+    "description": "GAUSS code for estimating Almost Ideal Demand System (AIDS/QUAIDS) models",
+    "dlib": [
+    ],
+    "keywords": [
+        "aids",
+        "quaids",
+        "almost ideal demand system",
+        "demand system",
+        "consumer demand",
+        "econometrics"
+    ],
+    "license": "UNLICENSED",
+    "name": "aids",
+    "repo": "https://github.com/ec78/gauss-aids-model",
+    "src": [
+        "aid_model.sdf",
+        "aidsutil.src",
+        "aids_rev.src"
+    ],
+    "version": "0.1.0"
+}
