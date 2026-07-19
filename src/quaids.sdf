@@ -1,14 +1,119 @@
 
 struct quaidsControl {
-    matrix aids;
     matrix maxiter;
     matrix alpha0;
     string othnam;
     matrix linear;
-    matrix stone;
     matrix homogenous;
     matrix err;
     matrix b0;
+};
 
-    string varname;
+/*
+** quaidsOut -- struct returned by quaidsFit() (and, via its qOut.b/v/bS/vS
+** fields, the raw legacy return values of quaids()). See the Milestone 1
+** section of GOLD_STANDARD_TODO.md and the CLAUDE.md field-by-field notes
+** for how each block maps back to the pre-Milestone-1 printed tables.
+*/
+struct quaidsOut {
+    // Metadata
+    string model;              // "LA-AIDS" | "AIDS" | "QUAIDS"
+    matrix linear;
+    matrix homogenous;
+    matrix maxiter;
+    matrix alpha0;
+    matrix nobs;
+    matrix n;                  // number of goods
+    matrix nint;                // number of extra intercept-shifter variables
+    matrix ninst;               // number of instruments
+    matrix nu;                  // number of endogenous total-expenditure regressors
+    matrix nendog;
+    matrix n1;                  // n - homogenous
+    matrix ng;
+    matrix nz;
+    matrix iterations;
+    matrix converged;
+    matrix finalErr;
+    matrix iterHistory;         // Kx2: iteration number, convergence criterion
+    // Name vectors below are legacy character matrices built with $+/ftocv,
+    // not the newer native "string array" type -- must stay typed "matrix".
+    matrix xnam;
+    matrix wnam;
+    matrix znam;
+    matrix unam;
+    matrix enam;
+    matrix intcptFull;          // intcpt with the constant column prepended
+    matrix u;                   // first-stage IV residuals
+
+    // Instrumental-variables first-stage regression (log total expenditure on instruments)
+    matrix ivB;
+    matrix ivSE;
+    matrix ivT;
+    matrix ivPvt;
+    matrix ivCor;
+    matrix ivTv;
+    matrix ivRsq;
+    matrix ivRbsq;
+    matrix ivSse;
+    matrix ivStdest;
+    matrix ivFstat;
+    matrix ivPvf;
+    matrix ivDf;
+
+    // Homogeneity-constrained (or unconstrained, if not homogenous) share-system estimates
+    matrix homogB;
+    matrix homogV;
+    matrix homogSE;
+    matrix homogT;
+    matrix homogPvt;
+    matrix homogCor;
+    matrix homogTv;
+    matrix homogRsq;
+    matrix homogRbsq;
+    matrix homogSse;
+    matrix homogStdest;
+    matrix homogFstat;
+    matrix homogPvf;
+    matrix homogDf;
+    matrix homogCrit;
+
+    // Overidentification test (valid only when ninst > nu)
+    matrix overidValid;
+    matrix overidGamma;
+    matrix overidSE;
+    matrix overidT;
+    matrix overidPvt;
+    matrix overidFstat;
+    matrix overidPvf;
+    matrix overidDf;
+
+    // Symmetry test given homogeneity (valid only when homogenous == 1)
+    matrix symValid;
+    matrix symStat;
+    matrix symPval;
+    matrix symDf;
+
+    // Symmetry-constrained share-system estimates (valid only when homogenous == 1)
+    matrix symcB;
+    matrix symcV;
+    matrix symcSE;
+    matrix symcT;
+    matrix symcPvt;
+    matrix symcRsq;
+    matrix symcRbsq;
+    matrix symcSse;
+    matrix symcStdest;
+    matrix symcCrit;
+
+    // Final absolute-price-form estimates -- what quaids() returns as (b1, v1, b2, v2)
+    matrix b;
+    matrix v;
+    matrix bS;
+    matrix vS;
+
+    // "Best available" estimates for downstream elasticities/Slutzky diagnostics:
+    // symmetry-constrained if homogeneity was imposed, else the recovered
+    // unconstrained fit.
+    matrix bestB;
+    matrix bestV;
 };

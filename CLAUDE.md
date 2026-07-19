@@ -26,20 +26,18 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-0)
+## Repository layout (post-Milestone-1)
 
 ```
 src/
-  quaids.sdf      # Struct definition: quaidsControl (renamed from
-                  #   aidsControl). The dead rankControl/latentControl
-                  #   structs from a copy-pasted template were removed here.
-  quaidsutil.src  # quaidsControlCreate() (renamed from aidsControlCreate()).
-                  #   The dead rankControlCreate()/latentControlCreate()
-                  #   constructors were removed here.
-  quaids.src      # The entire estimation library: quaids() (renamed from
-                  #   aids()), plus three helper procs it calls:
-                  #   quaidsSlutzky(), quaidsElas_(), quaidsElas() (renamed
-                  #   from slutzky(), elas_(), elas()).
+  quaids.sdf      # Struct definitions: quaidsControl and quaidsOut.
+  quaidsutil.src  # quaidsControlCreate() / getDefaultQuaidsControl().
+  quaids.src      # quaidsFit() (silent, struct-returning estimation core),
+                  #   printQuaids() (the separated estimation-report
+                  #   printer), quaids() (backward-compatible wrapper: fits,
+                  #   prints, reproduces the legacy elasticities/descriptive
+                  #   stats/Slutzky report, returns the 4 legacy matrices),
+                  #   plus quaidsSlutzky(), quaidsElas_(), quaidsElas().
 examples/
   quaids_example.e  # One synthetic 5-good dataset (homogeneity/symmetry true
                   #   by construction), run through quaids() with eyeballed
@@ -49,27 +47,68 @@ examples/
                   #   (../src/...), matching gauss-qardl's source-tree
                   #   testing convention, since there is no installable
                   #   package build yet.
+tests/
+  quaids_schema_test.e  # Milestone 1 schema test: asserts quaidsOut field
+                  #   values/shapes, that quaidsFit() prints nothing, and
+                  #   that the legacy quaids() wrapper's returned matrices
+                  #   are byte-identical to the struct fields they're drawn
+                  #   from. Run from tests/ as the working directory.
 package.json      # GAUSS package manifest (name: quaids, version: 0.1.0,
                   #   license: MIT).
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
-.gitignore        # Compiled .gcg artifacts, tmp/, .claude/, packaged zips.
+.gitignore        # Compiled .gcg artifacts, tmp/, .claude/, packaged zips,
+                  #   generated `output file=...` run artifacts.
 GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   definition of done. Read this before any nontrivial
                   #   change and update it as milestones close.
 ```
 
-Milestone 0 (repo hygiene) is complete: dead code removed, `src/`/`examples/`
-split done, package/proc naming decided (`quaids`), license decided (MIT).
-`docs/` and `tests/` directories do not exist yet — those are Milestones 3
-and 8.
+Milestones 0 (repo hygiene) and 1 (API/output-schema baseline) are complete.
+`docs/` does not exist yet — that is Milestone 8. A fuller `tests/` harness
+(installed-package tests, more fixtures) is Milestone 7.
 
-## The `quaids()` proc
+## The `quaidsFit()` / `printQuaids()` / `quaids()` split
+
+**`quaidsFit()` is the primary, silent, struct-returning entry point.** It
+does 100% of the estimation with zero printing and returns a `quaidsOut`
+struct (defined in `src/quaids.sdf`, ~75 fields, grouped by phase: metadata,
+IV first-stage diagnostics, homogeneity-constrained stage, overidentification
+test, symmetry test + symmetry-constrained stage, and the final
+absolute-price-form `b`/`v`/`bS`/`vS`).
+
+```gauss
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+```
+
+**`printQuaids(qOut)`** reproduces the estimation-stage console report (IV
+first-stage table, iteration summary, homogeneity-constrained coefficient
+table, overidentification test, symmetry test + symmetry-constrained table)
+from a `quaidsOut` struct alone. It does *not* print elasticities,
+descriptive statistics, or the Slutzky diagnostic — those are separate,
+explicitly-callable reports (`quaidsElas()`, `quaidsSlutzky()`), since
+Milestone 5 plans to generalize elasticities to arbitrary evaluation points
+rather than bake a fixed set into the struct.
+
+**`quaids()` is the original, backward-compatible call** — unchanged
+signature and unchanged printed behavior:
 
 ```gauss
 { b1, v1, b2, v2 } = quaids(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
 ```
+
+It calls `quaidsFit()`, calls `printQuaids(qOut)`, then reproduces the
+legacy elasticities-at-four-points / descriptive-statistics / Slutzky report
+exactly as the pre-Milestone-1 `aids()` proc did, then returns
+`(qOut.b, qOut.v, qOut.bS, qOut.vS)`. **Verified byte-for-byte**: running
+`quaids()` post-refactor against the same fixed-seed synthetic dataset used
+at Milestone 0 produces output identical to the pre-Milestone-1 code,
+including the per-iteration convergence log (reproduced from a stored
+`qOut.iterHistory` matrix rather than printed live during iteration, since
+`quaidsFit()` cannot print, but reproduced with matching iteration
+numbers/error values so the printed table is unchanged).
 
 - `w` — `TxN` budget shares.
 - `intcpt` — `TxK` extra intercept-shifter variables (demographics etc.), or
@@ -80,17 +119,27 @@ and 8.
 - `instr` — `TxH` instruments for log total expenditure.
 - `aCtl` — `quaidsControl` struct (see below).
 
-Returns, if `aCtl.homogenous == 1`: `b1`/`v1` = homogeneity-constrained
-estimates/covariance, `b2`/`v2` = homogeneity+symmetry-constrained
-estimates/covariance. If `aCtl.homogenous == 0`: `b1`/`v1` are the
-unconstrained (reparametrized) estimates and `b2`/`v2` are `0`.
+`quaids()`'s (`b1`/`v1`/`b2`/`v2`) return semantics are unchanged: if
+`aCtl.homogenous == 1`, `b1`/`v1` are homogeneity-constrained
+estimates/covariance and `b2`/`v2` are homogeneity+symmetry-constrained. If
+`aCtl.homogenous == 0`, `b1`/`v1` are the unconstrained (reparametrized)
+estimates and `b2`/`v2` are `0`. Same values are available struct-side as
+`qOut.b`/`qOut.v`/`qOut.bS`/`qOut.vS`; `qOut.bestB`/`qOut.bestV` always hold
+"whichever is the most-constrained estimate actually fit" (symmetric if
+homogeneity was imposed, else the recovered unconstrained fit) — this is
+what elasticities/Slutzky are evaluated against, matching what the original
+code's reused `b_s`/`v_s` locals held at that point regardless of branch.
 
-**This single call also prints ~10 pages of console output** (first-stage IV
-regression tables, iteration log, coefficient tables, an overidentification
-test if `ninst > nu`, a symmetry-given-homogeneity test, elasticities at four
-fixed points, descriptive statistics, and a Slutzky-negativity eigenvalue
-summary). There is currently no way to get `quaids()`'s results without that
-output — splitting estimation from printing is Milestone 1.
+**A pre-existing anomaly, preserved not fixed**: in the symmetry-constrained
+table's "Residuals of instrumental regressions" row, the original code pairs
+point estimates from the *homogeneity-stage* `b` with standard errors/t/p
+from the *symmetry-stage* fit (both stages leave the IV-residual coefficient
+block numerically identical, but the printed SE/t/p come from the
+symmetry-constrained covariance). This looks like it could be an original
+authoring inconsistency. It was carried over unchanged (`qOut.homogB` paired
+with `qOut.symcSE`/`qOut.symcT`/`qOut.symcPvt` in `printQuaids()`) since
+Milestone 1 is a structure-preserving refactor, not a correctness pass —
+flag for review during Milestone 3/4 validation work.
 
 ### `quaidsControl` fields (`src/quaids.sdf` / `quaidsControlCreate()`)
 
@@ -103,15 +152,16 @@ output — splitting estimation from printing is Milestone 1.
 | `err` | `.0001` | Relative parameter-change convergence tolerance |
 | `othnam` | `""` | Optional alternate variable names for printed output |
 | `b0` | `0` | Optional user-supplied starting values; `0` = use linearized-AIDS starting values |
-| `stone` | `0` | Present in the struct; not read by `quaids.src` today — audit before relying on it |
-| `aids` | `1` | Present in the struct; not read by `quaids.src` today — audit before relying on it |
-| `varname` | `"serie"` | Present in the struct; not read by `quaids.src` today — audit before relying on it |
 
-`stone`, `aids`, and `varname` are set by `quaidsControlCreate()` but not
-referenced anywhere in `quaids.src`'s estimation logic — confirmed by grep at
-Milestone 0. Left in place deliberately (Milestone 0 scope was dead
-*procs*/*structs*, not unused *fields* on an otherwise-live struct); resolve
-as part of the Milestone 1 output-schema/control-structure audit.
+The `stone`, `aids`, and `varname` fields flagged as dead at Milestone 0 were
+removed from `quaidsControl` at Milestone 1 (also dropped from
+`quaidsControlCreate()`), since grep confirmed no read anywhere in
+`quaids.src` and there are no external consumers of this pre-alpha struct yet.
+Also added: `getDefaultQuaidsControl()` (alias for `quaidsControlCreate()`,
+naming-convention parity with `gauss-qardl`'s `getDefault...Control` procs),
+and structure-inference return typing (`proc (struct quaidsControl) =
+quaidsControlCreate();`) so callers no longer need to pre-declare
+`struct quaidsControl aCtl;` before assignment.
 
 ## What GAUSS already provides — do not duplicate
 
@@ -150,6 +200,14 @@ GAUSS Already Provides." Summary:
   top of each proc.
 - **Struct declarations inside procs**: `struct quaidsControl aCtl;` appears
   as a formal parameter, not in the `local` list — standard GAUSS syntax.
+  `struct quaidsOut qOut;` (a local, not a parameter) is declared the same
+  way, separately from the `local` statement, inside `quaidsFit()`/`quaids()`.
+- **Character-matrix name vectors vs. the native `string array` type**: name
+  vectors built with the classic `0$+"X"$+ftocv(...)` idiom (`xnam`, `wnam`,
+  `znam`, `unam`, `enam`) are legacy character matrices, not the newer
+  `string array` type — struct fields holding them must be declared `matrix`,
+  not `string array`, or you get a `G0071 Type mismatch` at assignment. Hit
+  and fixed this exact error while building `quaidsOut` at Milestone 1.
 - **Loop style**: `do while ok; ... endo;` / `do while i<=n; ... i=i+1;
   endo;` — not GAUSS's newer `for` loop syntax.
 - **Symmetric-restriction idiom**: `design(vec(xpnd(seqa(1,1,k*(k+1)/2))))`
@@ -158,18 +216,40 @@ GAUSS Already Provides." Summary:
   via minimum distance. Reuse this idiom rather than re-deriving it.
 - **Matrix concatenation**: `~` horizontal, `|` vertical, as usual in GAUSS.
 - **Relative vs. absolute prices**: `prices` is converted to relative
-  (`prices[.,1:n-1] - prices[.,n]`) near the top of `quaids()` for
-  estimation, then converted back to absolute before the elasticities
-  section — mutating the input matrix in place. Be careful with this if
-  refactoring; it is a real footgun for anyone reading only part of the proc.
+  (`prices[.,1:n-1] - prices[.,n]`) near the top of `quaidsFit()`, then
+  converted back to absolute before the recovery step at the end — mutating
+  the input matrix in place *within `quaidsFit()`'s own local scope*. Because
+  GAUSS passes matrix arguments by value, this mutation does **not** leak
+  back into `quaids()`'s own `prices` local — the legacy wrapper's `prices`
+  stays in its original absolute-price form throughout, which is exactly
+  what lets `quaids()` reuse its own `prices`/`totexp`/`w`/`instr` arguments
+  unchanged for the elasticities/descriptive-stats/Slutzky calls after
+  `quaidsFit()` returns. `intcpt` is different: `quaidsFit()`'s internal
+  constant-column-prepend is a real structural change (not a round-trip), so
+  `quaidsFit()` returns the mutated version as `qOut.intcptFull` for
+  `quaids()` to reuse.
 
 ## Testing status
 
-There is no automated test suite yet. `examples/quaids_example.e` is a
-manual, eyeball-comparison smoke script (verified to still run correctly
-after the Milestone 0 rename — see `GOLD_STANDARD_TODO.md` for the run log),
-not a CI-style test — see `GOLD_STANDARD_TODO.md` Milestone 3 for the plan to
-add deterministic fixtures with real assertions.
+`tests/quaids_schema_test.e` is the first automated test: it asserts
+`quaidsOut` field values/shapes, that `quaidsFit()` prints nothing between
+call and return, and that the legacy `quaids()` wrapper's four returned
+matrices are exactly (not approximately) equal to the `quaidsOut` fields
+they're drawn from. Run it from `tests/` as the working directory:
+
+```
+tgauss -b -x quaids_schema_test.e
+```
+
+It prints one `PASS`/`FAIL` line per check and a final
+`SCHEMA TEST: ALL N CHECKS PASSED` (or a failure count) summary line — check
+that line, since `tgauss`'s exit code is not currently a reliable pass/fail
+signal for this harness.
+
+`examples/quaids_example.e` remains a manual, eyeball-comparison smoke
+script (no assertions) — see `GOLD_STANDARD_TODO.md` Milestone 3 for the plan
+to add deterministic, published-benchmark fixtures with real assertions
+beyond the current schema/shape-level checks.
 
 To run the example from a GAUSS 26 console/batch shell:
 

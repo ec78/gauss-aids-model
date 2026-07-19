@@ -11,12 +11,23 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha. **Milestone 0 (repository hygiene) is complete**
-as of 2026-07-19: dead code removed, files moved into `src/`/`examples/`,
-package/proc naming decided (`quaids`), license decided (MIT). `package.json`,
-`LICENSE`, `CITATION.cff`, `.gitignore`, and `CLAUDE.md` now exist at the
-repo root. `docs/` and `tests/` still do not exist — those are Milestones 3
-and 8.
+The repository is pre-alpha. **Milestones 0 (repository hygiene) and 1
+(API/output-schema baseline) are complete** as of 2026-07-19:
+
+- Milestone 0: dead code removed, files moved into `src/`/`examples/`,
+  package/proc naming decided (`quaids`), license decided (MIT).
+  `package.json`, `LICENSE`, `CITATION.cff`, `.gitignore`, and `CLAUDE.md`
+  exist at the repo root.
+- Milestone 1: estimation split from printing. `quaidsFit()` is a new,
+  silent, struct-returning entry point (`quaidsOut`, ~75 fields). `quaids()`
+  remains the original call (unchanged signature, unchanged printed
+  behavior, verified byte-for-byte against the pre-Milestone-1 baseline). A
+  first automated test, `tests/quaids_schema_test.e`, checks `quaidsOut`
+  field shapes/values, silence, and wrapper/struct consistency.
+
+`docs/` still does not exist — that is Milestone 8. A fuller `tests/`
+harness (installed-package tests, published/deterministic numerical
+fixtures) is Milestones 3 and 7.
 
 - `src/quaids.src` (formerly `aids_rev.src`) — one ~1,300-line proc, `quaids()`
   (formerly `aids()`), that does everything:
@@ -192,27 +203,127 @@ check) plus "identical numerical output on identical input" (parity check),
 rather than a correctness check against an external/published benchmark,
 which is out of scope until Milestone 3.
 
-### Milestone 1 — API and Output Schema Baseline
+### Milestone 1 — API and Output Schema Baseline — COMPLETE (2026-07-19)
 
 Goal: make `quaids()` callable without side-effect printing and return a
 predictable structure, before anything else is built on top of it.
 
-- [ ] Split estimation from printing: `quaids()` should return a struct
-  (`quaidsOut`) with parameter estimates/covariances/fit stats/residuals/model
-  metadata; printing becomes a separate `printQuaids(quaidsOut)` call,
-  following the `qardl`/`printQARDL` split.
-- [ ] Define `quaidsOut` fields: model family (LA-AIDS/AIDS/QUAIDS),
-  homogeneity and symmetry flags, `n` goods, sample size, instrument list,
-  alpha/gamma/beta/lambda blocks and their covariances, residuals,
-  first-stage IV diagnostics, log-det-sigma fit criterion, and the raw
-  `b`/`v` matrices for backward compatibility.
-- [ ] Add `getDefaultQuaidsControl()` alongside the existing
-  `quaidsControlCreate()` if naming should align with `qardl`'s
-  `getDefault...Control` convention — otherwise document why the existing
-  name stays.
-- [ ] Add schema tests asserting `quaidsOut` field names/shapes.
-- [ ] Keep the current positional call signature working; do not break
-  `examples/quaids_example.e`-style calls while restructuring.
+**Design decision, stated explicitly since it reads as a deviation from the
+literal wording below**: `quaids()` itself was *not* changed to return a
+struct instead of its four legacy matrices, because that would have broken
+`{ b1, v1, b2, v2 } = quaids(...)`-style calls (the "keep the current
+positional call signature working" requirement, immediately below).
+Instead, a new proc `quaidsFit()` was added as the silent, struct-returning
+primary entry point, and `quaids()` became a thin backward-compatible
+wrapper around it (calls `quaidsFit()`, calls `printQuaids()`, reproduces
+the legacy elasticities/descriptive-stats/Slutzky report, returns the same
+four matrices). This mirrors the `predictQARDL`/`predictARDL` legacy-wrapper
+pattern already used in `gauss-qardl`.
+
+- [x] Split estimation from printing: `quaidsFit()` returns a struct
+  (`quaidsOut`) with parameter estimates/covariances/fit stats/residuals/
+  model metadata; printing is `printQuaids(quaidsOut)`, a separate proc,
+  following the `qardl`/`printQARDL` split. `printQuaids()` covers the
+  estimation-stage report (IV first stage, iteration summary,
+  homogeneity-constrained table, overidentification test, symmetry test +
+  symmetry-constrained table). Elasticities/descriptive-stats/Slutzky remain
+  separate, explicitly-callable reports (`quaidsElas()`, `quaidsSlutzky()`),
+  not part of `quaidsOut`, since Milestone 5 plans to generalize
+  elasticities to arbitrary evaluation points rather than bake a fixed set
+  into the struct now.
+- [x] Define `quaidsOut` fields: model family (`qOut.model`,
+  `"LA-AIDS"|"AIDS"|"QUAIDS"`), homogeneity/symmetry validity flags
+  (`homogenous`, `symValid`), `n` goods, sample size (`nobs`), instrument
+  list (`ninst`, `znam`), coefficient/covariance blocks for every stage
+  (IV first-stage `iv*`, homogeneity-constrained `homog*`, overidentification
+  `overid*`, symmetry test `sym*`, symmetry-constrained `symc*`), residuals
+  (`u`), first-stage IV diagnostics (`ivRsq`/`ivFstat`/`ivPvf`/...),
+  log-det-sigma fit criteria (`homogCrit`, `symcCrit`), and the raw
+  `b`/`v`/`bS`/`vS` matrices for backward compatibility (exactly what
+  `quaids()` returns as `b1`/`v1`/`b2`/`v2`). ~75 fields total; see
+  `src/quaids.sdf` and the field-by-field notes in `CLAUDE.md`.
+- [x] Add `getDefaultQuaidsControl()` alongside the existing
+  `quaidsControlCreate()`, aligned with `qardl`'s `getDefault...Control`
+  convention (a thin alias). Also upgraded both to GAUSS structure-inference
+  return typing (`proc (struct quaidsControl) = ...`).
+- [x] Add schema tests asserting `quaidsOut` field names/shapes:
+  `tests/quaids_schema_test.e`, 34 checks (see Milestone 1 Verification).
+- [x] Keep the current positional call signature working: `quaids()`'s
+  signature, return values, and full printed console report are unchanged —
+  verified byte-for-byte identical to the pre-Milestone-1 code on the same
+  fixed-seed synthetic dataset (see Milestone 1 Verification).
+
+Also folded in while touching `quaidsControl`: removed the `stone`, `aids`,
+and `varname` fields flagged as dead-but-kept at Milestone 0 (confirmed
+still unread; no external consumers of this pre-alpha struct exist yet, so
+removing was safe and was re-verified against the same parity/schema tests).
+
+#### Milestone 1 Verification
+
+Same standard as Milestone 0 (compiles/runs, plus deterministic parity
+where behavior must not change), extended with a real schema/unit test
+since there is now a struct-shaped output to assert against.
+
+1. **Compile check** — as at Milestone 0, `#include`d all three source files
+   and ran with no other statements. **PASS.**
+2. **Behavioral parity check (`quaids()` legacy wrapper)** — reran the exact
+   Milestone 0 procedure: same fixed-seed (`seed = 11`) synthetic dataset,
+   `tgauss -b -x examples/quaids_example.e`, diffed the captured
+   `output file=out` result against the untouched Milestone-0-era baseline
+   (itself already diffed against the original pre-Milestone-0 code).
+   **PASS — zero differences across all 656 lines**, including the
+   per-iteration convergence log, which `quaidsFit()` cannot print directly
+   (it doesn't print at all) but reconstructs faithfully from a stored
+   `qOut.iterHistory` matrix so `printQuaids()` reproduces it unchanged. This
+   was re-run again after removing the three dead `quaidsControl` fields,
+   with the same zero-diff result.
+3. **New: `tests/quaids_schema_test.e`** — 34 checks against a `quaidsFit()`
+   call on the same synthetic dataset:
+   - A "silence window" check: nothing prints between calling `quaidsFit()`
+     and it returning.
+   - Metadata/shape checks: `model`, `homogenous`/`linear` echoing,
+     dimension fields (`nobs`/`n`/`nint`/`ninst`/`nu`), name-vector lengths,
+     `intcptFull`/`u` shapes.
+   - Iteration bookkeeping: this particular fixture (`err=.001`,
+     `maxiter=100`) does not actually converge within the iteration cap
+     (confirmed against the printed log: iteration 99, err≈20.9) — the test
+     asserts `quaidsFit()` honestly reports `converged == 0` and
+     `iterations == maxiter`, rather than assuming convergence.
+   - Per-stage shape checks: `ivB`, `homogB`, `symcB` dimensions;
+     `overidValid == 0` (correctly, since `ninst == nu` here — exactly
+     identified); `symValid == 1`; `symDf`/`symStat`/`symPval` sanity.
+   - Final-output shape checks: `b`/`bS`/`bestB` all reshape to `(ng+1) x n`
+     after absolute-price recovery, as expected when `homogenous == 1`.
+   - **Cross-check**: calls the legacy `quaids()` wrapper on the identical
+     inputs and asserts its four returned matrices are *exactly* equal
+     (`maxc(maxc(abs(...))) == 0`, not just close) to `qOut.b`/`qOut.v`/
+     `qOut.bS`/`qOut.vS` — i.e., the wrapper and the new struct-returning
+     core are provably drawing from the same numbers, not two independently
+     drifting code paths.
+   **PASS — all 34 checks pass** (`SCHEMA TEST: ALL 34 CHECKS PASSED`).
+
+**Standard applied**: Milestone 1 is a structure-preserving refactor of a
+correctness-sensitive estimator, so the bar was deliberately strict —
+`quaids()`'s output had to remain byte-identical (not just "close enough"),
+and the new struct's fields had to be checked both for internal consistency
+(shapes, flags) and for consistency with the legacy code path they replace
+(the exact-equality cross-check), not merely "did it run."
+
+**One real bug caught and fixed during this work**: the first `quaidsOut`
+draft declared the name-vector fields (`xnam`, `wnam`, `znam`, `unam`,
+`enam`) as `string array`, which produced a hard `G0071 Type mismatch`
+runtime error — GAUSS's classic `0$+"X"$+ftocv(...)` idiom produces a
+character matrix, not the newer native `string array` type. Fixed by
+declaring those fields `matrix`. Documented in `CLAUDE.md` so it isn't
+rediscovered the hard way again.
+
+**A pre-existing anomaly identified, not fixed**: while relocating the
+symmetry-constrained table's print logic, noticed that the original code
+pairs the *homogeneity-stage* `b`'s IV-residual-block point estimates with
+the *symmetry-stage*'s standard errors/t/p-values in that one table row.
+This was carried over unchanged (correct per the "structure-preserving, not
+correctness-fixing" scope of this milestone) and flagged in `CLAUDE.md` for
+review during Milestone 3/4 validation.
 
 ### Milestone 2 — Modular Source Split + Formula/Dataframe Entry Point
 

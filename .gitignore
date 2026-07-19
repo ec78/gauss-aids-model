@@ -6,4 +6,6 @@ quaids *.zip
 Thumbs.db
 examples/out
 examples/*.log
+tests/schema_test_quaids_wrapper_out
+tests/*.log
 *.log

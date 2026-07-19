@@ -2,14 +2,22 @@
 **
 ** QUAIDS.SRC - Almost Ideal / Quadratic Almost Ideal Demand System Estimation
 **
+** Milestone 1 note: estimation and printing are split.  quaidsFit() does all
+** the numerical work and returns a quaidsOut struct with no side-effect
+** printing.  printQuaids() reproduces the estimation-stage console report
+** from a quaidsOut struct.  quaids() is a backward-compatible wrapper that
+** calls quaidsFit(), calls printQuaids(), reproduces the legacy
+** elasticities/descriptive-statistics/Slutzky report exactly as before, and
+** returns the same four positional matrices it always has.
+**
 */
 
 /*******************************************************************************
-** QUAIDS
+** QUAIDSFIT
 **
-** Purpose:    To estimate (Q)AIDS demand systems
+** Purpose:    Estimate (Q)AIDS demand systems without printing.
 **
-** Format:     { b1, v1, b2, v2 } = QUAIDS(w, intcpt, prices, totexp, instr);
+** Format:     struct quaidsOut qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 **
 ** Input:    w -- budget shares.
 **
@@ -71,51 +79,42 @@
 **                          Default = .0001.
 **
 **
-**  Output:         b1,  b2 -- (1+K+P+2-aCtl.linear)xN matrix,  the estimates of parameters
-**                         columns: the shares
-**                         rows: intercept|z|prices|totexp|totexp^2 (if aCtl.linear==0)|u
+**  Output:  struct quaidsOut -- see quaids.sdf for the full field list.
+**           qOut.b, qOut.v, qOut.bS, qOut.vS are the same four matrices
+**           quaids() has always returned as (b1, v1, b2, v2):
 **
-**                      if aCtl.homogenous = 0: b1 corresponds to the unconstrained
-**                                     estimates,  b2 = 0.
-**                                     Note importantly that the printed
-**                                     estimates are not exactly b1,  but
-**                                     a reparametrization of gamma(i, 1),  ..., 
-**                                     gamma(i, p) as gamma(i, 1),  ..., 
+**                      if aCtl.homogenous = 0: qOut.b is the unconstrained
+**                                     estimates,  qOut.bS = 0.
+**                                     Note importantly that these
+**                                     estimates are not exactly the raw
+**                                     unconstrained fit,  but
+**                                     a reparametrization of gamma(i, 1),  ...,
+**                                     gamma(i, p) as gamma(i, 1),  ...,
 **                                     gamma(i, p-1),  gamma(i, 1)+...gamma(i, p).
 **                                     The last price effect is thus zero if
 **                                     homogeneity is accepted.
 **
-**                      if aCtl.homogenous = 1: b1 is the homogeneity constrained
-**                                     vector of estimates,  b2 is the
-**                                     symmetry constrained estimator.
-**
-**
-**             v1,  v2 -- DxD matrix,  the variance-covariance matrix of
-**                       estimates.
-**
+**                      if aCtl.homogenous = 1: qOut.b is the homogeneity
+**                                     constrained vector of estimates,
+**                                     qOut.bS is the symmetry constrained
+**                                     estimator.
 **
 ** Source:     QUAIDS.SRC
 **
 **
 ******************************************************************************/
 
+proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl);
 
+    local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zz, zzi, ze, u, stone, lx,
+        nendog, m, ng, gg, gw, b, ok, alpha, gama, a_p, _beta, b_p, lx2, err, iter, df, iw, m_, cov,
+        std, cor, tv, z, ww, sse, v, y1, J, lambda, D, iu, O, R, vi, ii, crit, rbsq, fstat, Sgma,
+        pvf, stdest, stderr, t, pvt, i, ic, ig, R1, enam, ie,
+        S, X, v_s, b_s, nz, mss, u1, b0, rsq, k, sym, pfsym,
+        z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma,
+        model, iterHist, firstIter, overidFstat, overidPvf;
+    struct quaidsOut qOut;
 
-
-/*external proc indices2, indexcat;*/
-
-
-
-proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl);
-    
-    local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zz, zzi, ze, u, stone, lx, 
-        nendog, m, ng, gg, gw, b, ok, alpha, gama, a_p, _beta, b_p, lx2, err, iter, df, iw, m_, cov, vnam, 
-        std, cor, tv, z, gz, ww, sse, v, y1, J, lambda, D, iu, O, R, vi, ii, crit, req, rbsq, fstat, Sgma, 
-        pvf, stdest, stderr, t, pvt, vnames, i, str, omat, mask, fmt, ms,  _msym, ic, ig, R1, enam, ie, 
-        S, X, v_s, b_s, nz, mss, u1, ep, er, epc, b0, er1, rsq, stder1, k, sym, pfsym, m_1, m_2, m_3, 
-        z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma, z1nam, z1, nz1;
-    
-    
     nobs = rows(w);
     if cols(prices) ne cols(w);
         "ERROR - not same number of prices and shares.";
@@ -123,7 +122,7 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     endif;
     n = cols(prices);
     n1 = n - aCtl.homogenous;
-    
+
     if intcpt == 0;
         intcpt = ones(nobs, 1);
         nint = 0;
@@ -137,22 +136,44 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         endif;
     endif;
     xnam = "CONSTANT"|xnam;
-    
+
     if aCtl.othnam $== 0;
         wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
     else;
         wnam = aCtl.othnam[nint+1:nint+n];
     endif;
-    
+
     ninst = cols(instr);
     if aCtl.othnam $== 0;
         znam=0$+"Z"$+ftocv(seqa(1, 1, ninst), __vpad*(floor(log(ninst)+1), 0));
     else;
         znam = aCtl.othnam[nint+n+1:nint+n+ninst];
     endif;
-    
-    
-    
+
+    if aCtl.maxiter == 1;
+        model = "LA-AIDS";
+    elseif aCtl.linear;
+        model = "AIDS";
+    else;
+        model = "QUAIDS";
+    endif;
+
+    qOut.model = model;
+    qOut.linear = aCtl.linear;
+    qOut.homogenous = aCtl.homogenous;
+    qOut.maxiter = aCtl.maxiter;
+    qOut.alpha0 = aCtl.alpha0;
+    qOut.nobs = nobs;
+    qOut.n = n;
+    qOut.nint = nint;
+    qOut.ninst = ninst;
+    qOut.n1 = n1;
+    qOut.xnam = xnam;
+    qOut.wnam = wnam;
+    qOut.znam = znam;
+    qOut.intcptFull = intcpt;
+
+
     /*****************************************************************/
     /* INSTRUMENTATION OF ENDOGENOUS VARIABLE */
     /*****************************************************************/
@@ -160,21 +181,24 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     lx = totexp ;
     endog = lx;
     enam = 0$+"X";
-    
-    
+
+
     /* you may alternatively want: endog = totexp~totexp^2; it will also work. */
     /*
     lx = totexp ;
     endog = lx~lx^2;
     enam = 0$+"X"|"X^2";
     */
-    
+
     nu = cols(endog);
-    
+    qOut.nu = nu;
+    qOut.enam = enam;
+
     prices[., 1:n-1] = prices[., 1:n-1] - prices[., n];   /* relative prices  */
     z = intcpt~prices~instr;
     nz = cols(z);
-    
+    qOut.nz = nz;
+
     m1 = moment(z~endog, 0);
     zz = m1[1:nz, 1:nz];
     zzi = invpd(zz);
@@ -182,9 +206,9 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     b = zzi*ze;
     u = endog - z*b;   /* residuals of instrumental regression  */
     clear z, ze, zz;
-    
-    /* output */
-    
+
+    /* first-stage diagnostics */
+
     df = nobs-nz-1;
     ie = seqa(nz+1, 1, nu);
     m_ = m1[., 1]/nobs;
@@ -193,11 +217,10 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     cor = cov[2:nz, ie]./std[2:nz]./std[ie]';
     tv = nobs*diag(cov[ie, ie]);
     clear m_, std, cov, ie;
-    
+
     sse = moment(u, 0);
     S=sse/nobs;
     sse = diag(sse);
-    mss = { . };
     rsq = (tv - sse)./tv;
     rbsq = 1-(1-rsq)*((nobs-1)/df);
     fstat = (rsq./(1-rsq))*(df/(nz-1));
@@ -206,89 +229,39 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     else;
         pvf = {.};
     endif;
-    
+
     stdest = sqrt(sse/df);
     v = S.*.zzi;
     stderr = sqrt(diag(v));
     stderr = reshape(stderr, nu, nz)';
     t = b./miss(stderr, 0);
     pvt = 2*cdftc(abs(t), df);
-    
-    
-    print "INSTRUMENTAL REGRESSION(S)";
-    print "    X = log(TOTEXP)";
-    print;
-    
-    i = 1;
-    do while i<=nu;
-        print ftos(nobs, "Observations: %*.*lf", 20, 0);;
-        print ftos(enam[i], "      Dependent variable:%*.*s", 20, 8);
-        print ftos(tv[i], "Total SS:     %*.*lf", 20, 3);;
-        print ftos(df, "      Degrees of freedom:%*.*lf", 20, 0);
-        print ftos(rsq[i], "R-squared:    %*.*lf", 20, 3);;
-        print ftos(rbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
-        print ftos(sse[i], "Residual SS:  %*.*lf", 20, 3);;
-        print ftos(stdest[i], "      Std error of est:  %*.*lf", 20, 3);
-        str = ftos(nz-1, "F(%*.*lf, ", 1, 0) $+ ftos(df, "%*.*lf):             ", 1, 0);
-        str = strsect(str, 1, 15) $+ ftos(fstat[i], "%*.*lf", 19, 3);
-        print str;;
-        print ftos(pvf[i], "      Probability of F:  %*.*lf", 20, 3);
-        
-        print;
-        print "                            Standard                 Prob     "\
-            "Cor with";
-        print "  Variable      Estimate      Error      t-value     >|t|     "\
-            "Dep Var";
-        
-        print "------------------------------------------------------------"\
-            "-----------------";
-        
-        mask = 0~1~1~1~1~1;
-        let fmt[6, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6""\
-            "*.*lf" 10 3 "*.*lf" 12 6;
-        ms = ftos(mss, "%*.*lf", 1, 0);
-        // _msym "---  ";
-        
-        
-        print "                     Intercept variables";
-        omat = xnam~b[1:1+nint, i]~stderr[1:1+nint, i]~t[1:1+nint, i]~pvt[1:1+nint, i];
-        omat = omat~(mss|cor[1:nint, i]);
-        call printfm(omat, mask, fmt);
-        
-        
-        print "                      Relative prices";
-        print "                   Reference = ";;
-        $wnam[n];
-        omat = wnam[1:n-1]~b[1+nint+1:1+nint+n-1, i]~stderr[1+nint+1:1+nint+n-1, i]
-            ~t[1+nint+1:1+nint+n-1, i]~pvt[1+nint+1:1+nint+n-1, i]~cor[nint+1:nint+n-1, i];
-        call printfm(omat, mask, fmt);
-        
-        
-        print "                 Reference price (absolute)";
-        omat = wnam[n]~b[1+nint+n, i]~stderr[1+nint+n, i]
-            ~t[1+nint+n, i]~pvt[1+nint+n, i]~cor[nint+n, i];
-        call printfm(omat, mask, fmt);
-        
-        print;
-        print "                   Identifying instruments ";
-        omat = znam~b[1+nint+n+1:nz, i]~stderr[1+nint+n+1:nz, i]
-            ~t[1+nint+n+1:nz, i]~pvt[1+nint+n+1:nz, i]~cor[nint+n+1:nz-1, i];
-        call printfm(omat, mask, fmt);
-//        // _msym ^ms;
-        i = i+1;
-        print;
-        print;
-    endo;
-    clear tv, df, rsq, rbsq, sse, stdest, str, pvf, stderr, t, pvt, cor, omat, mask, fmt, v, S;
-    
-    
-    
+
+    qOut.u = u;
+    qOut.ivB = b;
+    qOut.ivSE = stderr;
+    qOut.ivT = t;
+    qOut.ivPvt = pvt;
+    qOut.ivCor = cor;
+    qOut.ivTv = tv;
+    qOut.ivDf = df;
+    qOut.ivRsq = rsq;
+    qOut.ivRbsq = rbsq;
+    qOut.ivSse = sse;
+    qOut.ivStdest = stdest;
+    qOut.ivFstat = fstat;
+    qOut.ivPvf = pvf;
+
+    clear tv, df, rsq, rbsq, sse, stdest, pvf, stderr, t, pvt, cor, v, S;
+
+
+
     /**************************/
     /* STARTING VALUE  */
     /***************************/
-    
+
     if aCtl.b0==0; /* no proposed starting value; default: estimates linear version of aids */
-        
+
         stone = prices*meanc(w);
         lx = totexp -stone;
         clear stone;
@@ -304,32 +277,25 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         gg = m[1:ng, 1:ng];
         gw = m[1:ng, ng+1:ng+n];
         b = solpd(gw, gg);
-        
+
     else;
         b = aCtl.b0;
     endif;
-    
-    
+
+    qOut.unam = unam;
+    qOut.nendog = nendog;
+    qOut.ng = ng;
+
+
     /******************************/
     /* BEGINS ITERATIONS */
     /*****************************/
-    
-    if aCtl.maxiter == 1;
-        "LINEARIZED AIDS WITH STONE PRICE INDEX";
-        "";
-    else;
-        "PROPER AIDS ESTIMATION WITH FIXED ALPHA0";
-        print;
-        "  Iteration number  ";;
-        "        Convergence criterion";
-        "---------------------------------------------------------";
-    endif;
-    
-    
+
     /* STARTS THE ITERATED LEAST SQUARES ITERATIONS */
-    
+
     ok = aCtl.maxiter>1; /* only if aCtl.maxiter>1 */
     iter = 1;
+    firstIter = 1;
     do while ok;
         b0 = b;
         alpha = intcpt*b[1:1+nint, 1:n-1];
@@ -338,7 +304,7 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         else;
             gama = b[1+nint+1:1+nint+n, 1:n-1];
         endif;
-        
+
         a_p = aCtl.alpha0 + prices[., n]
             + sumc((prices[., 1:n-1].*alpha)')
             + .5*sumc(((prices*gama).*prices[., 1:n-1])');
@@ -358,22 +324,40 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         gg = m[1:ng, 1:ng];
         gw = m[1:ng, ng+1:ng+n];
         b = solpd(gw, gg);
-        
+
         err = maxc(maxc(abs((b-b0)./b0)));
         if err <= aCtl.err or iter>=aCtl.maxiter;
             ok = 0;
-            print;
         else;
-            print ftos(iter, "%*.*lf", 10, 0);;
-            print ftos(err, "                        %*.*lf", 10, 8);
+            if firstIter;
+                iterHist = iter~err;
+                firstIter = 0;
+            else;
+                iterHist = iterHist | (iter~err);
+            endif;
         endif;
         iter = iter+1;
     endo;
-    
-    
-    
+
+    if aCtl.maxiter > 1 and not firstIter;
+        qOut.iterHistory = iterHist;
+    else;
+        qOut.iterHistory = 0;
+    endif;
+    if aCtl.maxiter > 1;
+        qOut.iterations = iter-1;
+        qOut.finalErr = err;
+        qOut.converged = err <= aCtl.err;
+    else;
+        qOut.iterations = 0;
+        qOut.finalErr = miss(0, 0);
+        qOut.converged = 1;
+    endif;
+
+
+
     /* VARIANCE */
-    
+
     J = eye(n-1).*.gg;
     if aCtl.maxiter > 1;
         _beta = b[1+nint+n1+1, 1:n-1];
@@ -396,7 +380,7 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         endo;
         clear y1, y2, g;
     endif;
-    
+
     iw = seqa(ng+1, 1, n);
     ww = m[iw, iw];
     sse = ww-b'gw;
@@ -411,14 +395,14 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     Ji = inv(J);
     v = Ji'Sgma*Ji;
     clear J;
-    
+
     ii = -ones(1, n-1).*.eye(ng);
     v = (v|ii*v)~(v*ii'|ii*v*ii');
     clear ii;
-    
-    
-    /* PRINTING THE FIRST SET OF ESTIMATES */
-    
+
+
+    /* HOMOGENEITY-CONSTRAINED (OR UNCONSTRAINED, IF NOT aCtl.homogenous) STAGE */
+
     crit = -ln(det(S[1:n-1, 1:n-1]));
     df = nobs-ng-1;
     m_ = m[., 1]/nobs;
@@ -439,111 +423,49 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     else;
         pvf = {.};
     endif;
-    
+
     stdest = sqrt(sse/df);
     stderr = sqrt(diag(v));
     stderr = reshape(stderr, n, ng)';
     t = b./miss(stderr, 0);
     pvt = 2*cdftc(abs(t), df);
-    
-    if aCtl.homogenous;
-        "HOMOGENEITY CONSTRAINED PRICE EFFECTS";
-        print;
-    endif;
-    print ftos(crit, "Log Det Sigma:  %*.*lf", 20, 8);
-    print;
-    i = 1;
-    do while i<=n;
-        print;
-        print ftos(nobs, "Observations: %*.*lf", 20, 0);;
-        print ftos(wnam[i], "      Dependent variable:%*.*s", 20, 8);
-        print ftos(tv[i], "Total SS:     %*.*lf", 20, 3);;
-        print ftos(df, "      Degrees of freedom:%*.*lf", 20, 0);
-        print ftos(rsq[i], "R-squared:    %*.*lf", 20, 3);;
-        print ftos(rbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
-        print ftos(sse[i], "Residual SS:  %*.*lf", 20, 3);;
-        print ftos(stdest[i], "      Std error of est:  %*.*lf", 20, 3);
-        str = ftos(ng-1, "F(%*.*lf, ", 1, 0) $+ ftos(df, "%*.*lf):             ", 1, 0);
-        str = strsect(str, 1, 15) $+ ftos(fstat[i], "%*.*lf", 19, 3);
-        print str;;
-        print ftos(pvf[i], "      Probability of F:  %*.*lf", 20, 3);
-        
-        print;
-        print "                            Standard                 Prob     "\
-            "Cor with";
-        print "  Variable      Estimate      Error      t-value     >|t|     "\
-            "Dep Var";
-        
-        print "------------------------------------------------------------"\
-            "-----------------";
-        
-        mask = 0~1~1~1~1~1;
-        let fmt[6, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6""\
-            "*.*lf" 10 3 "*.*lf" 12 6;
-        
-        print "                     Intercept variables";
-        omat = xnam~b[1:1+nint, i]~stderr[1:1+nint, i]~t[1:1+nint, i]~pvt[1:1+nint, i];
-        omat = omat~(mss|cor[1:nint, i]);
-        call printfm(omat, mask, fmt);
-        
-        print "                      Relative prices";
-        print "                    reference = ";;
-        $wnam[n];
-        omat = wnam[1:n-1]~b[1+nint+1:1+nint+n-1, i]~stderr[1+nint+1:1+nint+n-1, i]
-            ~t[1+nint+1:1+nint+n-1, i]~pvt[1+nint+1:1+nint+n-1, i]~cor[nint+1:nint+n-1, i];
-        call printfm(omat, mask, fmt);
-        
-        if not aCtl.homogenous;
-            print "                     Reference price (absolute)";
-            print "              (if zero effect,  then homogeneity accepted)";
-            omat = wnam[n]~b[1+nint+n, i]~stderr[1+nint+n, i]
-                ~t[1+nint+n, i]~pvt[1+nint+n, i]~cor[nint+n, i];
-            call printfm(omat, mask, fmt);
-            print;
-        endif;
-        print "                     Total expenditure ";
-        print "                   X = log(TOTEXP) - a(P) ";
-        omat = "X"~b[1+nint+n1+1, i]~stderr[1+nint+n1+1, i]
-            ~t[1+nint+n1+1, i]~pvt[1+nint+n1+1, i]~cor[nint+n1+1, i];
-        call printfm(omat, mask, fmt);
-        
-        print;
-        if not aCtl.linear;
-            print "                 Squared total expenditure ";
-            omat = "X^2/b(p)"~b[1+nint+n1+2, i]~stderr[1+nint+n1+2, i]
-                ~t[1+nint+n1+2, i]~pvt[1+nint+n1+2, i]~cor[nint+n1+2, i];
-            call printfm(omat, mask, fmt);
-        endif;
-        
-        print;
-        print "              Residuals of instrumental regressions";
-        omat = unam~b[1+nint+n1+nendog+1:ng, i]~stderr[1+nint+n1+nendog+1:ng, i]
-            ~t[1+nint+n1+nendog+1:ng, i]~pvt[1+nint+n1+nendog+1:ng, i]~cor[nint+n1+nendog+1:ng-1, i];
-        call printfm(omat, mask, fmt);
-//        // _msym ^ms;
-        i = i+1;
-        print;
-        print;
-    endo;
-    clear crit, rsq, rbsq, sse, stdest, str, pvf, stderr, t, pvt, cor, omat, mask, fmt;
-    
-    
-    
-    
+
+    qOut.homogB = b;
+    qOut.homogV = v;
+    qOut.homogSE = stderr;
+    qOut.homogT = t;
+    qOut.homogPvt = pvt;
+    qOut.homogCor = cor;
+    qOut.homogTv = tv;
+    qOut.homogRsq = rsq;
+    qOut.homogRbsq = rbsq;
+    qOut.homogSse = sse;
+    qOut.homogStdest = stdest;
+    qOut.homogFstat = fstat;
+    qOut.homogPvf = pvf;
+    qOut.homogDf = df;
+    qOut.homogCrit = crit;
+
+    clear crit, rsq, rbsq, sse, stdest, pvf, stderr, t, pvt, cor;
+
+
+
+
     /**********************************************************/
     /* TEST OF OVERIDENTIFYING RESTRICTIONS */
     /**********************************************************/
-    
+
+    qOut.overidValid = ninst>nu;
     if ninst>nu;
-        
-        
+
+
         z1z1 = m1[1+nint+n+1:nz, 1+nint+n+1:nz];
         z1z1i = invpd(z1z1);
         gz1 = m1[1:1+nint+n1, 1+nint+n+1:nz]
             |endog'instr;
         gama1 = z1z1i*(instr'w-gz1'b[1:1+nint+n1+nendog, .]);
         D1 = gz1|zeros(nu, ninst);
-        
+
         J1 = eye(n-1).*.gz1';
         if aCtl.maxiter > 1;
             nr = 500;
@@ -564,8 +486,8 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
             endo;
             clear y1, y2;
         endif;
-        
-        
+
+
         itheta = seqa(1, 1, 1+nint+n1+nendog);
         itheta = vec(itheta+seqa(0, ng, n-1)');
         H1 = (eye(n-1).*.z1z1i) * J1*Ji[itheta, .];
@@ -575,72 +497,52 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         v1 =  ((S[1:n-1, 1:n-1]+O).*.z1z1i )
             - v2 - v2' - v3 - v3'
             + H1*Sgma*H1';
-        
-        clear J1, Ji, Sgma, H1, v2, v3, D1, z1, gz1, zz1, z1z1, z1z1i;
-        
-        
+
+        clear J1, Ji, Sgma, H1, v2, v3, D1, gz1, zz1, z1z1, z1z1i;
+
+
         ii = -ones(1, n-1).*.eye(ninst);
         v1 = (v1|ii*v1)~(v1*ii'|ii*v1*ii');
         clear ii;
-        
-        
-        /* output */
-        
-        print;
-        print;
-        print "TEST OF OVERIDENTIFYING RESTRICTIONS";
-        print;
-        print;
-        
-        
+
+
+        /* per-equation overidentification chi2 statistics */
+
         stderr = sqrt(diag(v1));
         stderr = reshape(stderr, n, ninst)';
         t = gama1./miss(stderr, 0);
         pvt = 2*cdfnc(abs(t));
+
+        overidFstat = zeros(n, 1);
+        overidPvf = zeros(n, 1);
         i = 1;
-        
         do while i<=n;
             ii = seqa(1, 1, ninst)+ninst*(i-1);
-            fstat = gama1[1:ninst, i]'pinv(v1[ii, ii])*gama1[1:ninst, i];
-            if fstat>0;
-                pvf = cdfchic(fstat, ninst-nu);
+            overidFstat[i] = gama1[1:ninst, i]'pinv(v1[ii, ii])*gama1[1:ninst, i];
+            if overidFstat[i]>0;
+                overidPvf[i] = cdfchic(overidFstat[i], ninst-nu);
             else;
-                pvf = {.};
+                overidPvf[i] = miss(0, 0);
             endif;
-            
-            
-            print ftos(nobs, "Observations: %*.*lf", 12, 0);;
-            print ftos(wnam[i], "   Dependent variable:  %*.*s", 12, 8);
-            str = ftos(ninst-nu, "Chi2(%*.*lf)        ", 1, 0) ;
-            str = strsect(str, 1, 15) $+ ftos(fstat, "%*.*lf", 11, 3);
-            print str;;
-            print ftos(pvf, "   Probability of Chi2: %*.*lf", 12, 3);
-            
-            print;
-            print "                             Standard                 Prob   ";
-            print "   Variable      Estimate      Error      t-value     >|t|   ";
-            
-            print "---------------------------------------------------------------------------";
-            omat = znam~gama1[., i]~stderr[., i]~t[., i]~pvt[., i];
-            mask = 0~1~1~1~1;
-            let fmt[5, 3] = "-*.*s" 12 12 "*.*le" 12 3 "*.*le" 12 3 "*.*lf" 12 6""\
-                "*.*lf" 10 3 ;
-            ms = ftos(mss, "%*.*lf", 1, 0);
-            // _msym "---  ";
-            call printfm(omat, mask, fmt);
-//            // _msym ^ms;
             i = i+1;
-            print;
-            print;
         endo;
-        
+
+        qOut.overidGamma = gama1;
+        qOut.overidSE = stderr;
+        qOut.overidT = t;
+        qOut.overidPvt = pvt;
+        qOut.overidFstat = overidFstat;
+        qOut.overidPvf = overidPvf;
+        qOut.overidDf = ninst-nu;
+
     endif;
-    
-    
+
+
     /*********************************************************************************/
     /* TEST OF SYMMETRY SYMMETRY CONSTRAINED ESTIMATION */
     /*********************************************************************************/
-    
+
+    qOut.symValid = aCtl.homogenous;
     if aCtl.homogenous;
         ic = seqa(1, 1, 1+nint)|seqa(1+nint+n1+1, 1, nendog+nu);
         ig = seqa(1+nint+1, 1, n1);
@@ -648,14 +550,14 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         ig = vec(ig+seqa(0, ng, n1)');
         i = ic|ig;
         i = sortind(i);
-        
+
         R1 = design(vec(xpnd(seqa(1, 1, n1*(n1+1)/2))));
         /* vec(G) = R1*vech(G) (if G=G') */
         k = (ng-n1)*n1;
         X = ( eye(k)          ~zeros(k, cols(R1)) )|
             ( zeros(rows(R1), k)~     R1           );
         X = X[i, .];
-        
+
         vi = invpd(v[1:n1*ng, 1:n1*ng]);
         v_s = X*invpd(X'vi*X)*X';
         b_s = v_s*vi*vec(b[., 1:n1]);
@@ -663,22 +565,17 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         sym = u1'*vi*u1;
         pfsym = cdfchic(sym, n1*(n1-1)/2);
         clear i, ic, ig, R1, X, vi;
-        
-        print "TEST OF SYMMETRY GIVEN HOMOGENEITY";
-        print;
-        str = ftos(n1*(n1-1)/2, "chi2(%*.*lf)", 1, 0);
-        str = strsect(str, 1, 15) $+ ftos(sym, "%*.*lf", 19, 8);
-        print str;;
-        print ftos(pfsym, "                    p-value:  %*.*lf", 20, 3);
-        print;
-        
+
+        qOut.symStat = sym;
+        qOut.symPval = pfsym;
+        qOut.symDf = n1*(n1-1)/2;
+
         ii = -ones(1, n-1).*.eye(ng);
         v_s = (v_s|ii*v_s)~(v_s*ii'|ii*v_s*ii');
         b_s = b_s|ii*b_s;
         b_s = reshape(b_s, n, ng)';
         b_s[1, n] = 1 + b_s[1, n];
-        
-        "SYMMETRY CONSTRAINED PARAMETERS";
+
         sse = ww-b_s'gw-gw'b_s+b_s'gg*b_s;
         crit = -ln(det(sse[1:n-1, 1:n-1]/nobs));
         sse = diag(sse);
@@ -689,72 +586,24 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         stderr = reshape(stderr, n, ng)';
         t = b_s./stderr;
         pvt = 2*cdfnc(abs(t));
-        
+
+        qOut.symcB = b_s;
+        qOut.symcV = v_s;
+        qOut.symcSE = stderr;
+        qOut.symcT = t;
+        qOut.symcPvt = pvt;
+        qOut.symcRsq = rsq;
+        qOut.symcRbsq = rbsq;
+        qOut.symcSse = sse;
+        qOut.symcStdest = stdest;
+        qOut.symcCrit = crit;
+
         clear i;
-        print ftos(crit, "Log Det Sigma:  %*.*lf", 20, 8);
-        print;
-        i = 1;
-        do while i<=n;
-            print;
-            print ftos(nobs, "Observations: %*.*lf", 20, 0);;
-            print ftos(wnam[i], "      Dependent variable:%*.*s", 20, 8);
-            print ftos(tv[i], "Total SS:     %*.*lf", 20, 3);;
-            print ftos(df, "      Degrees of freedom:%*.*lf", 20, 0);
-            print ftos(rsq[i], "R-squared:    %*.*lf", 20, 3);;
-            print ftos(rbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
-            print ftos(sse[i], "Residual SS:  %*.*lf", 20, 3);;
-            print ftos(stdest[i], "      Std error of est:  %*.*lf", 20, 3);
-            print;
-            print "                            Standard                 Prob   ";
-            print "  Variable      Estimate      Error      t-value     >|t|   ";
-            
-            print "------------------------------------------------------------";
-            
-            
-            mask = 0~1~1~1~1;
-            let fmt[5, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6 ""\
-                "*.*lf" 10 3 ;
-            
-            print "                     Intercept variables                     ";
-            omat = xnam~b_s[1:1+nint, i]~stderr[1:1+nint, i]~t[1:1+nint, i]~pvt[1:1+nint, i];
-            call printfm(omat, mask, fmt);
-            
-            print "                      Relative prices                     ";
-            print "                    reference = ";;
-            $wnam[n];
-            omat = wnam[1:n-1]~b_s[1+nint+1:1+nint+n-1, i]~stderr[1+nint+1:1+nint+n-1, i]
-                ~t[1+nint+1:1+nint+n-1, i]~pvt[1+nint+1:1+nint+n-1, i];
-            call printfm(omat, mask, fmt);
-            
-            print "                     Total expenditure ";
-            print "                   X = log(TOTEXP) - a(P) ";
-            omat = "X"~b_s[1+nint+n1+1, i]~stderr[1+nint+n1+1, i]
-                ~t[1+nint+n1+1, i]~pvt[1+nint+n1+1, i];
-            call printfm(omat, mask, fmt);
-            
-            print;
-            if not aCtl.linear;
-                print "                 Squared total expenditure ";
-                omat = "X^2/b(p)"~b_s[1+nint+n1+2, i]~stderr[1+nint+n1+2, i]
-                    ~t[1+nint+n1+2, i]~pvt[1+nint+n1+2, i];
-                call printfm(omat, mask, fmt);
-            endif;
-            
-            print;
-            print "              Residuals of instrumental regressions";
-            omat = unam~b[1+nint+n1+nendog+1:ng, i]~stderr[1+nint+n1+nendog+1:ng, i]
-                ~t[1+nint+n1+nendog+1:ng, i]~pvt[1+nint+n1+nendog+1:ng, i];
-            call printfm(omat, mask, fmt);
-//            // _msym ^ms;
-            i = i+1;
-            print;
-            print;
-        endo;
     endif;
-    clear crit, tv, df, rsq, rbsq, sse, stdest, stderr, t, pvt, cor, omat, mask, fmt;
-    
-    
-    
+    clear crit, tv, df, rsq, rbsq, sse, stdest, stderr, t, pvt, cor;
+
+
+
     /*****************************************************************************/
     /*  RECOVERS ABSOLUTE PRICE EFFECTS FROM RELATIVE */
     /****************************************************************************/
@@ -766,23 +615,21 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         ig = vec(ig+seqa(0, ng, n)');
         i = ic|ig;
         i = sortind(i);
-        
+
         R1 = ( eye(n-1) ~ zeros(n-1, 1) ) |
             ( -ones(1, n-1) ~ 1 );
         R1 = eye(n).*.R1;
-        
+
         k = (ng-n)*n;
         X = ( eye(k)          ~zeros(k, cols(R1)) )|
             ( zeros(rows(R1), k)~     R1           );
         X = X[i, i];
-        
+
         b_s = X*vec(b);
         b_s = reshape(b_s, n, ng)';
         v_s = X*v*X';
         clear i, ic, ig, R1, X;
-        
-        m_[1+nint+1:1+nint+n-1] =
-            m_[1+nint+1:1+nint+n-1] + m_[1+nint+n];
+
     else;
         /* recovers g1, g2, g3 from g1, g2 */
         ic = seqa(1, 1, 1+nint)|(1+nint+n1+seqa(1, 1, 2-aCtl.linear+nu));
@@ -791,16 +638,16 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         ig = vec(ig+seqa(0, ng, n)');
         i = ic|ig;
         i = sortind(i);
-        
+
         R1 =  eye(n1) |
             -ones(1, n1);
         R1 = eye(n).*.R1;
-        
+
         k = (ng-n1)*n;
         X = ( eye(k)          ~zeros(k, cols(R1)) )|
             ( zeros(rows(R1), k)~     R1           );
         X = X[., i];
-        
+
         ic = seqa(1, 1, 1+nint)|(1+nint+n+seqa(1, 1, 2-aCtl.linear+nu));
         ig = seqa(1+nint+1, 1, n);
         ic = vec(ic+seqa(0, ng+1, n)');
@@ -808,7 +655,7 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         i = ic|ig;
         i = sortind(i);
         X = X[i, .];
-        
+
         b = X*vec(b);
         b = reshape(b, n, ng+1)';
         v = X*v*X';
@@ -816,59 +663,408 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
         b_s = reshape(b_s, n, ng+1)';
         v_s = X*v_s*X';
         clear i, ig, ic, R1, X;
-        
-        
+
     endif;
-    
-    
+
+    if aCtl.homogenous;
+        qOut.b = b;
+        qOut.v = v;
+        qOut.bS = b_s;
+        qOut.vS = v_s;
+        qOut.bestB = b_s;
+        qOut.bestV = v_s;
+    else;
+        qOut.b = b_s;
+        qOut.v = v_s;
+        qOut.bS = 0;
+        qOut.vS = 0;
+        qOut.bestB = b_s;
+        qOut.bestV = v_s;
+    endif;
+
+    retp(qOut);
+endp;
+
+
+/*******************************************************************************
+**
+** PRINTQUAIDS
+**
+** Purpose:  print the estimation-stage report captured in a quaidsOut struct
+**           (instrumental-variables first stage, iteration summary,
+**           homogeneity-constrained coefficients, overidentification test,
+**           and symmetry test/symmetry-constrained coefficients). Does not
+**           print elasticities, descriptive statistics, or the Slutzky
+**           diagnostic -- those remain separate, explicitly-callable reports
+**           (quaidsElas(), quaidsSlutzky()), reproduced automatically by the
+**           legacy quaids() wrapper.
+**
+** Format:     call printQuaids(qOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaids(struct quaidsOut qOut);
+
+    local i, str, omat, mask, fmt, mss, ii;
+
+    print "INSTRUMENTAL REGRESSION(S)";
+    print "    X = log(TOTEXP)";
+    print;
+
+    i = 1;
+    do while i<=qOut.nu;
+        print ftos(qOut.nobs, "Observations: %*.*lf", 20, 0);;
+        print ftos(qOut.enam[i], "      Dependent variable:%*.*s", 20, 8);
+        print ftos(qOut.ivTv[i], "Total SS:     %*.*lf", 20, 3);;
+        print ftos(qOut.ivDf, "      Degrees of freedom:%*.*lf", 20, 0);
+        print ftos(qOut.ivRsq[i], "R-squared:    %*.*lf", 20, 3);;
+        print ftos(qOut.ivRbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
+        print ftos(qOut.ivSse[i], "Residual SS:  %*.*lf", 20, 3);;
+        print ftos(qOut.ivStdest[i], "      Std error of est:  %*.*lf", 20, 3);
+        str = ftos(qOut.nz-1, "F(%*.*lf, ", 1, 0) $+ ftos(qOut.ivDf, "%*.*lf):             ", 1, 0);
+        str = strsect(str, 1, 15) $+ ftos(qOut.ivFstat[i], "%*.*lf", 19, 3);
+        print str;;
+        print ftos(qOut.ivPvf[i], "      Probability of F:  %*.*lf", 20, 3);
+
+        print;
+        print "                            Standard                 Prob     "\
+            "Cor with";
+        print "  Variable      Estimate      Error      t-value     >|t|     "\
+            "Dep Var";
+
+        print "------------------------------------------------------------"\
+            "-----------------";
+
+        mask = 0~1~1~1~1~1;
+        let fmt[6, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6""\
+            "*.*lf" 10 3 "*.*lf" 12 6;
+        mss = { . };
+
+        print "                     Intercept variables";
+        omat = qOut.xnam~qOut.ivB[1:1+qOut.nint, i]~qOut.ivSE[1:1+qOut.nint, i]~qOut.ivT[1:1+qOut.nint, i]~qOut.ivPvt[1:1+qOut.nint, i];
+        omat = omat~(mss|qOut.ivCor[1:qOut.nint, i]);
+        call printfm(omat, mask, fmt);
+
+
+        print "                      Relative prices";
+        print "                   Reference = ";;
+        $qOut.wnam[qOut.n];
+        omat = qOut.wnam[1:qOut.n-1]~qOut.ivB[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.ivSE[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]
+            ~qOut.ivT[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.ivPvt[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.ivCor[qOut.nint+1:qOut.nint+qOut.n-1, i];
+        call printfm(omat, mask, fmt);
+
+
+        print "                 Reference price (absolute)";
+        omat = qOut.wnam[qOut.n]~qOut.ivB[1+qOut.nint+qOut.n, i]~qOut.ivSE[1+qOut.nint+qOut.n, i]
+            ~qOut.ivT[1+qOut.nint+qOut.n, i]~qOut.ivPvt[1+qOut.nint+qOut.n, i]~qOut.ivCor[qOut.nint+qOut.n, i];
+        call printfm(omat, mask, fmt);
+
+        print;
+        print "                   Identifying instruments ";
+        omat = qOut.znam~qOut.ivB[1+qOut.nint+qOut.n+1:qOut.nz, i]~qOut.ivSE[1+qOut.nint+qOut.n+1:qOut.nz, i]
+            ~qOut.ivT[1+qOut.nint+qOut.n+1:qOut.nz, i]~qOut.ivPvt[1+qOut.nint+qOut.n+1:qOut.nz, i]~qOut.ivCor[qOut.nint+qOut.n+1:qOut.nz-1, i];
+        call printfm(omat, mask, fmt);
+        i = i+1;
+        print;
+        print;
+    endo;
+
+
+    /* ITERATION SUMMARY */
+
+    if qOut.maxiter == 1;
+        "LINEARIZED AIDS WITH STONE PRICE INDEX";
+        "";
+    else;
+        "PROPER AIDS ESTIMATION WITH FIXED ALPHA0";
+        print;
+        "  Iteration number  ";;
+        "        Convergence criterion";
+        "---------------------------------------------------------";
+        if rows(qOut.iterHistory)>1 or (rows(qOut.iterHistory)==1 and cols(qOut.iterHistory)==2);
+            i = 1;
+            do while i<=rows(qOut.iterHistory);
+                print ftos(qOut.iterHistory[i, 1], "%*.*lf", 10, 0);;
+                print ftos(qOut.iterHistory[i, 2], "                        %*.*lf", 10, 8);
+                i = i+1;
+            endo;
+        endif;
+        print;
+    endif;
+
+
+    /* HOMOGENEITY-CONSTRAINED (OR UNCONSTRAINED) COEFFICIENT TABLE */
+
+    if qOut.homogenous;
+        "HOMOGENEITY CONSTRAINED PRICE EFFECTS";
+        print;
+    endif;
+    print ftos(qOut.homogCrit, "Log Det Sigma:  %*.*lf", 20, 8);
+    print;
+    i = 1;
+    do while i<=qOut.n;
+        print;
+        print ftos(qOut.nobs, "Observations: %*.*lf", 20, 0);;
+        print ftos(qOut.wnam[i], "      Dependent variable:%*.*s", 20, 8);
+        print ftos(qOut.homogTv[i], "Total SS:     %*.*lf", 20, 3);;
+        print ftos(qOut.homogDf, "      Degrees of freedom:%*.*lf", 20, 0);
+        print ftos(qOut.homogRsq[i], "R-squared:    %*.*lf", 20, 3);;
+        print ftos(qOut.homogRbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
+        print ftos(qOut.homogSse[i], "Residual SS:  %*.*lf", 20, 3);;
+        print ftos(qOut.homogStdest[i], "      Std error of est:  %*.*lf", 20, 3);
+        str = ftos(qOut.ng-1, "F(%*.*lf, ", 1, 0) $+ ftos(qOut.homogDf, "%*.*lf):             ", 1, 0);
+        str = strsect(str, 1, 15) $+ ftos(qOut.homogFstat[i], "%*.*lf", 19, 3);
+        print str;;
+        print ftos(qOut.homogPvf[i], "      Probability of F:  %*.*lf", 20, 3);
+
+        print;
+        print "                            Standard                 Prob     "\
+            "Cor with";
+        print "  Variable      Estimate      Error      t-value     >|t|     "\
+            "Dep Var";
+
+        print "------------------------------------------------------------"\
+            "-----------------";
+
+        mask = 0~1~1~1~1~1;
+        let fmt[6, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6""\
+            "*.*lf" 10 3 "*.*lf" 12 6;
+
+        print "                     Intercept variables";
+        omat = qOut.xnam~qOut.homogB[1:1+qOut.nint, i]~qOut.homogSE[1:1+qOut.nint, i]~qOut.homogT[1:1+qOut.nint, i]~qOut.homogPvt[1:1+qOut.nint, i];
+        omat = omat~(mss|qOut.homogCor[1:qOut.nint, i]);
+        call printfm(omat, mask, fmt);
+
+        print "                      Relative prices";
+        print "                    reference = ";;
+        $qOut.wnam[qOut.n];
+        omat = qOut.wnam[1:qOut.n-1]~qOut.homogB[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.homogSE[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]
+            ~qOut.homogT[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.homogPvt[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.homogCor[qOut.nint+1:qOut.nint+qOut.n-1, i];
+        call printfm(omat, mask, fmt);
+
+        if not qOut.homogenous;
+            print "                     Reference price (absolute)";
+            print "              (if zero effect,  then homogeneity accepted)";
+            omat = qOut.wnam[qOut.n]~qOut.homogB[1+qOut.nint+qOut.n, i]~qOut.homogSE[1+qOut.nint+qOut.n, i]
+                ~qOut.homogT[1+qOut.nint+qOut.n, i]~qOut.homogPvt[1+qOut.nint+qOut.n, i]~qOut.homogCor[qOut.nint+qOut.n, i];
+            call printfm(omat, mask, fmt);
+            print;
+        endif;
+        print "                     Total expenditure ";
+        print "                   X = log(TOTEXP) - a(P) ";
+        omat = "X"~qOut.homogB[1+qOut.nint+qOut.n1+1, i]~qOut.homogSE[1+qOut.nint+qOut.n1+1, i]
+            ~qOut.homogT[1+qOut.nint+qOut.n1+1, i]~qOut.homogPvt[1+qOut.nint+qOut.n1+1, i]~qOut.homogCor[qOut.nint+qOut.n1+1, i];
+        call printfm(omat, mask, fmt);
+
+        print;
+        if not qOut.linear;
+            print "                 Squared total expenditure ";
+            omat = "X^2/b(p)"~qOut.homogB[1+qOut.nint+qOut.n1+2, i]~qOut.homogSE[1+qOut.nint+qOut.n1+2, i]
+                ~qOut.homogT[1+qOut.nint+qOut.n1+2, i]~qOut.homogPvt[1+qOut.nint+qOut.n1+2, i]~qOut.homogCor[qOut.nint+qOut.n1+2, i];
+            call printfm(omat, mask, fmt);
+        endif;
+
+        print;
+        print "              Residuals of instrumental regressions";
+        omat = qOut.unam~qOut.homogB[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i]~qOut.homogSE[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i]
+            ~qOut.homogT[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i]~qOut.homogPvt[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i]~qOut.homogCor[qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng-1, i];
+        call printfm(omat, mask, fmt);
+        i = i+1;
+        print;
+        print;
+    endo;
+
+
+    /* TEST OF OVERIDENTIFYING RESTRICTIONS */
+
+    if qOut.overidValid;
+
+        print;
+        print;
+        print "TEST OF OVERIDENTIFYING RESTRICTIONS";
+        print;
+        print;
+
+        i = 1;
+        do while i<=qOut.n;
+            print ftos(qOut.nobs, "Observations: %*.*lf", 12, 0);;
+            print ftos(qOut.wnam[i], "   Dependent variable:  %*.*s", 12, 8);
+            str = ftos(qOut.overidDf, "Chi2(%*.*lf)        ", 1, 0) ;
+            str = strsect(str, 1, 15) $+ ftos(qOut.overidFstat[i], "%*.*lf", 11, 3);
+            print str;;
+            print ftos(qOut.overidPvf[i], "   Probability of Chi2: %*.*lf", 12, 3);
+
+            print;
+            print "                             Standard                 Prob   ";
+            print "   Variable      Estimate      Error      t-value     >|t|   ";
+
+            print "---------------------------------------------------------------------------";
+            omat = qOut.znam~qOut.overidGamma[., i]~qOut.overidSE[., i]~qOut.overidT[., i]~qOut.overidPvt[., i];
+            mask = 0~1~1~1~1;
+            let fmt[5, 3] = "-*.*s" 12 12 "*.*le" 12 3 "*.*le" 12 3 "*.*lf" 12 6""\
+                "*.*lf" 10 3 ;
+            call printfm(omat, mask, fmt);
+            i = i+1;
+            print;
+            print;
+        endo;
+
+    endif;
+
+
+    /* TEST OF SYMMETRY GIVEN HOMOGENEITY, AND SYMMETRY-CONSTRAINED PARAMETERS */
+
+    if qOut.symValid;
+        print "TEST OF SYMMETRY GIVEN HOMOGENEITY";
+        print;
+        str = ftos(qOut.symDf, "chi2(%*.*lf)", 1, 0);
+        str = strsect(str, 1, 15) $+ ftos(qOut.symStat, "%*.*lf", 19, 8);
+        print str;;
+        print ftos(qOut.symPval, "                    p-value:  %*.*lf", 20, 3);
+        print;
+
+        "SYMMETRY CONSTRAINED PARAMETERS";
+        print ftos(qOut.symcCrit, "Log Det Sigma:  %*.*lf", 20, 8);
+        print;
+        i = 1;
+        do while i<=qOut.n;
+            print;
+            print ftos(qOut.nobs, "Observations: %*.*lf", 20, 0);;
+            print ftos(qOut.wnam[i], "      Dependent variable:%*.*s", 20, 8);
+            print ftos(qOut.homogTv[i], "Total SS:     %*.*lf", 20, 3);;
+            print ftos(qOut.homogDf, "      Degrees of freedom:%*.*lf", 20, 0);
+            print ftos(qOut.symcRsq[i], "R-squared:    %*.*lf", 20, 3);;
+            print ftos(qOut.symcRbsq[i], "      Rbar-squared:      %*.*lf", 20, 3);
+            print ftos(qOut.symcSse[i], "Residual SS:  %*.*lf", 20, 3);;
+            print ftos(qOut.symcStdest[i], "      Std error of est:  %*.*lf", 20, 3);
+            print;
+            print "                            Standard                 Prob   ";
+            print "  Variable      Estimate      Error      t-value     >|t|   ";
+
+            print "------------------------------------------------------------";
+
+
+            mask = 0~1~1~1~1;
+            let fmt[5, 3] = "-*.*s" 12 12 "*.*lf" 12 6 "*.*lf" 12 6 "*.*lf" 12 6 ""\
+                "*.*lf" 10 3 ;
+
+            print "                     Intercept variables                     ";
+            omat = qOut.xnam~qOut.symcB[1:1+qOut.nint, i]~qOut.symcSE[1:1+qOut.nint, i]~qOut.symcT[1:1+qOut.nint, i]~qOut.symcPvt[1:1+qOut.nint, i];
+            call printfm(omat, mask, fmt);
+
+            print "                      Relative prices                     ";
+            print "                    reference = ";;
+            $qOut.wnam[qOut.n];
+            omat = qOut.wnam[1:qOut.n-1]~qOut.symcB[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.symcSE[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]
+                ~qOut.symcT[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i]~qOut.symcPvt[1+qOut.nint+1:1+qOut.nint+qOut.n-1, i];
+            call printfm(omat, mask, fmt);
+
+            print "                     Total expenditure ";
+            print "                   X = log(TOTEXP) - a(P) ";
+            omat = "X"~qOut.symcB[1+qOut.nint+qOut.n1+1, i]~qOut.symcSE[1+qOut.nint+qOut.n1+1, i]
+                ~qOut.symcT[1+qOut.nint+qOut.n1+1, i]~qOut.symcPvt[1+qOut.nint+qOut.n1+1, i];
+            call printfm(omat, mask, fmt);
+
+            print;
+            if not qOut.linear;
+                print "                 Squared total expenditure ";
+                omat = "X^2/b(p)"~qOut.symcB[1+qOut.nint+qOut.n1+2, i]~qOut.symcSE[1+qOut.nint+qOut.n1+2, i]
+                    ~qOut.symcT[1+qOut.nint+qOut.n1+2, i]~qOut.symcPvt[1+qOut.nint+qOut.n1+2, i];
+                call printfm(omat, mask, fmt);
+            endif;
+
+            print;
+            print "              Residuals of instrumental regressions";
+            omat = qOut.unam~qOut.homogB[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i]~qOut.symcSE[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i]
+                ~qOut.symcT[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i]~qOut.symcPvt[1+qOut.nint+qOut.n1+qOut.nendog+1:qOut.ng, i];
+            call printfm(omat, mask, fmt);
+            i = i+1;
+            print;
+            print;
+        endo;
+    endif;
+
+endp;
+
+
+/*******************************************************************************
+** QUAIDS
+**
+** Purpose:    To estimate (Q)AIDS demand systems (backward-compatible wrapper).
+**
+** Format:     { b1, v1, b2, v2 } = QUAIDS(w, intcpt, prices, totexp, instr, aCtl);
+**
+** This is the original quaids() call: it estimates via quaidsFit(), prints
+** the full legacy console report (estimation tables via printQuaids(), then
+** elasticities at the mean/quartiles, descriptive statistics, and the
+** Slutzky negativity diagnostic, exactly as the pre-Milestone-1 aids() proc
+** did), and returns the same four positional matrices. For a silent,
+** struct-returning call, use quaidsFit() directly.
+**
+** Source:     QUAIDS.SRC
+**
+******************************************************************************/
+
+proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl);
+
+    local nint, n, ninst, m_, m_1, m_2, m_3, omat, mask, fmt;
+    struct quaidsOut qOut;
+
+    qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+    call printQuaids(qOut);
+
+    nint = qOut.nint;
+    n = qOut.n;
+    ninst = qOut.ninst;
+
+
     /***********************/
     /*  ELASTICITIES   */
     /***********************/
-    
-    prices[., 1:n-1] = prices[., 1:n-1] + prices[., n];   /* absolute prices  */
-    m_=meanc(intcpt~prices~totexp~w~instr);
-    m_1=quantile(intcpt~prices~totexp~w~instr, 1/4)';
-    m_2=quantile(intcpt~prices~totexp~w~instr, 2/4)';
-    m_3=quantile(intcpt~prices~totexp~w~instr, 3/4)';
-    
-    
+
+    m_=meanc(qOut.intcptFull~prices~totexp~w~instr);
+    m_1=quantile(qOut.intcptFull~prices~totexp~w~instr, 1/4)';
+    m_2=quantile(qOut.intcptFull~prices~totexp~w~instr, 2/4)';
+    m_3=quantile(qOut.intcptFull~prices~totexp~w~instr, 3/4)';
+
+
     print;
     "ELASTICITIES AT MEAN POINT ";
-    call quaidsElas(b_s, v_s, m_[1:1+nint], m_[1+nint+1:1+nint+n], m_[1+nint+n+1], aCtl);
+    call quaidsElas(qOut.bestB, qOut.bestV, m_[1:1+nint], m_[1+nint+1:1+nint+n], m_[1+nint+n+1], aCtl);
     print;
 
     "ELASTICITIES AT FIRST QUARTILE";
     print;
-    call quaidsElas(b_s, v_s, m_1[1:1+nint], m_1[1+nint+1:1+nint+n], m_1[1+nint+n+1], aCtl);
+    call quaidsElas(qOut.bestB, qOut.bestV, m_1[1:1+nint], m_1[1+nint+1:1+nint+n], m_1[1+nint+n+1], aCtl);
     print;
 
     "ELASTICITIES AT MEDIAN POINT";
     print;
-    call quaidsElas(b_s, v_s, m_2[1:1+nint], m_2[1+nint+1:1+nint+n], m_2[1+nint+n+1], aCtl);
+    call quaidsElas(qOut.bestB, qOut.bestV, m_2[1:1+nint], m_2[1+nint+1:1+nint+n], m_2[1+nint+n+1], aCtl);
     print;
 
     "ELASTICITIES AT THIRD QUARTILE";
     print;
-    call quaidsElas(b_s, v_s, m_3[1:1+nint], m_3[1+nint+1:1+nint+n], m_3[1+nint+n+1], aCtl);
+    call quaidsElas(qOut.bestB, qOut.bestV, m_3[1:1+nint], m_3[1+nint+1:1+nint+n], m_3[1+nint+n+1], aCtl);
     print;
-    
-    
+
+
     /******************************/
     "DESCRIPTIVE STATISTICS";
     /******************************/
-    
+
     print;
     print "Variable       Mean       Median       First       Third";
     print "                                     quartile     quartile       ";
     print "-----------------------------------------------------------------";
     mask = 0~1~1~1~1;
     let fmt[5, 3] = "-*.*s" 8 8 "*.*lf" 12 4 "*.*lf" 12 4 "*.*lf" 12 4 "*.*lf" 12 4;
-    
+
     print "                   Intercept variables";
-    omat = xnam[2:1+nint]~m_[2:1+nint]~m_1[2:1+nint]~m_2[2:1+nint]~m_3[2:1+nint];
+    omat = qOut.xnam[2:1+nint]~m_[2:1+nint]~m_1[2:1+nint]~m_2[2:1+nint]~m_3[2:1+nint];
     call printfm(omat, mask, fmt);
     print "                  Absolute logged prices                        ";
-    omat = wnam~m_[1+nint+1:1+nint+n]~m_1[1+nint+1:1+nint+n]
+    omat = qOut.wnam~m_[1+nint+1:1+nint+n]~m_1[1+nint+1:1+nint+n]
         ~m_2[1+nint+1:1+nint+n]~m_3[1+nint+1:1+nint+n];
     call printfm(omat, mask, fmt);
     print "                 Logged total expenditure                              ";
@@ -877,43 +1073,30 @@ proc 4 = quaids(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl
     call printfm(omat, mask, fmt);
     print;
     print "                         Shares                          ";
-    omat = wnam~m_[1+nint+n+2:1+nint+n+1+n]~m_1[1+nint+n+2:1+nint+n+1+n]
+    omat = qOut.wnam~m_[1+nint+n+2:1+nint+n+1+n]~m_1[1+nint+n+2:1+nint+n+1+n]
         ~m_2[1+nint+n+2:1+nint+n+1+n]~m_3[1+nint+n+2:1+nint+n+1+n];
     call printfm(omat, mask, fmt);
     print "                 Identifying instruments ";
-    omat = znam~m_[1+nint+n+1+n+1:rows(m_)]~m_1[1+nint+n+1+n+1:rows(m_)]
+    omat = qOut.znam~m_[1+nint+n+1+n+1:rows(m_)]~m_1[1+nint+n+1+n+1:rows(m_)]
         ~m_2[1+nint+n+1+n+1:rows(m_)]~m_3[1+nint+n+1+n+1:rows(m_)];
     call printfm(omat, mask, fmt);
     print;
-    
-    
+
+
     /************************************************/
     /* TEST OF SLUTZKY CONDITIONS       */
     /************************************************/
-    
-    call quaidsSlutzky(b_s, intcpt, prices, totexp, aCtl);
-    
-    
+
+    call quaidsSlutzky(qOut.bestB, qOut.intcptFull, prices, totexp, aCtl);
+
+
     /***********************************/
     /* RETURNS OUTPUT           */
     /*****************************/
-    
-    /* with price effects at the end
-    i = seqa(1, 1, 1+nint)|seqa(1+nint+n+1, 1, 2-aCtl.linear)|seqa(1+nint+1, 1, n);
-    ii = vec(i+seqa(0, 1+nint+n+2-aCtl.linear+nu, n)');
-    b_s = b_s[i, .];
-    v_s = v_s[ii, ii];
-    */
-    
-    if aCtl.homogenous;
-        retp(b, v, b_s, v_s);
-    else;
-        retp(b_s, v_s, 0, 0);
-    endif;
-    
+
+    retp(qOut.b, qOut.v, qOut.bS, qOut.vS);
+
 endp;
-
-
 
 
 
@@ -943,22 +1126,22 @@ endp;
 *******************************************************************************/
 
 proc 0 = quaidsSlutzky(b, intcpt, prices, totexp, struct quaidsControl aCtl);
-    
-    local nint, n, alpha, gama, _beta, lambda, w, wepc, mu, a_p, 
+
+    local nint, n, alpha, gama, _beta, lambda, w, wepc, mu, a_p,
         lx, lx2, b_p, omat, mask, fmt, nobs, i, va, min, mean, std, max, Q1, Q2, Q3, vnames;
-    
+
     nint =  cols(intcpt);
     n = cols(prices);
     nobs = rows(prices);
-    
+
     alpha = intcpt*b[1:nint, .];
     clear intcpt;
     gama = b[nint+1:nint+n, .];
     _beta = b[nint+n+1, .];
-    
+
     a_p = aCtl.alpha0 + sumc((prices.*alpha)') + .5*sumc(((prices*gama).*prices)');
     lx = totexp - a_p;
-    
+
     w = alpha + prices*gama + lx*_beta;
     if not aCtl.linear;
         b_p = exp(prices*_beta');
@@ -966,33 +1149,33 @@ proc 0 = quaidsSlutzky(b, intcpt, prices, totexp, struct quaidsControl aCtl);
         lx2 = (lx^2)./b_p;
         w = w + lx2*lambda;
     endif;
-    
+
     nobs = rows(w);
     i=1;
     do while i<=nobs;
-        
+
         if not aCtl.linear;
             mu = lambda*lx[i]/b_p[i];
         else;
             mu = 0;
         endif;
-        
+
         wepc = -diagrv(eye(n), w[i, .]') + w[i, .]'w[i, .] + gama
             + (_beta'_beta + _beta'mu + mu'_beta + 2*mu'mu)*lx[i];
-        
+
         if i==1;
             va = eigh(wepc)';
         else;
             va = va | eigh(wepc)';
         endif;
-        
+
         i = i+1;
     endo;
-    
+
     print;
     "ANALYSIS OF EIGENVALUES OF SLUTZKY MATRIX";
     "from smallest to biggest";
-    
+
     print;
     print chrs(45*ones(80, 1));
     print "Eigenvalue    Mean  Std Dev  Minimum     Q1      Q2"\
@@ -1020,7 +1203,7 @@ proc 0 = quaidsSlutzky(b, intcpt, prices, totexp, struct quaidsControl aCtl);
     call printfm(omat, mask, fmt);
     print chrs(45*ones(80, 1));
     print;
-    
+
 endp;
 
 
@@ -1052,17 +1235,17 @@ endp;
 *******************************************************************************/
 
 proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
-    
-    local nint, n, alpha, gama, _beta, lambda, w, dw_dx, er, ep, epc, a_p, 
+
+    local nint, n, alpha, gama, _beta, lambda, w, dw_dx, er, ep, epc, a_p,
         lx, lx2, b_p;
-    
+
     nint =  rows(intcpt);
     n = rows(prices);
-    
+
     alpha = intcpt'b[1:nint, .];
     gama = b[nint+1:nint+n, .];
     _beta = b[nint+n+1, .];
-    
+
     a_p = aCtl.alpha0 + alpha*prices + .5*prices'gama*prices;
     lx = totexp - a_p;
     w = alpha' + gama'prices + _beta'lx;
@@ -1072,12 +1255,12 @@ proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
         lx2 = (lx^2)./b_p;
         w = w + lambda'lx2;
     endif;
-    
+
     dw_dx =  _beta' ;
     if not aCtl.linear;
         dw_dx = dw_dx + 2*lambda'lx/b_p;
     endif;
-    
+
     er = 1 + dw_dx./w;
     ep = gama' - dw_dx*(alpha + .5*prices'(gama+gama'));
     if not aCtl.linear;
@@ -1085,7 +1268,7 @@ proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
     endif;
     ep = -eye(n) + ep./w;
     epc = ep + er*w';
-    
+
     retp(er, ep, epc);
 endp;
 
@@ -1118,25 +1301,25 @@ endp;
 *******************************************************************************/
 
 proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
-    
-    local nint, n, wnam, er, ep, epc, omat, mask, fmt, t, dt, er_e, ep_e, epc_e, i, j, e, 
+
+    local nint, n, wnam, er, ep, epc, omat, mask, fmt, t, dt, er_e, ep_e, epc_e, i, j, e,
         ver, vep, vepc, vt, be, fmat, dtk, te, k, b0, dab0, ab0;
-    
+
     nint =  rows(intcpt);
     n = rows(prices);
-    
+
     if aCtl.othnam $== 0;
         wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
     else;
         wnam = aCtl.othnam[nint:nint-1+n];
     endif;
-    
+
     { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp, aCtl);
     t = er|vec(ep')|vec(epc');
-    
-    
+
+
     /* Computation of stepsize (e) for gradient */
-    
+
     b0 = vec(b);
     ab0 = abs(b0);
     if b0 /= 0;
@@ -1147,10 +1330,10 @@ proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
     e = (1e-8)*maxc((ab0~(1e-2)*ones(rows(b0), 1))').*dab0;
     be = b0+e;
     e = be-b0;    /* This increases precision slightly */
-    
-    
+
+
     /* computation of Jacobian and elasticities variances */
-    
+
     k=1;
     i=1;
     do while i<=cols(b);
@@ -1175,17 +1358,17 @@ proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
     endo;
     clear dt;
     vt = sqrt(vt);
-    
-    
+
+
     /* output */
-    
+
     ver = vt[1:n];
     ver = 0$+"("$+ftocv(ver, 0, 3)$+")";
     vep = reshape(vt[n+1:n+n^2], n, n);
     vep = 0$+"("$+ftocv(vep, 0, 3)$+")";
     vepc = reshape(vt[n*(n+1)+1:rows(vt)], n, n);
     vepc = 0$+"("$+ftocv(vepc, 0, 3)$+")";
-    
+
     er = er~diag(ep)~diag(epc);
     ver = ver~diag(vep)~diag(vepc);
     format /rd 7, 0;
@@ -1237,7 +1420,7 @@ proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
     fmt = ones(n+1, 1).*fmt;
     call printfm(omat, mask, fmt);
     print;
-    
+
 endp;
 
 /*
@@ -1288,5 +1471,3 @@ retp(med);
 endp;
 
 */
-
-
