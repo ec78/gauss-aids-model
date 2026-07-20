@@ -1,0 +1,67 @@
+/*
+** quaidsfixtures.src
+**
+** Shared deterministic synthetic-data generator for Milestone 3 validation
+** tests. Not part of the public src/ API -- lives in tests/ and is
+** #included only by test scripts.
+**
+** Generates a 5-good AIDS/QUAIDS dataset with homogeneity and adding-up
+** imposed by construction (mirrors examples/quaids_example.e's DGP), with
+** switches for whether the true DGP has a quadratic (QUAIDS) term and
+** whether total expenditure is genuinely endogenous. Also returns the true
+** parameters stacked in exactly the row order quaidsFit()'s final
+** qOut.bS/qOut.bestB uses (CONSTANT | X1-on-alpha | gamma (Nx N) |
+** beta | [lambda] | u-coefficient), so a fitted result can be diffed
+** directly against the return value here.
+*/
+
+proc (6) = _quaidsSyntheticDGP(tobs, seed, quadratic, endogenous);
+
+    local N, al, al1, ga, be, la, ro, prices, instr, intcpt, u, totexp, e,
+        a_p, lx, b_p, lx2, w, trueParams;
+
+    N = 5;
+
+    al = round(rndns(1,N-1,seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1,N-1,seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1,N-1,seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1,N-1,seed)*10)/10;
+    be = be~(-sumc(be'));
+    la = .01*round(rndns(1,N-1,seed)*10)/10;
+    la = la~(-sumc(la'));
+    if not quadratic;
+        la = zeros(1,N);
+    endif;
+    ro = round(rndns(1,N-1,seed)*10)/10;
+    if not endogenous;
+        ro = zeros(1,N-1);
+    endif;
+
+    prices = 1+rndns(tobs,N,seed);
+    instr = 5+5*rndns(tobs,1,seed);
+    intcpt = 2+2*rndns(tobs,1,seed);
+    u =  .1*rndns(tobs,1,seed);
+    totexp = .85*instr + u;
+    e = 2*rndns(tobs,N-1,seed) + u*ro;
+    e = e~(-sumc(e'));
+
+    a_p = sumc( (prices.*(al+intcpt*al1) )') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    trueParams = al|al1|ga|be;
+    if quadratic;
+        trueParams = trueParams|la;
+    endif;
+    trueParams = trueParams|(ro~-sumc(ro'));
+
+    retp(w, intcpt, prices, totexp, instr, trueParams);
+endp;

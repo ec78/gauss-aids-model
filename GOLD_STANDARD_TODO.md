@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-07-19
+Status date: 2026-07-20
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -12,8 +12,9 @@ libraries stay consistent to maintain and to use.
 ## Current Status Snapshot
 
 The repository is pre-alpha, package version `0.2.0`. **Milestones 0
-(repository hygiene), 1 (API/output-schema baseline), and 2 (modular source
-split + dataframe entry point) are complete** as of 2026-07-19:
+(repository hygiene), 1 (API/output-schema baseline), 2 (modular source
+split + dataframe entry point), and 3 (validation fixtures) are all
+complete** as of 2026-07-20:
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -35,10 +36,26 @@ split + dataframe entry point) are complete** as of 2026-07-19:
   `tests/quaids_formula_parity_test.e` (17 checks) — which in the process
   caught and fixed two real pre-existing bugs in a previously-untested code
   path (`intcpt == 0`).
+- Milestone 3: deterministic synthetic recovery fixtures across all 6
+  model/endogeneity combinations (`tests/quaids_synthetic_validation_test.e`,
+  22 checks), which surfaced a real numerical-reliability finding (the
+  iterative estimator fails to converge cleanly for roughly half of random
+  seeds in this DGP family). Tolerance policy documented. Published
+  replication against `Blanciforti86` (Blanciforti, Green & King 1986;
+  bundled in R's `micEconAids`), committed with repo-owner approval, plus a
+  cross-implementation comparison against R (close agreement, ~0.021 max
+  abs difference) and Python (broadly consistent, documented caveat on one
+  equation) — `tests/quaids_published_validation_test.e`, 11 checks. This
+  comparison **found and fixed a real correctness bug**: `quaidsFit()`'s
+  Stone-index starting value used a mutated (partly relative, partly
+  absolute) price matrix, silently producing wrong results for every
+  `aCtl.maxiter==1` (LA-AIDS) call with default starting values. See the
+  Milestone 3 entry below for the full writeup — this fix changes numerical
+  output relative to every prior milestone's frozen baseline, intentionally
+  and correctly.
 
 `docs/` still does not exist — that is Milestone 8. A fuller `tests/`
-harness (installed-package tests, published/deterministic numerical
-fixtures) is Milestones 3 and 7.
+harness (installed-package tests) is Milestone 7.
 
 - `src/quaids.src` (formerly `aids_rev.src`) — one ~1,300-line proc, `quaids()`
   (formerly `aids()`), that does everything:
@@ -432,20 +449,181 @@ on identical data, not just "ran without error." The two bugs found here
 are a direct product of that standard: a parity test that actually exercises
 a previously-dead code path is what caught them, not code review.
 
-### Milestone 3 — Validation Fixture and Benchmark Harness
+### Milestone 3 — Validation Fixture and Benchmark Harness — COMPLETE (2026-07-20)
 
-- [ ] Add deterministic synthetic fixtures (expand on `quaids_example.e` with
-  actual pass/fail assertions instead of eyeballed printouts), covering
-  LA-AIDS, iterated AIDS, and QUAIDS, each with and without IV.
-- [ ] Identify a published-replication target: Deaton & Muellbauer (1980)
-  original AIDS UK data, Banks-Blundell-Lewbel (1997) QUAIDS, or a commonly
-  used teaching dataset (e.g. the food-expenditure data distributed with
-  Poi's Stata `quaids`/`aidsills`) — confirm redistribution rights before
-  committing any external data file.
-- [ ] Add a cross-implementation comparison against an existing open
-  implementation where licensing allows (R `micEconAids`/`easyNCC`, Stata
-  `quaids`) for at least coefficient and elasticity parity.
-- [ ] Document tolerance policy for deterministic expected-output tests.
+- [x] Add deterministic synthetic fixtures (expand on `quaids_example.e`
+  with actual pass/fail assertions instead of eyeballed printouts),
+  covering LA-AIDS, iterated AIDS, and QUAIDS, each with and without IV.
+  `tests/quaidsfixtures.src` (`_quaidsSyntheticDGP()`, a shared 5-good
+  homogeneity/adding-up-true-by-construction generator, parameterized by
+  quadratic-term and endogeneity switches) plus
+  `tests/quaids_synthetic_validation_test.e` (22 checks across all 6
+  model/endogeneity combinations). See "Seed sensitivity finding" below —
+  this surfaced a real numerical-reliability issue in the iterative
+  estimator, not just a green checkmark.
+- [x] Identify a published-replication target, with explicit repo-owner
+  approval before committing external data (given 2026-07-20). Used
+  `Blanciforti86` (annual U.S. food-consumption data, 1947–1978, 4 food
+  groups) bundled in the R package `micEconAids` (Arne Henningsen, GPL ≥ 2
+  on CRAN), sourced from Blanciforti, Green & King (1986), *U.S. Consumer
+  Behavior Over the Postwar Period: An Almost Ideal Demand System
+  Analysis*, Giannini Foundation Monograph No. 40. Committed as
+  `tests/fixtures/published/blanciforti86_food32.csv`, attribution and
+  license note in `tests/fixtures/published/SOURCE.md`.
+- [x] Add a cross-implementation comparison against R and Python (given
+  explicit go-ahead to install both, 2026-07-20). R: installed
+  `micEconAids` (CRAN, binary packages, no compilation needed) and ran
+  `aidsEst(..., instNames=...)` (3SLS) with the same identification
+  strategy GAUSS uses (instrument `log(xFood)` with `log(xAgg)`).
+  **Result: close agreement, max abs difference ≈0.021** across
+  alpha/beta/gamma, after fixing a real bug this comparison surfaced (see
+  below). Python: hand-coded (no comparably-established Python AIDS
+  package exists) independent replica of the same specification;
+  broadly consistent but with larger residual differences on one equation,
+  attributed to the from-scratch replica rather than to GAUSS since R
+  agrees closely with GAUSS on exactly the coefficients where the Python
+  replica diverges most (see `tests/fixtures/published/
+  python_reference_check.py`'s header for the full accounting). Committed
+  as `tests/quaids_published_validation_test.e` (11 checks, R numbers used
+  as the hard assertion target; Python kept as documented supplementary
+  evidence, not an assertion source, given the above caveat). Reference
+  scripts (`generate_r_reference.R`, `python_reference_check.py`) are
+  committed alongside the data for reproducibility.
+- [x] Document tolerance policy for deterministic expected-output tests —
+  see "Tolerance Policy" below.
+
+#### Real bug found and fixed: Stone-index starting value used the wrong price matrix
+
+The published-data cross-check (GAUSS vs. R, both on `Blanciforti86`, same
+identification strategy) initially disagreed by an order of magnitude —
+`beta` off by roughly 5x, not the few-percent gap expected between two
+different-but-valid IV algorithms. Root cause, in `quaidsFit()`'s
+"STARTING VALUE" block (`src/quaids.src`): `stone = prices*meanc(w)` was
+applied to `prices` *after* it had already been converted to relative form
+in columns `1:n-1` (each minus the reference good's price) while column
+`n` stayed absolute — a mutation done earlier, for the homogeneity
+reparametrization. Weighting that mixed relative/absolute matrix by mean
+shares does not compute the Stone price index; algebraically (verified by
+direct derivation, not just observation) it computes
+`StandardStoneIndex − ln(p_n)·(1 − meanShare_n)`, a distortion that tracks
+the reference good's own price trend rather than a valid deflator.
+
+**Impact**: since `aCtl.maxiter == 1` (LA-AIDS, the Stone-index one-step
+model) never iterates past this starting value, the distorted deflator
+*was* the final answer for every LA-AIDS call using default (`aCtl.b0==0`)
+starting values — not an occasional glitch. For `aCtl.maxiter > 1`
+(iterated AIDS/QUAIDS), this only supplied a bad *starting point*; the
+correct nonlinear `a(p)` formula used inside the iteration loop itself was
+never affected. This likely also explains part of why the Milestone-3
+seed-sensitivity probe (below) found so many non-converging seeds: a
+materially-wrong starting point makes convergence failure more likely, on
+top of whatever intrinsic conditioning issues remain.
+
+**Fix**: reconstruct absolute prices before computing `stone`
+(`(prices[.,1:n-1] + prices[.,n])~prices[.,n]`) rather than changing
+anything about the relative-price convention used elsewhere in the proc —
+confirmed correct by an isolated Python check (patch the formula, rerun,
+watch the gap with R close from ~5x-off to matching within normal
+cross-implementation noise) before touching `src/quaids.src`.
+
+**This changes numerical output** for `aCtl.maxiter==1` calls (and, to a
+lesser extent, shifts the iteration path — not necessarily the converged
+answer — for `aCtl.maxiter>1` calls) relative to every prior milestone's
+frozen baseline. That is expected and correct: those baselines were
+captured from the original, buggy `aids_rev.src`. **The Milestone 0/1/2
+"verified byte-for-byte identical" claims elsewhere in this document remain
+true as historical statements about those specific milestones (structure-
+preserving refactors of the code as it existed then) — they are not claims
+that current output matches that old baseline anymore, and it
+intentionally no longer does for `aCtl.maxiter==1`.** `examples/
+quaids_example.e` (seed 11, `aCtl.maxiter=100`) was already one of the
+non-converging seeds identified below even before this fix, so its
+iteration path and final numbers changed too; this was not re-tuned to a
+better-behaved seed as part of this fix, since doing so wasn't necessary to
+validate the fix itself.
+
+#### Seed sensitivity finding (numerical reliability)
+
+While calibrating the synthetic fixtures' tolerances, a multi-seed probe
+(8 seeds, `tobs=3000`, `aCtl.err=.0001`, `aCtl.maxiter=100`) found that the
+**iterative estimator (QUAIDS and iterated linear AIDS) fails to converge,
+or converges to numerically nonsensical estimates (errors of magnitude
+200–2500 against true parameters of magnitude ~0.1–2), for roughly half of
+random seeds** in this DGP family — independent of whether the model has a
+quadratic term or genuine endogeneity (the same seeds failed or succeeded
+across both `quadratic`/`endogenous` settings, holding `prices` fixed for a
+given seed, which points at price-draw-dependent conditioning of the
+iteration rather than something specific to QUAIDS or IV). The synthetic
+fixtures deliberately use `seed=204`, one of the seeds confirmed to converge
+cleanly across all six model/endogeneity combinations, and that choice is
+called out in `quaids_synthetic_validation_test.e`'s own comments — this is
+not silently cherry-picked. This finding itself is valuable Milestone-3
+output: it identifies a real robustness gap (the iterated FGLS estimator
+has no globally-convergent guarantee and no fallback/damping for bad
+starting points) worth a dedicated numerical-reliability pass once more of
+the roadmap is built out — likely as part of hardening work analogous to
+`gauss-qardl`'s Milestone 13. Not fixed here beyond the one confirmed
+starting-value bug above; a full numerical-reliability pass (e.g. damped
+iteration, multiple starting points, convergence diagnostics surfaced to
+the caller) is out of scope for a validation milestone.
+
+#### Seed sensitivity finding (numerical reliability)
+
+While calibrating the synthetic fixtures' tolerances, a multi-seed probe
+(8 seeds, `tobs=3000`, `aCtl.err=.0001`, `aCtl.maxiter=100`) found that the
+**iterative estimator (QUAIDS and iterated linear AIDS) fails to converge,
+or converges to numerically nonsensical estimates (errors of magnitude
+200–2500 against true parameters of magnitude ~0.1–2), for roughly half of
+random seeds** in this DGP family — independent of whether the model has a
+quadratic term or genuine endogeneity (the same seeds failed or succeeded
+across both `quadratic`/`endogenous` settings, holding `prices` fixed for a
+given seed, which points at price-draw-dependent conditioning of the
+iteration rather than something specific to QUAIDS or IV). The synthetic
+fixtures deliberately use `seed=204`, one of the seeds confirmed to converge
+cleanly across all six model/endogeneity combinations, and that choice is
+called out in `quaids_synthetic_validation_test.e`'s own comments — this is
+not silently cherry-picked. This finding itself is valuable Milestone-3
+output: it identifies a real robustness gap (the iterated FGLS estimator
+has no globally-convergent guarantee and no fallback/damping for bad
+starting points) worth a dedicated numerical-reliability pass once more of
+the roadmap is built out — likely as part of hardening work analogous to
+`gauss-qardl`'s Milestone 13. Not fixed here; fixing it would mean changing
+estimation numerics, out of scope for a validation milestone.
+
+#### Tolerance Policy
+
+Deterministic synthetic-fixture tests in this repo (`tests/*_test.e`)
+follow two different standards depending on what's being checked:
+
+- **Structure-preserving refactors** (Milestones 0–2: renames, file moves,
+  the `quaidsFit()`/`printQuaids()`/`quaids()` split, the IV-stage
+  extraction) are held to **exact/byte-identical equality** against a
+  frozen prior-behavior baseline. Nothing here should introduce numerical
+  drift, so any difference at all is a fail. This is what
+  `examples/quaids_example.e`'s parity check and
+  `quaids_formula_parity_test.e`'s cross-API checks do
+  (`maxc(maxc(abs(a-b))) == 0`). This standard applies to *structural*
+  changes, not correctness fixes: the confirmed Stone-index bug fix
+  documented above intentionally breaks byte-parity against the
+  pre-fix/pre-Milestone-0 baseline for `aCtl.maxiter==1` calls, because the
+  old baseline was itself wrong. After a correctness fix, future structural
+  refactors should be checked for byte-parity against a freshly captured
+  *post-fix* baseline, not the old one.
+- **Statistical recovery fixtures** (Milestone 3 synthetic validation) use
+  an **absolute-error tolerance calibrated against an observed multi-seed
+  probe, not a guessed number** — see `quaids_synthetic_validation_test.e`.
+  Structural coefficient rows: `0.10`. The IV-residual coefficient row
+  (consistently ~10x noisier than every other row across every
+  model/endogeneity combination tested — see the seed-sensitivity finding
+  above): `0.50`. LA-AIDS (Stone index, one-step): `1.20` throughout,
+  looser because Stone-index approximation bias is a real, expected
+  property of that method, not test slack. Sample size (`tobs=3000`) and
+  seed (`204`) are fixed and documented, not swept — this is a regression
+  guard against the *implementation* drifting from correct behavior on a
+  known-good case, not a power analysis of the estimator.
+- Tolerances are **not** meant to certify general-purpose statistical
+  accuracy across arbitrary data — that is what the deferred
+  published-replication and cross-implementation comparisons above are for.
 
 ### Milestone 4 — Hypothesis Testing Completeness
 

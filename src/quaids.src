@@ -215,7 +215,19 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
 
     if aCtl.b0==0; /* no proposed starting value; default: estimates linear version of aids */
 
-        stone = prices*meanc(w);
+        /* Stone price index needs ABSOLUTE log prices. At this point
+           prices[.,1:n-1] holds RELATIVE prices (each minus the reference
+           good n, converted in _quaidsIVFirstStage for the homogeneity
+           reparametrization) while prices[.,n] is still absolute --
+           reconstruct the absolute price matrix before weighting by mean
+           shares, or the "index" silently becomes StandardStone -
+           ln(p_n)*(1-meanShare_n), a distortion that varies with the
+           reference good's price rather than a valid deflator. Bug found
+           via Milestone 3 published-data validation (see
+           GOLD_STANDARD_TODO.md); confirmed by closing an order-of-
+           magnitude gap against an independent R/Python cross-check. */
+        stone = (prices[., 1:n-1] + prices[., n])~prices[., n];
+        stone = stone*meanc(w);
         lx = totexp -stone;
         clear stone;
         if not aCtl.linear;
