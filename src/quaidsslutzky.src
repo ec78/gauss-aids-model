@@ -1,0 +1,104 @@
+/*******************************************************************************
+**
+** QUAIDSSLUTZKY
+**
+** Purpose:  tests negativity of the Slutzky matrix observation by observation.
+**
+** Format:     quaidsSlutzky(b, intcpt, prices, totexp);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific share;
+**                order is intcp|prices|lx|lx2|u.
+**
+**             intcpt -- independent variables. Txnint matrix.
+**
+**             prices -- log prices. Txn matrix.
+**
+**             totexp -- total expenditure. Tx1 vector.
+**
+** Output: nothing.
+**
+** Print: descriptive statistics on the eigenvalues of the Slutzky matrix
+**        computed observation by observation.
+**
+*******************************************************************************/
+
+proc 0 = quaidsSlutzky(b, intcpt, prices, totexp, struct quaidsControl aCtl);
+
+    local nint, n, alpha, gama, _beta, lambda, w, wepc, mu, a_p,
+        lx, lx2, b_p, omat, mask, fmt, nobs, i, va, min, mean, std, max, Q1, Q2, Q3, vnames;
+
+    nint =  cols(intcpt);
+    n = cols(prices);
+    nobs = rows(prices);
+
+    alpha = intcpt*b[1:nint, .];
+    clear intcpt;
+    gama = b[nint+1:nint+n, .];
+    _beta = b[nint+n+1, .];
+
+    a_p = aCtl.alpha0 + sumc((prices.*alpha)') + .5*sumc(((prices*gama).*prices)');
+    lx = totexp - a_p;
+
+    w = alpha + prices*gama + lx*_beta;
+    if not aCtl.linear;
+        b_p = exp(prices*_beta');
+        lambda = b[nint+n+2, .];
+        lx2 = (lx^2)./b_p;
+        w = w + lx2*lambda;
+    endif;
+
+    nobs = rows(w);
+    i=1;
+    do while i<=nobs;
+
+        if not aCtl.linear;
+            mu = lambda*lx[i]/b_p[i];
+        else;
+            mu = 0;
+        endif;
+
+        wepc = -diagrv(eye(n), w[i, .]') + w[i, .]'w[i, .] + gama
+            + (_beta'_beta + _beta'mu + mu'_beta + 2*mu'mu)*lx[i];
+
+        if i==1;
+            va = eigh(wepc)';
+        else;
+            va = va | eigh(wepc)';
+        endif;
+
+        i = i+1;
+    endo;
+
+    print;
+    "ANALYSIS OF EIGENVALUES OF SLUTZKY MATRIX";
+    "from smallest to biggest";
+
+    print;
+    print chrs(45*ones(80, 1));
+    print "Eigenvalue    Mean  Std Dev  Minimum     Q1      Q2"\
+        "     Q3    Maximum  ";
+    print chrs(45*ones(80, 1));
+    vnames = seqa(1, 1, cols(va));
+    mean = meanc(va);
+    std = stdc(va);
+    min = minc(va);
+    max = maxc(va);
+    Q1 = quantile(va, .25)';
+    Q2 = quantile(va, .5)';
+    Q3 = quantile(va, .75)';
+    omat = vnames~mean~std~min~Q1~Q2~Q3~max;
+    mask = 1~1~1~1~1~1~1~1;     /* mask to print first column as strings */
+    let fmt[8, 3]=
+        "-*.*lf" 10 0  /* format info for variable names column */
+        "*.*lf" 8 3   /* format info for mean column           */
+        "*.*lf" 8 3   /* format info for std deviation column  */
+        "*.*lf" 10 3   /* format info for min column       */
+        "*.*lf" 8 3   /* format info for Q1 column            */
+        "*.*lf" 8 3   /* format info for Q2 column            */
+        "*.*lf" 8 3   /* format info for Q3 column          */
+        "*.*lf" 10 3    /* format info for max column        */;
+    call printfm(omat, mask, fmt);
+    print chrs(45*ones(80, 1));
+    print;
+
+endp;

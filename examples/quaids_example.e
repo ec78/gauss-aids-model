@@ -1,6 +1,9 @@
 new;
 #include ../src/quaids.sdf;
 #include ../src/quaidsutil.src
+#include ../src/quaidsiv.src
+#include ../src/quaidselas.src
+#include ../src/quaidsslutzky.src
 #include ../src/quaids.src;
 
 seed = 11;

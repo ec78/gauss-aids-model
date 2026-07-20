@@ -11,8 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha. **Milestones 0 (repository hygiene) and 1
-(API/output-schema baseline) are complete** as of 2026-07-19:
+The repository is pre-alpha, package version `0.2.0`. **Milestones 0
+(repository hygiene), 1 (API/output-schema baseline), and 2 (modular source
+split + dataframe entry point) are complete** as of 2026-07-19:
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -24,6 +25,16 @@ The repository is pre-alpha. **Milestones 0 (repository hygiene) and 1
   behavior, verified byte-for-byte against the pre-Milestone-1 baseline). A
   first automated test, `tests/quaids_schema_test.e`, checks `quaidsOut`
   field shapes/values, silence, and wrapper/struct consistency.
+- Milestone 2: `src/quaids.src` split into `quaidsiv.src` (IV first stage),
+  `quaidselas.src` (elasticities), `quaidsslutzky.src` (Slutzky diagnostic),
+  and `quaids.src` (core estimation + printing + legacy wrapper) — see the
+  Milestone 2 entry below for why the rest of the estimation core stayed
+  together. `gmmFitIV` evaluated and explicitly not adopted (documented
+  reasons in `CLAUDE.md`). New dataframe entry point `quaidsFull()`
+  (`quaidsformula.src`), verified against the matrix API by a new
+  `tests/quaids_formula_parity_test.e` (17 checks) — which in the process
+  caught and fixed two real pre-existing bugs in a previously-untested code
+  path (`intcpt == 0`).
 
 `docs/` still does not exist — that is Milestone 8. A fuller `tests/`
 harness (installed-package tests, published/deterministic numerical
@@ -325,19 +336,101 @@ This was carried over unchanged (correct per the "structure-preserving, not
 correctness-fixing" scope of this milestone) and flagged in `CLAUDE.md` for
 review during Milestone 3/4 validation.
 
-### Milestone 2 — Modular Source Split + Formula/Dataframe Entry Point
+### Milestone 2 — Modular Source Split + Formula/Dataframe Entry Point — COMPLETE (2026-07-19)
 
-- [ ] Split `src/quaids.src` into focused files: core estimation, IV first
-  stage, homogeneity/symmetry testing, elasticities, Slutzky diagnostics,
-  printing — mirroring how `qardl.src`/`icmean.src`/`wtestlrb.src`/etc. are
-  separated in `gauss-qardl`.
-- [ ] Evaluate routing the IV first-stage regression through `gmmFitIV`
-  instead of the hand-rolled moment-matrix 2SLS block; document the decision
-  either way.
-- [ ] Add a formula/dataframe entry point (e.g. `quaidsFull(data, formula,
-  instFormula, aCtl)`) built on `loadd()`/`asdf()`, matching the
-  `applyQARDLFormula` pattern instead of a bespoke parser.
-- [ ] Add formula-vs-matrix parity tests.
+**Scoping decision, stated explicitly**: the checklist below names six
+things to split into separate files ("core estimation, IV first stage,
+homogeneity/symmetry testing, elasticities, Slutzky diagnostics, printing").
+Elasticities, Slutzky, printing, and the IV first stage were split out.
+Homogeneity/symmetry testing was **not** split out of `quaidsFit()`'s core,
+because unlike the IV first stage it is not cleanly separable: the starting
+values, iteration loop, variance computation, overidentification test, and
+symmetry test/symmetry-constrained stage all share heavily mutated
+intermediate state (`m`, `gg`, `gw`, `ng`, and iteration-final `_beta`/
+`lambda`/`lx`/`b_p`/`lx2`, which the variance and overidentification-test
+formulas both need). Forcing a split now would mean either a long, brittle
+inter-proc parameter list or inventing an "in-progress fit state" struct —
+real maintainability value, but not urgent on pre-alpha code with no other
+consumers, and safer to attempt after Milestone 3 gives this a validation
+harness to catch regressions in a deeper refactor. This matches
+`gauss-qardl`'s own stated "Roadmap Rules": build fixture infrastructure
+before a broad rewrite, prefer small releasable increments. Full reasoning
+in `CLAUDE.md`.
+
+- [x] Split `src/quaids.src` into focused files: **done for IV first stage**
+  (`quaidsiv.src`, private `_quaidsIVFirstStage()`), **elasticities**
+  (`quaidselas.src`), and **Slutzky diagnostics** (`quaidsslutzky.src`).
+  **Deferred** for "core estimation, homogeneity/symmetry testing" — see
+  scoping decision above; these plus printing (`printQuaids()`) and the
+  legacy wrapper (`quaids()`) remain in `quaids.src` as one cohesive unit,
+  matching how `gauss-qardl`'s own `qardl.src` bundles `qardl()`/
+  `qardlECM()`/`plotQARDL()`/etc. together while giving genuinely distinct
+  features (`icmean.src`, `wtestlrb.src`, `ardlbounds.src`, `qirf.src`)
+  their own files.
+- [x] Evaluate routing the IV first-stage regression through `gmmFitIV`.
+  **Decision: not adopted.** `gmmFitIV` is single-equation and, under
+  `"onestep"`/`"unadj"` settings, mathematically identical to the classical
+  2SLS already computed — no accuracy difference — but it does not expose
+  the raw `zzi`/moment-matrix building blocks that `quaidsFit()`'s
+  downstream system covariance and overidentification-test formulas need in
+  a specific layout. Adopting it would add a package dependency for zero
+  net simplification. Full reasoning in `CLAUDE.md`.
+- [x] Add a dataframe entry point: `quaidsFull(data, shareVars, priceVars,
+  totexpVar, instrVars, extraVars, aCtl)` (`src/quaidsformula.src`).
+  **Not** a `"y ~ x1 + x2"` formula string, by design: AIDS/QUAIDS is a
+  multi-equation system (N shares against N parallel prices) with no
+  natural single-equation-formula representation. Column-name string
+  arrays, matched by position, are the fit instead — documented in
+  `quaidsformula.src`'s header and in `CLAUDE.md`.
+- [x] Add formula-vs-matrix parity tests: `tests/quaids_formula_parity_test.e`,
+  17 checks, including the `extraVars == 0` path — see Milestone 2
+  Verification below.
+
+#### Milestone 2 Verification
+
+1. **Compile check** — all seven source files together. **PASS.**
+2. **Behavioral parity (`quaids()` legacy wrapper)** — same procedure as
+   Milestones 0/1: fixed-seed synthetic dataset, diffed against the
+   untouched Milestone-0-era baseline. **PASS — zero differences**, run
+   after the file split and again after the two bug fixes below.
+3. **Schema test** (`tests/quaids_schema_test.e`, 34 checks) — re-run after
+   the file split. **PASS.**
+4. **New: formula parity test** (`tests/quaids_formula_parity_test.e`, 17
+   checks) — builds the identical synthetic dataset as both plain matrices
+   and a named-column dataframe (`asDF`/`dfaddcol`), estimates both ways,
+   and asserts exact equality on `u`, `ivB`, `homogB`, `homogV`, `symcB`,
+   `symStat`, and the final `b`/`v`/`bS`/`vS`, plus the `extraVars == 0`
+   path against `quaidsFit(..., intcpt=0, ...)`. **PASS — 17/17**, after
+   two real bug fixes (below).
+
+**Two pre-existing bugs found and fixed**, both in the `intcpt == 0` branch
+of `quaidsFit()`'s name-setup block — a branch that existed unchanged since
+the original `aids_rev.src` but had never been exercised by any test or
+example in this repo, because the synthetic fixture always passes a
+non-zero `intcpt`:
+
+1. `xnam` was read uninitialized (`G0152`) when `intcpt == 0`, since it was
+   only assigned in the `else` branch.
+2. After fixing #1 with a native string-literal assignment, assigning that
+   into the `matrix`-typed `qOut.xnam` field threw `G0071 Type mismatch` —
+   same class of bug as the Milestone 1 `string array` vs. `matrix` issue,
+   different specific cause (native `string` literal vs. the legacy
+   `0$+"X"`-built character-matrix type). Fixed with the `0$+` idiom.
+
+Both fixes are scoped to the previously-dead branch; the already-tested
+`else` branch was untouched, and re-running the Milestone 0/1 parity and
+schema tests after the fix confirmed zero change to already-verified
+behavior. See `CLAUDE.md` for the full GAUSS type-system notes this
+surfaced (`type()` codes for matrix/string/string array, dataframe column
+selections being plain type-6 matrices, and where GAUSS does vs. doesn't
+coerce between the legacy character-matrix and native string types).
+
+**Standard applied**: same as Milestones 0/1 — behavior-preserving changes
+(file moves, the IV extraction) had to produce zero-diff output; genuinely
+new code (`quaidsFull()`) had to be verified against the existing matrix API
+on identical data, not just "ran without error." The two bugs found here
+are a direct product of that standard: a parity test that actually exercises
+a previously-dead code path is what caught them, not code review.
 
 ### Milestone 3 — Validation Fixture and Benchmark Harness
 

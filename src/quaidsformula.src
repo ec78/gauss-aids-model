@@ -1,0 +1,75 @@
+/*
+** quaidsformula.src
+**
+** Dataframe entry point for quaidsFit(). Not a single "y ~ x" formula
+** string, deliberately: AIDS/QUAIDS is a multi-equation system (N budget
+** shares against N parallel log prices), and GAUSS's single-equation
+** formula grammar ("y ~ x1 + x2") doesn't have a natural way to express
+** "these N columns are dependent variables, matched positionally against
+** these N other columns." Column-name lists (string arrays), matched by
+** position, are the natural fit here instead -- see the "quaidsFull vs. a
+** formula string" note in CLAUDE.md.
+*/
+
+/*******************************************************************************
+**
+** QUAIDSFULL
+**
+** Purpose:   estimate a (Q)AIDS demand system from a GAUSS dataframe by
+**            column name instead of assembling the w/intcpt/prices/totexp/
+**            instr matrices by hand.
+**
+** Format:    struct quaidsOut qOut = quaidsFull(data, shareVars, priceVars,
+**                totexpVar, instrVars, extraVars, aCtl);
+**
+** Input:     data       -- dataframe (as returned by loadd() or asDF()/
+**                           dfaddcol()). Callers who have a file on disk
+**                           should call data = loadd(fname) first.
+**
+**            shareVars  -- Nx1 string array of budget-share column names,
+**                           in the order the goods should appear.
+**
+**            priceVars  -- Nx1 string array of log-price column names, in
+**                           the SAME order as shareVars (shareVars[i] and
+**                           priceVars[i] must refer to the same good).
+**
+**            totexpVar  -- string, the log-total-expenditure column name.
+**
+**            instrVars  -- string array, instrument column name(s) for
+**                           log total expenditure.
+**
+**            extraVars  -- string array of extra intercept-shifter column
+**                           names (demographics etc.), or the scalar 0 for
+**                           none -- matches quaidsFit()'s intcpt == 0
+**                           convention.
+**
+**            aCtl       -- quaidsControl struct.
+**
+** Output:    struct quaidsOut -- identical to calling quaidsFit() directly
+**            on the matrices selected from data. See quaids.sdf.
+**
+*******************************************************************************/
+
+proc (struct quaidsOut) = quaidsFull(data, shareVars, priceVars, totexpVar, instrVars, extraVars, aCtl);
+
+    local w, prices, totexp, instr, intcpt;
+
+    if rows(shareVars) /= rows(priceVars);
+        "ERROR - quaidsFull: shareVars and priceVars must be the same length";
+        "        (one price column per share column, in matching order).";
+        stop;
+    endif;
+
+    w = data[., shareVars];
+    prices = data[., priceVars];
+    totexp = data[., totexpVar];
+    instr = data[., instrVars];
+
+    if type(extraVars) == 15 or type(extraVars) == 13;
+        intcpt = data[., extraVars];
+    else;
+        intcpt = 0;
+    endif;
+
+    retp(quaidsFit(w, intcpt, prices, totexp, instr, aCtl));
+endp;

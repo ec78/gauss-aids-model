@@ -1,0 +1,214 @@
+/*******************************************************************************
+**
+**  QUAIDSELAS_
+**
+** Purpose:   computes elasticities at one single point.
+**
+** Format:     { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific share;
+**                order is intcp|prices|lx|lx2|u.
+**
+**             intcpt -- vector of independent variables.
+**
+**             prices -- vector of log prices.
+**
+**             totexp -- log total expenditure.
+**
+** Output: elasticities.
+**         er = vector of income elasticities
+**         ep[i, j] = price j uncompensated elas. of commodity i
+**         epc[i, j] = ... compensated...
+**
+** Print: nothing.
+**
+*******************************************************************************/
+
+proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
+
+    local nint, n, alpha, gama, _beta, lambda, w, dw_dx, er, ep, epc, a_p,
+        lx, lx2, b_p;
+
+    nint =  rows(intcpt);
+    n = rows(prices);
+
+    alpha = intcpt'b[1:nint, .];
+    gama = b[nint+1:nint+n, .];
+    _beta = b[nint+n+1, .];
+
+    a_p = aCtl.alpha0 + alpha*prices + .5*prices'gama*prices;
+    lx = totexp - a_p;
+    w = alpha' + gama'prices + _beta'lx;
+    if not aCtl.linear;
+        b_p = exp(_beta*prices);
+        lambda = b[nint+n+2, .];
+        lx2 = (lx^2)./b_p;
+        w = w + lambda'lx2;
+    endif;
+
+    dw_dx =  _beta' ;
+    if not aCtl.linear;
+        dw_dx = dw_dx + 2*lambda'lx/b_p;
+    endif;
+
+    er = 1 + dw_dx./w;
+    ep = gama' - dw_dx*(alpha + .5*prices'(gama+gama'));
+    if not aCtl.linear;
+        ep = ep - lambda'lx2*_beta;
+    endif;
+    ep = -eye(n) + ep./w;
+    epc = ep + er*w';
+
+    retp(er, ep, epc);
+endp;
+
+
+/*******************************************************************************
+**
+** QUAIDSELAS
+**
+** Purpose:  compute income and price elasticities,  and asymptotic std,  at one
+**           single point.
+**
+** Format:     quaidsElas(b, v, intcpt, prices, totexp);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific share;
+**                order is intcp|prices|lx|lx2|u.
+**                 You may not add the "u" part in b. It is not used to compute elasticities anyway.
+**
+**           v -- variance of vec(b).
+**
+**             intcpt -- vector of independent variables.
+**
+**             prices -- vector of log prices.
+**
+**             totexp -- log total expenditure.
+**
+** Output: nothing.
+**
+** Print: elasticities and their asymptotic std.
+**
+*******************************************************************************/
+
+proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
+
+    local nint, n, wnam, er, ep, epc, omat, mask, fmt, t, dt, er_e, ep_e, epc_e, i, j, e,
+        ver, vep, vepc, vt, be, fmat, dtk, te, k, b0, dab0, ab0;
+
+    nint =  rows(intcpt);
+    n = rows(prices);
+
+    if aCtl.othnam $== 0;
+        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+    else;
+        wnam = aCtl.othnam[nint:nint-1+n];
+    endif;
+
+    { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp, aCtl);
+    t = er|vec(ep')|vec(epc');
+
+
+    /* Computation of stepsize (e) for gradient */
+
+    b0 = vec(b);
+    ab0 = abs(b0);
+    if b0 /= 0;
+        dab0 = b0./ab0;
+    else;
+        dab0 = 1;
+    endif;
+    e = (1e-8)*maxc((ab0~(1e-2)*ones(rows(b0), 1))').*dab0;
+    be = b0+e;
+    e = be-b0;    /* This increases precision slightly */
+
+
+    /* computation of Jacobian and elasticities variances */
+
+    k=1;
+    i=1;
+    do while i<=cols(b);
+        j=1;
+        do while j<=rows(b);
+            be=b;
+            be[j, i]=b[j, i]-e[k];
+            { er_e, ep_e, epc_e } = quaidsElas_(be, intcpt, prices, totexp, aCtl);
+            te = er_e|vec(ep_e')|vec(epc_e');
+            dtk = (te-t)/e[k];
+            if k==1;
+                dt=dtk;
+                vt = v[1, 1]*dtk^2;
+            else;
+                vt = vt + 2*dtk.*(dt*v[1:k-1, k]) + v[k, k]*dtk^2;
+                dt = dt~dtk;
+            endif;
+            j=j+1;
+            k=k+1;
+        endo;
+        i=i+1;
+    endo;
+    clear dt;
+    vt = sqrt(vt);
+
+
+    /* output */
+
+    ver = vt[1:n];
+    ver = 0$+"("$+ftocv(ver, 0, 3)$+")";
+    vep = reshape(vt[n+1:n+n^2], n, n);
+    vep = 0$+"("$+ftocv(vep, 0, 3)$+")";
+    vepc = reshape(vt[n*(n+1)+1:rows(vt)], n, n);
+    vepc = 0$+"("$+ftocv(vepc, 0, 3)$+")";
+
+    er = er~diag(ep)~diag(epc);
+    ver = ver~diag(vep)~diag(vepc);
+    format /rd 7, 0;
+    "INCOME AND OWN-PRICE ELASTICITIES ";
+    print "           income     uncompensated    compensated";
+    print "         elasticity  own-price elas.  own-price elas.";
+    print "--------------------------------------------------------";
+    i=2;
+    omat = wnam[1]~ftocv(er[1, .], 0, 3)|""~ver[1, .];
+    do while i<=n;
+        omat = omat|wnam[i]~ftocv(er[i, .], 0, 3)|""~ver[i, .];
+        i=i+1;
+    endo;
+    mask = 0~0~0~0;
+    let fmt[4, 3] = "-*.*s" 8 8 "*.*s" 9 8 "*.*s" 15 8 "*.*s" 15 8;
+    call printfm(omat, mask, fmt);
+    print;
+    "UNCOMPENSATED PRICE ELASTICITIES";
+    print;
+    format /rd 7, 0;
+    print$ ""~wnam';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i=2;
+    omat = wnam[1]~ftocv(ep[1, .], 0, 3)|""~vep[1, .];
+    do while i<=n;
+        omat = omat|wnam[i]~ftocv(ep[i, .], 0, 3)|""~vep[i, .];
+        i=i+1;
+    endo;
+    mask = zeros(1, n+1);
+    let fmt[1, 3] = "*.*s" 8 8;
+    fmt = ones(n+1, 1).*fmt;
+    call printfm(omat, mask, fmt);
+    print;
+    "COMPENSATED PRICE ELASTICITIES ";
+    print;
+    format /rd 7, 0;
+    print$ ""~wnam';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i=2;
+    omat = wnam[1]~ftocv(epc[1, .], 0, 3)|""~vepc[1, .];
+    do while i<=n;
+        omat = omat|wnam[i]~ftocv(epc[i, .], 0, 3)|""~vepc[i, .];
+        i=i+1;
+    endo;
+    mask = zeros(1, n+1);
+    let fmt[1, 3] = "*.*s" 8 8;
+    fmt = ones(n+1, 1).*fmt;
+    call printfm(omat, mask, fmt);
+    print;
+
+endp;

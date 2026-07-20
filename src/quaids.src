@@ -106,10 +106,10 @@
 
 proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl);
 
-    local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zz, zzi, ze, u, stone, lx,
+    local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zzi, u, stone, lx,
         nendog, m, ng, gg, gw, b, ok, alpha, gama, a_p, _beta, b_p, lx2, err, iter, df, iw, m_, cov,
-        std, cor, tv, z, ww, sse, v, y1, J, lambda, D, iu, O, R, vi, ii, crit, rbsq, fstat, Sgma,
-        pvf, stdest, stderr, t, pvt, i, ic, ig, R1, enam, ie,
+        std, cor, tv, ww, sse, v, y1, J, lambda, D, iu, O, R, vi, ii, crit, rbsq, fstat, Sgma,
+        pvf, stdest, stderr, t, pvt, i, ic, ig, R1, enam,
         S, X, v_s, b_s, nz, mss, u1, b0, rsq, k, sym, pfsym,
         z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma,
         model, iterHist, firstIter, overidFstat, overidPvf;
@@ -126,6 +126,7 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
     if intcpt == 0;
         intcpt = ones(nobs, 1);
         nint = 0;
+        xnam = 0$+"CONSTANT";   /* legacy character-matrix "CONSTANT", not a native string */
     else;
         nint = cols(intcpt);
         intcpt = ones(nobs, 1)~intcpt;
@@ -134,8 +135,8 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
         else;
             xnam = aCtl.othnam[1:nint];
         endif;
+        xnam = "CONSTANT"|xnam;
     endif;
-    xnam = "CONSTANT"|xnam;
 
     if aCtl.othnam $== 0;
         wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
@@ -175,68 +176,20 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
 
 
     /*****************************************************************/
-    /* INSTRUMENTATION OF ENDOGENOUS VARIABLE */
+    /* INSTRUMENTATION OF ENDOGENOUS VARIABLE (quaidsiv.src) */
     /*****************************************************************/
 
-    lx = totexp ;
-    endog = lx;
-    enam = 0$+"X";
+    /* you may alternatively want a richer endog = totexp~totexp^2; that
+       would require generalizing _quaidsIVFirstStage's single-column
+       totexp assumption -- see quaidsiv.src. */
 
+    { prices, u, zzi, m1, nz, nu, enam,
+        b, stderr, t, pvt, cor, tv, df, rsq, rbsq, sse, stdest, fstat, pvf }
+        = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
 
-    /* you may alternatively want: endog = totexp~totexp^2; it will also work. */
-    /*
-    lx = totexp ;
-    endog = lx~lx^2;
-    enam = 0$+"X"|"X^2";
-    */
-
-    nu = cols(endog);
     qOut.nu = nu;
     qOut.enam = enam;
-
-    prices[., 1:n-1] = prices[., 1:n-1] - prices[., n];   /* relative prices  */
-    z = intcpt~prices~instr;
-    nz = cols(z);
     qOut.nz = nz;
-
-    m1 = moment(z~endog, 0);
-    zz = m1[1:nz, 1:nz];
-    zzi = invpd(zz);
-    ze = m1[1:nz, nz+1:nz+nu];
-    b = zzi*ze;
-    u = endog - z*b;   /* residuals of instrumental regression  */
-    clear z, ze, zz;
-
-    /* first-stage diagnostics */
-
-    df = nobs-nz-1;
-    ie = seqa(nz+1, 1, nu);
-    m_ = m1[., 1]/nobs;
-    cov = m1/nobs - m_*m_';
-    std = sqrt(diag(cov));
-    cor = cov[2:nz, ie]./std[2:nz]./std[ie]';
-    tv = nobs*diag(cov[ie, ie]);
-    clear m_, std, cov, ie;
-
-    sse = moment(u, 0);
-    S=sse/nobs;
-    sse = diag(sse);
-    rsq = (tv - sse)./tv;
-    rbsq = 1-(1-rsq)*((nobs-1)/df);
-    fstat = (rsq./(1-rsq))*(df/(nz-1));
-    if fstat>0;
-        pvf = cdffc(fstat, nz-1, df);
-    else;
-        pvf = {.};
-    endif;
-
-    stdest = sqrt(sse/df);
-    v = S.*.zzi;
-    stderr = sqrt(diag(v));
-    stderr = reshape(stderr, nu, nz)';
-    t = b./miss(stderr, 0);
-    pvt = 2*cdftc(abs(t), df);
-
     qOut.u = u;
     qOut.ivB = b;
     qOut.ivSE = stderr;
@@ -252,7 +205,7 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
     qOut.ivFstat = fstat;
     qOut.ivPvf = pvf;
 
-    clear tv, df, rsq, rbsq, sse, stdest, pvf, stderr, t, pvt, cor, v, S;
+    clear tv, df, rsq, rbsq, sse, stdest, pvf, stderr, t, pvt, cor;
 
 
 
@@ -1101,327 +1054,8 @@ endp;
 
 
 
-/*******************************************************************************
-**
-** QUAIDSSLUTZKY
-**
-** Purpose:  tests negativity of the Slutzky matrix observation by observation.
-**
-** Format:     quaidsSlutzky(b, intcpt, prices, totexp);
-**
-** Input:    b -- parameter matrix; each column corresponds to a specific share;
-**                order is intcp|prices|lx|lx2|u.
-**
-**             intcpt -- independent variables. Txnint matrix.
-**
-**             prices -- log prices. Txn matrix.
-**
-**             totexp -- total expenditure. Tx1 vector.
-**
-** Output: nothing.
-**
-** Print: descriptive statistics on the eigenvalues of the Slutzky matrix
-**        computed observation by observation.
-**
-*******************************************************************************/
-
-proc 0 = quaidsSlutzky(b, intcpt, prices, totexp, struct quaidsControl aCtl);
-
-    local nint, n, alpha, gama, _beta, lambda, w, wepc, mu, a_p,
-        lx, lx2, b_p, omat, mask, fmt, nobs, i, va, min, mean, std, max, Q1, Q2, Q3, vnames;
-
-    nint =  cols(intcpt);
-    n = cols(prices);
-    nobs = rows(prices);
-
-    alpha = intcpt*b[1:nint, .];
-    clear intcpt;
-    gama = b[nint+1:nint+n, .];
-    _beta = b[nint+n+1, .];
-
-    a_p = aCtl.alpha0 + sumc((prices.*alpha)') + .5*sumc(((prices*gama).*prices)');
-    lx = totexp - a_p;
-
-    w = alpha + prices*gama + lx*_beta;
-    if not aCtl.linear;
-        b_p = exp(prices*_beta');
-        lambda = b[nint+n+2, .];
-        lx2 = (lx^2)./b_p;
-        w = w + lx2*lambda;
-    endif;
-
-    nobs = rows(w);
-    i=1;
-    do while i<=nobs;
-
-        if not aCtl.linear;
-            mu = lambda*lx[i]/b_p[i];
-        else;
-            mu = 0;
-        endif;
-
-        wepc = -diagrv(eye(n), w[i, .]') + w[i, .]'w[i, .] + gama
-            + (_beta'_beta + _beta'mu + mu'_beta + 2*mu'mu)*lx[i];
-
-        if i==1;
-            va = eigh(wepc)';
-        else;
-            va = va | eigh(wepc)';
-        endif;
-
-        i = i+1;
-    endo;
-
-    print;
-    "ANALYSIS OF EIGENVALUES OF SLUTZKY MATRIX";
-    "from smallest to biggest";
-
-    print;
-    print chrs(45*ones(80, 1));
-    print "Eigenvalue    Mean  Std Dev  Minimum     Q1      Q2"\
-        "     Q3    Maximum  ";
-    print chrs(45*ones(80, 1));
-    vnames = seqa(1, 1, cols(va));
-    mean = meanc(va);
-    std = stdc(va);
-    min = minc(va);
-    max = maxc(va);
-    Q1 = quantile(va, .25)';
-    Q2 = quantile(va, .5)';
-    Q3 = quantile(va, .75)';
-    omat = vnames~mean~std~min~Q1~Q2~Q3~max;
-    mask = 1~1~1~1~1~1~1~1;     /* mask to print first column as strings */
-    let fmt[8, 3]=
-        "-*.*lf" 10 0  /* format info for variable names column */
-        "*.*lf" 8 3   /* format info for mean column           */
-        "*.*lf" 8 3   /* format info for std deviation column  */
-        "*.*lf" 10 3   /* format info for min column       */
-        "*.*lf" 8 3   /* format info for Q1 column            */
-        "*.*lf" 8 3   /* format info for Q2 column            */
-        "*.*lf" 8 3   /* format info for Q3 column          */
-        "*.*lf" 10 3    /* format info for max column        */;
-    call printfm(omat, mask, fmt);
-    print chrs(45*ones(80, 1));
-    print;
-
-endp;
-
-
-
-/*******************************************************************************
-**
-**  QUAIDSELAS_
-**
-** Purpose:   computes elasticities at one single point.
-**
-** Format:     { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp);
-**
-** Input:    b -- parameter matrix; each column corresponds to a specific share;
-**                order is intcp|prices|lx|lx2|u.
-**
-**             intcpt -- vector of independent variables.
-**
-**             prices -- vector of log prices.
-**
-**             totexp -- log total expenditure.
-**
-** Output: elasticities.
-**         er = vector of income elasticities
-**         ep[i, j] = price j uncompensated elas. of commodity i
-**         epc[i, j] = ... compensated...
-**
-** Print: nothing.
-**
-*******************************************************************************/
-
-proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
-
-    local nint, n, alpha, gama, _beta, lambda, w, dw_dx, er, ep, epc, a_p,
-        lx, lx2, b_p;
-
-    nint =  rows(intcpt);
-    n = rows(prices);
-
-    alpha = intcpt'b[1:nint, .];
-    gama = b[nint+1:nint+n, .];
-    _beta = b[nint+n+1, .];
-
-    a_p = aCtl.alpha0 + alpha*prices + .5*prices'gama*prices;
-    lx = totexp - a_p;
-    w = alpha' + gama'prices + _beta'lx;
-    if not aCtl.linear;
-        b_p = exp(_beta*prices);
-        lambda = b[nint+n+2, .];
-        lx2 = (lx^2)./b_p;
-        w = w + lambda'lx2;
-    endif;
-
-    dw_dx =  _beta' ;
-    if not aCtl.linear;
-        dw_dx = dw_dx + 2*lambda'lx/b_p;
-    endif;
-
-    er = 1 + dw_dx./w;
-    ep = gama' - dw_dx*(alpha + .5*prices'(gama+gama'));
-    if not aCtl.linear;
-        ep = ep - lambda'lx2*_beta;
-    endif;
-    ep = -eye(n) + ep./w;
-    epc = ep + er*w';
-
-    retp(er, ep, epc);
-endp;
-
-
-/*******************************************************************************
-**
-** QUAIDSELAS
-**
-** Purpose:  compute income and price elasticities,  and asymptotic std,  at one
-**           single point.
-**
-** Format:     quaidsElas(b, v, intcpt, prices, totexp);
-**
-** Input:    b -- parameter matrix; each column corresponds to a specific share;
-**                order is intcp|prices|lx|lx2|u.
-**                 You may not add the "u" part in b. It is not used to compute elasticities anyway.
-**
-**           v -- variance of vec(b).
-**
-**             intcpt -- vector of independent variables.
-**
-**             prices -- vector of log prices.
-**
-**             totexp -- log total expenditure.
-**
-** Output: nothing.
-**
-** Print: elasticities and their asymptotic std.
-**
-*******************************************************************************/
-
-proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
-
-    local nint, n, wnam, er, ep, epc, omat, mask, fmt, t, dt, er_e, ep_e, epc_e, i, j, e,
-        ver, vep, vepc, vt, be, fmat, dtk, te, k, b0, dab0, ab0;
-
-    nint =  rows(intcpt);
-    n = rows(prices);
-
-    if aCtl.othnam $== 0;
-        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
-    else;
-        wnam = aCtl.othnam[nint:nint-1+n];
-    endif;
-
-    { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp, aCtl);
-    t = er|vec(ep')|vec(epc');
-
-
-    /* Computation of stepsize (e) for gradient */
-
-    b0 = vec(b);
-    ab0 = abs(b0);
-    if b0 /= 0;
-        dab0 = b0./ab0;
-    else;
-        dab0 = 1;
-    endif;
-    e = (1e-8)*maxc((ab0~(1e-2)*ones(rows(b0), 1))').*dab0;
-    be = b0+e;
-    e = be-b0;    /* This increases precision slightly */
-
-
-    /* computation of Jacobian and elasticities variances */
-
-    k=1;
-    i=1;
-    do while i<=cols(b);
-        j=1;
-        do while j<=rows(b);
-            be=b;
-            be[j, i]=b[j, i]-e[k];
-            { er_e, ep_e, epc_e } = quaidsElas_(be, intcpt, prices, totexp, aCtl);
-            te = er_e|vec(ep_e')|vec(epc_e');
-            dtk = (te-t)/e[k];
-            if k==1;
-                dt=dtk;
-                vt = v[1, 1]*dtk^2;
-            else;
-                vt = vt + 2*dtk.*(dt*v[1:k-1, k]) + v[k, k]*dtk^2;
-                dt = dt~dtk;
-            endif;
-            j=j+1;
-            k=k+1;
-        endo;
-        i=i+1;
-    endo;
-    clear dt;
-    vt = sqrt(vt);
-
-
-    /* output */
-
-    ver = vt[1:n];
-    ver = 0$+"("$+ftocv(ver, 0, 3)$+")";
-    vep = reshape(vt[n+1:n+n^2], n, n);
-    vep = 0$+"("$+ftocv(vep, 0, 3)$+")";
-    vepc = reshape(vt[n*(n+1)+1:rows(vt)], n, n);
-    vepc = 0$+"("$+ftocv(vepc, 0, 3)$+")";
-
-    er = er~diag(ep)~diag(epc);
-    ver = ver~diag(vep)~diag(vepc);
-    format /rd 7, 0;
-    "INCOME AND OWN-PRICE ELASTICITIES ";
-    print "           income     uncompensated    compensated";
-    print "         elasticity  own-price elas.  own-price elas.";
-    print "--------------------------------------------------------";
-    i=2;
-    omat = wnam[1]~ftocv(er[1, .], 0, 3)|""~ver[1, .];
-    do while i<=n;
-        omat = omat|wnam[i]~ftocv(er[i, .], 0, 3)|""~ver[i, .];
-        i=i+1;
-    endo;
-    mask = 0~0~0~0;
-    let fmt[4, 3] = "-*.*s" 8 8 "*.*s" 9 8 "*.*s" 15 8 "*.*s" 15 8;
-    call printfm(omat, mask, fmt);
-    print;
-    "UNCOMPENSATED PRICE ELASTICITIES";
-    print;
-    format /rd 7, 0;
-    print$ ""~wnam';
-    print "---------------------------------------------------------------"\
-        "---------------";
-    i=2;
-    omat = wnam[1]~ftocv(ep[1, .], 0, 3)|""~vep[1, .];
-    do while i<=n;
-        omat = omat|wnam[i]~ftocv(ep[i, .], 0, 3)|""~vep[i, .];
-        i=i+1;
-    endo;
-    mask = zeros(1, n+1);
-    let fmt[1, 3] = "*.*s" 8 8;
-    fmt = ones(n+1, 1).*fmt;
-    call printfm(omat, mask, fmt);
-    print;
-    "COMPENSATED PRICE ELASTICITIES ";
-    print;
-    format /rd 7, 0;
-    print$ ""~wnam';
-    print "---------------------------------------------------------------"\
-        "---------------";
-    i=2;
-    omat = wnam[1]~ftocv(epc[1, .], 0, 3)|""~vepc[1, .];
-    do while i<=n;
-        omat = omat|wnam[i]~ftocv(epc[i, .], 0, 3)|""~vepc[i, .];
-        i=i+1;
-    endo;
-    mask = zeros(1, n+1);
-    let fmt[1, 3] = "*.*s" 8 8;
-    fmt = ones(n+1, 1).*fmt;
-    call printfm(omat, mask, fmt);
-    print;
-
-endp;
+/* quaidsSlutzky() moved to quaidsslutzky.src; quaidsElas_()/quaidsElas() moved
+   to quaidselas.src. */
 
 /*
 

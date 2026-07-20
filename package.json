@@ -19,7 +19,11 @@
     "src": [
         "quaids.sdf",
         "quaidsutil.src",
-        "quaids.src"
+        "quaidsiv.src",
+        "quaidselas.src",
+        "quaidsslutzky.src",
+        "quaids.src",
+        "quaidsformula.src"
     ],
-    "version": "0.1.0"
+    "version": "0.2.0"
 }

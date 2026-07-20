@@ -1,0 +1,73 @@
+/*
+** quaidsiv.src
+**
+** Instrumental-variables first-stage regression for quaidsFit(): regresses
+** log total expenditure on the (already constant-prepended) intercept
+** shifters, relative log prices, and instruments, and returns both the
+** relative-price conversion of `prices` and the raw building blocks
+** (residuals, Z'Z inverse, full moment matrix) that quaidsFit() needs for
+** the rest of the system estimation, plus the first-stage diagnostic
+** quantities (coefficients, standard errors, t/p-values, R-squared, F-test)
+** that printQuaids() reports.
+**
+** This is a private helper (leading underscore), not part of the public
+** API -- called only from quaidsFit() in quaids.src.
+*/
+
+proc 20 = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
+
+    local nobs, endog, enam, nu, z, nz, m1, zz, zzi, ze, b, u,
+        df, ie, m_, cov, std, cor, tv, sse, S, rsq, rbsq, fstat, pvf,
+        stdest, v, stderr, t, pvt;
+
+    nobs = rows(prices);
+
+    endog = totexp;
+    enam = 0$+"X";
+    nu = cols(endog);
+
+    prices[., 1:n-1] = prices[., 1:n-1] - prices[., n];   /* relative prices  */
+    z = intcpt~prices~instr;
+    nz = cols(z);
+
+    m1 = moment(z~endog, 0);
+    zz = m1[1:nz, 1:nz];
+    zzi = invpd(zz);
+    ze = m1[1:nz, nz+1:nz+nu];
+    b = zzi*ze;
+    u = endog - z*b;   /* residuals of instrumental regression  */
+    clear z, ze, zz;
+
+    /* first-stage diagnostics */
+
+    df = nobs-nz-1;
+    ie = seqa(nz+1, 1, nu);
+    m_ = m1[., 1]/nobs;
+    cov = m1/nobs - m_*m_';
+    std = sqrt(diag(cov));
+    cor = cov[2:nz, ie]./std[2:nz]./std[ie]';
+    tv = nobs*diag(cov[ie, ie]);
+    clear m_, std, cov, ie;
+
+    sse = moment(u, 0);
+    S=sse/nobs;
+    sse = diag(sse);
+    rsq = (tv - sse)./tv;
+    rbsq = 1-(1-rsq)*((nobs-1)/df);
+    fstat = (rsq./(1-rsq))*(df/(nz-1));
+    if fstat>0;
+        pvf = cdffc(fstat, nz-1, df);
+    else;
+        pvf = {.};
+    endif;
+
+    stdest = sqrt(sse/df);
+    v = S.*.zzi;
+    stderr = sqrt(diag(v));
+    stderr = reshape(stderr, nu, nz)';
+    t = b./miss(stderr, 0);
+    pvt = 2*cdftc(abs(t), df);
+
+    retp(prices, u, zzi, m1, nz, nu, enam,
+        b, stderr, t, pvt, cor, tv, df, rsq, rbsq, sse, stdest, fstat, pvf);
+endp;
