@@ -11,10 +11,11 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.2.0`. **Milestones 0
+The repository is pre-alpha, package version `0.4.0`. **Milestones 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
-split + dataframe entry point), and 3 (validation fixtures) are all
-complete** as of 2026-07-20:
+split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
+testing completeness), and 5 (elasticities/diagnostics generalization) are
+all complete** as of 2026-07-20:
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -53,6 +54,26 @@ complete** as of 2026-07-20:
   Milestone 3 entry below for the full writeup — this fix changes numerical
   output relative to every prior milestone's frozen baseline, intentionally
   and correctly.
+- Milestone 4: two new standalone Wald tests, `quaidsHomogeneityTest()` and
+  `quaidsJointTest()` (`src/quaidstests.src`), both validated for size and
+  power (not just "it runs"). Strengthened the existing symmetry-given-
+  homogeneity test with a power check, and exercised the overidentification
+  test for the first time ever in this repo (every prior fixture was
+  exactly identified, `ninst==nu`) — `tests/quaids_hypothesis_tests_test.e`,
+  19 checks. The first implementation attempt at the homogeneity test was
+  wrong (misread the `quaidsFit()` docstring) and was caught immediately by
+  the size check rejecting a true null — see the Milestone 4 entry below.
+- Milestone 5: split `quaidsElas()` into `quaidsElasFit()` (silent,
+  struct-returning) and `printQuaidsElas()`, mirroring the Milestone 1
+  `quaidsFit()`/`printQuaids()` split — verified byte-for-byte identical
+  printed output. Validated correctness away from the four standard
+  evaluation points (mean/Q1/median/Q3) using three *exact* algebraic
+  identities (Engel aggregation, Cournot aggregation, elasticity
+  homogeneity), not tolerance-based approximations —
+  `tests/quaids_elasticities_test.e`, 17 checks. `quaidsSlutzky()` needed
+  no change (already accepted arbitrary points). Curvature imposition
+  scoped and explicitly deferred — even the reference implementation used
+  for Milestone 3 validation only diagnoses curvature, doesn't impose it.
 
 `docs/` still does not exist — that is Milestone 8. A fuller `tests/`
 harness (installed-package tests) is Milestone 7.
@@ -625,26 +646,149 @@ follow two different standards depending on what's being checked:
   accuracy across arbitrary data — that is what the deferred
   published-replication and cross-implementation comparisons above are for.
 
-### Milestone 4 — Hypothesis Testing Completeness
+### Milestone 4 — Hypothesis Testing Completeness — COMPLETE (2026-07-20)
 
-- [ ] Add a standalone homogeneity Wald/LR test (unrestricted vs.
+- [x] Add a standalone homogeneity Wald/LR test (unrestricted vs.
   homogeneity-constrained), not just the qualitative "near-zero reference
-  price effect" signal.
-- [ ] Formalize the existing symmetry-given-homogeneity test and the existing
-  overidentification test as independently callable, independently tested
-  procs.
-- [ ] Add a joint homogeneity+symmetry test.
-- [ ] Document degrees of freedom and asymptotic assumptions for each test.
+  price effect" signal. New `quaidsHomogeneityTest(qOut)`
+  (`src/quaidstests.src`), a Wald test on an unconstrained
+  (`aCtl.homogenous=0`) fit's recovered gamma matrix: `df = n-1`. Validated
+  for both **size** (fails to reject, p=0.63, on a homogeneity-true-by-
+  construction fixture) and **power** (rejects, p≈0, on a fixture with a
+  deliberate, clean homogeneity violation injected into the observed
+  shares) — see "New hypothesis tests" below for how the exact restriction
+  vector/covariance were derived and why the first attempt was wrong.
+- [x] Add a joint homogeneity+symmetry test. New `quaidsJointTest(qOut)`
+  (`src/quaidstests.src`), same unconstrained-fit input, `df = (n-1) +
+  (n-1)(n-2)/2`. Also validated for size and power.
+- [x] Formalize the existing symmetry-given-homogeneity test and the
+  existing overidentification test as independently tested (not
+  necessarily independently *callable* as separate procs — see the scoping
+  note below, which extends Milestone 2's coupling finding).
+  `tests/quaids_hypothesis_tests_test.e` adds: a **power** check for the
+  symmetry-given-homogeneity test (previously only implicitly
+  size-checked; now confirmed to reject on a deliberately asymmetric-but-
+  homogeneous fixture, p≈0), and the **first-ever exercise of the
+  overidentification test** in this repo's history — every fixture through
+  Milestone 3 used exactly-identified instruments (`ninst==nu`), so
+  `qOut.overidValid` was always `0` and that branch had literally never
+  run. A new 2-instrument fixture confirms it runs, has the right shape/df,
+  and doesn't spuriously reject when both instruments are valid by
+  construction.
+- [x] Document degrees of freedom and asymptotic assumptions for each test
+  — see "New hypothesis tests" below and the header comment of
+  `src/quaidstests.src`.
 
-### Milestone 5 — Elasticities and Diagnostics Generalization
+#### Scoping note: why the existing tests weren't extracted into standalone procs
 
-- [ ] Generalize `elas()`/`elas_()` to accept arbitrary evaluation points
+Milestone 2 declined to split `quaidsFit()`'s overidentification-test and
+symmetry-test computations out of the main estimation proc, because they
+depend on heavily mutated intermediate state from the iteration/variance
+stages (`Ji`, `Sgma`, `S`, `O`, `D`, `zzi`, `m1`, and iteration-final
+`_beta`/`lambda`/`lx`/`b_p`/`lx2`) that would otherwise need threading
+through a long, brittle parameter list. That coupling is unchanged by this
+milestone (nothing about the estimation core moved), so the same reasoning
+applies here: those two tests remain computed inline as part of
+`quaidsFit()`, exposed as `qOut` fields, not as separate callable procs.
+The two genuinely *new* tests (`quaidsHomogeneityTest`, `quaidsJointTest`)
+**are** standalone, independently callable procs — they only need the
+*already-finished* `qOut.b`/`qOut.v` from an unconstrained fit, not any
+of that intermediate iteration state, so there was no coupling problem to
+work around for them.
+
+#### New hypothesis tests: derivation and validation
+
+Both new tests are Wald tests built the same way: extract a linear
+combination `L` such that `L'*vec(qOut.b)` is the vector of restrictions
+being tested, use `L'*qOut.v*L` as its covariance (`qOut.b`/`qOut.v` here
+must come from an **unconstrained**, `aCtl.homogenous=0` fit — the final,
+absolute-price-form gamma matrix and its covariance), and compute
+`stat = r'*inv(V)*r ~ chi2(df)`.
+
+- **Homogeneity** (`df = n-1`): the restriction is `sum_j gamma_ij = 0` for
+  each independently-estimated equation `i = 1..n-1` (equation `n` is
+  recovered from the others via adding-up and contributes no new
+  information to a Wald test, matching the `n1 = n-1` convention used
+  throughout this library).
+- **Joint** (`df = (n-1) + (n-1)(n-2)/2`): homogeneity's `n-1` restrictions
+  plus symmetry restrictions `gamma_ij = gamma_ji` for `i<j`,
+  `i,j = 1..n-1`. Note a **symmetric** gamma matrix with adding-up already
+  imposed automatically satisfies homogeneity too (row `i` sum = `sum_j
+  gamma_ij` = `sum_j gamma_ji` [symmetry] = column `i` sum = 0 by
+  adding-up) — so there is no separate "symmetry only, given adding-up, on
+  a fully unconstrained fit" test offered; test joint, or use the existing
+  symmetry-given-homogeneity test if homogeneity itself is not in
+  question.
+
+**The first implementation attempt was wrong**, caught by validating size
+before trusting the formula: the docstring for `quaidsFit()` describes an
+internal *reparametrized* representation (used mid-computation, before the
+"recovers absolute price effects" step) where a row sum stands in for one
+of the raw price coefficients. Reading that as describing `qOut.b`
+directly (i.e., assuming a single row already *was* the row-sum statistic)
+gave a homogeneity test that rejected with `p ≈ 0` on a fixture where
+homogeneity is true by construction — a dead giveaway of a wrong formula,
+not a real finding. Re-deriving from the actual recovery code (`qOut.b`
+holds the raw, non-reparametrized gamma post-recovery) and summing
+*across* the price rows for each equation, rather than reading a single
+row, fixed it: `p = 0.63` on the true-null fixture, `p ≈ 0` on a
+deliberately-violated one. Constructing that violated fixture also took
+two attempts — a hand-built asymmetric gamma matrix turned out to be
+internally inconsistent (the price aggregator `a_p` uses a quadratic form
+`p'*Γ*p`, which is mathematically invariant to using `Γ` or `Γ'`, so an
+asymmetric "true" gamma silently degenerates to its own symmetrized
+average inside `a_p` while the share equations still see the full
+asymmetric version — not wrong, just not what was intended, and reflected
+in bad recovery). Injecting a clean, explicit violation directly into the
+observed shares instead (`w[.,1] += c*prices[.,1]`, `w[.,2] -=
+c*prices[.,1]`, preserving adding-up exactly) sidestepped that and gave a
+fixture that worked as intended. Both dead ends are a demonstration of why
+size *and* power checks matter — a formula that merely "runs" proves
+nothing.
+
+### Milestone 5 — Elasticities and Diagnostics Generalization — COMPLETE (2026-07-20)
+
+- [x] Generalize `elas()`/`elas_()` to accept arbitrary evaluation points
   (currently hardcoded to mean/Q1/median/Q3 inside `quaids()`).
-- [ ] Keep the Slutzky-eigenvalue negativity diagnostic as the default
-  always-on check.
-- [ ] Scope and, if justified, implement optional local curvature imposition
+  **Re-scoped based on what the code actually did**: `quaidsElas_()`
+  already accepted any point as an argument (`intcpt`/`prices`/`totexp` are
+  point values, not sample statistics) — the real gap was that
+  `quaidsElas()` mixed computation with printing, and `quaids()` only ever
+  called it at four fixed points, so there was no clean, silent,
+  struct-returning way to ask for elasticities anywhere else. Split
+  `quaidsElas()` into `quaidsElasFit()` (silent, returns `quaidsElasOut`:
+  point estimates + delta-method standard errors, no printing) and
+  `printQuaidsElas()` (the separated printer), mirroring the
+  `quaidsFit()`/`printQuaids()` split from Milestone 1. `quaidsElas()`
+  itself is now a thin wrapper (`quaidsElasFit()` then
+  `printQuaidsElas()`) — unchanged signature, **verified byte-for-byte**
+  identical printed output on `examples/quaids_example.e`.
+  `tests/quaids_elasticities_test.e` (17 checks) validates the split
+  (parity against `quaidsElas_()` directly) and, more importantly,
+  validates *correctness away from the four standard points* using three
+  **exact** algebraic identities (Engel aggregation, Cournot aggregation,
+  elasticity homogeneity — consequences of adding-up/homogeneity holding,
+  not approximations) at a real out-of-sample observation and at a fully
+  synthetic counterfactual price scenario. All held to floating-point
+  precision (~1e-16).
+- [x] Keep the Slutzky-eigenvalue negativity diagnostic as the default
+  always-on check. Unchanged — `quaidsSlutzky()` already accepted an
+  arbitrary `intcpt`/`prices`/`totexp` sample (any number of rows) as
+  input, so it was already general in the same sense the elasticities
+  functions needed to become; no code change was needed here, and
+  `quaids()` still calls it unconditionally. Confirmed unaffected by the
+  full regression suite.
+- [x] Scope and, if justified, implement optional local curvature imposition
   (Diewert-Wales Cholesky reparametrization) as an opt-in estimation mode
-  built on `optmt`/`cmlmt` — P2, not a release blocker.
+  built on `optmt`/`cmlmt` — P2, not a release blocker. **Scoped, not
+  implemented.** Even the reference implementation used for Milestone 3's
+  validation, R's `micEconAids`, only offers curvature *diagnosis*
+  (`aidsMono()`, `aidsConcav()` — check monotonicity/concavity post-hoc,
+  matching what `quaidsSlutzky()` already does here) and does not offer
+  curvature *imposition* as a constrained-estimation mode. That weakens the
+  case for this GAUSS library needing to leap ahead of the reference
+  implementation on a P2, "if justified" item. Revisit if a concrete use
+  case emerges; not pursued now.
 
 ### Milestone 6 — Reporting via `pubtable`
 

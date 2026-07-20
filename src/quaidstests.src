@@ -1,0 +1,166 @@
+/*
+** quaidstests.src
+**
+** Standalone Wald hypothesis tests for the AIDS/QUAIDS homogeneity and
+** symmetry restrictions, operating on an UNCONSTRAINED (aCtl.homogenous=0)
+** quaidsFit() result. Both tests read qOut.b (the final, absolute-price-
+** form, unconstrained gamma matrix -- rows (1+nint+1)..(1+nint+n) hold the
+** raw price-effect coefficients gamma_ij, one row per price j, one column
+** per equation i) and qOut.v (its covariance), and build a linear
+** combination via a selection matrix L such that L'*vec(qOut.b) is the
+** vector of restrictions being tested, with covariance L'*qOut.v*L --
+** this is the standard delta-method/Wald construction for a linear
+** hypothesis on a linear model.
+**
+** Only the first n-1 equations (columns of qOut.b) carry independent
+** information: column n is recovered from the others via adding-up, so it
+** contributes no new information to a Wald test and is excluded from the
+** restriction matrix, matching the n1 = n-1 convention used elsewhere in
+** this library (e.g. the existing symmetry-given-homogeneity test).
+**
+** Degrees of freedom:
+**   Homogeneity: n-1 (one row-sum restriction sum_j(gamma_ij) = 0 per
+**     independently-estimated equation i).
+**   Joint homogeneity+symmetry: (n-1) + (n-1)(n-2)/2 (homogeneity's n-1
+**     restrictions plus symmetry restrictions gamma_ij = gamma_ji for
+**     i<j, i,j in 1..n-1 -- note a SYMMETRIC gamma matrix with adding-up
+**     already imposed automatically satisfies homogeneity too [row i sum
+**     = column i sum by symmetry = 0 by adding-up], so a "symmetry only,
+**     given adding-up" test on a fully unconstrained fit is not offered
+**     separately here; use quaidsJointTest, or the existing
+**     symmetry-given-homogeneity test on a homogenous=1 fit if homogeneity
+**     is not in question).
+**
+** Both tests are standard Wald chi2 tests: asymptotically valid under the
+** same regularity conditions as the rest of this library's asymptotic
+** (delta-method/FGLS) inference -- large-T, correctly specified
+** instruments, no claim of finite-sample exactness. Validated (both size
+** and power) in tests/quaids_hypothesis_tests_test.e.
+*/
+
+/*******************************************************************************
+**
+** QUAIDSHOMOGENEITYTEST
+**
+** Purpose:  Wald test of H0: homogeneity holds (sum_j gamma_ij = 0 for
+**           every good i), against an unconstrained (aCtl.homogenous=0)
+**           quaidsFit() result.
+**
+** Format:     { stat, pval, df } = quaidsHomogeneityTest(qOut);
+**
+** Input:      qOut -- struct quaidsOut, from quaidsFit() called with
+**                      aCtl.homogenous = 0. Errors if qOut.homogenous /= 0.
+**
+** Output:     stat -- Wald chi2 statistic.
+**             pval -- p-value, cdfchic(stat, df).
+**             df   -- degrees of freedom, n-1.
+**
+*******************************************************************************/
+
+proc (3) = quaidsHomogeneityTest(struct quaidsOut qOut);
+
+    local n, nint, ng, priceRows, df, L, i, idx, rvec, Vsub, stat, pval;
+
+    if qOut.homogenous /= 0;
+        "ERROR - quaidsHomogeneityTest requires an unconstrained fit";
+        "        (call quaidsFit with aCtl.homogenous = 0).";
+        stop;
+    endif;
+
+    n = qOut.n;
+    nint = qOut.nint;
+    ng = qOut.ng;
+    priceRows = seqa(1+nint+1, 1, n);
+    df = n-1;
+
+    L = zeros(ng*n, df);
+    i = 1;
+    do while i <= n-1;
+        idx = priceRows + (i-1)*ng;
+        L[idx, i] = ones(n, 1);
+        i = i+1;
+    endo;
+
+    rvec = L' * vec(qOut.b);
+    Vsub = L' * qOut.v * L;
+    stat = rvec' * invpd(Vsub) * rvec;
+    pval = cdfchic(stat, df);
+
+    retp(stat, pval, df);
+endp;
+
+
+/*******************************************************************************
+**
+** QUAIDSJOINTTEST
+**
+** Purpose:  Joint Wald test of H0: homogeneity AND symmetry both hold,
+**           against an unconstrained (aCtl.homogenous=0) quaidsFit()
+**           result. Unlike quaidsSlutzky-style diagnostics, this is a
+**           single test on the FULL n x n gamma, not the reduced form
+**           used by the existing symmetry-given-homogeneity test (which
+**           assumes homogeneity already imposed).
+**
+** Format:     { stat, pval, df } = quaidsJointTest(qOut);
+**
+** Input:      qOut -- struct quaidsOut, from quaidsFit() called with
+**                      aCtl.homogenous = 0. Errors if qOut.homogenous /= 0.
+**
+** Output:     stat -- Wald chi2 statistic.
+**             pval -- p-value, cdfchic(stat, df).
+**             df   -- degrees of freedom, (n-1) + (n-1)*(n-2)/2.
+**
+*******************************************************************************/
+
+proc (3) = quaidsJointTest(struct quaidsOut qOut);
+
+    local n, nint, ng, priceRows, df, L, i, j, col, idx, idxIJ, idxJI, rvec, Vsub, stat, pval;
+
+    if qOut.homogenous /= 0;
+        "ERROR - quaidsJointTest requires an unconstrained fit";
+        "        (call quaidsFit with aCtl.homogenous = 0).";
+        stop;
+    endif;
+
+    n = qOut.n;
+    nint = qOut.nint;
+    ng = qOut.ng;
+    priceRows = seqa(1+nint+1, 1, n);
+    df = (n-1) + (n-1)*(n-2)/2;
+
+    L = zeros(ng*n, df);
+    col = 1;
+
+    /* Homogeneity restrictions: sum_j gamma_ij = 0, for equations i=1..n-1 */
+    i = 1;
+    do while i <= n-1;
+        idx = priceRows + (i-1)*ng;
+        L[idx, col] = ones(n, 1);
+        col = col+1;
+        i = i+1;
+    endo;
+
+    /* Symmetry restrictions: gamma_ij - gamma_ji = 0, for i<j, i,j=1..n-1.
+       gamma_ij lives at row priceRows[j], column i (equation i's response
+       to price j); gamma_ji lives at row priceRows[i], column j. */
+    i = 1;
+    do while i <= n-2;
+        j = i+1;
+        do while j <= n-1;
+            idxIJ = priceRows[j] + (i-1)*ng;
+            idxJI = priceRows[i] + (j-1)*ng;
+            L[idxIJ, col] = 1;
+            L[idxJI, col] = -1;
+            col = col+1;
+            j = j+1;
+        endo;
+        i = i+1;
+    endo;
+
+    rvec = L' * vec(qOut.b);
+    Vsub = L' * qOut.v * L;
+    stat = rvec' * invpd(Vsub) * rvec;
+    pval = cdfchic(stat, df);
+
+    retp(stat, pval, df);
+endp;

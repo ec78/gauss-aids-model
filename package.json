@@ -23,7 +23,8 @@
         "quaidselas.src",
         "quaidsslutzky.src",
         "quaids.src",
-        "quaidsformula.src"
+        "quaidsformula.src",
+        "quaidstests.src"
     ],
-    "version": "0.2.0"
+    "version": "0.4.0"
 }

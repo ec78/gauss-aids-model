@@ -117,3 +117,19 @@ struct quaidsOut {
     matrix bestB;
     matrix bestV;
 };
+
+/*
+** quaidsElasOut -- struct returned by quaidsElasFit(): income and price
+** elasticities (and their delta-method standard errors) at a single
+** evaluation point. See the Milestone 5 section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsElasOut {
+    matrix n;      // number of goods
+    matrix wnam;   // legacy character matrix of good names (see quaidsOut.wnam)
+    matrix er;     // n x 1, income elasticities
+    matrix ep;     // n x n, uncompensated (Marshallian) price elasticities
+    matrix epc;    // n x n, compensated (Hicksian) price elasticities
+    matrix ser;    // n x 1, delta-method standard errors of er
+    matrix sep;    // n x n, delta-method standard errors of ep
+    matrix sepc;   // n x n, delta-method standard errors of epc
+};

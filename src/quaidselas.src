@@ -1,3 +1,17 @@
+/*
+** Milestone 5 note: quaidsElas_() already computed elasticities at an
+** arbitrary caller-supplied point (intcpt/prices/totexp are point
+** arguments, not sample summary statistics) -- the "hardcoded to mean/
+** Q1/median/Q3" limitation flagged in the roadmap was really that
+** quaidsElas() mixed computation with printing, and quaids() (the legacy
+** wrapper) only ever called it at four fixed points, not that the
+** underlying math couldn't handle other points. quaidsElasFit() is now
+** the silent, struct-returning entry point for "elasticities at any
+** point I choose" (mirrors the quaidsFit()/printQuaids() split);
+** printQuaidsElas() is the separated printer; quaidsElas() is the
+** unchanged, backward-compatible call that does both, same as always.
+*/
+
 /*******************************************************************************
 **
 **  QUAIDSELAS_
@@ -65,12 +79,13 @@ endp;
 
 /*******************************************************************************
 **
-** QUAIDSELAS
+** QUAIDSELASFIT
 **
-** Purpose:  compute income and price elasticities,  and asymptotic std,  at one
-**           single point.
+** Purpose:  compute income and price elasticities, and their asymptotic
+**           standard errors, at one arbitrary evaluation point -- silent,
+**           no printing (see printQuaidsElas()).
 **
-** Format:     quaidsElas(b, v, intcpt, prices, totexp);
+** Format:     struct quaidsElasOut elasOut = quaidsElasFit(b, v, intcpt, prices, totexp, aCtl);
 **
 ** Input:    b -- parameter matrix; each column corresponds to a specific share;
 **                order is intcp|prices|lx|lx2|u.
@@ -78,22 +93,30 @@ endp;
 **
 **           v -- variance of vec(b).
 **
-**             intcpt -- vector of independent variables.
+**             intcpt -- vector of independent variables, INCLUDING the
+**                       leading constant (length 1+nint); e.g. for a fit
+**                       with no extra intercept shifters, pass a scalar 1.
+**                       Typically qOut.bestB/qOut.bestV supply b/v, and
+**                       the evaluation point is any (intcpt, prices,
+**                       totexp) triple in the same units the model was
+**                       fit in -- the sample mean, a quartile, a specific
+**                       observation, or a counterfactual scenario.
 **
-**             prices -- vector of log prices.
+**             prices -- vector of log prices (absolute) at the evaluation point.
 **
-**             totexp -- log total expenditure.
+**             totexp -- log total expenditure at the evaluation point.
 **
-** Output: nothing.
-**
-** Print: elasticities and their asymptotic std.
+** Output:  struct quaidsElasOut -- see quaids.sdf. elasOut.er/ep/epc are
+**          the point estimates (same as quaidsElas_()); elasOut.ser/sep/sepc
+**          are their delta-method standard errors.
 **
 *******************************************************************************/
 
-proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
+proc (struct quaidsElasOut) = quaidsElasFit(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
 
-    local nint, n, wnam, er, ep, epc, omat, mask, fmt, t, dt, er_e, ep_e, epc_e, i, j, e,
-        ver, vep, vepc, vt, be, fmat, dtk, te, k, b0, dab0, ab0;
+    local nint, n, wnam, er, ep, epc, t, dt, er_e, ep_e, epc_e, i, j, e,
+        vt, be, dtk, te, k, b0, dab0, ab0;
+    struct quaidsElasOut elasOut;
 
     nint =  rows(intcpt);
     n = rows(prices);
@@ -149,17 +172,44 @@ proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
     clear dt;
     vt = sqrt(vt);
 
+    elasOut.n = n;
+    elasOut.wnam = wnam;
+    elasOut.er = er;
+    elasOut.ep = ep;
+    elasOut.epc = epc;
+    elasOut.ser = vt[1:n];
+    elasOut.sep = reshape(vt[n+1:n+n^2], n, n);
+    elasOut.sepc = reshape(vt[n*(n+1)+1:rows(vt)], n, n);
 
-    /* output */
+    retp(elasOut);
+endp;
 
-    ver = vt[1:n];
-    ver = 0$+"("$+ftocv(ver, 0, 3)$+")";
-    vep = reshape(vt[n+1:n+n^2], n, n);
-    vep = 0$+"("$+ftocv(vep, 0, 3)$+")";
-    vepc = reshape(vt[n*(n+1)+1:rows(vt)], n, n);
-    vepc = 0$+"("$+ftocv(vepc, 0, 3)$+")";
 
-    er = er~diag(ep)~diag(epc);
+/*******************************************************************************
+**
+** PRINTQUAIDSELAS
+**
+** Purpose:  print the income/price elasticities and standard errors
+**           captured in a quaidsElasOut struct.
+**
+** Format:     call printQuaidsElas(elasOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsElas(struct quaidsElasOut elasOut);
+
+    local n, wnam, er, ep, epc, ver, vep, vepc, omat, mask, fmt, i;
+
+    n = elasOut.n;
+    wnam = elasOut.wnam;
+    ep = elasOut.ep;
+    epc = elasOut.epc;
+
+    ver = 0$+"("$+ftocv(elasOut.ser, 0, 3)$+")";
+    vep = 0$+"("$+ftocv(elasOut.sep, 0, 3)$+")";
+    vepc = 0$+"("$+ftocv(elasOut.sepc, 0, 3)$+")";
+
+    er = elasOut.er~diag(ep)~diag(epc);
     ver = ver~diag(vep)~diag(vepc);
     format /rd 7, 0;
     "INCOME AND OWN-PRICE ELASTICITIES ";
@@ -210,5 +260,33 @@ proc  0=quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
     fmt = ones(n+1, 1).*fmt;
     call printfm(omat, mask, fmt);
     print;
+
+endp;
+
+
+/*******************************************************************************
+**
+** QUAIDSELAS
+**
+** Purpose:  compute income and price elasticities,  and asymptotic std,  at one
+**           single point (backward-compatible wrapper).
+**
+** Format:     quaidsElas(b, v, intcpt, prices, totexp, aCtl);
+**
+** Input: see quaidsElasFit().
+**
+** Output: nothing.
+**
+** Print: elasticities and their asymptotic std -- calls quaidsElasFit()
+**        then printQuaidsElas(). For a silent, struct-returning call, use
+**        quaidsElasFit() directly.
+**
+*******************************************************************************/
+
+proc 0 = quaidsElas(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
+
+    struct quaidsElasOut elasOut;
+    elasOut = quaidsElasFit(b, v, intcpt, prices, totexp, aCtl);
+    call printQuaidsElas(elasOut);
 
 endp;

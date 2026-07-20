@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.2.0`) and is not yet
+The library is **pre-alpha** (package version `0.4.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-2)
+## Repository layout (post-Milestone-5)
 
 ```
 src/
@@ -40,7 +40,13 @@ src/
                     #   quaidsFit() (starting values, iteration, variance,
                     #   overidentification test, symmetry test) was not
                     #   further split.
-  quaidselas.src    # quaidsElas_(), quaidsElas() -- elasticities at a point.
+  quaidselas.src    # quaidsElas_() (silent, low-level), quaidsElasFit()
+                    #   (silent, struct-returning: point estimates +
+                    #   standard errors), printQuaidsElas() (the separated
+                    #   printer), quaidsElas() (backward-compatible
+                    #   wrapper: fit then print) -- elasticities at a
+                    #   point. See "Milestone 5: elasticities
+                    #   generalization" below.
   quaidsslutzky.src # quaidsSlutzky() -- Slutzky negativity diagnostic.
   quaids.src        # quaidsFit() (silent, struct-returning estimation core;
                     #   calls _quaidsIVFirstStage()), printQuaids() (the
@@ -52,6 +58,10 @@ src/
   quaidsformula.src # quaidsFull() -- dataframe/column-name entry point;
                     #   selects w/intcpt/prices/totexp/instr from a
                     #   dataframe by column name and calls quaidsFit().
+  quaidstests.src   # quaidsHomogeneityTest(), quaidsJointTest() -- standalone
+                    #   Wald tests, operating on an already-computed
+                    #   unconstrained (aCtl.homogenous=0) quaidsOut. See
+                    #   "Milestone 4: new hypothesis tests" below.
 examples/
   quaids_example.e  # One synthetic 5-good dataset (homogeneity/symmetry true
                     #   by construction), run through quaids() with
@@ -102,10 +112,24 @@ tests/
     python_reference_check.py # Independent from-scratch Python replica;
                     #   supplementary evidence, not the assertion source
                     #   (see its header for why). Requires numpy/pandas.
+  quaids_hypothesis_tests_test.e # Milestone 4: 19 checks -- size AND power
+                    #   for quaidsHomogeneityTest()/quaidsJointTest(), a
+                    #   power check for the existing symmetry-given-
+                    #   homogeneity test, and the first-ever exercise of
+                    #   the overidentification test (every prior fixture
+                    #   was exactly identified, ninst==nu).
+  quaids_elasticities_test.e   # Milestone 5: 17 checks -- parity between
+                    #   quaidsElasFit()/printQuaidsElas() and the
+                    #   pre-split quaidsElas_(), plus three EXACT
+                    #   algebraic identities (Engel aggregation, Cournot
+                    #   aggregation, elasticity homogeneity) checked at a
+                    #   real out-of-sample observation and a synthetic
+                    #   counterfactual price scenario -- not just the four
+                    #   points quaids() has always used.
                     #   All test/fixture files run from tests/ (or
                     #   tests/fixtures/published/ for the R/Python
                     #   scripts) as the working directory.
-package.json      # GAUSS package manifest (name: quaids, version: 0.2.0,
+package.json      # GAUSS package manifest (name: quaids, version: 0.4.0,
                   #   license: MIT).
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
@@ -118,10 +142,12 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
 ```
 
 Milestones 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular
-source split + dataframe entry point), and 3 (validation fixtures,
-including published-data cross-implementation validation) are all
-complete. `docs/` does not exist yet — that is Milestone 8. A fuller
-`tests/` harness (installed-package tests) is Milestone 7.
+source split + dataframe entry point), 3 (validation fixtures, including
+published-data cross-implementation validation), 4 (hypothesis testing
+completeness), and 5 (elasticities/diagnostics generalization) are all
+complete. `docs/` does not exist yet — that is
+Milestone 8. A fuller `tests/` harness (installed-package tests) is
+Milestone 7.
 
 **R and Python are installed in this environment** (as of 2026-07-20, with
 explicit repo-owner approval) for cross-implementation validation: R 4.5.0
@@ -416,6 +442,123 @@ near-degenerate one: first-stage `R² ≈ 0.998`).
   (`Rscript generate_r_reference.R`, `python python_reference_check.py`)
   to regenerate or extend these numbers.
 
+## Milestone 4: new hypothesis tests
+
+```gauss
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);  // aCtl.homogenous = 0
+{ stat, pval, df } = quaidsHomogeneityTest(qOut);
+{ statJ, pvalJ, dfJ } = quaidsJointTest(qOut);
+```
+
+Both (`src/quaidstests.src`) are Wald chi2 tests and **require an
+unconstrained fit** (`qOut.homogenous == 0` — they error clearly if not).
+They read `qOut.b`/`qOut.v` (the final, absolute-price-form unconstrained
+gamma matrix and its covariance) and build a restriction vector/covariance
+via a selection matrix `L`: `stat = (L'*vec(b))' * inv(L'*V*L) * (L'*vec(b))`.
+
+- **`quaidsHomogeneityTest`**, `df = n-1`: tests `sum_j gamma_ij = 0` for
+  each independently-estimated equation (equation `n` is recovered via
+  adding-up and adds no information to a Wald test).
+- **`quaidsJointTest`**, `df = (n-1) + (n-1)(n-2)/2`: homogeneity's
+  restrictions plus symmetry (`gamma_ij = gamma_ji`, `i<j`, `i,j=1..n-1`).
+  A symmetric gamma with adding-up already implies homogeneity (row `i`
+  sum = column `i` sum by symmetry = 0 by adding-up) — there's no separate
+  "symmetry given adding-up alone" test on an unconstrained fit; use this
+  joint test, or the existing symmetry-given-homogeneity test if
+  homogeneity itself isn't in question.
+
+Both are validated for size *and* power in `tests/quaids_hypothesis_tests_test.e`
+(19 checks) — full derivation, both dead ends hit while getting there, and
+why size+power (not just "it runs") is the standard applied, are in
+`GOLD_STANDARD_TODO.md`'s Milestone 4 section. Short version: the first
+implementation read `qOut.b`'s row layout wrong (mistook an internal
+pre-recovery reparametrization, described in `quaidsFit()`'s own
+docstring, for the final post-recovery form) and rejected a true null with
+`p≈0` — caught immediately by running the size check before trusting the
+formula, not by code review.
+
+Same milestone also **exercised the overidentification test for the first
+time in this repo's history**: every fixture through Milestone 3 used
+exactly-identified instruments (`ninst==nu`), so `qOut.overidValid` was
+always `0` and that branch of `quaidsFit()` had never actually run. A new
+2-instrument fixture in the same test file confirms it runs, has the
+right shape (`overidGamma` is `ninst x n`) and df (`ninst-nu`), and
+doesn't spuriously reject when both instruments are valid by construction.
+
+**Why the existing symmetry/overID tests weren't extracted into their own
+procs** (unlike the two new ones above): they depend on heavily mutated
+intermediate iteration/variance state (`Ji`, `Sgma`, `S`, `O`, `D`, `zzi`,
+`m1`, iteration-final `_beta`/`lambda`/`lx`/`b_p`/`lx2`) — the same coupling
+Milestone 2 already declined to untangle for the estimation core itself,
+unchanged here since nothing about the estimation core moved. The two new
+tests avoid this entirely: they only need the *finished* `qOut.b`/`qOut.v`,
+not any of that intermediate state.
+
+## Milestone 5: elasticities generalization
+
+```gauss
+struct quaidsElasOut elasOut;
+elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPoint, pricesPoint, totexpPoint, aCtl);
+call printQuaidsElas(elasOut);   // optional -- omit for a silent call
+```
+
+**The roadmap's framing turned out to be slightly off, worth recording**:
+it described `quaidsElas()`/`quaidsElas_()` as "hardcoded to mean/Q1/
+median/Q3," but `quaidsElas_()` already took `intcpt`/`prices`/`totexp` as
+*point arguments*, not sample statistics — it always could evaluate
+anywhere. The actual gap was that `quaidsElas()` mixed computation with
+printing (no way to get a result object silently) and that `quaids()`
+(the legacy wrapper) only ever *called* it at four fixed points. Fixed by
+splitting `quaidsElas()` the same way Milestone 1 split `quaidsFit()`:
+
+- **`quaidsElasFit(b, v, intcpt, prices, totexp, aCtl)`** — silent, returns
+  `struct quaidsElasOut` (`er`/`ep`/`epc` point estimates, `ser`/`sep`/`sepc`
+  raw numeric delta-method standard errors — not the pre-formatted
+  `"(0.123)"` display strings the old code produced inline, which stay in
+  the printer where they belong).
+- **`printQuaidsElas(elasOut)`** — the separated printer.
+- **`quaidsElas(...)`** — unchanged signature, now a thin wrapper
+  (`quaidsElasFit()` then `printQuaidsElas()`). **Verified byte-for-byte**
+  identical printed output against the pre-split version on
+  `examples/quaids_example.e`.
+- `quaidsElas_()` itself is untouched — it was already the right shape.
+
+**Validating "arbitrary point" actually works, not just "compiles"**:
+`tests/quaids_elasticities_test.e` checks three **exact** algebraic
+identities that any valid AIDS/QUAIDS elasticity set must satisfy given
+adding-up/homogeneity (which this estimator always imposes by
+construction) — these are consequences of the functional form, not
+separately-estimated statistical quantities, so they should hold to
+floating-point precision, not just "within tolerance":
+
+- Engel aggregation: `sum_i(w_i * er_i) = 1`
+- Cournot aggregation: `sum_i(w_i * ep_ij) + w_j = 0`, for each price `j`
+- Elasticity homogeneity: `sum_j(ep_ij) + er_i = 0`, for each good `i`
+
+Checked at a real out-of-sample observation and at a fully synthetic
+counterfactual (a hypothetical 20% price increase on one good, evaluated
+at the sample-mean point otherwise) — both held to ~1e-16. A test proc
+bug surfaced immediately while writing this (`struct quaidsElasOut
+elasOut` must be declared in the parameter list for field access to work,
+same as any GAUSS struct-typed parameter — omitting it gives a `G0008
+Syntax error` on the first `.field` access, not a silent failure).
+
+**`quaidsSlutzky()` needed no change**: it already accepts an arbitrary
+`intcpt`/`prices`/`totexp` sample (any number of rows) as input, so "keep
+the Slutzky diagnostic general" was already true going into this
+milestone.
+
+**Curvature imposition (Diewert-Wales Cholesky reparametrization) — scoped,
+not implemented**: the roadmap listed this as P2/"if justified." Even
+`micEconAids` (the reference implementation used for Milestone 3's
+cross-check) only offers curvature *diagnosis* (`aidsMono()`,
+`aidsConcav()` — post-hoc checks, matching what `quaidsSlutzky()` already
+does here), not *imposition* as a constrained-estimation mode. That's real
+evidence against this library needing to leap ahead of the reference
+implementation on a deliberately-optional item — revisit only if a
+concrete use case shows up.
+
 ### `quaidsControl` fields (`src/quaids.sdf` / `quaidsControlCreate()`)
 
 | Field | Default | Meaning |
@@ -515,13 +658,15 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Four automated tests exist, all run from `tests/` as the working directory:
+Six automated tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
 tgauss -b -x quaids_formula_parity_test.e
 tgauss -b -x quaids_synthetic_validation_test.e
 tgauss -b -x quaids_published_validation_test.e
+tgauss -b -x quaids_hypothesis_tests_test.e
+tgauss -b -x quaids_elasticities_test.e
 ```
 
 - `quaids_schema_test.e` (Milestone 1, 34 checks): asserts `quaidsOut` field
@@ -543,8 +688,17 @@ tgauss -b -x quaids_published_validation_test.e
   independent R reference within tolerance, plus adding-up/homogeneity/
   symmetry sanity checks. This is the test that caught the Stone-index
   starting-value bug — see "Milestone 3: real bug found and fixed" above.
+- `quaids_hypothesis_tests_test.e` (Milestone 4, 19 checks): size and power
+  for `quaidsHomogeneityTest()`/`quaidsJointTest()`, a power check for the
+  existing symmetry-given-homogeneity test, and the first-ever exercise of
+  the overidentification test. See "Milestone 4: new hypothesis tests"
+  above.
+- `quaids_elasticities_test.e` (Milestone 5, 17 checks): parity between
+  `quaidsElasFit()`/`printQuaidsElas()` and `quaidsElas_()`, plus three
+  exact algebraic identities checked at points other than the four
+  standard ones. See "Milestone 5: elasticities generalization" above.
 
-All four print one `PASS`/`FAIL` line per check and a final `...: ALL N
+All six print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
 harness.
@@ -567,13 +721,15 @@ adjusted, since the example includes source files via `../src/...`).
 
 `package.json` lists (relative to `src/`, in load order): `quaids.sdf`,
 `quaidsutil.src`, `quaidsiv.src`, `quaidselas.src`, `quaidsslutzky.src`,
-`quaids.src`, `quaidsformula.src`. `quaids.src` must load after
-`quaidsiv.src`/`quaidselas.src`/`quaidsslutzky.src` since it calls procs
-they define; `quaidsformula.src` must load after `quaids.src` since
-`quaidsFull()` calls `quaidsFit()`. The package is not yet
-buildable/installable as a GAUSS package (`.lcg`) — that is Milestone 7. If
-you add a new `.src` file, add it to the `"src"` array (respecting load
-order) and bump the version.
+`quaids.src`, `quaidsformula.src`, `quaidstests.src`. `quaids.src` must load
+after `quaidsiv.src`/`quaidselas.src`/`quaidsslutzky.src` since it calls
+procs they define; `quaidsformula.src` must load after `quaids.src` since
+`quaidsFull()` calls `quaidsFit()`. `quaidstests.src` has no load-order
+dependency on the others beyond `quaids.sdf` (it only reads an
+already-computed `quaidsOut`). The package is not yet buildable/installable
+as a GAUSS package (`.lcg`) — that is Milestone 7. If you add a new `.src`
+file, add it to the `"src"` array (respecting load order) and bump the
+version.
 
 ## References
 
