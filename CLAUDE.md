@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.4.0`) and is not yet
+The library is **pre-alpha** (package version `0.5.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,11 +26,14 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-5)
+## Repository layout (post-Milestone-6)
 
 ```
 src/
-  quaids.sdf        # Struct definitions: quaidsControl and quaidsOut.
+  quaids.sdf        # Struct definitions: quaidsControl, quaidsOut,
+                    #   quaidsElasOut. Guarded by #ifndef/#define
+                    #   QUAIDS_SDF_INCLUDED / #endif (added Milestone 6) so
+                    #   pubtable_quaids.src has a symbol to detect.
   quaidsutil.src    # quaidsControlCreate() / getDefaultQuaidsControl().
   quaidsiv.src      # _quaidsIVFirstStage() -- private helper, the
                     #   instrumental-variables first-stage regression of log
@@ -62,6 +65,18 @@ src/
                     #   Wald tests, operating on an already-computed
                     #   unconstrained (aCtl.homogenous=0) quaidsOut. See
                     #   "Milestone 4: new hypothesis tests" below.
+  pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
+                    #   ptFromQuaids() (coefficient tables),
+                    #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
+                    #   ptTablesFromQuaidsElas() (elasticity tables),
+                    #   ptFromQuaidsFamily() dispatcher. NOT in
+                    #   package.json's src array or self-included by any
+                    #   other src/ file -- has a hard compile-time
+                    #   dependency on pubtable.sdf's ptModel/ptTable struct
+                    #   types, so a caller must #include pubtable.sdf/
+                    #   pubtable.src (or `library pubtable;`) before this
+                    #   file, same as quaids.sdf/quaids.src. See
+                    #   "Milestone 6: reporting via pubtable" below.
 examples/
   quaids_example.e  # One synthetic 5-good dataset (homogeneity/symmetry true
                     #   by construction), run through quaids() with
@@ -71,6 +86,11 @@ examples/
                     #   relative paths (../src/...), matching gauss-qardl's
                     #   source-tree testing convention, since there is no
                     #   installable package build yet.
+  pubtable_export_example.e # Milestone 6: same style, but exports a
+                    #   quaidsFit() coefficient table and a
+                    #   quaidsElasFit() elasticity report to
+                    #   LaTeX/Markdown/CSV via pubtable_quaids.src.
+                    #   Requires the pubtable package installed.
 tests/
   quaids_schema_test.e         # Milestone 1: asserts quaidsOut field
                     #   values/shapes, that quaidsFit() prints nothing, and
@@ -126,11 +146,20 @@ tests/
                     #   real out-of-sample observation and a synthetic
                     #   counterfactual price scenario -- not just the four
                     #   points quaids() has always used.
+  quaids_pubtable_test.e       # Milestone 6: 30 checks -- exact numeric
+                    #   parity between pubtable ptModel.estimates/
+                    #   stdErrors and the qOut.bestB/qOut.bestV/
+                    #   elasOut.er/ser values they're built from, shape/
+                    #   title checks, the ptFromQuaidsFamily dispatcher,
+                    #   and an end-to-end export smoke test that writes
+                    #   real .tex/.md/.csv files and reads them back.
+                    #   Requires the pubtable package installed.
                     #   All test/fixture files run from tests/ (or
                     #   tests/fixtures/published/ for the R/Python
                     #   scripts) as the working directory.
-package.json      # GAUSS package manifest (name: quaids, version: 0.4.0,
-                  #   license: MIT).
+package.json      # GAUSS package manifest (name: quaids, version: 0.5.0,
+                  #   license: MIT). pubtable_quaids.src deliberately not
+                  #   listed in its src array -- see "Milestone 6" below.
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
@@ -144,10 +173,15 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
 Milestones 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular
 source split + dataframe entry point), 3 (validation fixtures, including
 published-data cross-implementation validation), 4 (hypothesis testing
-completeness), and 5 (elasticities/diagnostics generalization) are all
-complete. `docs/` does not exist yet — that is
-Milestone 8. A fuller `tests/` harness (installed-package tests) is
-Milestone 7.
+completeness), 5 (elasticities/diagnostics generalization), and 6
+(reporting via `pubtable`) are all complete. `docs/` does not exist yet —
+that is Milestone 8. An installed-package build/smoke test is Milestone 7.
+
+**pubtable is installed in this environment** at `c:\gauss26\pkgs\pubtable`
+(package version `1.0.0`) and is what `src/pubtable_quaids.src` (Milestone
+6) targets. Like R/Python below, it is not a repo dependency — nothing in
+`src/` or the core test suite requires it; only
+`examples/pubtable_export_example.e` and `tests/quaids_pubtable_test.e` do.
 
 **R and Python are installed in this environment** (as of 2026-07-20, with
 explicit repo-owner approval) for cross-implementation validation: R 4.5.0
@@ -581,6 +615,120 @@ and structure-inference return typing (`proc (struct quaidsControl) =
 quaidsControlCreate();`) so callers no longer need to pre-declare
 `struct quaidsControl aCtl;` before assignment.
 
+## Milestone 6: reporting via pubtable
+
+```gauss
+library pubtable;
+#include quaids.sdf
+#include quaidsutil.src
+#include quaidsiv.src
+#include quaidselas.src
+#include quaidsslutzky.src
+#include quaids.src
+#include pubtable_quaids.src
+
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+struct ptTable coefTbl;
+coefTbl = ptFromQuaids(qOut);            // one comparison column per good
+call ptExport(coefTbl, "results.tex");   // .tex/.md/.csv/.rtf/.html/.xlsx by extension
+
+struct quaidsElasOut elasOut;
+elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
+
+struct ptTable elasTbls;
+elasTbls = ptTablesFromQuaidsElas(elasOut);  // 3x1: income, uncompensated, compensated
+call ptExport(elasTbls[1], "income_elasticities.md");
+```
+
+`src/pubtable_quaids.src` is an optional adapter onto the `pubtable`
+package (`c:\gauss26\pkgs\pubtable`), following the same pattern as
+`pubtable`'s own bundled `pubtable_qardl.src`
+(`c:\gauss26\pkgs\pubtable\src\pubtable_qardl.src`): every proc is guarded
+by `#ifDef QUAIDS_SDF_INCLUDED` with a clear `_library_missing_error()` stub
+otherwise, using the `(...)`/`dynargsGet()` variadic-argument idiom for the
+struct-typed inputs.
+
+**Location deliberately diverges from the `pubtable_qardl.src` precedent**:
+that file lives *inside the installed pubtable package itself*, not inside
+`gauss-qardl`'s own repo — pubtable ships adapters for both Aptech's own
+estimators (`cmlmt`/`maxlikmt`/`optmt`/`tsmt`) and third-party ones
+(`qardl`) bundled together in its own `src/`. Matching that physically for
+`pubtable_quaids.src` would mean writing into a shared, installed package
+outside this repo's git history, affecting every other project on this
+machine that loads `pubtable` — asked of the repo owner explicitly rather
+than assumed (see `GOLD_STANDARD_TODO.md`'s Milestone 6 section for the
+full reasoning). Decision: `src/pubtable_quaids.src` stays inside this
+repo, self-contained and git-tracked, matching every other file in `src/`
+(none of which `#include` their own dependencies — the caller does). It is
+**not** listed in `package.json`'s `src` array, since (unlike every other
+file there) its `proc (struct ptModel) = ...`/`proc (struct ptTable) = ...`
+return-type annotations sit outside the `#ifDef` guard and need
+`pubtable.sdf`'s struct types declared unconditionally — adding it to
+`src` would make `pubtable` a hard compile-time dependency for the whole
+package, contradicting `package.json`'s empty `deps` array.
+
+**Public procs**:
+- `ptModelFromQuaids(name, qOut, eqIdx)` / `ptFromQuaids(qOut)` — one
+  equation's (good's) coefficient column from `qOut.bestB`/`qOut.bestV`
+  (the same "most-constrained estimate actually fit" elasticities/Slutzky
+  are evaluated against), or an `n`-good comparison table via
+  `ptModelCompare` (mirrors `pubtable_qardl.src`'s per-quantile
+  `ptFromQardl`). Row order: intercept block (`qOut.xnam`) | price/gamma
+  block (`GAMMA_`+good name, one row per good) | `BETA_LX` |
+  `LAMBDA_LX2` (QUAIDS only) | one row per IV control-function residual
+  term (`qOut.unam`, `qOut.nu` rows — always present, since `quaidsFit()`
+  always treats log total expenditure as endogenous).
+- `ptModelFromQuaidsElas(name, elasOut)` / `ptFromQuaidsElas(elasOut)` —
+  income elasticities (`elasOut.er`/`elasOut.ser`) as a single-column
+  `ptModel`/`ptTable`.
+- `ptTablesFromQuaidsElas(elasOut)` — 3x1 `struct ptTable` array (income
+  elasticities, uncompensated/Marshallian price elasticities, compensated/
+  Hicksian price elasticities), suitable for `ptExportAll()`. The two
+  price-elasticity tables are `n x n` matrices with a value row and an
+  `(se)` row per good — built directly via the internal
+  `_ptQuaidsElasMatrixTable()` helper rather than through `ptModel`, since
+  that shape doesn't fit `ptModel`'s single-coefficient-vector design.
+- `ptFromQuaidsFamily(x)` — `isStructType`-based dispatcher (`quaidsOut` ->
+  `ptFromQuaids`, `quaidsElasOut` -> `ptFromQuaidsElas`), mirroring
+  `pubtable_qardl.src`'s `ptFromArdlFamily`.
+
+**A real type-system finding, empirically verified (not assumed from the
+Milestone 1 lesson)**: `quaidsOut`/`quaidsElasOut` name vectors (`xnam`,
+`wnam`, `unam`, ...) are legacy character matrices (GAUSS type 6); `pubtable`
+struct fields for names/titles are natively typed `string array` (type 15)
+or scalar `string` (type 13). Direct assignment throws `G0071 Type
+mismatch` in *this* direction too (matrix into string-typed field), not
+just the matrix-field direction CLAUDE.md already documented. Tested
+several candidate conversions directly with `tgauss` rather than guessing:
+`strtrim()` looked like the obvious builtin and instead errors ("Invalid
+argument type") on a legacy char-matrix input — **there is no dedicated
+conversion builtin**. The idiom that does work: concatenating the char-matrix
+with a native string via `$|` forces element-wise conversion to a native
+string array (`cm $| ""`, slicing off the trailing blank row for a full
+array; a *scalar*-indexed single row of the result, `sa[1]` and not
+`sa[1:1]`, further demotes to a true scalar `string`). Encapsulated as
+`_ptQuaidsToStrArray()`/`_ptQuaidsToStr()` in `pubtable_quaids.src`.
+
+**A real row-count bug, found by running against a real fit**: the first
+draft of `ptModelFromQuaids()` built row names only from the blocks
+`quaidsElas_()` reads (`qOut.xnam` | `GAMMA_`+`qOut.wnam` | `BETA_LX` |
+`LAMBDA_LX2`) — but `quaidsElas_()` only *reads* the first
+`1+nint+n+nendog` rows of `b` and silently ignores the rest; `qOut.bestB`
+itself always has `qOut.nu` additional trailing rows for the IV
+control-function residual coefficient(s). Running the adapter against a
+real `quaidsFit()` QUAIDS/IV result immediately threw
+`ptModelSetNames: termNames must contain 10 labels` (9 built vs. 10
+actual) — caught by execution, not by re-deriving the formula on paper.
+Fixed by appending `qOut.unam`-derived names for the trailing block, which
+also makes the table more complete: `printQuaids()`'s own console report
+already shows these as the "Residuals of instrumental regressions" row, so
+a pubtable coefficient report should too. Re-verified against LA-AIDS
+(`linear=1`) and QUAIDS (`linear=0`), both `homogenous=1` and
+`homogenous=0`, to confirm the row-count formula holds across all four
+combinations.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -604,9 +752,12 @@ GAUSS Already Provides." Summary:
   Milestone 2) keeps the hand-rolled computation but gives it its own file.
 - **`pubtable`** (`pkgs/pubtable`) is a complete LaTeX/HTML/RTF/CSV/XLS/
   Markdown table-export engine, already used by `gauss-qardl` via a small
-  adapter (`pubtable_qardl.src`, guarded by `#ifDef QARDL_SDF_INCLUDED`). Any
-  export/reporting work should add `pubtable_quaids.src` the same way, not a
-  bespoke exporter. Still not done — candidate for Milestone 6.
+  adapter bundled inside pubtable itself (`pubtable_qardl.src`, guarded by
+  `#ifDef QARDL_SDF_INCLUDED`). **Adopted at Milestone 6**: this repo's own
+  `src/pubtable_quaids.src` follows the same pattern (guard, `ptModelFromX`/
+  `ptFromX` shape) but lives in this repo rather than physically inside the
+  installed `pubtable` package — see "Milestone 6: reporting via pubtable"
+  above for why.
 - **`loadd()`/`asdf()`/dataframe column selection** — used at Milestone 2 for
   `quaidsFull()` (see below). **Not** a `"y ~ x1 + x2"` formula string:
   AIDS/QUAIDS is a multi-equation system (N shares against N parallel
@@ -634,7 +785,12 @@ GAUSS Already Provides." Summary:
   `znam`, `unam`, `enam`) are legacy character matrices, not the newer
   `string array` type — struct fields holding them must be declared `matrix`,
   not `string array`, or you get a `G0071 Type mismatch` at assignment. Hit
-  and fixed this exact error while building `quaidsOut` at Milestone 1.
+  and fixed this exact error while building `quaidsOut` at Milestone 1. The
+  *reverse* direction (legacy char-matrix into a native `string`/
+  `string array`-typed field, e.g. a `pubtable` `ptModel`/`ptTable`) throws
+  the same error and has no dedicated conversion builtin — see "Milestone
+  6: reporting via pubtable" above for the `$|`-concatenation idiom that
+  does work.
 - **Loop style**: `do while ok; ... endo;` / `do while i<=n; ... i=i+1;
   endo;` — not GAUSS's newer `for` loop syntax.
 - **Symmetric-restriction idiom**: `design(vec(xpnd(seqa(1,1,k*(k+1)/2))))`
@@ -658,7 +814,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Six automated tests exist, all run from `tests/` as the working directory:
+Seven automated tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -667,6 +823,7 @@ tgauss -b -x quaids_synthetic_validation_test.e
 tgauss -b -x quaids_published_validation_test.e
 tgauss -b -x quaids_hypothesis_tests_test.e
 tgauss -b -x quaids_elasticities_test.e
+tgauss -b -x quaids_pubtable_test.e
 ```
 
 - `quaids_schema_test.e` (Milestone 1, 34 checks): asserts `quaidsOut` field
@@ -697,8 +854,15 @@ tgauss -b -x quaids_elasticities_test.e
   `quaidsElasFit()`/`printQuaidsElas()` and `quaidsElas_()`, plus three
   exact algebraic identities checked at points other than the four
   standard ones. See "Milestone 5: elasticities generalization" above.
+- `quaids_pubtable_test.e` (Milestone 6, 30 checks; requires the `pubtable`
+  package installed): exact numeric parity between `pubtable`
+  `ptModel.estimates`/`stdErrors` and the `qOut`/`elasOut` values they're
+  built from, shape/title checks, the `ptFromQuaidsFamily` dispatcher, and
+  an end-to-end export smoke test that writes real `.tex`/`.md`/`.csv`
+  files and reads them back. See "Milestone 6: reporting via pubtable"
+  above.
 
-All six print one `PASS`/`FAIL` line per check and a final `...: ALL N
+All seven print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
 harness.
@@ -706,16 +870,19 @@ harness.
 `examples/quaids_example.e` remains a manual, eyeball-comparison smoke
 script (no assertions) — superseded for correctness-checking purposes by
 `quaids_synthetic_validation_test.e`, but kept as a simple, readable
-end-to-end usage example.
+end-to-end usage example. `examples/pubtable_export_example.e` (Milestone
+6) is the same style for the reporting layer — exports a coefficient table
+and elasticity tables to `.tex`/`.md`/`.csv`, requires `pubtable` installed.
 
-To run the example from a GAUSS 26 console/batch shell:
+To run the examples from a GAUSS 26 console/batch shell:
 
 ```
 tgauss -b -x examples/quaids_example.e
+tgauss -b -x examples/pubtable_export_example.e
 ```
 
 (must be run with `examples/` as the working directory, or with paths
-adjusted, since the example includes source files via `../src/...`).
+adjusted, since the examples include source files via `../src/...`).
 
 ## Package manifest
 
@@ -726,10 +893,15 @@ after `quaidsiv.src`/`quaidselas.src`/`quaidsslutzky.src` since it calls
 procs they define; `quaidsformula.src` must load after `quaids.src` since
 `quaidsFull()` calls `quaidsFit()`. `quaidstests.src` has no load-order
 dependency on the others beyond `quaids.sdf` (it only reads an
-already-computed `quaidsOut`). The package is not yet buildable/installable
-as a GAUSS package (`.lcg`) — that is Milestone 7. If you add a new `.src`
-file, add it to the `"src"` array (respecting load order) and bump the
-version.
+already-computed `quaidsOut`). `src/pubtable_quaids.src` (Milestone 6) is
+deliberately **not** in this array — it has a hard dependency on
+`pubtable.sdf`'s struct types, and adding it would make `pubtable` a hard
+dependency for the whole package to compile; see "Milestone 6: reporting
+via pubtable" above. The package is not yet buildable/installable as a
+GAUSS package (`.lcg`) — that is Milestone 7. If you add a new *required*
+`.src` file, add it to the `"src"` array (respecting load order) and bump
+the version; optional/adapter files like `pubtable_quaids.src` still
+warrant a version bump (real new public API surface) but stay out of `src`.
 
 ## References
 

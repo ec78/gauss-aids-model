@@ -1,3 +1,5 @@
+#ifndef QUAIDS_SDF_INCLUDED
+#define QUAIDS_SDF_INCLUDED
 
 struct quaidsControl {
     matrix maxiter;
@@ -133,3 +135,5 @@ struct quaidsElasOut {
     matrix sep;    // n x n, delta-method standard errors of ep
     matrix sepc;   // n x n, delta-method standard errors of epc
 };
+
+#endif

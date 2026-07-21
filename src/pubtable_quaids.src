@@ -1,0 +1,251 @@
+/*
+** pubtable_quaids.src
+**
+** Optional pubtable adapters for the QUAIDS package (LA-AIDS/AIDS/QUAIDS
+** estimation and elasticities):
+** - quaidsOut       (quaidsFit(), quaids(), quaidsFull())
+** - quaidsElasOut   (quaidsElasFit(), quaidsElas())
+**
+** Follows the same pattern as pubtable's own bundled pubtable_qardl.src
+** adapter (c:\gauss26\pkgs\pubtable\src\pubtable_qardl.src): activated when
+** QUAIDS_SDF_INCLUDED is defined (set by quaids.sdf's own include guard,
+** added alongside this file), with a clear stub error otherwise.
+**
+** Unlike pubtable_qardl.src, this file is NOT bundled inside the installed
+** pubtable package -- it lives in this repo's own src/, matching how every
+** other quaids .src file is included directly by the caller rather than
+** self-including its dependencies (this package has no installable build
+** yet -- see GOLD_STANDARD_TODO.md Milestone 7). A caller wanting export
+** functionality must include, in order: quaids.sdf, quaids.src (or at
+** least quaidselas.src for elasticities-only use), pubtable.sdf, and
+** pubtable.src (or `library pubtable;`), before this file.
+**
+** GAUSS type-system note (see CLAUDE.md): quaidsOut/quaidsElasOut name
+** vectors (xnam, wnam, ...) are legacy character matrices (type 6), but
+** pubtable's ptModel/ptTable name/title fields are natively typed `string`
+** (type 13) / `string array` (type 15) -- direct assignment between the two
+** throws G0071 Type mismatch in both directions (confirmed empirically,
+** not just by analogy with the matrix-field case already documented in
+** CLAUDE.md). _ptQuaidsToStrArray()/_ptQuaidsToStr() below do the
+** conversion; the working idiom is concatenating the legacy matrix with a
+** native string via $| (which forces element-wise conversion to a native
+** string array), not any dedicated conversion builtin -- none exists.
+*/
+
+/*
+** _ptQuaidsToStrArray: converts a legacy character-matrix column vector
+** (as held by quaidsOut.xnam/wnam/znam etc.) to a native string array.
+** Does not depend on any QUAIDS struct type, so defined unconditionally.
+*/
+proc (1) = _ptQuaidsToStrArray(cm);
+    local sa;
+    sa = cm $| "";
+    retp(sa[1:rows(cm)]);
+endp;
+
+/*
+** _ptQuaidsToStr: converts a single legacy character-matrix cell to a
+** native scalar string (for ptModel.name / ptTable.title, which are
+** scalar `string`, not `string array`).
+*/
+proc (1) = _ptQuaidsToStr(cm1x1);
+    local sa;
+    sa = cm1x1 $| "";
+    retp(sa[1]);
+endp;
+
+/*
+** _ptQuaidsElasMatrixTable: builds a ptTable directly (not via ptModel,
+** since price elasticity matrices are n x n, not a single coefficient
+** vector) with the point estimate on one row and "(se)" on the row below,
+** for each good -- the same layout printQuaidsElas() uses on the console.
+** Takes plain matrices and an already-converted string array of names, so
+** it does not depend on any QUAIDS struct type and is defined
+** unconditionally.
+*/
+proc (struct ptTable) = _ptQuaidsElasMatrixTable(title, mat, seMat, wnamSA, digits);
+    local n, valFmt, seFmt, body, rowNames, i;
+    struct ptTable tbl;
+
+    n = rows(mat);
+    valFmt = ptFormatMatrix(mat, digits);
+    seFmt = "(" $+ ptFormatMatrix(seMat, digits) $+ ")";
+
+    body = valFmt[1, .] $| seFmt[1, .];
+    rowNames = wnamSA[1] $| "";
+    for i(2, n, 1);
+        body = body $| valFmt[i, .] $| seFmt[i, .];
+        rowNames = rowNames $| wnamSA[i] $| "";
+    endfor;
+
+    tbl = ptTableCreate(title);
+    tbl.rowNames = rowNames;
+    tbl.colNames = wnamSA;
+    tbl.body = body;
+    tbl.stubName = "Good";
+
+    retp(tbl);
+endp;
+
+/*
+** quaidsOut: one equation's (good's) coefficient column from
+** qOut.bestB/qOut.bestV -- the "most-constrained estimate actually fit"
+** (symmetric if homogeneity was imposed, else the recovered unconstrained
+** fit; see CLAUDE.md), the same estimates elasticities/Slutzky are
+** evaluated against. Row order matches quaidsFit()'s own qOut.bestB/qOut.bS
+** layout (see tests/quaidsfixtures.src's trueParams stacking comment):
+** intercept block (qOut.xnam) | price/gamma block (one row per good) |
+** BETA_LX | LAMBDA_LX2 (QUAIDS only) | one row per IV control-function
+** residual term (qOut.unam, qOut.nu rows -- always >= 1, since
+** quaidsFit() always treats log total expenditure as endogenous).
+** quaidsElas_() only reads the first 1+nint+n+nendog rows of b and
+** silently ignores any trailing rows, which is how it can accept the same
+** qOut.bestB unmodified -- but a coefficient *report* should show the
+** fitted residual coefficients too (they're real fitted control-function
+** terms, shown in printQuaids()'s own "Residuals of instrumental
+** regressions" table), so this adapter does not drop them the way
+** quaidsElas_() implicitly does.
+*/
+proc (struct ptModel) = ptModelFromQuaids(...);
+    local name, eqIdx, k, idx, estCol, seCol, pvalCol, rowNames;
+    struct ptModel mdl;
+
+    #ifDef QUAIDS_SDF_INCLUDED
+        struct quaidsOut qOut;
+        { name, qOut, eqIdx } = dynargsGet(1|3);
+
+        k = rows(qOut.bestB);
+        idx = seqa((eqIdx - 1) * k + 1, 1, k);
+
+        estCol = qOut.bestB[., eqIdx];
+        seCol = sqrt(diag(qOut.bestV[idx, idx]));
+        pvalCol = 2 * cdfnc(abs(estCol ./ seCol));
+
+        rowNames = _ptQuaidsToStrArray(qOut.xnam | (0$+"GAMMA_"$+qOut.wnam) | (0$+"BETA_LX"));
+        if not qOut.linear;
+            rowNames = rowNames $| "LAMBDA_LX2";
+        endif;
+        rowNames = rowNames $| _ptQuaidsToStrArray(qOut.unam);
+
+        mdl = ptModelCreate(name, estCol, seCol);
+        mdl = ptModelSetNames(mdl, rowNames);
+        mdl = ptModelSetPValues(mdl, pvalCol);
+        mdl = ptModelSetGOF(mdl, "N", qOut.nobs);
+    #else;
+        _library_missing_error(currentprocname(), "QUAIDS");
+    #endif;
+
+    retp(mdl);
+endp;
+
+/*
+** ptFromQuaids: one comparison column per good/equation, via
+** ptModelCompare -- mirrors ptFromQardl's per-quantile comparison table.
+*/
+proc (struct ptTable) = ptFromQuaids(...);
+    local ss, jj, wnamSA;
+    struct ptTable tbl;
+
+    #ifDef QUAIDS_SDF_INCLUDED
+        struct quaidsOut qOut;
+        struct ptModel models;
+        qOut = dynargsGet(1);
+
+        wnamSA = _ptQuaidsToStrArray(qOut.wnam);
+        ss = qOut.n;
+        models = reshape(ptModelFromQuaids(wnamSA[1], qOut, 1), ss, 1);
+
+        for jj(2, ss, 1);
+            models[jj] = ptModelFromQuaids(wnamSA[jj], qOut, jj);
+        endfor;
+
+        tbl = ptModelCompare(models);
+        tbl = ptSetTitle(tbl, qOut.model $+ " results");
+        tbl.stubName = "Term";
+    #else;
+        _library_missing_error(currentprocname(), "QUAIDS");
+    #endif;
+
+    retp(tbl);
+endp;
+
+/*
+** quaidsElasOut: income elasticities (er/ser) as a single ptModel column,
+** one row per good.
+*/
+proc (struct ptModel) = ptModelFromQuaidsElas(...);
+    local name, wnamSA;
+    struct ptModel mdl;
+
+    #ifDef QUAIDS_SDF_INCLUDED
+        struct quaidsElasOut elasOut;
+        { name, elasOut } = dynargsGet(1|2);
+
+        wnamSA = _ptQuaidsToStrArray(elasOut.wnam);
+
+        mdl = ptModelCreate(name, elasOut.er, elasOut.ser);
+        mdl = ptModelSetNames(mdl, wnamSA);
+    #else;
+        _library_missing_error(currentprocname(), "QUAIDS");
+    #endif;
+
+    retp(mdl);
+endp;
+
+/*
+** ptFromQuaidsElas: the income-elasticities table alone (the single
+** canonical table for a quaidsElasOut -- for the full report including
+** the n x n price elasticity matrices, see ptTablesFromQuaidsElas).
+*/
+proc (struct ptTable) = ptFromQuaidsElas(...);
+    #ifDef QUAIDS_SDF_INCLUDED
+        struct quaidsElasOut elasOut;
+        elasOut = dynargsGet(1);
+        retp(ptModelTable(ptModelFromQuaidsElas("Income elasticities", elasOut)));
+    #else;
+        _library_missing_error(currentprocname(), "QUAIDS");
+    #endif;
+endp;
+
+/*
+** ptTablesFromQuaidsElas: 3x1 struct ptTable array -- income elasticities,
+** uncompensated (Marshallian) price elasticities, compensated (Hicksian)
+** price elasticities -- suitable for ptExportAll(). Mirrors the *Full
+** workflow tables in pubtable_qardl.src (e.g. ptTablesFromQardlFull).
+*/
+proc (struct ptTable) = ptTablesFromQuaidsElas(...);
+    local wnamSA;
+    struct ptTable tbls;
+
+    #ifDef QUAIDS_SDF_INCLUDED
+        struct quaidsElasOut elasOut;
+        elasOut = dynargsGet(1);
+
+        wnamSA = _ptQuaidsToStrArray(elasOut.wnam);
+
+        tbls = reshape(ptFromQuaidsElas(elasOut), 3, 1);
+        tbls[2] = _ptQuaidsElasMatrixTable("Uncompensated (Marshallian) price elasticities", elasOut.ep, elasOut.sep, wnamSA, 3);
+        tbls[3] = _ptQuaidsElasMatrixTable("Compensated (Hicksian) price elasticities", elasOut.epc, elasOut.sepc, wnamSA, 3);
+    #else;
+        _library_missing_error(currentprocname(), "QUAIDS");
+    #endif;
+
+    retp(tbls);
+endp;
+
+/*
+** ptFromQuaidsFamily: convenience dispatcher, using isStructType. Takes an
+** untyped argument and delegates to the (...) adapters above, which
+** already handle the QUAIDS-missing case themselves, so no #ifDef is
+** needed here (mirrors ptFromArdlFamily in pubtable_qardl.src).
+*/
+proc (struct ptTable) = ptFromQuaidsFamily(x);
+    if isStructType(x, "quaidsOut");
+        retp(ptFromQuaids(x));
+    elseif isStructType(x, "quaidsElasOut");
+        retp(ptFromQuaidsElas(x));
+    endif;
+
+    errorlog "ptFromQuaidsFamily: unsupported QUAIDS output structure.";
+    end;
+endp;

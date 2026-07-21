@@ -6,6 +6,15 @@ quaids *.zip
 Thumbs.db
 examples/out
 examples/*.log
+examples/quaids_coefficients.tex
+examples/quaids_coefficients.md
+examples/quaids_coefficients.csv
+examples/quaids_income_elasticities.md
+examples/quaids_uncompensated_elasticities.tex
+examples/quaids_compensated_elasticities.csv
 tests/schema_test_quaids_wrapper_out
+tests/pubtable_test_coef.tex
+tests/pubtable_test_coef.md
+tests/pubtable_test_coef.csv
 tests/*.log
 *.log
