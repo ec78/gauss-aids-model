@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-6)
+## Repository layout (post-Milestone-7)
 
 ```
 src/
@@ -157,12 +157,66 @@ tests/
                     #   All test/fixture files run from tests/ (or
                     #   tests/fixtures/published/ for the R/Python
                     #   scripts) as the working directory.
+  package_public_api.e   # Milestone 7: installed-package release gate --
+                    #   `library quaids;` (not #include) against a real
+                    #   install, exercising quaidsControlCreate/
+                    #   getDefaultQuaidsControl, quaidsFit/quaids,
+                    #   quaidsFull, quaidsElasFit/quaidsElas/
+                    #   printQuaidsElas, quaidsSlutzky,
+                    #   quaidsHomogeneityTest/quaidsJointTest. Builds its
+                    #   own small inline synthetic dataset rather than
+                    #   reusing quaidsfixtures.src (tests/-only, not part
+                    #   of the installed package). Run after
+                    #   scripts/run_release_verification.ps1
+                    #   -InstallArtifact. See "Milestone 7: package build
+                    #   and release tooling" below.
+  run_source_tests.ps1    # Milestone 7: runs verify_package_manifest.ps1
+                    #   then all 7 tgauss test files above, checking this
+                    #   repo's own PASS/FAIL-line convention (not just
+                    #   tgauss's exit code -- see "Testing status" below).
+  verify_package_manifest.ps1  # Milestone 7: package.json src array vs.
+                    #   actual src/ directory consistency (no dupes,
+                    #   nothing missing, nothing unlisted except the
+                    #   documented pubtable_quaids.src allowlist entry).
+scripts/
+  build_lcg.ps1     # Milestone 7: writes lib/<name>.lcg, the plain-text
+                    #   symbol-location catalog GAUSS's `library`
+                    #   mechanism reads (verified against the real,
+                    #   installed qardl.lcg/pubtable.lcg format -- not a
+                    #   stub). Run against an INSTALLED copy of the
+                    #   package (e.g. the staging dir build_package.ps1 +
+                    #   Expand-Archive produce), not this repo directly.
+  build_package.ps1 # Milestone 7: stages package.json plus whichever of
+                    #   README.md/CHANGELOG.md/CITATION.cff/CITATION.md/
+                    #   LICENSE/llms.txt exist, plus src/docs/examples/
+                    #   scripts/tests, strips generated run artifacts, and
+                    #   zips "<name> <version>.zip" in the repo root (already
+                    #   gitignored via the pre-existing `quaids *.zip`
+                    #   pattern from Milestone 0).
+  verify_release_artifact.ps1  # Milestone 7: checks a built .zip's name/
+                    #   CHANGELOG.md entry match package.json's version, no
+                    #   stale artifacts sit in the repo root, and the
+                    #   archive contains every file package.json's src
+                    #   array promises plus this repo's current root
+                    #   files/dirs (README.md/docs/COMMAND_REFERENCE.md
+                    #   deliberately not required yet -- Milestone 8).
+  run_release_verification.ps1 # Milestone 7: orchestrator -- source tests,
+                    #   build/verify the release artifact, optionally
+                    #   install it into a GAUSS package directory
+                    #   (defaults to <GaussHome>/pkgs, i.e. for real,
+                    #   alongside every other package on the machine, only
+                    #   with -InstallArtifact), then the installed-package
+                    #   public API gate.
 package.json      # GAUSS package manifest (name: quaids, version: 0.5.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
+CHANGELOG.md      # Milestone 7: version history 0.1.0-0.5.0, reconstructed
+                  #   from this file's own milestone records (Keep a
+                  #   Changelog style). No git tag cut yet -- nothing in
+                  #   this repo has been committed as of Milestone 7.
 .gitignore        # Compiled .gcg artifacts, tmp/, .claude/, packaged zips,
                   #   generated `output file=...` run artifacts.
 GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
@@ -173,9 +227,15 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
 Milestones 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular
 source split + dataframe entry point), 3 (validation fixtures, including
 published-data cross-implementation validation), 4 (hypothesis testing
-completeness), 5 (elasticities/diagnostics generalization), and 6
-(reporting via `pubtable`) are all complete. `docs/` does not exist yet —
-that is Milestone 8. An installed-package build/smoke test is Milestone 7.
+completeness), 5 (elasticities/diagnostics generalization), 6 (reporting
+via `pubtable`), and 7 (package build and release tooling) are all
+complete. `docs/` does not exist yet — that is Milestone 8.
+
+**The package is now actually installed** at `c:\gauss26\pkgs\quaids`
+(Milestone 7), alongside `qardl` and `pubtable` on this machine --
+`library quaids;` works. Rebuild/reinstall after any `src/` change with
+`powershell scripts\run_release_verification.ps1 -BuildArtifact
+-ForceArtifact -InstallArtifact` (run from the repo root).
 
 **pubtable is installed in this environment** at `c:\gauss26\pkgs\pubtable`
 (package version `1.0.0`) and is what `src/pubtable_quaids.src` (Milestone
@@ -729,6 +789,105 @@ a pubtable coefficient report should too. Re-verified against LA-AIDS
 `homogenous=0`, to confirm the row-count formula holds across all four
 combinations.
 
+## Milestone 7: package build and release tooling
+
+```powershell
+# From the repo root, after any src/ change:
+powershell scripts\run_release_verification.ps1 -BuildArtifact -ForceArtifact -InstallArtifact
+
+# Or step by step:
+powershell tests\run_source_tests.ps1                       # manifest check + all 7 tgauss tests
+powershell scripts\build_package.ps1 -Force                 # writes "quaids <version>.zip", self-verifies
+powershell scripts\run_release_verification.ps1 -InstallArtifact -SkipInstalledPackageTest  # installs to <GaussHome>/pkgs/quaids
+tgauss -b -x package_public_api.e                            # from tests/, exercises `library quaids;`
+```
+
+Adapted from `gauss-qardl`'s `scripts/`/`tests/` release tooling, scaled
+down for this repo's current scope — see `GOLD_STANDARD_TODO.md`'s
+Milestone 7 section for the full list of what was intentionally omitted
+(separate benchmark/examples-smoke scripts; this repo's equivalent
+validation already lives in `run_source_tests.ps1`'s 7 tgauss files) and
+what's deferred to Milestone 8 (`verify_release_artifact.ps1`'s
+`requiredEntries` list doesn't require `README.md`/
+`docs/COMMAND_REFERENCE.md` yet, since neither exists).
+
+**The package is now really installed** at `c:\gauss26\pkgs\quaids`,
+verified via `library quaids;` — not just staged/zipped. This was an
+explicit repo-owner decision (asked via the same "writing outside this git
+repo into shared machine state" reasoning as the Milestone 6 adapter-
+location question), since fully validating the release pipeline requires
+`library quaids;` to actually resolve, which only happens against GAUSS's
+real, shared package directory.
+
+**Three real bugs found by actually building, installing, and running the
+package — not by re-reading the scripts**, the same "never trust a
+derived formula/script without running it" standard this whole project has
+followed since Milestone 3:
+
+1. **`build_package.ps1`'s cleanup step deleted the entire staged
+   `examples/`/`tests/` directories.** `Get-ChildItem -LiteralPath <dir>
+   -Include <patterns> -Recurse` silently ignores `-Include` when the base
+   path isn't itself a wildcard (a known PowerShell footgun) — `-Recurse`
+   returned every file with no effective filter, and `Remove-Item -Force`
+   deleted all of them. `verify_release_artifact.ps1` caught it
+   immediately: "missing required entry: examples/quaids_example.e" on the
+   first real run. Fixed by removing named generated files by explicit
+   literal path, plus a `-Filter` (not `-Include`) pass for `*.log`, which
+   doesn't have this bug.
+2. **`build_lcg.ps1`'s proc-detection regex only matched one of the three
+   GAUSS proc-declaration forms this codebase actually uses.** It matched
+   `proc (struct X) = name(...)`, but not the bare-digit form `proc N =
+   name(...)` (e.g. `proc 3 = quaidsElas_(...)`) or the no-return-spec
+   form `proc name(...)` (e.g. `proc quantile(x, s);`). This silently
+   dropped `quaidsSlutzky`, `_quaidsIVFirstStage`, `quaids()`,
+   `printQuaids`, `quaidsElas_`, `printQuaidsElas`, `quaidsElas`, and a
+   private `quantile` helper from the generated `.lcg` catalog — invisible
+   to every `#include`-based test (which never goes through the catalog),
+   surfaced only as `Undefined symbol` errors from `library quaids;` when
+   `tests/package_public_api.e` called them for real. Fixed the regex to
+   match all three forms; verified the regenerated catalog lists every
+   proc in every `src/` file.
+3. **A genuinely pre-existing bug in `src/quaids.src`, dating from before
+   Milestone 0**: a private `quantile(x, s)` helper duplicating GAUSS's
+   builtin `quantile()`. The original author clearly intended to delete
+   it — it sat inside a comment block — but GAUSS comments do not nest,
+   and the wrapping comment's own doc-header used an inner
+   `/**...**/`-style block whose closing marker closed the *outer*
+   "delete this" comment early, leaving the entire proc live and
+   uncommented. Silently duplicated the builtin's behavior at its 3 call
+   sites (`quaids()`'s legacy elasticities-at-four-points block) for as
+   long as this repo has existed, invisible via `#include`-based
+   compilation (which just locally shadows the builtin name) — but a real
+   GAUSS builtin name cannot be redefined via `library`-based lazy
+   loading, so it surfaced as `Undefined symbol: 'quantile'` resolving
+   `quaids.src`'s *own* proc definition, once bug #2's fix let `library
+   quaids;` actually try to load it. Fixed by deleting the dead code
+   outright (the original author's evident intent), not just repairing
+   the comment nesting — the 3 call sites now resolve to the GAUSS
+   builtin, same as `quaidsslutzky.src`'s identical calls always have.
+   Full 7-test regression suite re-run afterward; no assertion anywhere
+   depended on the old local implementation's exact output (only the
+   legacy, unasserted quartile-elasticities console block uses it), so no
+   test needed updating.
+
+Also hit and fixed a self-inflicted issue while writing bug #3's own
+explanatory comment: GAUSS's lexer does not tolerate literal `"`
+characters inside a `/* ... */` block comment — an odd count throws
+`error G0097 String not closed`, even though the characters are inside a
+comment, not a string. Caught immediately by re-running the test suite;
+fixed by rephrasing without quote characters. Worth remembering when
+writing GAUSS comments generally, not just here.
+
+**No version bump for this milestone**: build/release tooling doesn't
+change GAUSS public API surface, so per this repo's established policy
+(version bumps track public API changes, not every milestone — see
+Milestone 3's R/Python scripts) the package stays at `0.5.0`. Not tagging
+a git release either: nothing in this repo has been committed yet as of
+Milestone 7 (every milestone's changes are staged but uncommitted, per the
+"never commit unless asked" policy), and a tag needs a commit to point at
+— `CHANGELOG.md`/`package.json` versioning infrastructure is in place for
+whenever the repo owner chooses to commit and tag.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -865,7 +1024,19 @@ tgauss -b -x quaids_pubtable_test.e
 All seven print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
-harness.
+harness. `tests/run_source_tests.ps1` (Milestone 7) runs
+`verify_package_manifest.ps1` plus all 7 of these in one shot and checks
+this same summary-line convention (not just GAUSS-level compile/execute
+errors).
+
+An eighth test, `tests/package_public_api.e` (Milestone 7), is different
+in kind from the seven above: it loads `library quaids;` against a real
+*installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
+than `#include`-ing the source tree, so it only runs correctly after
+`scripts/run_release_verification.ps1 -InstallArtifact` (or equivalent)
+has installed the package — it is a release gate, not a routine
+`run_source_tests.ps1` member. See "Milestone 7: package build and release
+tooling" above.
 
 `examples/quaids_example.e` remains a manual, eyeball-comparison smoke
 script (no assertions) — superseded for correctness-checking purposes by
@@ -897,11 +1068,18 @@ already-computed `quaidsOut`). `src/pubtable_quaids.src` (Milestone 6) is
 deliberately **not** in this array — it has a hard dependency on
 `pubtable.sdf`'s struct types, and adding it would make `pubtable` a hard
 dependency for the whole package to compile; see "Milestone 6: reporting
-via pubtable" above. The package is not yet buildable/installable as a
-GAUSS package (`.lcg`) — that is Milestone 7. If you add a new *required*
-`.src` file, add it to the `"src"` array (respecting load order) and bump
-the version; optional/adapter files like `pubtable_quaids.src` still
-warrant a version bump (real new public API surface) but stay out of `src`.
+via pubtable" above. **Buildable/installable as of Milestone 7**: `scripts/
+build_lcg.ps1`/`build_package.ps1`/`run_release_verification.ps1` build a
+release `.zip` and can install it to a real GAUSS package directory
+(`c:\gauss26\pkgs\quaids` on this machine) so `library quaids;` works — see
+"Milestone 7: package build and release tooling" above. If you add a new
+*required* `.src` file, add it to the `"src"` array (respecting load
+order), bump the version, and rebuild/reinstall (`scripts/
+run_release_verification.ps1 -BuildArtifact -ForceArtifact
+-InstallArtifact`) so the installed copy and its `.lcg` catalog stay in
+sync with the source tree; optional/adapter files like
+`pubtable_quaids.src` still warrant a version bump (real new public API
+surface) but stay out of `src`.
 
 ## References
 

@@ -14,8 +14,9 @@ libraries stay consistent to maintain and to use.
 The repository is pre-alpha, package version `0.5.0`. **Milestones 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
-testing completeness), 5 (elasticities/diagnostics generalization), and 6
-(reporting via `pubtable`) are all complete** as of 2026-07-20:
+testing completeness), 5 (elasticities/diagnostics generalization), 6
+(reporting via `pubtable`), and 7 (package build and release tooling) are
+all complete** as of 2026-07-20:
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -91,9 +92,21 @@ testing completeness), 5 (elasticities/diagnostics generalization), and 6
   the adapter against a real `quaidsFit()` result, not by inspection.
   `tests/quaids_pubtable_test.e`, 30 checks, including an end-to-end export
   smoke test that reads the generated files back.
+- Milestone 7: package build/release tooling (`scripts/build_lcg.ps1`,
+  `scripts/build_package.ps1`, `scripts/verify_release_artifact.ps1`,
+  `scripts/run_release_verification.ps1`, `tests/verify_package_manifest.ps1`,
+  `tests/run_source_tests.ps1`) and an installed-package public API gate
+  (`tests/package_public_api.e`, run via `library quaids;` against a real
+  install at `c:\gauss26\pkgs\quaids`), adapted from `gauss-qardl`.
+  `CHANGELOG.md` added, reconstructing the 0.1.0-0.5.0 history. Found and
+  fixed 3 real pre-existing/newly-introduced bugs by actually building,
+  installing, and running the package (not by re-reading the scripts) —
+  see the Milestone 7 entry below, including a genuinely pre-existing
+  dead-but-accidentally-live `quantile()` duplicate in `src/quaids.src`
+  dating from before Milestone 0, invisible to every `#include`-based test
+  but not to `library`-based loading.
 
-`docs/` still does not exist — that is Milestone 8. An installed-package
-build/smoke test is Milestone 7.
+`docs/` still does not exist — that is Milestone 8.
 
 - `src/quaids.src` (formerly `aids_rev.src`) — one ~1,300-line proc, `quaids()`
   (formerly `aids()`), that does everything:
@@ -934,16 +947,146 @@ published-data cross-checks. `package.json`'s `deps` stays empty; this is
 optional, activated-by-inclusion functionality, not a hard package
 dependency.
 
-### Milestone 7 — Package Build and Release Tooling
+### Milestone 7 — Package Build and Release Tooling — COMPLETE (2026-07-20)
 
-- [ ] Add `package.json` (name, version, `src` array, deps, keywords,
-  license) matching `dccelib`/`qardl` conventions.
-- [ ] Add `tests/run_source_tests.ps1`-style runner and a package-manifest
-  consistency check.
-- [ ] Add repeatable package build/install scripts and an installed-package
-  smoke test (`library aids;` public API gate), matching `qardl`'s
-  `tests/package_public_api.e`.
-- [ ] Add `CHANGELOG.md` and version the first tagged release.
+- [x] `package.json` (name, version, `src` array, deps, keywords, license)
+  matching `dccelib`/`qardl` conventions — already existed since Milestone
+  0; re-verified consistent.
+- [x] `tests/run_source_tests.ps1`-style runner and a package-manifest
+  consistency check (`tests/verify_package_manifest.ps1`).
+- [x] Repeatable package build/install scripts (`scripts/build_lcg.ps1`,
+  `scripts/build_package.ps1`, `scripts/verify_release_artifact.ps1`,
+  `scripts/run_release_verification.ps1`) and an installed-package smoke
+  test (`library quaids;` public API gate, `tests/package_public_api.e`),
+  matching `qardl`'s `tests/package_public_api.e`.
+- [x] `CHANGELOG.md`, reconstructing the 0.1.0-0.5.0 version history from
+  `GOLD_STANDARD_TODO.md`'s own milestone records. **Not tagging a git
+  release as part of this milestone** — nothing in this repo has been
+  committed yet (every milestone's changes, 0 through 7, are staged but
+  uncommitted, per the "never commit unless asked" policy this whole
+  engagement has followed), and a tag requires a commit to point at.
+  Version-numbering infrastructure (`CHANGELOG.md`, `package.json`) is in
+  place; the actual `git commit`/`git tag` is a repo-owner decision for
+  whenever they choose to commit this work.
+
+Scripts adapted from `gauss-qardl`'s `scripts/`/`tests/` tooling
+(`build_lcg.ps1`, `build_package.ps1`, `verify_release_artifact.ps1`,
+`run_release_verification.ps1`, `verify_package_manifest.ps1`,
+`run_source_tests.ps1`, `package_public_api.e`), scaled down for this
+repo's smaller current scope:
+
+- `verify_release_artifact.ps1`'s `requiredEntries` list omits
+  `README.md`/`docs/COMMAND_REFERENCE.md` (Milestone 8, not built yet) —
+  add them once Milestone 8 lands, noted in that script's own header
+  comment.
+- `run_release_verification.ps1` omits `gauss-qardl`'s separate
+  new-model-benchmark/validation-benchmark/examples-smoke scripts, since
+  the equivalent validation already lives inside `run_source_tests.ps1`'s
+  7 tgauss test files (in particular `quaids_synthetic_validation_test.e`
+  and `quaids_published_validation_test.e`).
+- `run_source_tests.ps1` checks this repo's own `PASS`/`FAIL`-line and
+  `ALL N CHECKS PASSED`/`N CHECKS FAILED` convention (documented in
+  `CLAUDE.md`'s "Testing status" section as more reliable than `tgauss`'s
+  process exit code for this harness), not just GAUSS-level compile/
+  execute error text the way `gauss-qardl`'s version does.
+- `tests/package_public_api.e` builds its own small inline synthetic
+  dataset (the same DGP shape as `examples/quaids_example.e`) rather than
+  reusing `tests/quaidsfixtures.src`'s private `_quaidsSyntheticDGP()` --
+  that helper is tests/-only source, not part of the installed package,
+  and the point of this test is to exercise exactly what an
+  installed-package consumer actually has available.
+- `pubtable_quaids.src` is deliberately not exercised by
+  `package_public_api.e`: it is not in `package.json`'s `src` array (see
+  Milestone 6), so `library quaids;` does not load it.
+
+**No version bump for this milestone**: build/release tooling and
+`CHANGELOG.md` don't change GAUSS public API surface (no new/changed
+procs in `src/`), so per this repo's established policy (version bumps
+are keyed to public API surface changes, not every milestone — see
+Milestone 3's R/Python reference scripts, which also didn't bump the
+version), the package stays at `0.5.0`.
+
+**Real bugs found by actually building, installing, and running the
+package — not by re-reading the scripts**, following this repo's
+established validation standard (never trust a derived formula or script
+without running it against a real case first):
+
+1. **`build_package.ps1`'s cleanup step deleted the entire staged
+   `examples/`/`tests/` directories**, not just the generated run
+   artifacts it was meant to strip. `Get-ChildItem -LiteralPath <dir>
+   -Include <patterns> -Recurse` silently ignores `-Include` when the base
+   path isn't itself a wildcard — a known PowerShell footgun — so
+   `-Recurse` returned every file with no effective filter, and
+   `Remove-Item -Force` deleted all of them. Caught immediately by
+   `verify_release_artifact.ps1` failing with "missing required entry:
+   examples/quaids_example.e" the first time the script actually ran.
+   Fixed by removing named files by explicit literal path (no
+   `-Include`/`-Recurse` combination) plus a `-Filter` (not `-Include`)
+   pass for `*.log`, which does not have this bug.
+2. **`build_lcg.ps1`'s proc-detection regex only matched one of the three
+   GAUSS proc-declaration forms actually used in this codebase**:
+   `proc (struct X) = name(...)` (matched), but not `proc N = name(...)`
+   (bare digit return count, e.g. `proc 3 = quaidsElas_(...)`) or
+   `proc name(...)` (no return spec at all, e.g. `proc quantile(x, s);`).
+   This silently dropped `quaidsSlutzky`, `_quaidsIVFirstStage`, the
+   legacy `quaids()` wrapper, `printQuaids`, `quaidsElas_`,
+   `printQuaidsElas`, `quaidsElas`, and a private `quantile` helper from
+   the generated `.lcg` catalog — invisible via every source-tree
+   `#include`-based test (which doesn't go through the catalog at all),
+   surfaced only as `Undefined symbol` errors from `library quaids;` when
+   `tests/package_public_api.e` actually called them against a real
+   install. Fixed by extending the regex to match all three forms;
+   verified the regenerated catalog lists every proc in every `src/` file.
+3. **A genuinely pre-existing, previously-invisible bug in
+   `src/quaids.src` itself**: a private `quantile(x, s)` helper
+   (duplicating GAUSS's builtin `quantile()`) that the original author
+   clearly intended to delete was left accidentally live, because GAUSS
+   comments do not nest and the wrapping "delete this" comment's own
+   doc-header used an inner `/**...**/`-style block whose closing marker
+   closed the *outer* comment early. This has been silently live and
+   silently duplicating the builtin's behavior at its 3 call sites (in the
+   legacy `quaids()` wrapper's elasticities-at-four-points block) since
+   before Milestone 0 — invisible via `#include`-based compilation (which
+   just locally shadows the builtin name within that compile unit), but a
+   real GAUSS builtin name cannot be redefined via `library`-based lazy
+   loading, so it surfaced as `Undefined symbol: 'quantile'` resolving
+   `quaids.src`'s *own* proc definition once the catalog fix above let
+   `library quaids;` actually try to load it. Fixed by deleting the dead
+   code outright (matching the original author's evident intent) rather
+   than just repairing the comment nesting — the 3 call sites now
+   correctly resolve to the GAUSS builtin, the same as
+   `quaidsslutzky.src`'s identical `quantile()` calls already did. Full
+   regression suite (all 7 source-tree tests) re-run afterward to confirm
+   no numeric-output regression outside the (expected, and previously
+   untested) legacy quartile-elasticities block.
+4. A minor self-inflicted bug while writing bug #3's own explanatory
+   comment: GAUSS's lexer does not tolerate literal `"` characters inside
+   a `/* ... */` block comment (an odd count breaks it with `error G0097
+   String not closed`, even though the characters are inside a comment,
+   not a string) — caught immediately by re-running the test suite, fixed
+   by rephrasing the comment without quote characters.
+
+**A real install location decision, asked of the repo owner rather than
+assumed**: fully validating `tests/package_public_api.e` requires
+`library quaids;` to resolve, which means installing the built package
+into GAUSS's real, shared package directory (`c:\gauss26\pkgs\quaids`) --
+not touching any existing package, but still writing outside this git
+repo into shared machine state, the same category of decision as the
+`pubtable_quaids.src` location question at Milestone 6. Asked; repo owner
+chose a real install. `c:\gauss26\pkgs\quaids` now exists as a working
+installed copy of the package (verified via `library quaids;` +
+`tests/package_public_api.e`), alongside `qardl` and `pubtable`.
+
+**Verification**: `scripts/run_release_verification.ps1 -BuildArtifact
+-ForceArtifact -InstallArtifact` run end to end -- all 7 source-tree tests
+(150 checks) pass, the release `.zip` is built and verified (contains
+every file `package.json`'s `src` array promises plus the root files/dirs
+this repo currently ships), the artifact is installed to
+`c:\gauss26\pkgs\quaids`, and `tests/package_public_api.e` passes against
+that real installed copy via `library quaids;` (`quaidsControlCreate`/
+`getDefaultQuaidsControl`, `quaidsFit`/`quaids`, `quaidsFull`,
+`quaidsElasFit`/`quaidsElas`/`printQuaidsElas`, `quaidsSlutzky`,
+`quaidsHomogeneityTest`/`quaidsJointTest`).
 
 ### Milestone 8 — Documentation
 

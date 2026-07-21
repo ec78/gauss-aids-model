@@ -1067,53 +1067,24 @@ endp;
 
 
 /* quaidsSlutzky() moved to quaidsslutzky.src; quaidsElas_()/quaidsElas() moved
-   to quaidselas.src. */
+   to quaidselas.src.
 
-/*
-
-/*******************************************************************************
-**
-**  QUANTILE
-**
-**  Purpose:     Computes the quantiles of a set of variables contained in the
-**               columns of a matrix.
-**
-**  Format:      m = quantile(x, s);
-**
-**  Input:       x       NxK matrix.
-**
-**                 0<s<1       scalar; which quantile ?
-**
-**  Output:      m       Kx1 vector containing the s-quantiles of the respective
-**                       columns of x.
-**
-*******************************************************************************/
-
-proc quantile(x, s);
-local k,  n,  med,  mid,  mflag,  i,  v,  svx,  indx,  sv;
-
-k=cols(x); n=rows(x); med=zeros(k, 1); mid=n*s;
-
-if round(mid) eq mid;    /* even */
-mflag=1; mid=mid|(mid+1);
-else;
-mflag=0; mid=ceil(mid);
-endif;
-
-indx=seqa(1, 1, n);
-i=1;
-do until i > k;
-v=submat(x, 0, i);
-svx=sortc((v~indx), 1);
-sv=submat(svx, 0, 1);
-if mflag;      /* even # of elements */
-med[i, 1]=meanc(sv[mid, 1]);
-else;
-med[i, 1]=sv[mid, 1];
-endif;
-i=i+1;
-endo;
-retp(med);
-endp;
-
-*/
+   A private quantile(x, s) helper duplicating GAUSS's builtin quantile()
+   used to follow here, wrapped in a comment intended to delete it (a
+   superseded local reimplementation, presumably predating reliance on the
+   builtin -- quaidsslutzky.src's own quantile() calls already use the
+   builtin directly, with no local override). That wrapping comment was
+   broken: GAUSS comments do not nest, and the wrapper's own doc-header
+   used a slash-star-star...star-star-slash style inner comment block
+   whose closing marker prematurely closed the outer one, leaving the
+   entire dead proc as live, uncommented code. Invisible via #include-based
+   testing, where it simply duplicated the builtin's behavior at this
+   file's own 3 call sites (below, in the legacy elasticities-at-four-
+   points block) -- but a real GAUSS builtin name cannot be redefined via
+   library-based lazy loading, so installing this package and running
+   tests/package_public_api.e threw an undefined-symbol error resolving
+   this file's own proc definition. Removed the dead code outright (not
+   just fixed the comment), which is what the original wrapping comment
+   already intended; the 3 call sites below now correctly resolve to the
+   GAUSS builtin, the same as quaidsslutzky.src's identical calls always
+   have. */

@@ -73,7 +73,21 @@ foreach ($entry in @($pkg.src)) {
             continue
         }
 
-        if ($line -match '^\s*proc(?:\s*\(([^)]*)\))?\s*(?:=\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*\(') {
+        # Matches all three GAUSS proc-declaration forms seen in this
+        # codebase: "proc (struct X) = name(...)" / "proc (N) = name(...)"
+        # (paren-enclosed, captured to $matches[1] for the typed_returns
+        # check below), "proc N = name(...)" (bare digit return count,
+        # e.g. "proc 3 = quaidsElas_(...)"), and "proc name(...)" (no
+        # return spec at all, e.g. "proc quantile(x, s);"). The original
+        # version of this regex only matched the first form -- it silently
+        # dropped every bare-digit and bare-name proc from the catalog
+        # (quaidsSlutzky, _quaidsIVFirstStage, quaids(), printQuaids,
+        # quaidsElas_, printQuaidsElas, quaidsElas, and a private
+        # quantile() helper), which surfaced as "Undefined symbol" errors
+        # from `library quaids;` despite every source-tree #include-based
+        # test passing -- caught by actually installing the package and
+        # running tests/package_public_api.e, not by re-reading the script.
+        if ($line -match '^\s*proc\s*(?:\(([^)]*)\)|\d+)?\s*(?:=\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*\(') {
             $procName = $matches[2]
             $typedSuffix = ""
             if ($matches[1] -match '^\s*struct\b') {
