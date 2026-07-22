@@ -5,10 +5,12 @@
 # before procedures that reference them). Adapted from gauss-qardl's
 # tests/verify_package_manifest.ps1.
 #
-# Does NOT yet cross-check package.json against docs/COMMAND_REFERENCE.md
-# the way gauss-qardl's version does -- docs/ is Milestone 8 in this repo's
-# roadmap and does not exist yet. Add that check here once
-# docs/COMMAND_REFERENCE.md exists.
+# Milestone 8: also cross-checks docs/COMMAND_REFERENCE.md against the
+# actual source -- every documented proc must actually be defined
+# somewhere in src/ (including src/pubtable_quaids.src, since that file's
+# procs are documented too, even though it's intentionally excluded from
+# package.json's src array -- see the allowlist below), and every linked
+# command-reference page must exist.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -82,6 +84,64 @@ if ([string]::IsNullOrWhiteSpace([string]$pkg.version)) {
 
 if ([string]::IsNullOrWhiteSpace([string]$pkg.license)) {
     throw "package.json license is empty"
+}
+
+# --- Milestone 8: docs/COMMAND_REFERENCE.md cross-check ---
+
+$commandRefPath = Join-Path $RepoRoot "docs\COMMAND_REFERENCE.md"
+if (-not (Test-Path -LiteralPath $commandRefPath)) {
+    throw "docs/COMMAND_REFERENCE.md not found at $commandRefPath"
+}
+
+$commandRef = Get-Content -LiteralPath $commandRefPath -Raw
+$linkMatches = [regex]::Matches($commandRef, '\[([A-Za-z_][A-Za-z0-9_]*)\]\(command-reference/([^)]+\.md)\)')
+
+$docCommands = New-Object System.Collections.Generic.List[string]
+$linkedDocPaths = New-Object System.Collections.Generic.List[string]
+foreach ($match in $linkMatches) {
+    $docCommands.Add($match.Groups[1].Value)
+    $linkedDocPaths.Add($match.Groups[2].Value)
+}
+$docCommands = @($docCommands | Sort-Object -Unique)
+
+if ($docCommands.Count -eq 0) {
+    throw "docs/COMMAND_REFERENCE.md does not list any public commands"
+}
+
+$missingDocPages = @()
+foreach ($relPath in ($linkedDocPaths | Sort-Object -Unique)) {
+    $fullPath = Join-Path (Join-Path $RepoRoot "docs\command-reference") $relPath
+    if (-not (Test-Path -LiteralPath $fullPath)) {
+        $missingDocPages += $relPath
+    }
+}
+if ($missingDocPages.Count -gt 0) {
+    throw "docs/COMMAND_REFERENCE.md references missing command pages: $($missingDocPages -join ', ')"
+}
+
+# Every .src file actually present in src/ -- both package.json's required
+# src array and the intentionally-unlisted allowlist (pubtable_quaids.src)
+# -- is fair game for documented procs, since this repo documents the
+# optional pubtable adapter too.
+$allSrcFiles = $srcEntries + $intentionallyUnlisted | Sort-Object -Unique
+$sourceText = ""
+foreach ($entry in $allSrcFiles) {
+    if ([System.IO.Path]::GetExtension($entry) -ne ".src") {
+        continue
+    }
+    $sourceText += "`n"
+    $sourceText += Get-Content -LiteralPath (Join-Path $srcDir $entry) -Raw
+}
+
+# Matches all three GAUSS proc-declaration forms (see the identical fix in
+# scripts/build_lcg.ps1's header comment for why: "proc (struct X) =
+# name(...)" alone is not enough for this codebase).
+$procMatches = [regex]::Matches($sourceText, '(?m)^\s*proc\s*(?:\(([^)]*)\)|\d+)?\s*(?:=\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*\(')
+$exportedProcs = @($procMatches | ForEach-Object { $_.Groups[2].Value } | Sort-Object -Unique)
+
+$missingDocumentedProcs = $docCommands | Where-Object { $exportedProcs -notcontains $_ }
+if ($missingDocumentedProcs.Count -gt 0) {
+    throw "docs/COMMAND_REFERENCE.md documents procedures not found in src/: $($missingDocumentedProcs -join ', ')"
 }
 
 Write-Host "verify_package_manifest.ps1: PASS"

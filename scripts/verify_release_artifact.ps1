@@ -7,10 +7,9 @@
 # files/dirs this repo currently ships. Adapted from gauss-qardl's
 # scripts/verify_release_artifact.ps1.
 #
-# requiredEntries below is intentionally smaller than gauss-qardl's list --
-# no README.md or docs/COMMAND_REFERENCE.md yet, since docs/ is Milestone 8
-# in this repo's roadmap. Add "README.md" and "docs/COMMAND_REFERENCE.md"
-# to requiredEntries once Milestone 8 lands.
+# Milestone 8: README.md and docs/COMMAND_REFERENCE.md now exist and are
+# required entries below, closing the gap this file's Milestone 7 comment
+# flagged.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -74,13 +73,18 @@ try {
 
     $requiredEntries = @(
         "package.json",
+        "README.md",
         "CHANGELOG.md",
         "CITATION.cff",
         "LICENSE",
         "src/quaids.sdf",
         "examples/quaids_example.e",
         "scripts/build_package.ps1",
-        "scripts/verify_release_artifact.ps1"
+        "scripts/verify_release_artifact.ps1",
+        "docs/COMMAND_REFERENCE.md",
+        "docs/USAGE_GUIDE.md",
+        "docs/METHODOLOGY_NOTES.md",
+        "docs/FEATURE_SUPPORT_MATRIX.md"
     )
 
     $missingEntries = $requiredEntries | Where-Object { $entryNames -notcontains $_ }

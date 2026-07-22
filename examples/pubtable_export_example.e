@@ -12,16 +12,22 @@
 ** c:\gauss26\pkgs\pubtable -- see CLAUDE.md's "What GAUSS Already
 ** Provides" section). Run from the examples/ directory:
 **   tgauss -b -x pubtable_export_example.e
+**
+** src/pubtable_quaids.src is not part of the installed quaids package
+** (see CLAUDE.md's "Milestone 6: reporting via pubtable" section), so it
+** is still #included from the source tree. The bare "#include quaids.sdf"
+** below (rather than a full "library quaids;"-only setup) is required
+** so that pubtable_quaids.src's #ifDef QUAIDS_SDF_INCLUDED guard is
+** active -- `library quaids;` alone lazily loads procs on demand and does
+** not run quaids.sdf's #define, confirmed empirically; explicitly
+** including the .sdf (resolved via the installed package's search path)
+** is what activates the guard, matching how pubtable's own bundled
+** pubtable_qardl.src documents the identical requirement for qardl.sdf.
 */
 
 new;
-library pubtable;
-#include ../src/quaids.sdf;
-#include ../src/quaidsutil.src
-#include ../src/quaidsiv.src
-#include ../src/quaidselas.src
-#include ../src/quaidsslutzky.src
-#include ../src/quaids.src;
+library pubtable, quaids;
+#include quaids.sdf
 #include ../src/pubtable_quaids.src;
 
 seed = 11;

@@ -112,6 +112,8 @@ call assert_true(qOutLA.model $== "LA-AIDS", "quaidsFit LA-AIDS model tag invali
 call assert_true(maxc(maxc(abs(b2 - qOut.bS))) == 0 and maxc(maxc(abs(v2 - qOut.vS))) == 0,
     "legacy quaids() wrapper output does not match quaidsFit()");
 
+call printQuaids(qOut);
+
 
 /* --- quaidsFull(): dataframe entry point --- */
 
@@ -174,6 +176,15 @@ call assert_true(abs(sumc(wModelPt.*elasOut.er) - 1) < 1e-6,
     "quaidsElasFit income elasticities fail Engel aggregation");
 
 call printQuaidsElas(elasOut);
+
+/* quaidsElas() is a thin fit-then-print wrapper (see
+   src/quaidselas.src) -- calling it here, not just its split
+   quaidsElasFit()/printQuaidsElas() halves, closes a real gap this test
+   previously had: quaidsElas() and printQuaids() are both required,
+   package.json-listed public procs that were never actually exercised
+   through `library quaids;` until Milestone 9's final integration pass
+   found it. */
+call quaidsElas(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 
 
 /* --- quaidsSlutzky() (prints a report, no return value) --- */

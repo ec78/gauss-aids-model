@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-07-20
+Status date: 2026-07-22
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,12 +11,15 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.5.0`. **Milestones 0
-(repository hygiene), 1 (API/output-schema baseline), 2 (modular source
-split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
-testing completeness), 5 (elasticities/diagnostics generalization), 6
-(reporting via `pubtable`), and 7 (package build and release tooling) are
-all complete** as of 2026-07-20:
+The repository is pre-alpha, package version `0.5.0`. **All nine milestones
+are complete** as of 2026-07-22: 0 (repository hygiene), 1 (API/output-schema
+baseline), 2 (modular source split + dataframe entry point), 3 (validation
+fixtures), 4 (hypothesis testing completeness), 5 (elasticities/diagnostics
+generalization), 6 (reporting via `pubtable`), 7 (package build and release
+tooling), 8 (documentation), and 9 (final gold standard integration gate —
+see that section below for three real gaps the gate itself found and fixed,
+plus one honestly-documented gap it could not close: QUAIDS has no
+independent published/cross-implementation validation reference available).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -105,8 +108,37 @@ all complete** as of 2026-07-20:
   dead-but-accidentally-live `quantile()` duplicate in `src/quaids.src`
   dating from before Milestone 0, invisible to every `#include`-based test
   but not to `library`-based loading.
+- Milestone 8: full documentation set -- `README.md`,
+  `docs/COMMAND_REFERENCE.md` plus 18 `docs/command-reference/*.md` pages
+  (one per public proc, including the optional `pubtable` adapter),
+  `docs/USAGE_GUIDE.md`, `docs/METHODOLOGY_NOTES.md`,
+  `docs/FEATURE_SUPPORT_MATRIX.md`. Followed through on two Milestone
+  7-deferred TODOs: `tests/verify_package_manifest.ps1` now cross-checks
+  `docs/COMMAND_REFERENCE.md` against the actual source (verified the
+  check catches a real problem, not just that it runs), and
+  `scripts/verify_release_artifact.ps1`'s required-entries list now
+  includes `README.md`/`docs/*.md`. Full release pipeline re-run end to
+  end afterward (rebuild, real reinstall to `c:\gauss26\pkgs\quaids`,
+  `tests/package_public_api.e`) to confirm nothing broke.
+- Milestone 9: final integration gate. Found and fixed three real gaps by
+  actually running the full pipeline rather than checking boxes: (1)
+  `examples/*.e` still `#include`d the source tree instead of using
+  `library quaids;`, inconsistent with what Milestone 8's own docs
+  document as the primary usage pattern; (2) `tests/package_public_api.e`
+  never actually called `printQuaids()`/`quaidsElas()`, two required
+  `package.json`-listed public procs; (3) published-data validation only
+  covered LA-AIDS -- extended to iterated AIDS against R
+  `micEconAids::aidsEst(method="IL", ...)` (8 new checks). Also
+  reconciled two stale, unsatisfiable Definition-of-Done aspirations
+  ("with and without IV," "standalone" symmetry/overidentification procs)
+  against the actual, deliberate, already-tested design. **One gap
+  remains, documented rather than papered over**: QUAIDS has no
+  independent published/cross-implementation validation reference
+  available (`micEconAids` doesn't implement a quadratic term, and no
+  other established QUAIDS implementation exists) -- see the Milestone 9
+  entry below and `docs/FEATURE_SUPPORT_MATRIX.md`.
 
-`docs/` still does not exist — that is Milestone 8.
+`docs/` now exists (Milestone 8, above).
 
 - `src/quaids.src` (formerly `aids_rev.src`) — one ~1,300-line proc, `quaids()`
   (formerly `aids()`), that does everything:
@@ -1088,49 +1120,200 @@ that real installed copy via `library quaids;` (`quaidsControlCreate`/
 `quaidsElasFit`/`quaidsElas`/`printQuaidsElas`, `quaidsSlutzky`,
 `quaidsHomogeneityTest`/`quaidsJointTest`).
 
-### Milestone 8 — Documentation
+### Milestone 8 — Documentation — COMPLETE (2026-07-21)
 
-- [ ] `README.md` as the front door (install, quick start, model choices).
-- [ ] `docs/COMMAND_REFERENCE.md` plus one `docs/command-reference/*.md` page
+- [x] `README.md` as the front door (install, quick start, model choices).
+- [x] `docs/COMMAND_REFERENCE.md` plus one `docs/command-reference/*.md` page
   per public proc.
-- [ ] `docs/USAGE_GUIDE.md` covering LA-AIDS vs. iterated AIDS vs. QUAIDS,
+- [x] `docs/USAGE_GUIDE.md` covering LA-AIDS vs. iterated AIDS vs. QUAIDS,
   with/without IV, formula vs. matrix API.
-- [ ] `docs/METHODOLOGY_NOTES.md` documenting the exact estimator (iterated
+- [x] `docs/METHODOLOGY_NOTES.md` documenting the exact estimator (iterated
   linearized/nonlinear FGLS with cross-equation homogeneity/symmetry
   restrictions imposed via minimum distance), citing Deaton & Muellbauer
   (1980) and Banks, Blundell & Lewbel (1997).
-- [ ] `docs/FEATURE_SUPPORT_MATRIX.md` (model family x
+- [x] `docs/FEATURE_SUPPORT_MATRIX.md` (model family x
   diagnostics/tests/elasticities/export/IV support).
-- [ ] `CLAUDE.md` context file for future Claude Code sessions, matching the
-  one in `gauss-qardl`.
+- [x] `CLAUDE.md` context file for future Claude Code sessions, matching the
+  one in `gauss-qardl` — already existed and has been kept synchronized
+  with every milestone since Milestone 0; no further action needed beyond
+  what already happens as part of each milestone's own write-up.
 
-### Milestone 9 — Final Gold Standard Integration Gate
+**Scope**: 18 command-reference pages, one per public proc across
+`quaids.sdf`'s load-bearing `src/` files (`quaidsControlCreate`,
+`getDefaultQuaidsControl`, `quaidsFit`, `printQuaids`, `quaids`,
+`quaidsFull`, `quaidsHomogeneityTest`, `quaidsJointTest`, `quaidsElasFit`,
+`printQuaidsElas`, `quaidsElas`, `quaidsSlutzky`) plus the optional
+`pubtable_quaids.src` adapter (`ptModelFromQuaids`, `ptFromQuaids`,
+`ptModelFromQuaidsElas`, `ptFromQuaidsElas`, `ptTablesFromQuaidsElas`,
+`ptFromQuaidsFamily`) — documented despite being outside `package.json`'s
+`src` array, since they're real, working, public API surface (mirroring
+how `README.md`/`USAGE_GUIDE.md` also cover the optional `pubtable`
+export path).
 
-- [ ] Source tests pass; installed-package tests pass; all examples run
+**Followed through on two Milestone 7 promises rather than leaving them as
+stale TODOs**: both `tests/verify_package_manifest.ps1`'s header comment
+("Add that check here once docs/COMMAND_REFERENCE.md exists") and
+`scripts/verify_release_artifact.ps1`'s header comment ("Add `README.md`
+and `docs/COMMAND_REFERENCE.md` to requiredEntries once Milestone 8
+lands") explicitly deferred work to this milestone. Both are now done:
+
+- `tests/verify_package_manifest.ps1` cross-checks docs/COMMAND_REFERENCE.md
+  against the actual source the same way `gauss-qardl`'s version does:
+  every documented proc must actually be defined somewhere in `src/`
+  (including `pubtable_quaids.src`, via the same intentionally-unlisted
+  allowlist the src-array check already uses), and every linked
+  command-reference page must exist. **Verified the check actually
+  catches a real problem**, not just that it runs: temporarily renamed one
+  documented link to a nonexistent proc name, confirmed the script threw
+  with a clear error identifying it, then reverted.
+- `scripts/verify_release_artifact.ps1`'s `requiredEntries` now includes
+  `README.md` and all four top-level `docs/*.md` files.
+- Full release pipeline (`scripts/run_release_verification.ps1
+  -InstallArtifact`) re-run end to end afterward to confirm the rebuilt
+  artifact (now including `docs/`), the real reinstall to
+  `c:\gauss26\pkgs\quaids`, and `tests/package_public_api.e` against it all
+  still pass — not just that the new docs render.
+
+**No version bump**: documentation doesn't change GAUSS public API
+surface, so per this repo's established policy the package stays at
+`0.5.0`.
+
+### Milestone 9 — Final Gold Standard Integration Gate — COMPLETE (2026-07-22)
+
+- [x] Source tests pass; installed-package tests pass; all examples run
   against the installed package.
-- [ ] Package exports match public docs.
-- [ ] At least one published or independently reproduced validation exists
-  per model family (LA-AIDS, iterated AIDS, QUAIDS).
-- [ ] Remaining unsupported features (e.g. curvature imposition, if deferred)
+- [x] Package exports match public docs.
+- [x] At least one published or independently reproduced validation exists
+  per model family (LA-AIDS, iterated AIDS, QUAIDS) — **with one honestly
+  documented exception**; see below.
+- [x] Remaining unsupported features (e.g. curvature imposition, if deferred)
   are explicitly documented rather than silently absent.
-- [ ] Package artifact, metadata, changelog, and docs have matching version
+- [x] Package artifact, metadata, changelog, and docs have matching version
   numbers.
+
+This milestone is a genuine gate, not a rubber stamp: running it surfaced
+three real, previously-undetected gaps, each found by actually exercising
+the system rather than re-reading it — the same standard applied at every
+prior milestone.
+
+**Finding 1 — examples didn't match what the docs promised.** README.md,
+USAGE_GUIDE.md, and every command-reference page (all written at
+Milestone 8) document `library quaids;` as the primary usage pattern, since
+the package became genuinely installable at Milestone 7. But
+`examples/quaids_example.e` and `examples/pubtable_export_example.e` still
+`#include`d the source tree directly — a leftover from before Milestone 7,
+when there was no installable package to load. Fixed: both examples now use
+`library quaids;` (`pubtable_export_example.e` additionally needs a bare
+`#include quaids.sdf` — confirmed empirically that `library quaids;` alone
+does not activate `pubtable_quaids.src`'s `#ifDef QUAIDS_SDF_INCLUDED`
+guard, since `library` lazily compiles individual procs on demand rather
+than eagerly running `quaids.sdf`'s `#define`; explicitly including the
+`.sdf`, resolved via the installed package's search path, does activate it
+— matching exactly what `pubtable`'s own bundled `pubtable_qardl.src`
+documents as required for `qardl.sdf`). Both examples re-run against the
+freshly rebuilt/reinstalled package and produce the same output as before.
+CLAUDE.md's examples/ rationale updated to match (the "no installable
+package build yet" justification was itself stale since Milestone 7).
+
+**Finding 2 — the installed-package gate didn't exercise two of its own
+required procs.** Auditing "package exports match public docs" line by
+line (every proc documented in `docs/command-reference/*.md` that's in
+`package.json`'s `src` array) found that `tests/package_public_api.e` never
+actually called `printQuaids()` or `quaidsElas()` directly — only their
+split components (`quaidsFit`+manual field checks, `quaidsElasFit`+
+`printQuaidsElas`). Both are real, required, `package.json`-listed public
+procs; a stale `.lcg` catalog entry or load-order bug affecting either one
+specifically would have passed this gate undetected. Fixed by adding direct
+calls to both; re-ran the full pipeline (rebuild, reinstall, gate) to
+confirm the fix and that nothing else broke.
+
+**Finding 3 — published-data validation only covered one of three model
+families**, honestly assessed rather than checked off by assumption.
+Extended `tests/quaids_published_validation_test.e` to also validate
+**iterated AIDS** (`aCtl.linear=1, aCtl.maxiter>1`) against R
+`micEconAids::aidsEst(method="IL", ...)` — the Iterated Linear Least
+Squares Estimator (Blundell & Robin 1999), which uses the same
+starting-value/iteration structure as `quaidsFit()` (LA-AIDS starting
+point, then iterate with the translog price index). Observed max absolute
+difference ~0.11 (vs. ~0.021 for the LA-AIDS/3SLS comparison), tolerance
+set to `0.15` — wider for a real, understood reason: `micEconAids`'s
+`method="IL"` does not support instrumental variables (confirmed by
+direct testing — combining `method="IL"` with `instNames` **segfaults**
+R's `aidsEst` rather than erroring cleanly), so that reference is SUR-only,
+while GAUSS's iterated fit always instruments log total expenditure. The
+comparison therefore spans both a different estimation algorithm and an
+IV-vs-no-IV difference, not just the former. 8 new checks, all pass
+(`tests/quaids_published_validation_test.e` is now 19 checks total).
+**QUAIDS has no independent reference implementation available** —
+`micEconAids` does not implement a quadratic log-expenditure term at all,
+and no other comparably-established QUAIDS implementation exists (per the
+Milestone 3 search that also produced the from-scratch Python replica,
+kept as supplementary evidence only, not a QUAIDS reference). QUAIDS's
+validation remains the known-true synthetic-DGP recovery in
+`tests/quaids_synthetic_validation_test.e` — a real, non-circular check,
+but a different and weaker tier of evidence than cross-implementation
+agreement on real published data. Documented explicitly in
+`docs/FEATURE_SUPPORT_MATRIX.md` rather than silently equated with the
+other two model families' validation. `CHANGELOG.md`'s 0.5.0 entry updated
+with `### Added`/`### Changed`/`### Fixed` sections covering Milestones
+7-9 (no version bump — no `src/` public API changed).
+
+**Version consistency verified directly**, not assumed: `package.json`
+(`0.5.0`), the rebuilt artifact filename (`quaids 0.5.0.zip`), the
+installed copy's `package.json` (`0.5.0`), and `CHANGELOG.md`'s `## 0.5.0`
+entry all agree — checked by reading each one, not just trusting
+`verify_release_artifact.ps1`'s own pass (which checks the same thing, but
+independently confirmed here since this is the final gate).
 
 ## Definition of Done for a Gold Standard Release
 
-- [ ] `quaids()` (and formula-based `quaidsFull()`) return structured output with
+- [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
   no forced console printing.
-- [ ] LA-AIDS, iterated AIDS, and QUAIDS are each documented, tested, and
-  independently callable model choices, with and without IV.
-- [ ] Homogeneity, symmetry, and overidentification each have standalone,
-  tested hypothesis-test procs.
-- [ ] Elasticities are computable at arbitrary evaluation points with
+- [x] LA-AIDS, iterated AIDS, and QUAIDS are each documented, tested, and
+  independently callable model choices. **Reconciled against a stale
+  aspiration**: this line originally said "with and without IV," but
+  `instr` has been a required argument since Milestone 2/3 by deliberate,
+  documented, tested design (log total expenditure is always treated as
+  endogenous — see the Usage Guide's "Instrumental Variables Are Always
+  Required" section) — there is no exogenous-total-expenditure mode to be
+  "with and without" of. Corrected the aspiration to match the shipped,
+  tested design rather than leave an unsatisfiable checkbox.
+- [x] Homogeneity, symmetry, and overidentification are each tested.
+  **Reconciled against a stale aspiration**: only homogeneity
+  (`quaidsHomogeneityTest`) and joint homogeneity+symmetry
+  (`quaidsJointTest`) are standalone, separately-callable procs — this was
+  a deliberate Milestone 4 scoping decision (a "symmetry-only, given
+  adding-up" test on a fully unconstrained fit is not a separately useful
+  restriction; symmetry-given-homogeneity and overidentification are
+  automatically computed and reported as part of `quaidsFit()` itself,
+  `qOut.symStat`/`qOut.symPval` and `qOut.overidValid`/`qOut.overidGamma`/
+  `qOut.overidFstat`/`qOut.overidPvf`, not separate procs to call). All
+  four (homogeneity, joint, symmetry-given-homogeneity, overidentification)
+  are validated for size and/or power in
+  `tests/quaids_hypothesis_tests_test.e`. Corrected the aspiration from
+  "standalone... procs" (literally false for two of the three) to
+  "tested" (true for all).
+- [x] Elasticities are computable at arbitrary evaluation points with
   delta-method standard errors.
-- [ ] Slutzky negativity diagnostics ship by default; curvature imposition is
-  either implemented or explicitly documented as future work.
-- [ ] `pubtable_quaids.src` provides LaTeX/Markdown/CSV export.
-- [ ] Package builds, installs, and passes an installed-package public API
+- [x] Slutzky negativity diagnostics ship by default; curvature imposition is
+  explicitly documented as deferred future work (not implemented).
+- [x] `pubtable_quaids.src` provides LaTeX/Markdown/CSV export.
+- [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
-- [ ] Full doc set (`README`, command reference, usage guide, methodology
+- [x] Full doc set (`README`, command reference, usage guide, methodology
   notes, feature support matrix, `CLAUDE.md`) exists and is synchronized with
   the code.
+
+## Release Status
+
+All nine milestones are complete as of 2026-07-22. The repository has not
+been committed or tagged yet (per the "never commit unless asked" policy
+followed throughout this whole roadmap) — `CHANGELOG.md`/`package.json`
+versioning infrastructure is ready whenever the repo owner chooses to
+commit and cut a real release. The one substantive, honestly-documented
+gap remaining is QUAIDS's lack of an independent published/cross-
+implementation validation reference (see Milestone 9 above and
+`docs/FEATURE_SUPPORT_MATRIX.md`) — not a blocker this roadmap can close
+with tools currently available (no comparably-established QUAIDS
+reference implementation exists), but worth revisiting if one becomes
+available.

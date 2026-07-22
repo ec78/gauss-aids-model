@@ -26,6 +26,37 @@ below match `package.json` at the time each milestone landed.
   smoke test that reads the generated files back.
 - `#ifndef`/`#define QUAIDS_SDF_INCLUDED`/`#endif` include guard on
   `src/quaids.sdf`, so `pubtable_quaids.src` has a symbol to detect.
+- Package build/release tooling (`scripts/build_lcg.ps1`,
+  `scripts/build_package.ps1`, `scripts/verify_release_artifact.ps1`,
+  `scripts/run_release_verification.ps1`, `tests/verify_package_manifest.ps1`,
+  `tests/run_source_tests.ps1`) and an installed-package public API gate
+  (`tests/package_public_api.e`). The package is now actually installed and
+  loadable via `library quaids;`.
+- Full documentation set: `README.md`, `docs/COMMAND_REFERENCE.md` plus 18
+  `docs/command-reference/*.md` pages, `docs/USAGE_GUIDE.md`,
+  `docs/METHODOLOGY_NOTES.md`, `docs/FEATURE_SUPPORT_MATRIX.md`.
+- Published-data validation extended to iterated AIDS (`aCtl.linear=1,
+  aCtl.maxiter>1`) against R's `micEconAids::aidsEst(method="IL", ...)`,
+  alongside the existing LA-AIDS check
+  (`tests/quaids_published_validation_test.e`, now 19 checks).
+
+### Changed
+- `examples/quaids_example.e` and `examples/pubtable_export_example.e` now
+  use `library quaids;` against the installed package, matching
+  README.md/USAGE_GUIDE.md's documented usage pattern, instead of
+  `#include`-ing the source tree directly (only meaningful once the
+  package became installable).
+
+### Fixed
+- `tests/package_public_api.e` now actually calls `printQuaids()` and
+  `quaidsElas()` -- both are required, `package.json`-listed public procs
+  that the installed-package gate exercised only indirectly (via their
+  split `quaidsFit`/`quaidsElasFit`/`printQuaidsElas` components) until the
+  final integration pass found the gap.
+
+No public API in `src/` changed across this tooling/documentation/testing
+work, so the package version did not bump for it -- see
+`GOLD_STANDARD_TODO.md`'s Milestones 7-9 for the full writeups.
 
 ## 0.4.0 - 2026-07-20
 

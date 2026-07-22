@@ -34,3 +34,23 @@ cat("alpha:\n"); print(ivResult$coef$alpha)
 cat("beta:\n"); print(ivResult$coef$beta)
 cat("gamma:\n"); print(ivResult$coef$gamma)
 cat("estMethod:", ivResult$est$method, "\n")
+
+# Milestone 9: iterated (nonlinear translog price index) AIDS reference,
+# for cross-validating GAUSS's aCtl.linear=1, aCtl.maxiter>1 case --
+# method="IL" is micEconAids's Iterated Linear Least Squares Estimator
+# (Blundell & Robin 1999): LA-AIDS with priceIndex="Ls" as the starting
+# value, then iterates using the (nonlinear) translog price index -- the
+# same starting-value/iteration structure quaidsFit() uses. No IV variant
+# of method="IL" is offered by micEconAids (instNames is only documented
+# for the LA/3SLS path), so this reference is SUR-estimated, not IV --
+# GAUSS's iterated fit still instruments log(xFood) (always endogenous in
+# this library), so this comparison is across both a different estimation
+# algorithm AND an IV-vs-no-IV difference, expect a wider gap than the
+# LA-AIDS-vs-3SLS-IV comparison above.
+ilResult <- aidsEst(priceNames, shareNames, "xFood", data = B86,
+    method = "IL", priceIndex = "Ls")
+
+cat("IL alpha:\n"); print(ilResult$coef$alpha)
+cat("IL beta:\n"); print(ilResult$coef$beta)
+cat("IL gamma:\n"); print(ilResult$coef$gamma)
+cat("IL iterations:", ilResult$ILiter, "\n")
