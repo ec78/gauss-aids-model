@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-07-22
+Status date: 2026-07-23
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,19 +11,24 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.6.0`. **All ten milestones
-are complete** as of 2026-07-22: 0 (repository hygiene), 1 (API/output-schema
-baseline), 2 (modular source split + dataframe entry point), 3 (validation
-fixtures), 4 (hypothesis testing completeness), 5 (elasticities/diagnostics
-generalization), 6 (reporting via `pubtable`), 7 (package build and release
-tooling), 8 (documentation), 9 (final gold standard integration gate — see
-that section below for three real gaps the gate itself found and fixed,
-plus one honestly-documented gap it could not close: QUAIDS has no
-independent published/cross-implementation validation reference available),
-and 10 (local curvature imposition for LA-AIDS/AIDS via the Diewert-Wales
-Cholesky reparametrization, requested directly by the repo owner and built
-on GAUSS's `optmt` package — this library's first real external
-dependency).
+The repository is pre-alpha, package version `0.7.0`. **The original ten-
+milestone roadmap is complete, plus Milestone 11**, as of 2026-07-23: 0
+(repository hygiene), 1 (API/output-schema baseline), 2 (modular source
+split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
+testing completeness), 5 (elasticities/diagnostics generalization), 6
+(reporting via `pubtable`), 7 (package build and release tooling), 8
+(documentation), 9 (final gold standard integration gate — see that
+section below for three real gaps the gate itself found and fixed, plus
+one honestly-documented gap it could not close: QUAIDS has no independent
+published/cross-implementation validation reference available), 10 (local
+curvature imposition for LA-AIDS/AIDS via the Diewert-Wales Cholesky
+reparametrization, requested directly by the repo owner and built on
+GAUSS's `optmt` package — this library's first real external dependency),
+and 11 (exact welfare measures — compensating/equivalent variation — for
+all three model choices, requested directly by the repo owner as the next
+expansion step; see that section below for a real correctness risk found
+and resolved *before* any code was written, by checking a from-memory
+formula against Shephard's lemma and catching it wrong).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -141,6 +146,18 @@ dependency).
   available (`micEconAids` doesn't implement a quadratic term, and no
   other established QUAIDS implementation exists) -- see the Milestone 9
   entry below and `docs/FEATURE_SUPPORT_MATRIX.md`.
+- Milestone 10: local curvature imposition for LA-AIDS/AIDS via the
+  Diewert-Wales Cholesky reparametrization (`quaidsCurvatureFit`), built
+  on GAUSS's `optmt` package -- this library's first real external
+  dependency. QUAIDS deferred (harder *estimation* problem, not scoped
+  out casually). See the Milestone 10 entry below.
+- Milestone 11: exact welfare measures (compensating/equivalent
+  variation, `quaidsWelfareFit`) for all three model choices, needing no
+  new estimation or dependency -- a closed-form evaluation of the
+  already-fitted expenditure function. Caught and fixed a real formula
+  error (a QUAIDS expenditure-function sign/inversion mistake) via
+  Shephard's-lemma cross-check *before* writing any code, not after. See
+  the Milestone 11 entry below.
 
 `docs/` now exists (Milestone 8, above).
 
@@ -1381,6 +1398,86 @@ API (`quaidsCurvatureFit`/`printQuaidsCurvature`, listed in `package.json`'s
 established policy of bumping the version when public API surface
 changes.
 
+### Milestone 11 — Welfare Measures (Compensating/Equivalent Variation) — COMPLETE (2026-07-23)
+
+- [x] Exact compensating variation (CV) and equivalent variation (EV) for
+  a price change, holding nominal expenditure fixed
+  (`quaidsWelfareFit`/`printQuaidsWelfare`, `src/quaidswelfare.src`).
+- [x] Works for LA-AIDS, iterated AIDS, and QUAIDS with one unified
+  implementation — no scoping-out needed, unlike Milestone 10.
+- [x] Validated via exact algebraic identities plus one limiting-case
+  numerical check (`tests/quaids_welfare_test.e`, 20 checks).
+
+Requested by the repo owner after Milestone 10 closed ("what's next on
+the expansion dev path?"), following a recommendation made directly (not
+solicited via a scoping question this time, since — unlike curvature
+imposition — welfare measures don't require a hard choice between model
+families or between estimation rigor levels; the closed-form formula
+either works correctly for both AIDS and QUAIDS or it doesn't).
+
+**A real correctness risk was found and resolved before any code was
+written, not after**: deriving the QUAIDS closed-form expenditure
+function from memory (inverting Banks, Blundell & Lewbel (1997)'s
+indirect utility function) initially produced a formula that failed a
+direct verification check — Shephard's lemma applied to that formula
+(`w_i = d ln(e)/d ln(p_i)`, holding utility fixed) did **not** reproduce
+the already-validated, already-tested QUAIDS share equation used
+everywhere else in this codebase. Re-derived carefully, with the base
+indirect utility function itself cross-checked against a web search
+(a misreading of which term was inverted — `b(p)/L` vs `L/b(p)` inside
+the formula — was the actual bug), the corrected formula:
+
+```
+ln V(x,p) = 1 / ( b(p)/L(p,x) + lambda(p) )      [indirect utility, confirmed via web search]
+ln e(u,p) = a(p) + b(p) / ( 1/u - lambda(p) )     [this milestone's verified inversion]
+```
+
+passes the same Shephard's-lemma check exactly (term by term, not
+approximately) and collapses correctly to the simpler, independently-
+verified AIDS expenditure function `a(p) + u*b(p)` when `lambda=0`. This
+is the same "verify before implementing, not after" discipline this
+whole project has followed since Milestone 3 (the Stone-index bug), just
+applied at the *design* stage this time rather than caught by a test
+after the fact — the error was found by direct derivation-checking before
+`src/quaidswelfare.src` had a single line written.
+
+**Verification strategy avoids needing any external reference** (unlike
+the published-data validation gaps documented at Milestones 9-10): three
+*exact* algebraic identities plus one numerical limiting case, mirroring
+Milestone 5's elasticities-identity approach rather than Milestone 3's
+published-data-comparison approach:
+
+1. Zero price change implies `CV == EV == 0` exactly.
+2. Feeding `e(p1,u0)` back into the *original* indirect utility formula
+   at `p1` returns `u0` exactly — the defining inverse-function property
+   of an expenditure function, checked to floating-point precision, not
+   assumed to hold just because the algebra was checked by hand.
+3. For a small price change, `CV`/`EV` converge to the standard
+   Marshallian first-order (share-weighted expenditure change)
+   approximation as the change shrinks toward zero — ties the exact
+   measure back to a well-known limiting case.
+
+Delta-method standard errors reuse the exact numerical-Jacobian-
+perturbation technique already validated twice (`quaidsElasFit`,
+`quaidsCurvatureFit`) — no new SE machinery, and none of Milestone 10's
+boundary-inference complications apply here (no constrained/reparametrized
+optimization, just a closed-form evaluation).
+
+**No new package dependency**: pure closed-form algebra, `package.json`'s
+`deps` stays at `["optmt"]` (from Milestone 10 only). Version bumped to
+`0.7.0` (real new required public API, `quaidswelfare.src` added to
+`package.json`'s `src` array), matching established policy.
+
+**A note on version control**: this session discovered (via `git log`,
+not something done by any tool call in this conversation) that this repo
+has an automated commit/push process that already captured Milestones
+8-10 (`local master` and `origin/master` confirmed in sync before this
+milestone started) — the "repository has not been committed" language in
+prior milestones' write-ups is now stale. This milestone's changes were
+committed and pushed explicitly (see the repo's commit history for the
+exact commit) per the repo owner's request to commit/push at milestone
+breakpoints going forward.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -1424,18 +1521,21 @@ changes.
 
 ## Release Status
 
-All ten milestones are complete as of 2026-07-22 (package version
-`0.6.0`, following Milestone 10's curvature-imposition addition). The
-repository has not been committed or tagged yet (per the "never commit
-unless asked" policy followed throughout this whole roadmap) —
-`CHANGELOG.md`/`package.json` versioning infrastructure is ready whenever
-the repo owner chooses to commit and cut a real release. Two substantive,
-honestly-documented gaps remain, both explicitly scoped rather than
-silently absent: QUAIDS's lack of an independent published/cross-
-implementation validation reference (Milestone 9,
+The original ten-milestone gold-standard roadmap is complete, and
+Milestone 11 (welfare measures) extends it beyond the original scope, as
+of 2026-07-23 (package version `0.7.0`). Commits are now being made (and
+pushed to `origin/master`) at milestone breakpoints, per the repo owner's
+request — see the repo's commit history rather than treating "not yet
+committed" as current status (that language in earlier milestone
+write-ups reflected the state at the time, before an automated commit/
+push process was discovered to already be capturing this work, and before
+the repo owner asked for explicit commits at breakpoints going forward).
+Two substantive, honestly-documented gaps remain, both explicitly scoped
+rather than silently absent: QUAIDS's lack of an independent published/
+cross-implementation validation reference (Milestone 9,
 `docs/FEATURE_SUPPORT_MATRIX.md`) and QUAIDS curvature imposition
-(Milestone 10, same doc) — neither is a blocker this roadmap can close
-with tools currently available (no comparably-established QUAIDS
-reference implementation exists for the first; the second is a bounded,
-well-understood follow-on once justified by a concrete use case), but
-both are worth revisiting if circumstances change.
+(Milestone 10, same doc) — neither is a blocker with tools currently
+available (no comparably-established QUAIDS reference implementation
+exists for the first; the second is a bounded, well-understood follow-on
+once justified). Welfare measures (Milestone 11) needed no such scoping
+gap — the closed-form formula is unified across all three model choices.

@@ -1,0 +1,209 @@
+/*
+** quaidswelfare.src
+**
+** Milestone 11: exact compensating variation (CV) and equivalent
+** variation (EV) for a price change, holding nominal expenditure fixed.
+** Works for LA-AIDS, iterated AIDS, and QUAIDS alike -- unlike Milestone
+** 10's curvature imposition, this needs no new estimation and no new
+** package dependency, just a closed-form evaluation of the (already
+** fitted) expenditure function at two points.
+**
+** Background: the QUAIDS indirect utility function (Banks, Blundell &
+** Lewbel 1997) is
+**   ln V(x,p) = 1 / ( b(p)/L(p,x) + lambda(p) )
+** where a(p)/b(p) are the same translog price-index/scale terms already
+** computed elsewhere in this codebase (a_p, b_p), L(p,x) = ln(x) - a(p)
+** (the same "lx" computed elsewhere), and lambda(p) = lambda . p (a
+** scalar, zero when aCtl.linear=1 -- no quadratic term). Inverting for
+** the expenditure function e(u,p) such that V(e(u,p),p) = u:
+**   ln e(u,p) = a(p) + b(p) / ( 1/u - lambda(p) )
+** Verified two ways before implementing (not assumed from memory): (1)
+** w_i = d ln(e)/d ln(p_i), holding u fixed, reproduces the exact QUAIDS
+** share equation (alpha_i + sum_j gamma_ij ln p_j + beta_i*L +
+** (lambda_i/b(p))*L^2) term-by-term via Shephard's lemma; (2) setting
+** lambda=0 collapses this to a(p)+u*b(p), the standard AIDS expenditure
+** function, whose own Shephard's-lemma derivative already reproduces the
+** linear AIDS share equation. An initial from-memory attempt at this
+** inversion did NOT pass check (1) (a sign/inversion error) -- caught by
+** that check, not assumed correct, before any of this was written.
+**
+** Welfare measures, comparing base prices p0 (with expenditure x0) to new
+** prices p1, nominal expenditure held fixed at x0 throughout (sign
+** convention: both CV and EV are positive when the price change reduces
+** welfare, zero when p0=p1 -- matching Deaton & Muellbauer's own applied
+** convention):
+**   u0 = ln V(x0, p0)                  -- utility actually enjoyed at the base point
+**   CV = e(p1, u0) - x0                -- extra cost, AT NEW PRICES, to keep the OLD utility
+**   u1 = ln V(x0, p1)                  -- utility x0 actually buys at the NEW prices
+**   EV = x0 - e(p0, u1)                -- AT OLD PRICES, cost difference between old and new utility
+*/
+
+/*
+** _quaidsWelfareCVEV: the core closed-form computation, given a
+** coefficient matrix b (same row layout as qOut.bestB: intercept | gamma
+** | beta | [lambda] | u-residual -- the residual rows are not used, same
+** as quaidsElas_()). Internal helper, no #ifDef guard needed.
+*/
+proc (4) = _quaidsWelfareCVEV(b, nint, n, alpha0, intcptPt, pricesPt0, pricesPt1, totexpPt0, linear);
+    local alpha, gama, beta, lambda, a_p0, a_p1, b_p0, b_p1, lam0, lam1,
+        lx0, u0, lnE10, cv, lx1at1, u1, lnE01, ev, x0;
+
+    alpha = b[1:1+nint, .];
+    gama = b[1+nint+1:1+nint+n, .];
+    beta = b[1+nint+n+1, .];
+
+    a_p0 = alpha0 + intcptPt'alpha*pricesPt0 + .5*pricesPt0'gama*pricesPt0;
+    a_p1 = alpha0 + intcptPt'alpha*pricesPt1 + .5*pricesPt1'gama*pricesPt1;
+    b_p0 = exp(beta*pricesPt0);
+    b_p1 = exp(beta*pricesPt1);
+
+    if linear;
+        lam0 = 0;
+        lam1 = 0;
+    else;
+        lambda = b[1+nint+n+2, .];
+        lam0 = lambda*pricesPt0;
+        lam1 = lambda*pricesPt1;
+    endif;
+
+    x0 = exp(totexpPt0);
+
+    lx0 = totexpPt0 - a_p0;
+    u0 = 1/(b_p0/lx0 + lam0);
+    lnE10 = a_p1 + b_p1/(1/u0 - lam1);
+    cv = exp(lnE10) - x0;
+
+    lx1at1 = totexpPt0 - a_p1;
+    u1 = 1/(b_p1/lx1at1 + lam1);
+    lnE01 = a_p0 + b_p0/(1/u1 - lam0);
+    ev = x0 - exp(lnE01);
+
+    retp(cv, ev, u0, u1);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSWELFAREFIT
+**
+** Purpose:  computes exact compensating variation (CV) and equivalent
+**           variation (EV) for a price change, holding nominal
+**           expenditure fixed, with delta-method standard errors. Silent,
+**           no printing -- see printQuaidsWelfare().
+**
+** Format:     struct quaidsWelfareOut wOut = quaidsWelfareFit(b, v, intcpt, pricesPt0, pricesPt1, totexpPt0, aCtl);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific
+**                share; row order is intcp|prices|lx|lx2|u. Typically
+**                qOut.bestB. Do not include the "u" part -- not used,
+**                same as quaidsElasFit().
+**
+**           v -- variance of vec(b). Typically qOut.bestV.
+**
+**             intcpt -- vector of independent variables at the reference
+**                       point, INCLUDING the leading constant (length
+**                       1+nint) -- same convention as quaidsElasFit().
+**
+**             pricesPt0 -- vector of log prices (absolute) at the BASE point.
+**
+**             pricesPt1 -- vector of log prices (absolute) at the NEW point.
+**
+**             totexpPt0 -- log total (BASE) expenditure. Nominal
+**                       expenditure is held fixed at this level throughout
+**                       -- the standard "what if prices change and income
+**                       doesn't" applied setup.
+**
+** Output:  struct quaidsWelfareOut -- see quaids.sdf. Works for LA-AIDS,
+**           iterated AIDS, and QUAIDS alike (aCtl.linear controls whether
+**           the quadratic lambda term is used, same as elsewhere).
+**
+*******************************************************************************/
+
+proc (struct quaidsWelfareOut) = quaidsWelfareFit(b, v, intcpt, pricesPt0, pricesPt1, totexpPt0, struct quaidsControl aCtl);
+
+    local nint, n, cv, ev, u0, u1, b0, ab0, dab0, e, be, t, k, i, j,
+        cvE, evE, u0E, u1E, te, dt, dtk, vt;
+    struct quaidsWelfareOut wOut;
+
+    nint = rows(intcpt) - 1;
+    n = rows(pricesPt0);
+
+    { cv, ev, u0, u1 } = _quaidsWelfareCVEV(b, nint, n, aCtl.alpha0, intcpt, pricesPt0, pricesPt1, totexpPt0, aCtl.linear);
+    t = cv|ev;
+
+    /* Delta method via a numerically differenced Jacobian -- identical
+       stepsize/perturbation technique to quaidsElasFit(). */
+    b0 = vec(b);
+    ab0 = abs(b0);
+    if b0 /= 0;
+        dab0 = b0./ab0;
+    else;
+        dab0 = 1;
+    endif;
+    e = (1e-8)*maxc((ab0~(1e-2)*ones(rows(b0), 1))').*dab0;
+    be = b0+e;
+    e = be-b0;
+
+    k=1;
+    i=1;
+    do while i<=cols(b);
+        j=1;
+        do while j<=rows(b);
+            be=b;
+            be[j, i]=b[j, i]-e[k];
+            { cvE, evE, u0E, u1E } = _quaidsWelfareCVEV(be, nint, n, aCtl.alpha0, intcpt, pricesPt0, pricesPt1, totexpPt0, aCtl.linear);
+            te = cvE|evE;
+            dtk = (te-t)/e[k];
+            if k==1;
+                dt=dtk;
+                vt = v[1, 1]*dtk^2;
+            else;
+                vt = vt + 2*dtk.*(dt*v[1:k-1, k]) + v[k, k]*dtk^2;
+                dt = dt~dtk;
+            endif;
+            j=j+1;
+            k=k+1;
+        endo;
+        i=i+1;
+    endo;
+    clear dt;
+    vt = sqrt(vt);
+
+    wOut.cv = cv;
+    wOut.ev = ev;
+    wOut.seCV = vt[1];
+    wOut.seEV = vt[2];
+    wOut.u0 = u0;
+    wOut.u1 = u1;
+    wOut.pricesPt0 = pricesPt0;
+    wOut.pricesPt1 = pricesPt1;
+    wOut.totexpPt0 = totexpPt0;
+
+    retp(wOut);
+endp;
+
+
+/*******************************************************************************
+**
+** PRINTQUAIDSWELFARE
+**
+** Purpose:  prints the compensating/equivalent variation estimates and
+**           standard errors captured in a quaidsWelfareOut structure.
+**
+** Format:     call printQuaidsWelfare(wOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsWelfare(struct quaidsWelfareOut wOut);
+
+    print;
+    "COMPENSATING AND EQUIVALENT VARIATION";
+    print "(positive = the price change reduces welfare; nominal expenditure held fixed)";
+    print;
+    print "Compensating variation (CV):" wOut.cv "  se:" wOut.seCV;
+    print "Equivalent variation   (EV):" wOut.ev "  se:" wOut.seEV;
+    print;
+    print "Implied utility at base point  (ln V0):" wOut.u0;
+    print "Implied utility at new prices, base expenditure (ln V1):" wOut.u1;
+    print;
+
+endp;

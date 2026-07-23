@@ -117,6 +117,62 @@ elasticity homogeneity -- as consequences of the functional form, checked
 to floating-point precision in `tests/quaids_elasticities_test.e`. See
 [quaidsElasFit](command-reference/quaidsElasFit.md) for the formulas.
 
+## Welfare Measures
+
+[quaidsWelfareFit](command-reference/quaidsWelfareFit.md) computes exact
+compensating variation (CV) and equivalent variation (EV) for a price
+change, holding nominal expenditure fixed, for LA-AIDS, iterated AIDS,
+and QUAIDS alike -- unlike curvature imposition, this needs no new
+estimation, just a closed-form evaluation of the already-fitted
+expenditure function at two points.
+
+**The QUAIDS indirect utility function** (Banks, Blundell & Lewbel 1997):
+
+```
+ln V(x,p) = 1 / ( b(p)/L(p,x) + lambda(p) )
+```
+
+where `a(p)`/`b(p)` are the same translog price-index/scale terms used
+throughout this library, `L(p,x) = ln(x) - a(p)` (the same `lx` computed
+elsewhere), and `lambda(p) = lambda . p` (a scalar; zero when
+`aCtl.linear=1`, since there is no quadratic term to weight).
+
+**Inverting for the expenditure function** (the money needed to achieve
+utility `u` at prices `p`):
+
+```
+ln e(u,p) = a(p) + b(p) / ( 1/u - lambda(p) )
+```
+
+**Verified before implementation, not assumed from memory**: an initial
+derivation attempt produced a different (incorrect) formula. It was
+checked -- and found wrong -- by confirming whether
+`w_i = d ln(e)/d ln(p_i)` (Shephard's lemma, holding `u` fixed) reproduces
+the *already validated* QUAIDS share equation
+(`w_i = alpha_i + sum_j gamma_ij ln p_j + beta_i*L + (lambda_i/b(p))*L^2`).
+The corrected formula above reproduces it exactly, term by term, and
+collapses to the simpler, independently-verified AIDS expenditure
+function `a(p) + u*b(p)` when `lambda=0`.
+
+**Welfare measures**, comparing base prices `p0` (expenditure `x0`) to new
+prices `p1`, with nominal expenditure held fixed at `x0` (sign
+convention: both positive when the price change reduces welfare, zero
+when `p0=p1`, matching Deaton & Muellbauer's own applied convention):
+
+```
+u0 = ln V(x0, p0)              // utility actually enjoyed at the base point
+CV = e(p1, u0) - x0             // extra cost, at NEW prices, to keep the OLD utility
+u1 = ln V(x0, p1)               // utility x0 actually buys at the NEW prices
+EV = x0 - e(p0, u1)             // at OLD prices, cost difference between old and new utility
+```
+
+`tests/quaids_welfare_test.e` checks this via exact algebraic identities
+rather than tolerance-based approximation: `CV`/`EV` are exactly zero at
+`p0=p1`; feeding `e(p1,u0)` back into `ln V(.,p1)` returns `u0` exactly
+(the defining inverse-function property); and `CV`/`EV` for a small price
+change converge to the standard Marshallian first-order (share-weighted)
+approximation as the change shrinks toward zero.
+
 ## Slutzky Negativity
 
 Demand theory implies the Slutzky (compensated price-response) matrix

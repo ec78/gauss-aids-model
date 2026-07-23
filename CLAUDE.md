@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.6.0`) and is not yet
+The library is **pre-alpha** (package version `0.7.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-10)
+## Repository layout (post-Milestone-11)
 
 ```
 src/
@@ -78,6 +78,13 @@ src/
                     #   so `optmt` is now a real package dependency
                     #   (package.json's deps array). See "Milestone 10:
                     #   curvature imposition" below.
+  quaidswelfare.src # Milestone 11: quaidsWelfareFit()/printQuaidsWelfare()
+                    #   -- exact compensating/equivalent variation for a
+                    #   price change, holding nominal expenditure fixed.
+                    #   Unified across LA-AIDS/iterated-AIDS/QUAIDS (no
+                    #   scoping-out needed, unlike Milestone 10), pure
+                    #   closed-form algebra, no new package dependency.
+                    #   See "Milestone 11: welfare measures" below.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
@@ -204,6 +211,14 @@ tests/
                     #   genuinely violates curvature on this fixture).
                     #   Requires the optmt package installed. See
                     #   "Milestone 10: curvature imposition" below.
+  quaids_welfare_test.e        # Milestone 11: 20 checks -- exact zero-
+                    #   price-change identity, exact round-trip inverse-
+                    #   function identity (feeding e(p1,u0) back into
+                    #   V(.,p1) returns u0 exactly), first-order
+                    #   (Marshallian) limiting-case consistency, and CV/EV
+                    #   sign agreement -- on both a QUAIDS and an AIDS fit.
+                    #   No extra package required. See "Milestone 11:
+                    #   welfare measures" below.
                     #   All test/fixture files run from tests/ (or
                     #   tests/fixtures/published/ for the R/Python
                     #   scripts) as the working directory.
@@ -299,20 +314,29 @@ docs/
                     #   optional pubtable_quaids.src adapter's 6 procs
                     #   (documented despite being outside package.json's
                     #   src array, since they're real public API surface).
-package.json      # GAUSS package manifest (name: quaids, version: 0.6.0,
+package.json      # GAUSS package manifest (name: quaids, version: 0.7.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
                   #   quaidscurvature.src IS listed (required public API),
                   #   so deps now lists "optmt" -- this library's first
                   #   real external package dependency (Milestone 10).
+                  #   quaidswelfare.src (Milestone 11) is also listed but
+                  #   adds no new dependency.
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
 CHANGELOG.md      # Milestone 7: version history 0.1.0-0.5.0, reconstructed
                   #   from this file's own milestone records (Keep a
-                  #   Changelog style). No git tag cut yet -- nothing in
-                  #   this repo has been committed as of Milestone 7.
-                  #   Extended through 0.6.0 at Milestone 10.
+                  #   Changelog style). Extended through 0.7.0 at
+                  #   Milestone 11. This repo now has an automated commit/
+                  #   push process (discovered at Milestone 11 via `git
+                  #   log`, not set up by any tool call in this
+                  #   conversation) plus explicit commits at milestone
+                  #   breakpoints per the repo owner's request -- "nothing
+                  #   in this repo has been committed" is no longer
+                  #   accurate as of Milestone 11 (see "Milestone 11:
+                  #   welfare measures" below and the repo's own commit
+                  #   history for current status).
 README.md         # Milestone 8: front door -- install (Tools > Install
                   #   Application, or the scripts/ build+install
                   #   one-liner), quick start, model-choice summary,
@@ -325,14 +349,15 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-All ten milestones are complete: 0 (repo hygiene), 1 (API/output-schema
-baseline), 2 (modular source split + dataframe entry point), 3 (validation
-fixtures, including published-data cross-implementation validation), 4
-(hypothesis testing completeness), 5 (elasticities/diagnostics
-generalization), 6 (reporting via `pubtable`), 7 (package build and
-release tooling), 8 (documentation), 9 (final gold standard integration
-gate), and 10 (curvature imposition via Diewert-Wales, requested by the
-repo owner after Milestone 9 closed).
+The original ten-milestone roadmap is complete, plus Milestone 11: 0 (repo
+hygiene), 1 (API/output-schema baseline), 2 (modular source split +
+dataframe entry point), 3 (validation fixtures, including published-data
+cross-implementation validation), 4 (hypothesis testing completeness), 5
+(elasticities/diagnostics generalization), 6 (reporting via `pubtable`),
+7 (package build and release tooling), 8 (documentation), 9 (final gold
+standard integration gate), 10 (curvature imposition via Diewert-Wales,
+requested by the repo owner after Milestone 9 closed), and 11 (exact
+welfare measures, requested by the repo owner after Milestone 10 closed).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -1235,6 +1260,84 @@ testing), this milestone adds real, required new public API
 matching this project's policy of bumping the version when public API
 surface changes.
 
+## Milestone 11: welfare measures
+
+```gauss
+n = qOut.n;
+nint = qOut.nint;
+intcptPt = meanc(qOut.intcptFull);
+pricesPt0 = meanc(prices);
+totexpPt0 = meanc(totexp);
+
+pricesPt1 = pricesPt0;
+pricesPt1[1] = pricesPt1[1] + ln(1.05);   // a hypothetical 5% price increase on good 1
+
+struct quaidsWelfareOut wOut;
+wOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
+call printQuaidsWelfare(wOut);
+```
+
+Requested by the repo owner after Milestone 10 closed ("what's next on
+the expansion dev path?"). Unlike curvature imposition, this needed no
+scoping question up front: computing CV/EV requires no new estimation,
+just a closed-form evaluation of the already-fitted expenditure function
+at two points, so the same formula either works correctly for both AIDS
+and QUAIDS or it doesn't -- no "AIDS first, QUAIDS deferred" tradeoff to
+make.
+
+**A real correctness risk was found and resolved *before* writing any
+code, not after** -- the same standard as every "verify before trusting a
+derived formula" moment in this project's history (Milestone 3's Stone-
+index bug, Milestone 5's homogeneity-test formula), just caught one step
+earlier this time: an initial from-memory attempt to invert Banks-
+Blundell-Lewbel (1997)'s QUAIDS indirect utility function into a closed-
+form expenditure function was checked via Shephard's lemma
+(`w_i = d ln(e)/d ln(p_i)`, holding utility fixed) against the *already
+validated, already tested* QUAIDS share equation used everywhere else in
+this codebase -- and did **not** reproduce it. The bug was a misreading of
+which term was inverted (`b(p)/L` vs `L/b(p)`) inside the indirect utility
+formula itself; the base formula was independently confirmed via a web
+search before re-deriving. The corrected formula --
+
+```
+ln V(x,p) = 1 / ( b(p)/L(p,x) + lambda(p) )      // indirect utility
+ln e(u,p) = a(p) + b(p) / ( 1/u - lambda(p) )     // this milestone's verified inversion
+```
+
+-- reproduces the QUAIDS share equation exactly term-by-term via
+Shephard's lemma, and collapses correctly to the simpler, independently-
+verified AIDS expenditure function `a(p) + u*b(p)` when `lambda=0`. No
+external reference data was needed to validate the final implementation:
+`tests/quaids_welfare_test.e` checks three *exact* algebraic identities
+(zero price change gives `CV=EV=0`; feeding `e(p1,u0)` back into the
+*original* indirect utility formula at `p1` returns `u0` exactly, the
+defining inverse-function property; `CV`/`EV` for a small price change
+converge to the standard Marshallian first-order approximation) rather
+than comparing against a published or cross-implementation number,
+mirroring Milestone 5's elasticities-identity approach.
+
+Delta-method standard errors reuse the exact numerical-Jacobian-
+perturbation technique already validated twice
+(`quaidsElasFit`/`quaidsCurvatureFit`) -- no new SE machinery, and none of
+Milestone 10's boundary-inference complications apply (no constrained/
+reparametrized optimization here, just closed-form evaluation).
+
+**No new package dependency**: pure closed-form algebra. `package.json`'s
+`deps` stays at `["optmt"]` (from Milestone 10 only). Version bumped to
+`0.7.0` (real new required public API), matching established policy.
+
+**Version control**: this session discovered, via `git log` (not via any
+tool call in this conversation), that this repo already has an automated
+commit/push process that had captured Milestones 8-10 (`git log` showed
+commits with content-accurate auto-generated messages; `local master` and
+`origin/master` were confirmed in sync before this milestone started).
+The repo owner also asked, starting this milestone, for explicit
+commits/pushes at milestone breakpoints going forward -- done for this
+milestone (see the repo's commit history), superseding the "nothing in
+this repo has been committed" language in every prior milestone's
+write-up, which was accurate at the time it was written but is no longer
+current status.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -1328,7 +1431,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Eight automated tests exist, all run from `tests/` as the working directory:
+Nine automated tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -1339,6 +1442,7 @@ tgauss -b -x quaids_hypothesis_tests_test.e
 tgauss -b -x quaids_elasticities_test.e
 tgauss -b -x quaids_pubtable_test.e
 tgauss -b -x quaids_curvature_test.e
+tgauss -b -x quaids_welfare_test.e
 ```
 
 - `quaids_schema_test.e` (Milestone 1, 34 checks): asserts `quaidsOut` field
@@ -1383,17 +1487,24 @@ tgauss -b -x quaids_curvature_test.e
   gamma, exact adding-up/homogeneity/symmetry, near-exact negative-
   semidefiniteness at the reference point, and a non-vacuousness check.
   See "Milestone 10: curvature imposition" above.
+- `quaids_welfare_test.e` (Milestone 11, 20 checks): exact zero-price-
+  change identity, an exact round-trip identity (feeding the computed
+  expenditure function's output back into the indirect utility function
+  returns the original utility level), a first-order/Marshallian limiting-
+  case numerical check, SE finiteness/non-negativity, and a CV/EV sign-
+  agreement check — run once against a QUAIDS fit and once against an
+  AIDS fit. See "Milestone 11: welfare measures" above.
 
-All eight print one `PASS`/`FAIL` line per check and a final `...: ALL N
+All nine print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
 harness. `tests/run_source_tests.ps1` (Milestone 7) runs
-`verify_package_manifest.ps1` plus all 8 of these in one shot and checks
+`verify_package_manifest.ps1` plus all 9 of these in one shot and checks
 this same summary-line convention (not just GAUSS-level compile/execute
 errors).
 
-A ninth test, `tests/package_public_api.e` (Milestone 7), is different
-in kind from the eight above: it loads `library quaids;` against a real
+A tenth test, `tests/package_public_api.e` (Milestone 7), is different
+in kind from the nine above: it loads `library quaids;` against a real
 *installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
 than `#include`-ing the source tree, so it only runs correctly after
 `scripts/run_release_verification.ps1 -InstallArtifact` (or equivalent)
@@ -1429,16 +1540,22 @@ of the installed package (see "Milestone 6" above).
 
 `package.json` lists (relative to `src/`, in load order): `quaids.sdf`,
 `quaidsutil.src`, `quaidsiv.src`, `quaidselas.src`, `quaidsslutzky.src`,
-`quaids.src`, `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`.
+`quaids.src`, `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`,
+`quaidswelfare.src`.
 `quaids.src` must load after `quaidsiv.src`/`quaidselas.src`/
 `quaidsslutzky.src` since it calls procs they define; `quaidsformula.src`
 must load after `quaids.src` since `quaidsFull()` calls `quaidsFit()`.
 `quaidstests.src` has no load-order dependency on the others beyond
 `quaids.sdf` (it only reads an already-computed `quaidsOut`).
-`quaidscurvature.src` (Milestone 10) loads last, after `quaids.src`
-(needs `quaidsFit()`'s output) -- unlike `pubtable_quaids.src`, it IS
-required in `src` (real public API), so `package.json`'s `deps` array now
-lists `optmt` (this library's first real external package dependency).
+`quaidscurvature.src` (Milestone 10) loads after `quaids.src` (needs
+`quaidsFit()`'s output) -- unlike `pubtable_quaids.src`, it IS required in
+`src` (real public API), so `package.json`'s `deps` array now lists
+`optmt` (this library's first real external package dependency).
+`quaidswelfare.src` (Milestone 11) loads last; it has no load-order
+dependency on anything beyond `quaids.sdf` (it only reads already-fitted
+`b`/`v` coefficient/covariance arguments, the same footprint as
+`quaidselas.src`) and adds no new entry to `deps` — pure closed-form
+algebra, no external package needed.
 `src/pubtable_quaids.src` (Milestone 6) is deliberately **not** in this
 array — it has a hard dependency on `pubtable.sdf`'s struct types, and
 adding it would make `pubtable` a hard dependency for the whole package to

@@ -26,7 +26,8 @@
         "quaids.src",
         "quaidsformula.src",
         "quaidstests.src",
-        "quaidscurvature.src"
+        "quaidscurvature.src",
+        "quaidswelfare.src"
     ],
-    "version": "0.6.0"
+    "version": "0.7.0"
 }

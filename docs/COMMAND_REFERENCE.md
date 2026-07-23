@@ -35,6 +35,11 @@ sections.
 - [quaidsElas](command-reference/quaidsElas.md)
 - [quaidsSlutzky](command-reference/quaidsSlutzky.md)
 
+## Welfare Analysis
+
+- [quaidsWelfareFit](command-reference/quaidsWelfareFit.md)
+- [printQuaidsWelfare](command-reference/printQuaidsWelfare.md)
+
 ## Curvature Imposition (requires `optmt`)
 
 `src/quaidscurvature.src` is listed in `package.json`'s `src` array (real,

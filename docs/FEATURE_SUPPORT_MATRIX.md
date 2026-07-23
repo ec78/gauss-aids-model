@@ -22,6 +22,7 @@ for the exact switch values.
 | Delta-method elasticity standard errors | Yes | Yes | Yes |
 | Exact algebraic identity validation (Engel/Cournot/homogeneity) | Yes | Yes | Yes |
 | Slutzky negativity diagnostic | Yes (`quaidsSlutzky`) | Yes | Yes |
+| Welfare measures (exact CV/EV) | Yes (`quaidsWelfareFit`, no extra dependency) | Yes | Yes |
 | Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | No (diagnosis only) -- deferred, see Notes |
 | Dataframe/column-name entry point | Yes (`quaidsFull`) | Yes | Yes |
 | Formula-string (`"y ~ x"`) API | Not applicable (multi-equation system) | Not applicable | Not applicable |
@@ -36,6 +37,12 @@ for the exact switch values.
 - "Always (control-function)" means `instr` is a required argument to
   every estimator entry point -- there is no exogenous-total-expenditure
   estimation mode in this library.
+- Welfare measures (`quaidsWelfareFit`, Milestone 11) are exact, not
+  approximated, for all three model choices -- unlike curvature
+  imposition, computing CV/EV needs no new estimation, only a closed-form
+  evaluation of the already-fitted expenditure function at two points, so
+  there was no reason to scope QUAIDS out the way Milestone 10 did. See
+  [Methodology Notes](METHODOLOGY_NOTES.md#welfare-measures).
 - The published-data cross-validation (`Blanciforti86` vs. R's
   `micEconAids`) covers both LA-AIDS (`aCtl.linear=1, aCtl.maxiter=1`, vs.
   `aidsEst(..., instNames=...)`, 3SLS -- max abs difference ~0.021) and

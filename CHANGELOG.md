@@ -5,6 +5,30 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.7.0 - 2026-07-23
+
+### Added
+- `quaidsWelfareFit()`/`printQuaidsWelfare()` (`src/quaidswelfare.src`):
+  exact compensating variation (CV) and equivalent variation (EV) for a
+  price change, holding nominal expenditure fixed, with delta-method
+  standard errors. Works for LA-AIDS, iterated AIDS, and QUAIDS alike --
+  a closed-form evaluation of the already-fitted expenditure function at
+  two points, no new estimation and no new package dependency (unlike
+  Milestone 10's curvature imposition).
+- `quaidsWelfareOut` struct (`src/quaids.sdf`).
+- `tests/quaids_welfare_test.e` (20 checks): exact zero-price-change
+  identity, exact round-trip inverse-function identity, first-order
+  (Marshallian) limiting-case consistency, and sign-agreement between CV
+  and EV -- exercised on both a QUAIDS and an AIDS/LA-AIDS fit from the
+  existing `_quaidsSyntheticDGP` fixture.
+
+### Notes
+- The QUAIDS expenditure-function inversion (Banks, Blundell & Lewbel
+  1997) was verified by Shephard's-lemma cross-check against the already-
+  validated QUAIDS share equation before implementation, after an initial
+  from-memory attempt failed that same check (a sign/inversion error,
+  caught before any code was written). See `docs/METHODOLOGY_NOTES.md`.
+
 ## 0.6.0 - 2026-07-22
 
 ### Added

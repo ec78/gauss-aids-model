@@ -147,6 +147,35 @@ against `qOut.bestB`/`qOut.bestV` -- "whichever is the most-constrained
 estimate actually fit" (symmetric if homogeneity was imposed, else the
 recovered unconstrained fit).
 
+## Welfare Analysis (Compensating/Equivalent Variation)
+
+[quaidsWelfareFit](command-reference/quaidsWelfareFit.md) computes exact
+CV/EV for a hypothetical price change, holding nominal expenditure fixed
+-- works for any model choice (LA-AIDS, iterated AIDS, QUAIDS), no extra
+package required:
+
+```gauss
+n = qOut.n;
+nint = qOut.nint;
+intcptPt = meanc(qOut.intcptFull);
+pricesPt0 = meanc(prices);
+totexpPt0 = meanc(totexp);
+
+// A hypothetical 5% price increase on good 1, all else unchanged:
+pricesPt1 = pricesPt0;
+pricesPt1[1] = pricesPt1[1] + ln(1.05);
+
+struct quaidsWelfareOut wOut;
+wOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
+call printQuaidsWelfare(wOut);
+```
+
+`wOut.cv`/`wOut.ev` are positive when the price change reduces welfare,
+negative when it improves welfare, and exactly zero when
+`pricesPt1 == pricesPt0`. See
+[Methodology Notes](METHODOLOGY_NOTES.md#welfare-measures) for the exact
+formula and how it was verified.
+
 ## Imposing Curvature (Diewert-Wales)
 
 `quaidsSlutzky()` always diagnoses curvature (Slutzky negative

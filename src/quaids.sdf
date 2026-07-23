@@ -166,4 +166,22 @@ struct quaidsCurvOut {
                               //   precision, by construction)
 };
 
+/*
+** quaidsWelfareOut -- struct returned by quaidsWelfareFit(): exact
+** compensating variation (CV) and equivalent variation (EV) for a price
+** change from a base point to a new point, holding nominal expenditure
+** fixed. See the Milestone 11 section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsWelfareOut {
+    matrix cv;    // compensating variation (money, not log-money)
+    matrix ev;    // equivalent variation (money, not log-money)
+    matrix seCV;  // delta-method standard error of cv
+    matrix seEV;  // delta-method standard error of ev
+    matrix u0;    // ln V at the base point (p0, x0)
+    matrix u1;    // ln V at (p1, x0) -- new prices, unchanged nominal expenditure
+    matrix pricesPt0;
+    matrix pricesPt1;
+    matrix totexpPt0;
+};
+
 #endif

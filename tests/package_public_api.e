@@ -36,9 +36,10 @@ new;
 ** The main inline DGP below (seed=11) is known (CLAUDE.md's Milestone 3
 ** notes) to be one of the seeds for which the iterated estimator does not
 ** converge cleanly -- fine for exercising quaidsFit/quaids/quaidsFull/
-** quaidsElasFit/quaidsSlutzky/the hypothesis tests, none of which require
-** convergence, but not suitable for quaidsCurvatureFit (which needs an
-** already-converged, homogeneity+symmetry-constrained AIDS starting fit).
+** quaidsElasFit/quaidsSlutzky/quaidsWelfareFit/the hypothesis tests, none
+** of which require convergence, but not suitable for quaidsCurvatureFit
+** (which needs an already-converged, homogeneity+symmetry-constrained
+** AIDS starting fit).
 ** A second, separate inline dataset below (seed=500, with a self-
 ** consistent fixed-point construction so its true gamma is curvature-
 ** consistent at its own sample mean) mirrors
@@ -212,6 +213,26 @@ call quaidsElas(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl
 /* --- quaidsSlutzky() (prints a report, no return value) --- */
 
 call quaidsSlutzky(qOut.bestB, qOut.intcptFull, prices, totexp, aCtl);
+
+
+/* --- quaidsWelfareFit() / printQuaidsWelfare() (Milestone 11) ---
+   Needs no convergence, just a fitted bestB/bestV, so the seed=11
+   dataset above (known non-converging for the iterated estimator) is
+   fine here -- unlike quaidsCurvatureFit below. */
+
+pricesPt1 = pricesMean;
+pricesPt1[1] = pricesPt1[1] + ln(1.05);
+
+struct quaidsWelfareOut wOut;
+wOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
+call assert_true(wOut.seCV >= 0 and wOut.seEV >= 0, "quaidsWelfareFit standard errors invalid");
+
+struct quaidsWelfareOut wOutZero;
+wOutZero = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesMean, totexpMean, aCtl);
+call assert_true(wOutZero.cv == 0 and wOutZero.ev == 0,
+    "quaidsWelfareFit zero-price-change identity failed");
+
+call printQuaidsWelfare(wOut);
 
 
 /* --- quaidsHomogeneityTest() / quaidsJointTest() (need an unconstrained fit) --- */
