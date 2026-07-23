@@ -35,6 +35,16 @@ sections.
 - [quaidsElas](command-reference/quaidsElas.md)
 - [quaidsSlutzky](command-reference/quaidsSlutzky.md)
 
+## Curvature Imposition (requires `optmt`)
+
+`src/quaidscurvature.src` is listed in `package.json`'s `src` array (real,
+required public API) but has a hard compile-time dependency on GAUSS's
+`optmt` package (`package.json`'s `deps` array lists `optmt` accordingly)
+-- `library quaids;` requires `optmt` installed and loaded too.
+
+- [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)
+- [printQuaidsCurvature](command-reference/printQuaidsCurvature.md)
+
 ## Reporting (optional, requires `pubtable`)
 
 `src/pubtable_quaids.src` is **not** listed in `package.json`'s `src`

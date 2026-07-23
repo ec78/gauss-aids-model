@@ -11,15 +11,19 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.5.0`. **All nine milestones
+The repository is pre-alpha, package version `0.6.0`. **All ten milestones
 are complete** as of 2026-07-22: 0 (repository hygiene), 1 (API/output-schema
 baseline), 2 (modular source split + dataframe entry point), 3 (validation
 fixtures), 4 (hypothesis testing completeness), 5 (elasticities/diagnostics
 generalization), 6 (reporting via `pubtable`), 7 (package build and release
-tooling), 8 (documentation), and 9 (final gold standard integration gate —
-see that section below for three real gaps the gate itself found and fixed,
+tooling), 8 (documentation), 9 (final gold standard integration gate — see
+that section below for three real gaps the gate itself found and fixed,
 plus one honestly-documented gap it could not close: QUAIDS has no
-independent published/cross-implementation validation reference available).
+independent published/cross-implementation validation reference available),
+and 10 (local curvature imposition for LA-AIDS/AIDS via the Diewert-Wales
+Cholesky reparametrization, requested directly by the repo owner and built
+on GAUSS's `optmt` package — this library's first real external
+dependency).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -1265,6 +1269,118 @@ entry all agree — checked by reading each one, not just trusting
 `verify_release_artifact.ps1`'s own pass (which checks the same thing, but
 independently confirmed here since this is the final gate).
 
+### Milestone 10 — Curvature Imposition (Diewert-Wales) — COMPLETE (2026-07-22)
+
+- [x] Local curvature (Slutzky negative semidefiniteness) imposition for
+  LA-AIDS/AIDS via the Diewert-Wales (1987) Cholesky reparametrization,
+  evaluated at the sample mean.
+- [x] New standalone entry point (`quaidsCurvatureFit`/
+  `printQuaidsCurvature`, `src/quaidscurvature.src`), not a new
+  `quaidsFit()` branch — matching the precedent already set by
+  `quaidsHomogeneityTest`/`quaidsJointTest`.
+- [x] Synthetic validation with a known-curvature-consistent true DGP
+  (`tests/quaidsfixtures.src`'s `_quaidsCurvatureSyntheticDGP`,
+  `tests/quaids_curvature_test.e`, 17 checks), including a non-vacuousness
+  check (the unconstrained fit genuinely violates curvature on this
+  fixture).
+- [x] QUAIDS curvature imposition explicitly scoped out and documented,
+  not silently absent.
+
+This was requested directly by the repo owner after Milestone 9 closed
+("are there any next-level extensions that make sense?" → curvature
+imposition, already flagged as P2/deferred since Milestone 0) — planned
+via `EnterPlanMode`/`ExitPlanMode` before any code was written, with two
+explicit scope questions put to the repo owner up front: (1) LA-AIDS/AIDS
+only vs. also QUAIDS in the same pass (chose AIDS-only, QUAIDS deferred —
+its Slutzky matrix has an extra `lambda`-dependent cross-term entangling
+three nonlinear parameter blocks instead of two); (2) full Diewert-Wales
+nonlinear reparametrization with rigorous delta-method standard errors vs.
+a cheaper eigenvalue-clipping projection heuristic with informal SEs
+(chose full Diewert-Wales, consistent with this project's established
+standard of real statistical rigor over shortcuts).
+
+**The math**: `quaidsSlutzky()` already computes, per observation, the
+matrix that must be negative semidefinite for concavity:
+`wepc = -diag(w) + w*w' + gama + (beta'beta)*lx` (AIDS: no quadratic
+cross-term). Diewert-Wales imposes this *locally*, at one reference point
+— concavity cannot be imposed globally for a flexible functional form
+without over-restricting it, a standard result, not a gap here. This
+implementation uses the **observed sample mean** as that point (matching
+Diewert & Wales' own practice, and `quaidsElasFit()`'s "evaluate at a
+given point" convention), reparametrizing gamma's upper-left `(n-1)x(n-1)`
+block as `-A*A' - K0` (`A` lower triangular, `K0` the matrix's non-gamma
+part at the reference point) — negative semidefinite by construction, for
+any `A`.
+
+**A real design refinement found during implementation, not in the
+approved plan verbatim, but squarely within its intent**: the plan
+described the inner nonlinear step as "GMM/IV via `optmt` over the full
+parameter vector." Implementation found a materially better-conditioned
+formulation: for *any* candidate `A`, the remaining coefficients (alpha,
+beta, IV-residual coefficients) are *exactly identified* by ordinary least
+squares once `gama(A)` is substituted in as a fixed offset (a
+profiled/concentrated nonlinear least squares problem) — so `optmt` only
+ever searches over `vech(A)` (as few as 6-15 free parameters for typical
+good counts), not the full coefficient vector, reusing the exact
+`moment()`/`solpd()` primitives `quaidsFit()` itself already uses for the
+"given A" regression. Documented here since it's a genuine refinement of
+the approved design, not just an implementation detail.
+
+**Two real numerical-methods findings from actually building and testing
+this, not from reading the algebra**:
+
+1. **The synthetic fixture required a self-consistent fixed-point
+   construction, not the population-mean-based one first attempted.**
+   Building a curvature-consistent true gamma against an *idealized*
+   population reference point (e.g. uniform shares, or the DGP's
+   analytically-derived population mean) left a persistent, seed-
+   independent gap of several tenths to units between the constructed
+   gamma's curvature property and the *actual* simulated sample's
+   behavior — confirmed empirically, not assumed, and unaffected by the
+   Cholesky factor's scale. Root cause: the translog price index's own
+   nonlinearity in gamma means the "reference point" is not fixed
+   independent of gamma. Fixed by a short fixed-point iteration
+   (simulate → recompute the reference point from the *realized* sample →
+   rebuild gamma → repeat), which converges to floating-point-level
+   agreement (Slutzky eigenvalues ~1e-16) within 5-8 rounds for a
+   well-behaved seed — and diverges to astronomical magnitudes within a
+   handful of rounds for most seeds, the same kind of iteration
+   instability already documented for the main estimator (Milestone 3).
+   `seed=500` was found by direct screening (dozens of seeds tried, not
+   guessed) to converge cleanly, and was separately verified to be a
+   genuinely non-vacuous test case: the *existing, unconstrained*
+   `quaidsFit()` recovers this DGP's structural parameters reasonably
+   (max abs diff ~0.16) but its own Slutzky matrix at the sample mean has
+   a positive eigenvalue (~+0.17) — i.e. it really does violate curvature
+   here, even though the truth does not.
+2. **Standard errors expose a real, known boundary-inference complication,
+   not a bug to chase away.** The estimated Cholesky factor frequently
+   converges with some entries at exactly zero — the constrained optimum
+   sits on the *edge* of the negative-semidefinite cone rather than its
+   interior. Classical delta-method inference is unreliable exactly at
+   such boundary points (the same complication that arises for non-
+   negativity-constrained variance components elsewhere in econometrics),
+   and this run's own estimated Cholesky factor was confirmed (not
+   assumed) to have this property. Rather than force a false sense of
+   precision, this is documented explicitly wherever standard errors are
+   discussed (command reference, methodology notes, usage guide,
+   `CHANGELOG.md`) — point estimates and the exact curvature property at
+   the reference point are unaffected by this caveat.
+
+**What GAUSS already provides, reused rather than duplicated**: GAUSS's
+installed `optmt` package (`c:\gauss26\pkgs\optmt`) provides the nonlinear
+optimization engine, exactly as flagged in this roadmap's very first
+draft (Milestone 0's "Target Model Coverage" section) — no solver was
+hand-rolled. `package.json`'s `deps` array is no longer empty (`optmt`
+added); this is this library's first real external package dependency.
+
+**Version bump to `0.6.0`**: unlike Milestones 7-9 (pure tooling/docs/
+testing, no version bump), this milestone adds real, required new public
+API (`quaidsCurvatureFit`/`printQuaidsCurvature`, listed in `package.json`'s
+`src` array) and a new package dependency, matching this project's
+established policy of bumping the version when public API surface
+changes.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -1295,8 +1411,10 @@ independently confirmed here since this is the final gate).
   "tested" (true for all).
 - [x] Elasticities are computable at arbitrary evaluation points with
   delta-method standard errors.
-- [x] Slutzky negativity diagnostics ship by default; curvature imposition is
-  explicitly documented as deferred future work (not implemented).
+- [x] Slutzky negativity diagnostics ship by default; curvature imposition
+  is implemented for LA-AIDS/AIDS (`quaidsCurvatureFit`, Milestone 10, at
+  the sample mean, standard-error caveats documented) and explicitly
+  scoped out (not silently absent) for QUAIDS.
 - [x] `pubtable_quaids.src` provides LaTeX/Markdown/CSV export.
 - [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
@@ -1306,14 +1424,18 @@ independently confirmed here since this is the final gate).
 
 ## Release Status
 
-All nine milestones are complete as of 2026-07-22. The repository has not
-been committed or tagged yet (per the "never commit unless asked" policy
-followed throughout this whole roadmap) — `CHANGELOG.md`/`package.json`
-versioning infrastructure is ready whenever the repo owner chooses to
-commit and cut a real release. The one substantive, honestly-documented
-gap remaining is QUAIDS's lack of an independent published/cross-
-implementation validation reference (see Milestone 9 above and
-`docs/FEATURE_SUPPORT_MATRIX.md`) — not a blocker this roadmap can close
+All ten milestones are complete as of 2026-07-22 (package version
+`0.6.0`, following Milestone 10's curvature-imposition addition). The
+repository has not been committed or tagged yet (per the "never commit
+unless asked" policy followed throughout this whole roadmap) —
+`CHANGELOG.md`/`package.json` versioning infrastructure is ready whenever
+the repo owner chooses to commit and cut a real release. Two substantive,
+honestly-documented gaps remain, both explicitly scoped rather than
+silently absent: QUAIDS's lack of an independent published/cross-
+implementation validation reference (Milestone 9,
+`docs/FEATURE_SUPPORT_MATRIX.md`) and QUAIDS curvature imposition
+(Milestone 10, same doc) — neither is a blocker this roadmap can close
 with tools currently available (no comparably-established QUAIDS
-reference implementation exists), but worth revisiting if one becomes
-available.
+reference implementation exists for the first; the second is a bounded,
+well-understood follow-on once justified by a concrete use case), but
+both are worth revisiting if circumstances change.

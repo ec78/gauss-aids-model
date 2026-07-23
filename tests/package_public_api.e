@@ -24,11 +24,33 @@ new;
 ** who wants it still #includes src/pubtable_quaids.src directly, same as
 ** in the source tree. tests/quaids_pubtable_test.e already covers it.
 **
+** quaidsCurvatureFit()/printQuaidsCurvature() (Milestone 10) ARE in
+** package.json's src array (required public API), but have a hard
+** compile-time dependency on the optmt package's struct types (struct
+** PV/optmtControl/optmtResults) -- confirmed empirically that `library
+** quaids;` alone does NOT resolve these (errors with "Undefined
+** structure 'modelResults'"), so this file now loads `library optmt,
+** quaids;`, matching what every curvature-related doc page already
+** documents as the required usage pattern.
+**
+** The main inline DGP below (seed=11) is known (CLAUDE.md's Milestone 3
+** notes) to be one of the seeds for which the iterated estimator does not
+** converge cleanly -- fine for exercising quaidsFit/quaids/quaidsFull/
+** quaidsElasFit/quaidsSlutzky/the hypothesis tests, none of which require
+** convergence, but not suitable for quaidsCurvatureFit (which needs an
+** already-converged, homogeneity+symmetry-constrained AIDS starting fit).
+** A second, separate inline dataset below (seed=500, with a self-
+** consistent fixed-point construction so its true gamma is curvature-
+** consistent at its own sample mean) mirrors
+** tests/quaidsfixtures.src's _quaidsCurvatureSyntheticDGP() -- duplicated
+** here rather than reused, for the same "no dependency on tests/-only
+** fixture code" reason as the main dataset above.
+**
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
 */
 
-library quaids;
+library optmt, quaids;
 
 proc (0) = assert_true(ok, msg);
     if not ok;
@@ -209,6 +231,75 @@ call assert_true(pvalH >= 0 and pvalH <= 1 and dfH == N-1, "quaidsHomogeneityTes
 
 { statJ, pvalJ, dfJ } = quaidsJointTest(qOutU);
 call assert_true(pvalJ >= 0 and pvalJ <= 1 and dfJ == (N-1) + (N-1)*(N-2)/2, "quaidsJointTest output invalid");
+
+
+/* --- quaidsCurvatureFit() / printQuaidsCurvature() (Milestone 10) ---
+   Needs its own dataset: the seed=11 fixture above is a known non-
+   converging seed for the iterated estimator (fine for everything above,
+   since none of it requires convergence, but quaidsCurvatureFit needs an
+   already-converged AIDS starting fit). Mirrors
+   tests/quaidsfixtures.src's _quaidsCurvatureSyntheticDGP() -- see that
+   file's header comment for why the self-consistent fixed-point
+   construction and seed=500 are necessary, not arbitrary. */
+
+Nc = 5;
+n1c = Nc - 1;
+seedC = 500;
+aScaleC = 0.15;
+nroundsC = 8;
+tobsC = 3000;
+
+AtrueC = aScaleC * lowmat(rndns(n1c, n1c, seedC));
+
+alC = round(rndns(1, Nc-1, seedC)*10)/10;
+alC = alC~(1-sumc(alC'));
+beC = .5*round(rndns(1, Nc-1, seedC)*10)/10;
+beC = beC~(-sumc(beC'));
+roC = round(rndns(1, Nc-1, seedC)*10)/10;
+
+pricesC = 1+rndns(tobsC, Nc, seedC);
+instrC = 5+5*rndns(tobsC, 1, seedC);
+uC = .1*rndns(tobsC, 1, seedC);
+totexpC = .85*instrC + uC;
+eC = 2*rndns(tobsC, Nc-1, seedC) + uC*roC;
+eC = eC~(-sumc(eC'));
+
+wbarC = ones(Nc, 1)/Nc;
+lxbarC = 3.25;
+rC = 1;
+do while rC <= nroundsC;
+    K0C = -diagrv(eye(Nc), wbarC) + wbarC*wbarC' + beC'beC*lxbarC;
+    CC = -AtrueC*AtrueC' - K0C[1:n1c, 1:n1c];
+    gaC = CC | (-sumc(CC)');
+    gaC = gaC ~ (-sumc(gaC'));
+
+    a_pC = sumc((pricesC.*alC)') + .5*sumc(((pricesC*gaC).*pricesC)');
+    lxC = totexpC - a_pC;
+    wC = alC + pricesC*gaC + lxC*beC + eC;
+
+    wbarC = meanc(wC);
+    lxbarC = meanc(lxC);
+    rC = rC + 1;
+endo;
+
+struct quaidsControl aCtlC;
+aCtlC = quaidsControlCreate();
+aCtlC.linear = 1;
+aCtlC.maxiter = 100;
+aCtlC.homogenous = 1;
+aCtlC.err = .0001;
+
+struct quaidsOut qOutC;
+qOutC = quaidsFit(wC, 0, pricesC, totexpC, instrC, aCtlC);
+call assert_true(qOutC.converged == 1, "quaidsCurvatureFit prerequisite AIDS fit did not converge");
+
+struct quaidsCurvOut cOut;
+cOut = quaidsCurvatureFit(qOutC, wC, pricesC, totexpC, aCtlC);
+call assert_true(cOut.converged == 1, "quaidsCurvatureFit did not converge");
+call assert_true(maxc(cOut.eigenvalues) < 1e-3,
+    "quaidsCurvatureFit: Slutzky matrix at the reference point is not negative semidefinite");
+
+call printQuaidsCurvature(cOut);
 
 
 print "package_public_api.e: PASS";

@@ -14,11 +14,17 @@
 # quaids_pubtable_test.e requires the pubtable package to be installed
 # (this machine has it at c:\gauss26\pkgs\pubtable) -- pass -SkipPubtable
 # to skip it on a machine without pubtable.
+#
+# quaids_curvature_test.e requires the optmt package to be installed
+# (this machine has it at c:\gauss26\pkgs\optmt, and it is now a real
+# package.json dependency -- see "Milestone 10" in CLAUDE.md) -- pass
+# -SkipCurvature to skip it on a machine without optmt.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
     [string]$GaussExe = "C:\gauss26\tgauss.exe",
-    [switch]$SkipPubtable
+    [switch]$SkipPubtable,
+    [switch]$SkipCurvature
 )
 
 $testsDir = Join-Path $RepoRoot "tests"
@@ -37,6 +43,10 @@ $gaussTests = @(
 
 if (-not $SkipPubtable) {
     $gaussTests += "quaids_pubtable_test.e"
+}
+
+if (-not $SkipCurvature) {
+    $gaussTests += "quaids_curvature_test.e"
 }
 
 function Invoke-GaussBatch {

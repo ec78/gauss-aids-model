@@ -65,3 +65,101 @@ proc (6) = _quaidsSyntheticDGP(tobs, seed, quadratic, endogenous);
 
     retp(w, intcpt, prices, totexp, instr, trueParams);
 endp;
+
+/*
+** _quaidsCurvatureSyntheticDGP: Milestone 10. A 5-good LA-AIDS/AIDS
+** (linear, no quadratic term -- Milestone 10 is scoped to AIDS only)
+** dataset whose TRUE gamma is curvature-consistent (negative semidefinite
+** Slutzky matrix) at its own actual sample mean, by construction --
+** needed to test whether quaidsCurvatureFit() actually recovers a
+** known-true curvature-consistent gamma, not just that it runs.
+**
+** No extra intercept shifters (intcpt=0 path) -- deliberately simpler
+** than _quaidsSyntheticDGP: an extra demographic shifter's interaction
+** with the reference point below is not needed to validate curvature
+** recovery, and was found empirically to destabilize the self-consistent
+** construction below for most seeds (large al1*intcpt terms can push the
+** reference-point share vector outside a plausible range).
+**
+** Construction: gamma's upper-left (N-1)x(N-1) block is set to
+** -A_true*A_true' - K0, where A_true is a fixed lower-triangular Cholesky
+** factor and K0 = -diag(wbar) + wbar*wbar' + beta'beta*lxbar is exactly
+** the matrix quaidsSlutzky() computes (mu=0 for linear AIDS), evaluated
+** at a reference point (wbar, lxbar). This makes gamma+K0 = -A_true*A_true'
+** negative semidefinite BY CONSTRUCTION, for any A_true -- the same
+** Diewert-Wales reparametrization quaidsCurvatureFit() itself uses. The
+** remaining row/column of gamma is recovered via the same adding-up
+** identity used throughout this codebase (ga|(-sumc(ga)'); ga~(-sumc(ga'))).
+**
+** The reference point (wbar, lxbar) is NOT a guessed constant: using the
+** population-mean values implied by this DGP's other constants (e.g.
+** wbar = uniform shares, lxbar = 3.25) leaves a persistent, seed-
+** independent gap of several tenths to units between the constructed
+** gamma's curvature property and the ACTUAL simulated sample's mean
+** (confirmed empirically, not assumed). Instead, (wbar, lxbar) are found
+** by a short self-consistent fixed-point iteration: simulate with the
+** current guess, recompute (wbar, lxbar) from the REALIZED sample, rebuild
+** gamma, repeat. This converges to floating-point-level agreement (the
+** Slutzky matrix at the actual sample mean is NSD to ~1e-16) within
+** 5-8 rounds for a well-behaved seed -- diverges (to astronomical
+** magnitudes within a handful of rounds) for most seeds, the same kind of
+** iteration instability already documented for the main estimator in the
+** "Seed sensitivity" note above. seed=500 was found, by direct screening
+** (not guessed), to converge cleanly; verified separately that the
+** resulting DGP is not just numerically stable but also gives a genuine,
+** non-vacuous test case: fitting the existing (uncurved) quaidsFit() to
+** data drawn from this DGP recovers structural parameters reasonably
+** (max abs diff ~0.16 against the true gamma) but its own Slutzky matrix
+** at the sample mean has a positive eigenvalue (~+0.17) -- i.e. the
+** unconstrained fit really does violate curvature here, even though the
+** true DGP does not, so imposing curvature has something real to fix.
+*/
+
+proc (6) = _quaidsCurvatureSyntheticDGP(tobs);
+
+    local N, n1, seed, aScale, nrounds, Atrue, K0, C, ga, al, be, ro,
+        prices, instr, u, totexp, e, a_p, lx, w, trueParams, lxbar, wbar, r;
+
+    N = 5;
+    n1 = N - 1;
+    seed = 500;
+    aScale = 0.15;
+    nrounds = 8;
+
+    Atrue = aScale * lowmat(rndns(n1, n1, seed));
+
+    al = round(rndns(1, N-1, seed)*10)/10;
+    al = al~(1-sumc(al'));
+    be = .5*round(rndns(1, N-1, seed)*10)/10;
+    be = be~(-sumc(be'));
+    ro = round(rndns(1, N-1, seed)*10)/10;
+
+    prices = 1+rndns(tobs, N, seed);
+    instr = 5+5*rndns(tobs, 1, seed);
+    u = .1*rndns(tobs, 1, seed);
+    totexp = .85*instr + u;
+    e = 2*rndns(tobs, N-1, seed) + u*ro;
+    e = e~(-sumc(e'));
+
+    wbar = ones(N, 1)/N;
+    lxbar = 3.25;
+    r = 1;
+    do while r <= nrounds;
+        K0 = -diagrv(eye(N), wbar) + wbar*wbar' + be'be*lxbar;
+        C = -Atrue*Atrue' - K0[1:n1, 1:n1];
+        ga = C | (-sumc(C)');
+        ga = ga ~ (-sumc(ga'));
+
+        a_p = sumc((prices.*al)') + .5*sumc(((prices*ga).*prices)');
+        lx = totexp - a_p;
+        w = al + prices*ga + lx*be + e;
+
+        wbar = meanc(w);
+        lxbar = meanc(lx);
+        r = r + 1;
+    endo;
+
+    trueParams = al|ga|be|(ro~-sumc(ro'));
+
+    retp(w, 0, prices, totexp, instr, trueParams);
+endp;

@@ -122,8 +122,39 @@ to floating-point precision in `tests/quaids_elasticities_test.e`. See
 Demand theory implies the Slutzky (compensated price-response) matrix
 should be negative semi-definite. `quaidsSlutzky()` computes this matrix
 observation by observation across a sample and reports descriptive
-statistics on its eigenvalues -- a diagnostic, not an imposed constraint.
-Curvature **imposition** is out of scope for this release; see the
+statistics on its eigenvalues -- a diagnostic, always available regardless
+of whether curvature is imposed.
+
+## Curvature Imposition (Diewert-Wales)
+
+Concavity of a flexible functional form like AIDS/QUAIDS cannot be imposed
+*globally* without over-restricting the functional form -- a standard
+result in the demand-systems literature (Diewert & Wales, 1987), not a gap
+in this implementation. [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)
+imposes it *locally*, at the sample mean, for LA-AIDS/AIDS
+(`aCtl.linear = 1`; QUAIDS is deferred -- see
+[Feature Support Matrix](FEATURE_SUPPORT_MATRIX.md)).
+
+The reparametrization: write the upper-left `(n-1) x (n-1)` block of the
+gamma matrix as `gamma = -A*A' - K0`, where `A` is lower triangular and
+`K0` is the non-gamma part of `quaidsSlutzky()`'s own matrix, evaluated at
+the sample mean. This makes the Slutzky matrix equal `-A*A'` at that
+point by construction -- negative semidefinite for *any* `A`, regardless
+of the data. Estimation is a profiled/concentrated nonlinear IV problem:
+GAUSS's `optmt` package searches only over `A`'s free elements
+(`vech(A)`), with the remaining coefficients exactly identified by OLS
+once the reparametrized gamma is substituted in as a fixed offset --
+within an outer iteration that mirrors `quaidsFit()`'s own translog-
+price-index iteration.
+
+Standard errors are a simplified, homoskedastic-NLS delta-method
+approximation, not a full SUR/GMM sandwich, and are known to be
+unreliable when the estimated Cholesky factor has boundary (near-zero)
+entries -- a standard complication of Cholesky-based negative-
+semidefinite-cone estimation, analogous to inference on non-negativity-
+constrained variance components elsewhere in econometrics. Point
+estimates and the exact curvature property are unaffected. See
+[quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md) and the
 [usage guide's Limitations section](USAGE_GUIDE.md#limitations).
 
 ## References
@@ -136,3 +167,6 @@ Curvature **imposition** is out of scope for this release; see the
   the Postwar Period: An Almost Ideal Demand System Analysis*. Giannini
   Foundation Monograph No. 40. Used for published-data cross-validation --
   see `tests/fixtures/published/SOURCE.md`.
+- Diewert, W. E., Wales, T. J. (1987). "Flexible Functional Forms and
+  Global Curvature Conditions." *Econometrica*, 55(1), 43-68. The
+  Cholesky reparametrization used by `quaidsCurvatureFit()`.

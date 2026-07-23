@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.5.0`) and is not yet
+The library is **pre-alpha** (package version `0.6.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-9)
+## Repository layout (post-Milestone-10)
 
 ```
 src/
@@ -65,6 +65,19 @@ src/
                     #   Wald tests, operating on an already-computed
                     #   unconstrained (aCtl.homogenous=0) quaidsOut. See
                     #   "Milestone 4: new hypothesis tests" below.
+  quaidscurvature.src # Milestone 10: quaidsCurvatureFit()/
+                    #   printQuaidsCurvature() -- local curvature (Slutzky
+                    #   negative semidefiniteness) imposition for LA-AIDS/
+                    #   AIDS via the Diewert-Wales Cholesky
+                    #   reparametrization, at the sample mean. Hard
+                    #   compile-time dependency on the installed `optmt`
+                    #   package (struct PV/optmtControl/optmtResults,
+                    #   pvPacki/pvUnpack/optmt) -- unlike
+                    #   pubtable_quaids.src, this IS listed in
+                    #   package.json's src array (required public API),
+                    #   so `optmt` is now a real package dependency
+                    #   (package.json's deps array). See "Milestone 10:
+                    #   curvature imposition" below.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
@@ -129,6 +142,12 @@ tests/
                     #   true model has a quadratic term and whether total
                     #   expenditure is genuinely endogenous. Returns the
                     #   true parameters pre-stacked in qOut.bS's row order.
+                    #   Milestone 10 adds _quaidsCurvatureSyntheticDGP(): a
+                    #   dedicated 5-good LA-AIDS dataset whose true gamma
+                    #   is curvature-consistent at its own actual sample
+                    #   mean by construction (built via a self-consistent
+                    #   fixed-point iteration, seed=500 found by direct
+                    #   screening -- see "Milestone 10" below).
   quaids_synthetic_validation_test.e # Milestone 3: 22 checks recovering
                     #   true DGP parameters within a documented tolerance
                     #   across all 6 (LA-AIDS/AIDS/QUAIDS) x (with/without
@@ -177,6 +196,14 @@ tests/
                     #   and an end-to-end export smoke test that writes
                     #   real .tex/.md/.csv files and reads them back.
                     #   Requires the pubtable package installed.
+  quaids_curvature_test.e      # Milestone 10: 17 checks -- recovery
+                    #   against a known-curvature-consistent true gamma,
+                    #   exact adding-up/homogeneity/symmetry, near-exact
+                    #   negative-semidefiniteness at the reference point,
+                    #   and a non-vacuousness check (the unconstrained fit
+                    #   genuinely violates curvature on this fixture).
+                    #   Requires the optmt package installed. See
+                    #   "Milestone 10: curvature imposition" below.
                     #   All test/fixture files run from tests/ (or
                     #   tests/fixtures/published/ for the R/Python
                     #   scripts) as the working directory.
@@ -272,9 +299,12 @@ docs/
                     #   optional pubtable_quaids.src adapter's 6 procs
                     #   (documented despite being outside package.json's
                     #   src array, since they're real public API surface).
-package.json      # GAUSS package manifest (name: quaids, version: 0.5.0,
+package.json      # GAUSS package manifest (name: quaids, version: 0.6.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
+                  #   quaidscurvature.src IS listed (required public API),
+                  #   so deps now lists "optmt" -- this library's first
+                  #   real external package dependency (Milestone 10).
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
@@ -282,6 +312,7 @@ CHANGELOG.md      # Milestone 7: version history 0.1.0-0.5.0, reconstructed
                   #   from this file's own milestone records (Keep a
                   #   Changelog style). No git tag cut yet -- nothing in
                   #   this repo has been committed as of Milestone 7.
+                  #   Extended through 0.6.0 at Milestone 10.
 README.md         # Milestone 8: front door -- install (Tools > Install
                   #   Application, or the scripts/ build+install
                   #   one-liner), quick start, model-choice summary,
@@ -294,13 +325,14 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-All nine milestones are complete: 0 (repo hygiene), 1 (API/output-schema
+All ten milestones are complete: 0 (repo hygiene), 1 (API/output-schema
 baseline), 2 (modular source split + dataframe entry point), 3 (validation
 fixtures, including published-data cross-implementation validation), 4
 (hypothesis testing completeness), 5 (elasticities/diagnostics
 generalization), 6 (reporting via `pubtable`), 7 (package build and
-release tooling), 8 (documentation), and 9 (final gold standard
-integration gate).
+release tooling), 8 (documentation), 9 (final gold standard integration
+gate), and 10 (curvature imposition via Diewert-Wales, requested by the
+repo owner after Milestone 9 closed).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -1104,6 +1136,105 @@ real rebuild/reinstall to `c:\gauss26\pkgs\quaids`,
 `tests/package_public_api.e` against that install, and both examples run
 directly against the installed package.
 
+## Milestone 10: curvature imposition
+
+```gauss
+library optmt, quaids;
+
+struct quaidsControl aCtl;
+aCtl = quaidsControlCreate();
+aCtl.linear = 1;          // required -- QUAIDS not yet supported
+aCtl.maxiter = 100;
+aCtl.homogenous = 1;      // required -- quaidsCurvatureFit needs a
+                          // homogeneity+symmetry-constrained starting fit
+
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+struct quaidsCurvOut cOut;
+cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
+call printQuaidsCurvature(cOut);
+```
+
+Requested directly by the repo owner after Milestone 9 closed ("are there
+any next-level extensions?" → curvature imposition, already flagged as
+P2/deferred since Milestone 0's original scoping). Planned via
+`EnterPlanMode`/`ExitPlanMode` before writing any code, with two scope
+questions put to the repo owner first: AIDS-only vs. also QUAIDS in the
+same pass (chose AIDS-only), and full Diewert-Wales nonlinear
+reparametrization vs. a cheaper eigenvalue-clipping heuristic (chose full
+Diewert-Wales, for real delta-method standard errors rather than informal
+point estimates).
+
+**The math**: `quaidsSlutzky()` already computes, per observation, the
+matrix that must be negative semidefinite for concavity:
+`wepc = -diag(w) + w*w' + gama + (beta'beta)*lx` (AIDS: no quadratic
+term). Concavity cannot be imposed globally for a flexible functional
+form without over-restricting it (a standard demand-theory result, not a
+gap here) -- Diewert & Wales (1987) impose it locally, at the **observed
+sample mean** (matching their own practice and `quaidsElasFit()`'s
+"evaluate at a given point" convention). Reparametrization: gamma's
+upper-left `(n-1)x(n-1)` block becomes `-A*A' - K0` (`A` lower triangular,
+`K0` the matrix's non-gamma part at the reference point) -- negative
+semidefinite by construction, for any `A`.
+
+**A real design refinement found during implementation** (within the
+approved plan's intent, not verbatim): rather than searching the *full*
+parameter vector via `optmt`, for *any* candidate `A` the remaining
+coefficients are *exactly identified* by OLS once `gama(A)` is substituted
+in as a fixed offset (profiled/concentrated nonlinear least squares) --
+so `optmt` only searches `vech(A)` (6-15 free parameters typically),
+reusing `quaidsFit()`'s own `moment()`/`solpd()` primitives for the "given
+`A`" regression, within an outer iteration mirroring `quaidsFit()`'s own
+translog-price-index iteration.
+
+**Two real numerical-methods findings from building and testing this, not
+from the algebra alone**:
+
+1. **The synthetic fixture's reference point couldn't be an idealized
+   population value.** Building the true, curvature-consistent gamma
+   against an idealized reference point (uniform shares, or the DGP's
+   analytically-derived population mean) left a persistent gap of several
+   tenths to units between the constructed gamma's curvature property and
+   the *actual* simulated sample's behavior -- confirmed empirically (not
+   assumed), and unaffected by the Cholesky factor's scale. Root cause:
+   the translog price index's own nonlinearity in gamma means the
+   reference point isn't fixed independent of gamma. Fixed with a short
+   self-consistent fixed-point iteration (simulate → recompute the
+   reference point from the realized sample → rebuild gamma → repeat),
+   converging to ~1e-16 agreement within 5-8 rounds for a well-behaved
+   seed and diverging to astronomical magnitudes within a handful of
+   rounds for most seeds -- the same iteration-sensitivity already
+   documented for the main estimator (Milestone 3). `seed=500` was found
+   by direct screening, not guessed, and separately confirmed to be a
+   non-vacuous test case: the existing unconstrained `quaidsFit()`
+   recovers this DGP reasonably (max abs diff ~0.16) but its own Slutzky
+   matrix at the sample mean has a positive eigenvalue (~+0.17) -- a real
+   violation the constrained fit then has to fix.
+2. **Standard errors expose a genuine boundary-inference complication,
+   not a bug.** The estimated Cholesky factor frequently converges with
+   some entries at exactly zero -- the constrained optimum sits on the
+   *edge* of the negative-semidefinite cone, not its interior -- where
+   classical delta-method inference is known to be unreliable (the same
+   complication that arises for non-negativity-constrained variance
+   components elsewhere in econometrics). Confirmed directly (this run's
+   own estimated factor has this property), not assumed, and documented
+   everywhere standard errors are discussed rather than silently
+   presented with false precision. Point estimates and the exact
+   curvature property at the reference point are unaffected.
+
+**What GAUSS already provides, reused rather than duplicated**: the
+`optmt` package (`c:\gauss26\pkgs\optmt`), exactly as flagged in this
+repo's very first roadmap draft. No solver was hand-rolled.
+`package.json`'s `deps` array is no longer empty -- this library's first
+real external package dependency.
+
+**Version bump to `0.6.0`**: unlike Milestones 7-9 (pure tooling/docs/
+testing), this milestone adds real, required new public API
+(`quaidsCurvatureFit`/`printQuaidsCurvature`) and a new dependency,
+matching this project's policy of bumping the version when public API
+surface changes.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -1133,6 +1264,14 @@ GAUSS Already Provides." Summary:
   `ptFromX` shape) but lives in this repo rather than physically inside the
   installed `pubtable` package — see "Milestone 6: reporting via pubtable"
   above for why.
+- **`optmt`** (`pkgs/optmt`) is GAUSS's general-purpose nonlinear
+  optimization package (PV-struct parameter packing, `pvPacki`/`pvUnpack`,
+  minimizes a scalar objective). Flagged as the right tool for curvature
+  imposition since Milestone 0's original scoping; **adopted at
+  Milestone 10** for `quaidsCurvatureFit()`'s profiled nonlinear IV step
+  (searching only `vech(A)`, with the remaining coefficients exactly
+  identified by OLS at each candidate `A`) — this library's first real
+  external package dependency (`package.json`'s `deps` array).
 - **`loadd()`/`asdf()`/dataframe column selection** — used at Milestone 2 for
   `quaidsFull()` (see below). **Not** a `"y ~ x1 + x2"` formula string:
   AIDS/QUAIDS is a multi-equation system (N shares against N parallel
@@ -1189,7 +1328,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Seven automated tests exist, all run from `tests/` as the working directory:
+Eight automated tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -1199,6 +1338,7 @@ tgauss -b -x quaids_published_validation_test.e
 tgauss -b -x quaids_hypothesis_tests_test.e
 tgauss -b -x quaids_elasticities_test.e
 tgauss -b -x quaids_pubtable_test.e
+tgauss -b -x quaids_curvature_test.e
 ```
 
 - `quaids_schema_test.e` (Milestone 1, 34 checks): asserts `quaidsOut` field
@@ -1238,17 +1378,22 @@ tgauss -b -x quaids_pubtable_test.e
   an end-to-end export smoke test that writes real `.tex`/`.md`/`.csv`
   files and reads them back. See "Milestone 6: reporting via pubtable"
   above.
+- `quaids_curvature_test.e` (Milestone 10, 17 checks; requires the `optmt`
+  package installed): recovery against a known-curvature-consistent true
+  gamma, exact adding-up/homogeneity/symmetry, near-exact negative-
+  semidefiniteness at the reference point, and a non-vacuousness check.
+  See "Milestone 10: curvature imposition" above.
 
-All seven print one `PASS`/`FAIL` line per check and a final `...: ALL N
+All eight print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
 harness. `tests/run_source_tests.ps1` (Milestone 7) runs
-`verify_package_manifest.ps1` plus all 7 of these in one shot and checks
+`verify_package_manifest.ps1` plus all 8 of these in one shot and checks
 this same summary-line convention (not just GAUSS-level compile/execute
 errors).
 
-An eighth test, `tests/package_public_api.e` (Milestone 7), is different
-in kind from the seven above: it loads `library quaids;` against a real
+A ninth test, `tests/package_public_api.e` (Milestone 7), is different
+in kind from the eight above: it loads `library quaids;` against a real
 *installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
 than `#include`-ing the source tree, so it only runs correctly after
 `scripts/run_release_verification.ps1 -InstallArtifact` (or equivalent)
@@ -1284,16 +1429,21 @@ of the installed package (see "Milestone 6" above).
 
 `package.json` lists (relative to `src/`, in load order): `quaids.sdf`,
 `quaidsutil.src`, `quaidsiv.src`, `quaidselas.src`, `quaidsslutzky.src`,
-`quaids.src`, `quaidsformula.src`, `quaidstests.src`. `quaids.src` must load
-after `quaidsiv.src`/`quaidselas.src`/`quaidsslutzky.src` since it calls
-procs they define; `quaidsformula.src` must load after `quaids.src` since
-`quaidsFull()` calls `quaidsFit()`. `quaidstests.src` has no load-order
-dependency on the others beyond `quaids.sdf` (it only reads an
-already-computed `quaidsOut`). `src/pubtable_quaids.src` (Milestone 6) is
-deliberately **not** in this array — it has a hard dependency on
-`pubtable.sdf`'s struct types, and adding it would make `pubtable` a hard
-dependency for the whole package to compile; see "Milestone 6: reporting
-via pubtable" above. **Buildable/installable as of Milestone 7**: `scripts/
+`quaids.src`, `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`.
+`quaids.src` must load after `quaidsiv.src`/`quaidselas.src`/
+`quaidsslutzky.src` since it calls procs they define; `quaidsformula.src`
+must load after `quaids.src` since `quaidsFull()` calls `quaidsFit()`.
+`quaidstests.src` has no load-order dependency on the others beyond
+`quaids.sdf` (it only reads an already-computed `quaidsOut`).
+`quaidscurvature.src` (Milestone 10) loads last, after `quaids.src`
+(needs `quaidsFit()`'s output) -- unlike `pubtable_quaids.src`, it IS
+required in `src` (real public API), so `package.json`'s `deps` array now
+lists `optmt` (this library's first real external package dependency).
+`src/pubtable_quaids.src` (Milestone 6) is deliberately **not** in this
+array — it has a hard dependency on `pubtable.sdf`'s struct types, and
+adding it would make `pubtable` a hard dependency for the whole package to
+compile; see "Milestone 6: reporting via pubtable" above.
+**Buildable/installable as of Milestone 7**: `scripts/
 build_lcg.ps1`/`build_package.ps1`/`run_release_verification.ps1` build a
 release `.zip` and can install it to a real GAUSS package directory
 (`c:\gauss26\pkgs\quaids` on this machine) so `library quaids;` works — see

@@ -5,6 +5,41 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.6.0 - 2026-07-22
+
+### Added
+- `quaidsCurvatureFit()`/`printQuaidsCurvature()` (`src/quaidscurvature.src`):
+  local curvature (Slutzky negative semidefiniteness) imposition for
+  LA-AIDS/AIDS via the Diewert-Wales (1987) Cholesky reparametrization,
+  evaluated at the sample mean. Built on GAUSS's `optmt` package (now a
+  real package dependency -- `package.json`'s `deps` array is no longer
+  empty) for the small (`vech(A)`-only) profiled nonlinear IV step; the
+  remaining coefficients are exactly identified by OLS once the
+  reparametrized `gamma` is substituted in, reusing the same
+  `moment`/`solpd` primitives as `quaidsFit()` itself.
+- `quaidsCurvOut` struct (`src/quaids.sdf`).
+- `tests/quaidsfixtures.src`: `_quaidsCurvatureSyntheticDGP()`, a
+  synthetic dataset whose true gamma is curvature-consistent at its own
+  sample mean by construction, found by direct seed screening (most seeds
+  make the underlying nonlinear system numerically unstable -- the same
+  kind of iteration sensitivity already documented for the main estimator).
+- `tests/quaids_curvature_test.e` (17 checks): recovery, exact adding-up/
+  homogeneity/symmetry, near-exact negative-semidefiniteness at the
+  reference point, and a non-vacuousness check confirming the
+  unconstrained fit genuinely violates curvature on this fixture.
+- QUAIDS (the quadratic extension) curvature imposition is explicitly
+  deferred, not silently absent -- see `docs/FEATURE_SUPPORT_MATRIX.md`
+  and `GOLD_STANDARD_TODO.md`'s Milestone 10 section.
+
+### Known limitation
+- Standard errors from `quaidsCurvatureFit()` are a simplified,
+  homoskedastic-NLS delta-method approximation, not a full SUR/GMM
+  sandwich, and are unreliable specifically when the estimated Cholesky
+  factor has boundary (near-zero) entries -- a known, documented
+  complication of Cholesky-based negative-semidefinite-cone estimation,
+  not unique to this implementation. Point estimates and the exact
+  curvature property are unaffected.
+
 ## 0.5.0 - 2026-07-20
 
 ### Added

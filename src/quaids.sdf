@@ -136,4 +136,34 @@ struct quaidsElasOut {
     matrix sepc;   // n x n, delta-method standard errors of epc
 };
 
+/*
+** quaidsCurvOut -- struct returned by quaidsCurvatureFit(): a homogeneity+
+** symmetry-constrained AIDS/LA-AIDS fit re-estimated under an additional
+** local curvature (Slutzky negative semidefiniteness) restriction at the
+** sample mean, via the Diewert-Wales Cholesky reparametrization. See the
+** Milestone 10 section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsCurvOut {
+    matrix n;         // number of goods
+    matrix n1;        // n - 1 (size of the reparametrized Cholesky factor)
+    matrix nint;      // number of extra intercept-shifter variables
+    matrix wnam;      // legacy character matrix of good names
+    matrix cholA;     // n1 x n1, the estimated lower-triangular Cholesky factor
+    matrix b;         // curvature-constrained coefficient matrix, same row
+                      //   layout as qOut.bestB (intercept | gamma | beta | u)
+    matrix v;         // covariance of vec(b), via the delta method
+    matrix se;        // standard errors, same shape as b
+    matrix gama;      // n x n curvature-constrained price-effect matrix
+                      //   (also b's gamma block, kept separately for convenience)
+    matrix converged; // 1 if the outer iteration converged, 0 otherwise
+    matrix iterations;
+    matrix finalErr;
+    matrix intcptPt;  // reference point used to impose curvature (sample means)
+    matrix pricesPt;
+    matrix totexpPt;
+    matrix eigenvalues;      // n x 1, Slutzky-matrix eigenvalues at the
+                              //   reference point (<=0 to numerical
+                              //   precision, by construction)
+};
+
 #endif

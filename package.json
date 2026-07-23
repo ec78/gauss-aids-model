@@ -1,6 +1,7 @@
 {
     "author": "Eric Clower",
     "deps": [
+        "optmt"
     ],
     "description": "GAUSS code for estimating Almost Ideal Demand System (AIDS/QUAIDS) models",
     "dlib": [
@@ -24,7 +25,8 @@
         "quaidsslutzky.src",
         "quaids.src",
         "quaidsformula.src",
-        "quaidstests.src"
+        "quaidstests.src",
+        "quaidscurvature.src"
     ],
-    "version": "0.5.0"
+    "version": "0.6.0"
 }

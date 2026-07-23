@@ -147,6 +147,37 @@ against `qOut.bestB`/`qOut.bestV` -- "whichever is the most-constrained
 estimate actually fit" (symmetric if homogeneity was imposed, else the
 recovered unconstrained fit).
 
+## Imposing Curvature (Diewert-Wales)
+
+`quaidsSlutzky()` always diagnoses curvature (Slutzky negative
+semidefiniteness) but never imposes it. For LA-AIDS/AIDS
+(`aCtl.linear = 1`), [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)
+can impose it locally, at the sample mean, requiring the `optmt` package:
+
+```gauss
+library optmt, quaids;
+
+struct quaidsControl aCtl;
+aCtl = quaidsControlCreate();
+aCtl.linear = 1;
+aCtl.maxiter = 100;
+aCtl.homogenous = 1;    // required -- quaidsCurvatureFit needs a
+                        // homogeneity+symmetry-constrained starting fit
+
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+struct quaidsCurvOut cOut;
+cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
+call printQuaidsCurvature(cOut);
+
+print "Slutzky eigenvalues at the sample mean:" cOut.eigenvalues';  // all <= 0
+```
+
+QUAIDS (`aCtl.linear = 0`) is not yet supported -- `quaidsCurvatureFit`
+errors clearly if called on a QUAIDS fit. See the
+[Limitations section](#limitations) below for the standard-error caveat.
+
 ## Reporting (`pubtable`)
 
 `src/pubtable_quaids.src` is an optional adapter onto the `pubtable`
@@ -173,10 +204,14 @@ runnable example.
 
 ## Limitations
 
-- No curvature **imposition** (Diewert-Wales Cholesky reparametrization or
-  similar) -- only diagnosis, via [quaidsSlutzky](command-reference/quaidsSlutzky.md).
-  Deferred as P2/"if justified"; even the R `micEconAids` reference
-  implementation used for cross-validation only diagnoses curvature.
-- No guaranteed convergence for the iterated estimator -- see "Choosing A
+- Curvature **imposition** ([quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md))
+  is only available for LA-AIDS/AIDS, at the sample mean, and its standard
+  errors are a simplified delta-method approximation that is known to be
+  unreliable when the estimated Cholesky factor has boundary (near-zero)
+  entries -- see the [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
+  for why this happens and why point estimates and the exact curvature
+  property are unaffected. QUAIDS curvature imposition is deferred.
+- No guaranteed convergence for the iterated estimator (or the curvature-
+  constrained outer iteration built on top of it) -- see "Choosing A
   Model" above.
 - IV is mandatory; there is no exogenous-total-expenditure estimation mode.

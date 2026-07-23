@@ -22,7 +22,7 @@ for the exact switch values.
 | Delta-method elasticity standard errors | Yes | Yes | Yes |
 | Exact algebraic identity validation (Engel/Cournot/homogeneity) | Yes | Yes | Yes |
 | Slutzky negativity diagnostic | Yes (`quaidsSlutzky`) | Yes | Yes |
-| Curvature imposition | No (diagnosis only) | No (diagnosis only) | No (diagnosis only) |
+| Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | No (diagnosis only) -- deferred, see Notes |
 | Dataframe/column-name entry point | Yes (`quaidsFull`) | Yes | Yes |
 | Formula-string (`"y ~ x"`) API | Not applicable (multi-equation system) | Not applicable | Not applicable |
 | `pubtable` export (LaTeX/Markdown/CSV/...) | Yes (`src/pubtable_quaids.src`, optional) | Yes | Yes |
@@ -60,12 +60,24 @@ for the exact switch values.
   re-running the estimator on its own output), but a different, weaker
   tier of evidence than cross-implementation agreement on real published
   data. Documented here rather than silently claimed as equivalent.
-- Curvature imposition (Diewert-Wales Cholesky reparametrization or
-  similar) is scoped and explicitly deferred, not silently absent -- see
-  [Methodology Notes](METHODOLOGY_NOTES.md#slutzky-negativity) and
-  `GOLD_STANDARD_TODO.md`'s Milestone 5 section. Even the R `micEconAids`
-  reference implementation used for this library's own cross-validation
-  only offers curvature diagnosis, not imposition.
+- Curvature imposition (Diewert-Wales Cholesky reparametrization,
+  `quaidsCurvatureFit`, Milestone 10) is available for LA-AIDS/AIDS
+  (`aCtl.linear=1`), imposed locally at the sample mean, requiring the
+  `optmt` package (`package.json`'s `deps` array, no longer empty). QUAIDS
+  is deferred, not silently absent -- its Slutzky matrix adds cross-terms
+  entangling three nonlinear parameter blocks instead of two. Standard
+  errors from `quaidsCurvatureFit` are a simplified delta-method
+  approximation, known to be unreliable when the estimated Cholesky
+  factor has boundary (near-zero) entries (a standard complication of
+  Cholesky-based negative-semidefinite-cone estimation) -- point estimates
+  and the exact curvature property at the reference point are unaffected.
+  There is no independent published/cross-implementation validation for
+  the *imposed* estimator (only synthetic-DGP recovery,
+  `tests/quaids_curvature_test.e`): even the R `micEconAids` reference
+  implementation used elsewhere in this library only diagnoses curvature,
+  never imposes it. See
+  [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
+  and `GOLD_STANDARD_TODO.md`'s Milestone 10 section.
 
 Related documentation:
 
