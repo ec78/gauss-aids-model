@@ -9,6 +9,7 @@ struct quaidsControl {
     matrix homogenous;
     matrix err;
     matrix b0;
+    matrix relax;
 };
 
 /*

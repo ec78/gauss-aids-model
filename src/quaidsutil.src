@@ -8,6 +8,7 @@ proc (struct quaidsControl) = quaidsControlCreate();
     aCtl.homogenous = 1;
     aCtl.err = .0001;
     aCtl.b0 = 0;
+    aCtl.relax = 1;
 
     retp(aCtl);
 endp;

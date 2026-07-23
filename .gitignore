@@ -18,3 +18,4 @@ tests/pubtable_test_coef.md
 tests/pubtable_test_coef.csv
 tests/*.log
 *.log
+tests/convergence_sweep_report.txt

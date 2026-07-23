@@ -112,7 +112,7 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
         pvf, stdest, stderr, t, pvt, i, ic, ig, R1, enam,
         S, X, v_s, b_s, nz, mss, u1, b0, rsq, k, sym, pfsym,
         z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma,
-        model, iterHist, firstIter, overidFstat, overidPvf;
+        model, iterHist, firstIter, overidFstat, overidPvf, oldtrp, xvix;
     struct quaidsOut qOut;
 
     nobs = rows(w);
@@ -290,7 +290,23 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
         gw = m[1:ng, ng+1:ng+n];
         b = solpd(gw, gg);
 
-        err = maxc(maxc(abs((b-b0)./b0)));
+        /* Milestone 12: optional under-relaxation of the fixed-point
+           update -- aCtl.relax=1 (default) reproduces the original
+           full-step update exactly. This is the one mitigation that
+           measurably reduced this estimator's convergence-failure rate
+           in a 200-seed sweep (tests/quaids_convergence_sweep.e); the
+           denominator guard just below did not. Applied before the
+           convergence check so qOut.converged/iterations reflect the
+           coefficients actually returned. */
+        b = aCtl.relax*b + (1-aCtl.relax)*b0;
+
+        /* Milestone 12: guard against b0 entries at or near exact zero --
+           a real, frequent occurrence on this codebase's own synthetic
+           fixtures (true coefficients are rounded to the nearest 0.1 in
+           tests/quaidsfixtures.src), not a hypothetical edge case. Matches
+           the identical guard already used by quaidscurvature.src's own
+           analogous outer-loop convergence check. */
+        err = maxc(maxc(abs((b-b0)./(b0 + (b0 .== 0)))));
         if err <= aCtl.err or iter>=aCtl.maxiter;
             ok = 0;
         else;
@@ -523,17 +539,48 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
             ( zeros(rows(R1), k)~     R1           );
         X = X[i, .];
 
+        /* Milestone 12 finding: on a badly-diverged iterated fit, this
+           block's variance sub-matrix can be non-positive-definite,
+           and an unguarded invpd() here used to crash the entire
+           quaidsFit() call for the caller -- discovered by a 200-seed
+           convergence sweep, not a hypothetical. Trap both inversions
+           (the same trap/scalmiss idiom GAUSS's own gdaols.src uses) and
+           degrade gracefully instead: report the symmetry test as
+           invalid and fall back to the homogeneity-constrained estimate
+           as "best available", the same fallback already used below
+           when aCtl.homogenous==0. */
+        xvix = 0;
+        oldtrp = trapchk(1);
+        trap 1,1;
         vi = invpd(v[1:n1*ng, 1:n1*ng]);
-        v_s = X*invpd(X'vi*X)*X';
-        b_s = v_s*vi*vec(b[., 1:n1]);
-        u1 = vec(b[., 1:n1]) - b_s;
-        sym = u1'*vi*u1;
-        pfsym = cdfchic(sym, n1*(n1-1)/2);
-        clear i, ic, ig, R1, X, vi;
+        trap oldtrp,1;
 
-        qOut.symStat = sym;
-        qOut.symPval = pfsym;
-        qOut.symDf = n1*(n1-1)/2;
+        if not scalmiss(vi);
+            oldtrp = trapchk(1);
+            trap 1,1;
+            xvix = invpd(X'vi*X);
+            trap oldtrp,1;
+        endif;
+
+        if scalmiss(vi) or scalmiss(xvix);
+            qOut.symValid = 0;
+            qOut.symStat = miss(0, 0);
+            qOut.symPval = miss(0, 0);
+            qOut.symDf = n1*(n1-1)/2;
+            b_s = vec(b[., 1:n1]);
+            v_s = v[1:n1*ng, 1:n1*ng];
+        else;
+            v_s = X*xvix*X';
+            b_s = v_s*vi*vec(b[., 1:n1]);
+            u1 = vec(b[., 1:n1]) - b_s;
+            sym = u1'*vi*u1;
+            pfsym = cdfchic(sym, n1*(n1-1)/2);
+
+            qOut.symStat = sym;
+            qOut.symPval = pfsym;
+            qOut.symDf = n1*(n1-1)/2;
+        endif;
+        clear i, ic, ig, R1, X, vi, xvix;
 
         ii = -ones(1, n-1).*.eye(ng);
         v_s = (v_s|ii*v_s)~(v_s*ii'|ii*v_s*ii');

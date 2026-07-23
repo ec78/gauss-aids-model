@@ -5,6 +5,47 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.8.0 - 2026-07-23
+
+### Added
+- `aCtl.relax` (`src/quaids.sdf`/`quaidsutil.src`): optional under-
+  relaxation (damping) of `quaidsFit()`'s iterated translog-price-index
+  fixed-point update, `(0,1]`, default `1` (no damping, byte-identical to
+  every prior release). Empirically the one mitigation of three tested
+  that measurably reduced the iterated estimator's convergence-failure
+  rate, at `relax=.75` -- see `GOLD_STANDARD_TODO.md`'s Milestone 12.
+- `tests/quaids_convergence_sweep.e`/`tests/run_convergence_sweep.ps1`: a
+  real, committed 200-seed x 2-model convergence-reliability diagnostic,
+  replacing an informal 8-seed probe referenced since Milestone 3 that
+  never survived as a repo artifact. Diagnostic only, not a pass/fail
+  gate.
+- `tests/quaids_reliability_regression_test.e` (8 checks): regression
+  guard for the fixes below.
+
+### Fixed
+- A real crash: an unguarded `invpd()` in `quaidsFit()`'s symmetry-test
+  block threw `error G0121: Matrix not positive definite` and aborted the
+  entire call for the caller whenever a badly-diverged iterated fit
+  produced a non-positive-definite variance block -- found by the new
+  200-seed sweep, not a hypothetical. Now degrades gracefully
+  (`qOut.symValid=0`, `qOut.converged` reflects the iteration's own
+  state) instead of crashing.
+- A near-zero-denominator guard on `quaidsFit()`'s convergence check
+  (`b0 + (b0 .== 0)`, matching `quaidscurvature.src`'s own analogous
+  guard) -- a real correctness gap (this codebase's own synthetic
+  fixtures round true coefficients to the nearest 0.1, so exact zeros are
+  a real occurrence), but measured via the sweep to have **zero effect**
+  on the observed failure rate. Kept and documented as an honest
+  non-result, not omitted.
+
+### Notes
+- The 200-seed sweep replaced "roughly half of seeds fail" with precise,
+  reproducible numbers: iterated AIDS fails (never-converges or converges
+  to a wrong answer) 58% of the time at default settings, QUAIDS 76% --
+  see `docs/USAGE_GUIDE.md` and `docs/FEATURE_SUPPORT_MATRIX.md`. This
+  milestone characterizes and partially mitigates the instability; it
+  does not claim to solve it.
+
 ## 0.7.0 - 2026-07-23
 
 ### Added

@@ -11,8 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.7.0`. **The original ten-
-milestone roadmap is complete, plus Milestone 11**, as of 2026-07-23: 0
+The repository is pre-alpha, package version `0.8.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11 and 12**, as of
+2026-07-23: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -24,11 +25,16 @@ published/cross-implementation validation reference available), 10 (local
 curvature imposition for LA-AIDS/AIDS via the Diewert-Wales Cholesky
 reparametrization, requested directly by the repo owner and built on
 GAUSS's `optmt` package — this library's first real external dependency),
-and 11 (exact welfare measures — compensating/equivalent variation — for
+11 (exact welfare measures — compensating/equivalent variation — for
 all three model choices, requested directly by the repo owner as the next
 expansion step; see that section below for a real correctness risk found
 and resolved *before* any code was written, by checking a from-memory
-formula against Shephard's lemma and catching it wrong).
+formula against Shephard's lemma and catching it wrong), and 12
+(numerical reliability of the iterated estimator — a real, committed
+200-seed convergence sweep replacing an informal probe that never
+survived in this repo's history, one confirmed crash bugfix, and one
+modest evidence-backed opt-in damping mitigation; see that section below
+for why "convergence guaranteed" was never a realistic exit criterion).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -158,6 +164,16 @@ formula against Shephard's lemma and catching it wrong).
   error (a QUAIDS expenditure-function sign/inversion mistake) via
   Shephard's-lemma cross-check *before* writing any code, not after. See
   the Milestone 11 entry below.
+- Milestone 12: numerical reliability of the iterated estimator. A real,
+  committed 200-seed sweep (`tests/quaids_convergence_sweep.e`) replaced
+  an informal 8-seed probe that never survived in this repo's history,
+  precisely characterizing "roughly half of seeds fail" as 58% (iterated
+  AIDS) / 76% (QUAIDS) at default settings, split into three distinct
+  failure buckets. Fixed a real crash (an unguarded `invpd()` that could
+  abort the entire `quaidsFit()` call) found by running the sweep at
+  scale, and added an opt-in damping field (`aCtl.relax`, default `1`)
+  that measurably, modestly reduces the failure rate. Does not claim the
+  underlying instability is solved. See the Milestone 12 entry below.
 
 `docs/` now exists (Milestone 8, above).
 
@@ -671,28 +687,16 @@ starting-value bug above; a full numerical-reliability pass (e.g. damped
 iteration, multiple starting points, convergence diagnostics surfaced to
 the caller) is out of scope for a validation milestone.
 
-#### Seed sensitivity finding (numerical reliability)
-
-While calibrating the synthetic fixtures' tolerances, a multi-seed probe
-(8 seeds, `tobs=3000`, `aCtl.err=.0001`, `aCtl.maxiter=100`) found that the
-**iterative estimator (QUAIDS and iterated linear AIDS) fails to converge,
-or converges to numerically nonsensical estimates (errors of magnitude
-200–2500 against true parameters of magnitude ~0.1–2), for roughly half of
-random seeds** in this DGP family — independent of whether the model has a
-quadratic term or genuine endogeneity (the same seeds failed or succeeded
-across both `quadratic`/`endogenous` settings, holding `prices` fixed for a
-given seed, which points at price-draw-dependent conditioning of the
-iteration rather than something specific to QUAIDS or IV). The synthetic
-fixtures deliberately use `seed=204`, one of the seeds confirmed to converge
-cleanly across all six model/endogeneity combinations, and that choice is
-called out in `quaids_synthetic_validation_test.e`'s own comments — this is
-not silently cherry-picked. This finding itself is valuable Milestone-3
-output: it identifies a real robustness gap (the iterated FGLS estimator
-has no globally-convergent guarantee and no fallback/damping for bad
-starting points) worth a dedicated numerical-reliability pass once more of
-the roadmap is built out — likely as part of hardening work analogous to
-`gauss-qardl`'s Milestone 13. Not fixed here; fixing it would mean changing
-estimation numerics, out of scope for a validation milestone.
+**Update, Milestone 12 (2026-07-23)**: this informal 8-seed probe never
+survived as a committed artifact anywhere in this repo's history (its
+exact numbers could not even be independently reproduced when this was
+checked). Milestone 12 replaced it with a real, committed 200-seed sweep
+(`tests/quaids_convergence_sweep.e`) and applied one confirmed bugfix plus
+one evidence-backed opt-in mitigation (`aCtl.relax`) — see the Milestone
+12 section below for the full, precise breakdown (this "roughly half"
+estimate turned out to understate iterated AIDS's failure rate somewhat
+and QUAIDS's failure rate substantially: 58%/76% measured at default
+settings, not ~50%/~50%).
 
 #### Tolerance Policy
 
@@ -1477,6 +1481,138 @@ prior milestones' write-ups is now stale. This milestone's changes were
 committed and pushed explicitly (see the repo's commit history for the
 exact commit) per the repo owner's request to commit/push at milestone
 breakpoints going forward.
+
+### Milestone 12 — Numerical Reliability of the Iterated Estimator — COMPLETE (2026-07-23)
+
+**Context**: after Milestone 11 closed, the repo owner asked what's next.
+This closed the loop on a problem documented but never root-caused since
+Milestone 3: the iterated estimator (`quaidsFit()`, `aCtl.maxiter>1`)
+fails to converge, or converges to a wrong answer, for a large fraction of
+random seeds — previously described only as "roughly half," with the
+original 8-seed probe behind that number never surviving as a committed
+artifact (confirmed by a full git-history search: it does not exist
+anywhere in this repo).
+
+**Stage 1 — a real, committed diagnostic** (`tests/quaids_convergence_sweep.e`,
+`tests/run_convergence_sweep.ps1`): sweeps 200 seeds x 2 models
+(iterated AIDS, QUAIDS) at the original probe's exact settings
+(`tobs=3000`, `aCtl.err=.0001`, `aCtl.maxiter=100`), classifying each
+fit into one of three buckets that the old "roughly half" phrasing
+conflated: **never-converged** (hit `aCtl.maxiter` without meeting
+tolerance), **converged-but-wrong** (`qOut.converged==1` but the
+recovered coefficients are >10x the normal structural tolerance from the
+truth — a genuinely different failure mode, a self-consistent but wrong
+fixed point, not simply running out of iterations), and
+**converged-correctly**. Deliberately a diagnostic report generator, not
+a pass/fail gate (not wired into `run_source_tests.ps1`) — there is no
+convergence guarantee to gate on.
+
+**Measured baseline** (default settings, `aCtl.relax=1`):
+
+| Model | never-converged | converged-but-wrong | converged-correctly |
+| --- | --- | --- | --- |
+| Iterated AIDS | 39% | 19% | 42% |
+| QUAIDS | 54.5% | 21.5% | 24% |
+
+**A real crash, found by running the sweep at scale, not a hypothetical**:
+partway through the first 200-seed run, `quaidsFit()` itself threw
+`error G0121: Matrix not positive definite` and aborted the entire batch.
+Root cause: an unguarded `invpd()` in the symmetry-test block
+(`src/quaids.src`, `vi = invpd(v[1:n1*ng, 1:n1*ng])`) crashes the whole
+call — not just returns a bad answer — whenever a badly-diverged iterated
+fit produces a non-positive-definite variance block. Confirmed the fix
+via GAUSS's own `trap`/`scalmiss` idiom (the exact pattern GAUSS's
+shipped `gdaols.src` uses for the identical situation) first in an
+isolated reproduction, then applied inside `quaidsFit()` itself so no
+caller needs to trap anything: on failure, `qOut.symValid` is set to `0`
+and the symmetry-constrained refit falls back to the homogeneity-
+constrained estimate as "best available" — the same fallback already used
+when `aCtl.homogenous==0`. `printQuaids()` already gates the entire
+symmetry-constrained report on `qOut.symValid` (confirmed by reading it,
+not assumed), so the degenerate fallback values are never surfaced to a
+human reader. This is an unconditional bugfix (no version bump on its
+own, no back-compat flag), same precedent as the Milestone 3 Stone-index
+fix — a crash on unlucky-but-valid input is unambiguously a bug.
+
+**Fix candidate (a): near-zero-denominator guard on the convergence
+check** (`src/quaids.src`: `err = maxc(maxc(abs((b-b0)./(b0 + (b0 .==
+0)))))`, matching the identical guard `src/quaidscurvature.src`'s own
+analogous outer-loop check already uses). Real motivation, not
+hypothetical: this codebase's own synthetic fixtures build true
+coefficients via `round(rndns(...)*10)/10`, so exact/near-zero true
+values are a frequent, reproducible occurrence. **Result, verified by
+re-running the sweep before/after: zero measurable effect** — the
+post-fix sweep output was byte-identical to the pre-fix baseline across
+all 400 fits. Kept anyway as a legitimate, unconditional defensive fix
+(protects against a literal zero denominator, which is still possible in
+principle), and documented honestly as a non-result rather than omitted
+or oversold — the same "verify before trusting a derived fix" standard
+this project has applied since Milestone 3. Likely explanation: the
+*true* DGP parameter can be exactly zero by construction, but the
+*estimated* `b0` during iteration is a continuous, noisy value that
+essentially never lands on literal `0.0` in floating point — so the exact-
+zero guard's trigger condition rarely if ever fires in practice, even
+though near-zero true coefficients are common.
+
+**Fix candidate (b): optional damping** (`aCtl.relax`, new
+`quaidsControl` field, `(0,1]`, default `1` = no damping, byte-identical
+to every prior release unless a caller opts in — `src/quaids.sdf`,
+`src/quaidsutil.src`, one new line in `src/quaids.src`'s loop:
+`b = aCtl.relax*b + (1-aCtl.relax)*b0;`, applied before the convergence
+check so `qOut.converged`/`iterations` reflect the coefficients actually
+returned). Verified by re-running the sweep at `aCtl.relax` in
+`{1.0, .75, .5, .3}`:
+
+| relax | Iterated AIDS correct | QUAIDS correct |
+| --- | --- | --- |
+| 1.0 (default) | 42% | 24% |
+| **.75** | **43%** | **26.5%** |
+| .5 | 39% | 25% |
+| .3 | 29% | 19% |
+
+Damping reduces the never-converged rate substantially at every setting
+tested, but mostly by converting "never converges" into "converges to a
+wrong answer" rather than into a correct fit — heavier damping does not
+help further and clearly hurts at `.3`. `relax=.75` is a real, modest,
+evidence-backed improvement (documented as such, not oversold), not a
+fix for the underlying instability. A concrete example is pinned as a
+regression check: seed 2 (QUAIDS) never-converges at the default
+`relax=1` but converges correctly in 78 iterations at `relax=.75`.
+
+**This milestone does not claim the instability is solved.** Naive
+successive-substitution on this nonlinear FGLS system can genuinely have
+multiple fixed points for a bad price draw — no amount of denominator-
+guarding or mild damping changes which basin of attraction the iteration
+falls into. The honest exit criteria here, matching this project's
+established standard for partial fixes (the boundary-inference caveat on
+`quaidsCurvatureFit`'s standard errors, the "no QUAIDS reference
+implementation" caveat on published-data validation): **characterized
+precisely with real, reproducible numbers (replacing "roughly half" with
+a real sweep and a three-way failure taxonomy), fixed the one confirmed
+crash bug, and added one modest, evidence-backed opt-in mitigation** — not
+"convergence guaranteed."
+
+**Regression testing**: `tests/quaids_reliability_regression_test.e` (8
+checks) — `aCtl.relax=1` reproduces byte-identical output to leaving
+`aCtl.relax` unset (confirms the new field is a true no-op at its
+default); the previously-crashing seed (QUAIDS, seed 43) no longer
+crashes and correctly reports `qOut.converged==0`/`qOut.symValid==0`
+rather than silently-wrong output; the seed-2 damping example above is
+pinned exactly. The full existing 9-file suite (`quaids_synthetic_
+validation_test.e`'s `seed=204` fixtures, `quaids_published_validation_
+test.e`'s Blanciforti86 cross-check, and all others) re-ran clean with
+unchanged tolerances after all three changes — no pinned "golden" numbers
+from before this milestone were needed as a separate check, since the
+existing tolerance-based fixtures already cover that ground.
+
+**Version bump to `0.8.0`**: `aCtl.relax` is a new field on the public
+`quaidsControl` struct — real new public API surface, matching the
+Milestone 10/11 precedent of bumping on any new public struct field or
+proc, regardless of whether the field's default changes any existing
+caller's behavior. (The crash fix and denominator guard alone would not
+have warranted a bump, per the Milestone 3/7-9 precedent for pure
+bugfixes with no new API surface — the bump here is attributable
+specifically to `aCtl.relax`.)
 
 ## Definition of Done for a Gold Standard Release
 

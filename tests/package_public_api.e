@@ -47,6 +47,12 @@ new;
 ** here rather than reused, for the same "no dependency on tests/-only
 ** fixture code" reason as the main dataset above.
 **
+** Milestone 12 added aCtl.relax (an opt-in damping field on the existing
+** quaidsControl struct, not a new proc) -- exercised here by asserting
+** its default value and by running one fit with it set to a non-default
+** value, confirming the installed package's .sdf/.lcg picked up the new
+** field, not just that it compiles source-tree-side.
+**
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
 */
@@ -102,6 +108,7 @@ w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
 struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 call assert_true(aCtl.maxiter > 1 and aCtl.homogenous == 1, "quaidsControlCreate defaults look wrong");
+call assert_true(aCtl.relax == 1, "quaidsControlCreate: aCtl.relax (Milestone 12) default should be 1 (no damping)");
 
 struct quaidsControl aCtlAlias;
 aCtlAlias = getDefaultQuaidsControl();
@@ -122,6 +129,16 @@ call assert_true(qOut.model $== "QUAIDS" and qOut.n == N and qOut.nobs == tobs,
     "quaidsFit metadata invalid");
 call assert_true(rows(qOut.bestB) > 0 and rows(qOut.bestV) == rows(qOut.bestB)*N and cols(qOut.bestV) == rows(qOut.bestB)*N,
     "quaidsFit bestB/bestV shape invalid");
+
+/* aCtl.relax (Milestone 12): confirm the installed package's .sdf/.lcg
+   actually picked up the new quaidsControl field, not just that it
+   compiles source-tree-side. */
+struct quaidsOut qOutRelax;
+struct quaidsControl aCtlRelax;
+aCtlRelax = aCtl;
+aCtlRelax.relax = .75;
+qOutRelax = quaidsFit(w, intcpt, prices, totexp, instr, aCtlRelax);
+call assert_true(rows(qOutRelax.bestB) == rows(qOut.bestB), "quaidsFit with aCtl.relax=.75 (installed package) produced a valid fit");
 
 struct quaidsOut qOutLA;
 struct quaidsControl aCtlLA;

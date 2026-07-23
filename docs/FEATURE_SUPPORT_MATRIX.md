@@ -29,11 +29,33 @@ for the exact switch values.
 | `pubtable` export (LaTeX/Markdown/CSV/...) | Yes (`src/pubtable_quaids.src`, optional) | Yes | Yes |
 | Synthetic deterministic validation | Yes (`tests/quaids_synthetic_validation_test.e`) | Yes | Yes |
 | Published-data cross-validation vs. R | Yes (`Blanciforti86` vs. 3SLS, `tests/quaids_published_validation_test.e`) | Yes (`Blanciforti86` vs. `method="IL"`, wider tolerance -- see Notes) | No independent reference implementation exists (see Notes) |
-| Iteration convergence guarantee | Not applicable (one-step) | No -- roughly half of random seeds in one synthetic-DGP family failed to converge cleanly; check `qOut.converged` | No -- same caveat |
+| Iteration convergence guarantee | Not applicable (one-step) | No -- a 200-seed sweep measured a 58% failure rate (never-converges or converges to a wrong answer) at default settings; check `qOut.converged`. `aCtl.relax=.75` measurably reduces this -- see Notes | No -- same caveat, 76% failure rate measured |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
 ## Notes
 
+- **Iteration convergence guarantee** (Milestone 12): a real, committed
+  200-seed x 2-model sweep (`tests/quaids_convergence_sweep.e`, replacing
+  an informal 8-seed probe referenced since Milestone 3 that never
+  survived as a repo artifact) measured, at default settings
+  (`aCtl.relax=1`, `aCtl.err=.0001`, `aCtl.maxiter=100`): iterated AIDS
+  never-converges 39% of the time and converges to a wrong answer (a
+  self-consistent but incorrect fixed point, distinct from simply running
+  out of iterations) another 19% (58% combined failure); QUAIDS
+  never-converges 54.5% and converges wrong another 21.5% (76% combined).
+  Two candidate fixes were tested empirically, not assumed: a near-zero-
+  denominator guard on the convergence check had **zero measurable
+  effect** (documented as an honest non-result); an opt-in damping field
+  `aCtl.relax` (default `1`, i.e. off) measurably improved the correct-
+  convergence rate at `relax=.75` (iterated AIDS 42%->43% correct, QUAIDS
+  24%->26.5% correct) but more aggressive damping (`.5`, `.3`) did not
+  help further and often made things worse. This is a modest, evidence-
+  backed mitigation, not a solved problem -- see
+  [Usage guide](USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids)
+  and `GOLD_STANDARD_TODO.md`'s Milestone 12 section for the full grid
+  and the separate, unrelated crash fix this same sweep also found (an
+  unguarded `invpd()` in the symmetry-test block that used to abort the
+  entire `quaidsFit()` call on a badly-diverged fit).
 - "Always (control-function)" means `instr` is a required argument to
   every estimator entry point -- there is no exogenous-total-expenditure
   estimation mode in this library.

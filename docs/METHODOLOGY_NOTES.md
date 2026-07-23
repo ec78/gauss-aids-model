@@ -92,7 +92,12 @@ coefficient estimates.
    residual becomes an added regressor.
 3. **Homogeneity-constrained (or unconstrained) FGLS**, iterating the
    translog price index when `aCtl.maxiter > 1`, until relative parameter
-   change falls below `aCtl.err` or `aCtl.maxiter` is reached.
+   change (guarded against a near-zero denominator, `b0 + (b0 .== 0)`)
+   falls below `aCtl.err` or `aCtl.maxiter` is reached. Each step is a
+   plain fixed-point update (`b_new = relax*b + (1-relax)*b_old`,
+   `aCtl.relax` default `1` = no damping); this has no global-convergence
+   guarantee -- see `GOLD_STANDARD_TODO.md`'s Milestone 12 section for a
+   measured failure-rate characterization and `aCtl.relax`'s effect.
 4. **Overidentification test**, if `ninst > nu`.
 5. **Symmetry test given homogeneity**, and a **symmetry-constrained
    re-estimation** via minimum distance, if `aCtl.homogenous == 1`.

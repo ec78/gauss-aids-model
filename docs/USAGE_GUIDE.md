@@ -74,11 +74,26 @@ aCtl.maxiter = 100;
 For `aCtl.maxiter > 1`, `qOut.model` reports which of `"AIDS"`/`"QUAIDS"`
 was actually fit.
 
-**Convergence is not guaranteed** for the iterated estimator: in one
-synthetic-DGP family used for validation, roughly half of random seeds
-failed to converge cleanly or converged to values far from the truth (see
-`GOLD_STANDARD_TODO.md`'s Milestone 3 findings). Check `qOut.converged`
-and `qOut.iterations` after any iterated fit before trusting the result.
+**Convergence is not guaranteed** for the iterated estimator. A real,
+committed 200-seed sweep (`tests/quaids_convergence_sweep.e`, Milestone
+12 -- run it yourself with `tests/run_convergence_sweep.ps1`) measured,
+at default settings: iterated AIDS fails (never converges, or converges
+to a self-consistent but wrong answer) 58% of the time; QUAIDS 76%. An
+optional damping control can help:
+
+```gauss
+aCtl.relax = .75;   // default is 1 (no damping); .75 measurably reduced
+                    // the failure rate in the Milestone 12 sweep
+```
+
+`aCtl.relax` under-relaxes the fixed-point update (`b_new = relax*b +
+(1-relax)*b_old` each iteration); more aggressive damping (`.5`, `.3`)
+did not help further in testing and often made things worse. This is a
+modest, evidence-backed mitigation, not a guarantee -- always check
+`qOut.converged` and `qOut.iterations` after any iterated fit before
+trusting the result. See
+[Feature Support Matrix](FEATURE_SUPPORT_MATRIX.md#notes) and
+`GOLD_STANDARD_TODO.md`'s Milestone 12 section for the full breakdown.
 
 ## Instrumental Variables Are Always Required
 
@@ -242,5 +257,6 @@ runnable example.
   property are unaffected. QUAIDS curvature imposition is deferred.
 - No guaranteed convergence for the iterated estimator (or the curvature-
   constrained outer iteration built on top of it) -- see "Choosing A
-  Model" above.
+  Model" above. `aCtl.relax` (Milestone 12) is an evidence-backed, opt-in
+  mitigation, not a fix.
 - IV is mandatory; there is no exogenous-total-expenditure estimation mode.
