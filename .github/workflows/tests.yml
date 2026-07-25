@@ -26,10 +26,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run source-tree test suite
-        shell: powershell
-        # -ExecutionPolicy Bypass: the runner service runs as NT
-        # AUTHORITY\NETWORK SERVICE, a different account from the
-        # maintainer's own, whose default execution policy blocks
-        # running any .ps1 file at all. Same workaround this repo's own
-        # local invocations have always used.
+        # shell: cmd (not the default "powershell", which wraps this
+        # whole run: block in its own ". 'tempfile.ps1'" invocation --
+        # that OUTER powershell call has no -ExecutionPolicy Bypass of
+        # its own, so it hits the policy wall before our inner command
+        # ever runs. cmd has no such policy, so our own explicit
+        # `powershell -ExecutionPolicy Bypass` below is the first and
+        # only PowerShell invocation, and it applies correctly. The
+        # runner service runs as NT AUTHORITY\NETWORK SERVICE, a
+        # different account from the maintainer's own, whose default
+        # execution policy blocks running any .ps1 file at all.
+        shell: cmd
         run: powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1
