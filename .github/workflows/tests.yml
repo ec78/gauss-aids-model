@@ -27,4 +27,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run source-tree test suite
         shell: powershell
-        run: tests\run_source_tests.ps1
+        # -ExecutionPolicy Bypass: the runner service runs as NT
+        # AUTHORITY\NETWORK SERVICE, a different account from the
+        # maintainer's own, whose default execution policy blocks
+        # running any .ps1 file at all. Same workaround this repo's own
+        # local invocations have always used.
+        run: powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1
