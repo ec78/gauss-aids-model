@@ -1,0 +1,30 @@
+name: Test suite
+
+# Milestone 14: runs on a self-hosted runner (this repo's tests require
+# GAUSS/tgauss.exe, a licensed product only installed on the maintainer's
+# machine -- GitHub-hosted runners cannot run them).
+#
+# Deliberately triggers on push only, NOT pull_request: this repository is
+# public, and self-hosted runners on public repos are a real security risk
+# on pull_request triggers (a fork could open a PR that runs arbitrary
+# workflow code on the runner machine). Push access is restricted to repo
+# collaborators, so push-only closes that attack vector entirely.
+#
+# Runs tests/run_source_tests.ps1 only (the fast, read-only source-tree
+# suite) -- not the full release-verification/rebuild-and-reinstall
+# pipeline, which mutates the shared GAUSS package install
+# (c:\gauss26\pkgs\quaids) and stays a manually-run command for now.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: [self-hosted, Windows, gauss]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run source-tree test suite
+        shell: powershell
+        run: tests\run_source_tests.ps1
