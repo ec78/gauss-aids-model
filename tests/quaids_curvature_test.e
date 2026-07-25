@@ -3,8 +3,11 @@
 **
 ** Milestone 10: validates quaidsCurvatureFit() (src/quaidscurvature.src),
 ** the Diewert-Wales Cholesky reparametrization imposing local curvature
-** (Slutzky negative semidefiniteness) at the sample mean, scoped to
-** LA-AIDS/AIDS (aCtl.linear=1).
+** (Slutzky negative semidefiniteness) at the sample mean, for AIDS
+** (aCtl.linear=1). Milestone 13 extends the same test file to also cover
+** QUAIDS (aCtl.linear=0) -- see the second block below.
+**
+** === AIDS block ===
 **
 ** Uses tests/quaidsfixtures.src's _quaidsCurvatureSyntheticDGP(): a
 ** synthetic dataset whose TRUE gamma is curvature-consistent at its own
@@ -42,6 +45,37 @@
 ** only for non-negativity/finiteness here, not magnitude. See
 ** src/quaidscurvature.src's header comment and
 ** GOLD_STANDARD_TODO.md's Milestone 10 section.
+**
+** === QUAIDS block (Milestone 13) ===
+**
+** Deliberately does NOT reuse the AIDS block's "recovers a known true
+** curvature-consistent gamma" design. Building a QUAIDS analog of
+** _quaidsCurvatureSyntheticDGP() -- a self-consistent-fixed-point true
+** DGP whose gamma is curvature-consistent at its own realized sample
+** mean -- turned out to be substantially harder than for AIDS: a broad
+** screen (tens of thousands of seed/aScale combinations) found dozens of
+** seeds where the fixed-point construction is numerically self-consistent
+** AND genuinely negative-semidefinite, but EVERY one of them implied
+** economically nonsensical mean budget shares (large negative/>1 entries)
+** at that fixed point -- not a "wrong seed" problem, a property of this
+** fixed-point map for this DGP family. Rather than force an implausible
+** fixture, this block instead validates quaidsCurvatureFit() on QUAIDS
+** using the existing, already-validated general QUAIDS fixture
+** (_quaidsSyntheticDGP(), the same one quaids_synthetic_validation_test.e
+** and others already rely on) -- checking convergence, exact NSD at the
+** reference point, non-vacuousness against the unconstrained fit's own
+** violation, and shape/finiteness, but NOT "recovers the true gamma"
+** (there is no known-curvature-consistent true gamma to recover here).
+** This is a real, weaker tier of evidence than the AIDS block's, and is
+** documented as such rather than silently equated with it -- the same
+** honesty standard already applied to QUAIDS's published-data validation
+** gap (see docs/FEATURE_SUPPORT_MATRIX.md).
+**
+** aCtl.relax (Milestone 12) is required here, not optional: QUAIDS's
+** curvature outer loop is measurably less stable than AIDS's own (see
+** src/quaidscurvature.src's header) -- undamped (relax=1) runs on this
+** fixture diverge to NaN within a handful of iterations, confirmed
+** directly, not assumed. relax=.25 was found to converge cleanly.
 **
 ** Run from the tests/ directory:
 **   tgauss -b -x quaids_curvature_test.e
@@ -165,6 +199,77 @@ call check(minc(abs(vech(cOut.cholA))) < 1e-6,
 /* --- printQuaidsCurvature() runs without error. --- */
 call printQuaidsCurvature(cOut);
 call check(1, "printQuaidsCurvature() runs without error");
+
+
+/* ===================================================================
+   QUAIDS block (Milestone 13) -- see file header for why this checks
+   convergence/NSD/shape rather than "recovers a known true gamma".
+   =================================================================== */
+
+tobsQ = 3000;
+{ wQ, intcptQ, pricesQ, totexpQ, instrQ, trueParamsQ } = _quaidsSyntheticDGP(tobsQ, 204, 1, 1);
+
+struct quaidsControl aCtlQ;
+aCtlQ = quaidsControlCreate();
+aCtlQ.linear = 0;
+aCtlQ.maxiter = 100;
+aCtlQ.homogenous = 1;
+aCtlQ.err = .0001;
+
+struct quaidsOut qOutQ;
+qOutQ = quaidsFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ);
+call check(qOutQ.converged == 1, "QUAIDS: starting homogeneity+symmetry fit converged");
+
+nQ = qOutQ.n;
+n1Q = nQ - 1;
+nintQ = qOutQ.nint;
+
+pricesPtQ = meanc(pricesQ);
+totexpPtQ = meanc(totexpQ);
+intcptPtQ = meanc(qOutQ.intcptFull);
+alphaUncQ = qOutQ.bestB[1:1+nintQ, .];
+gaUncQ = qOutQ.bestB[1+nintQ+1:1+nintQ+nQ, .];
+betaUncQ = qOutQ.bestB[1+nintQ+nQ+1, .];
+lambdaUncQ = qOutQ.bestB[1+nintQ+nQ+2, .];
+
+b_pUncQ = exp(pricesPtQ'betaUncQ');
+a_pPtUncQ = intcptPtQ'alphaUncQ*pricesPtQ + .5*pricesPtQ'gaUncQ*pricesPtQ;
+lxPtUncQ = totexpPtQ - a_pPtUncQ;
+lx2PtUncQ = (lxPtUncQ^2)/b_pUncQ;
+muPtUncQ = lambdaUncQ*lxPtUncQ/b_pUncQ;
+wPtUncQ = alphaUncQ'intcptPtQ + gaUncQ'pricesPtQ + betaUncQ'lxPtUncQ + lambdaUncQ'lx2PtUncQ;
+wepcUncQ = -diagrv(eye(nQ), wPtUncQ) + wPtUncQ*wPtUncQ' + gaUncQ
+    + (betaUncQ'betaUncQ + betaUncQ'muPtUncQ + muPtUncQ'betaUncQ + 2*muPtUncQ'muPtUncQ)*lxPtUncQ;
+eigUncQ = eigh(wepcUncQ);
+
+call check(maxc(eigUncQ) > 0, "QUAIDS: unconstrained fit genuinely violates curvature at the sample mean (non-vacuous test)");
+
+struct quaidsControl aCtlCurvQ;
+aCtlCurvQ = aCtlQ;
+aCtlCurvQ.relax = .25;
+
+struct quaidsCurvOut cOutQ;
+cOutQ = quaidsCurvatureFit(qOutQ, wQ, pricesQ, totexpQ, aCtlCurvQ);
+
+call check(cOutQ.converged == 1, "QUAIDS: curvature-constrained fit converged");
+call check(cOutQ.n == nQ and cOutQ.n1 == n1Q, "QUAIDS: quaidsCurvOut metadata matches qOut");
+
+call check(maxc(abs(sumc(cOutQ.gama'))) < 1e-8, "QUAIDS: curvature-constrained gamma: row sums == 0 (homogeneity)");
+call check(maxc(abs(sumc(cOutQ.gama))) < 1e-8, "QUAIDS: curvature-constrained gamma: column sums == 0 (adding-up)");
+call check(maxc(maxc(abs(cOutQ.gama - cOutQ.gama'))) < 1e-8, "QUAIDS: curvature-constrained gamma is symmetric");
+
+call check(maxc(cOutQ.eigenvalues) < 1e-3,
+    "QUAIDS: curvature-constrained fit: Slutzky matrix at the reference point is NSD (to iteration tolerance)");
+call check(maxc(cOutQ.eigenvalues) < maxc(eigUncQ),
+    "QUAIDS: curvature-constrained fit's largest eigenvalue is smaller than the unconstrained fit's");
+
+call check(rows(cOutQ.b) == 1+nintQ+nQ+2 and cols(cOutQ.b) == nQ, "QUAIDS: cOut.b has the expected shape (includes a lambda row)");
+call check(rows(cOutQ.se) == rows(cOutQ.b) and cols(cOutQ.se) == cols(cOutQ.b), "QUAIDS: cOut.se matches cOut.b's shape");
+call check(minc(minc(cOutQ.se)) >= 0, "QUAIDS: cOut.se are all non-negative");
+call check(sumc(sumc(cOutQ.se .== cOutQ.se)) == rows(cOutQ.se)*cols(cOutQ.se), "QUAIDS: cOut.se contains no NaN/missing values");
+
+call printQuaidsCurvature(cOutQ);
+call check(1, "QUAIDS: printQuaidsCurvature() runs without error");
 
 
 print;

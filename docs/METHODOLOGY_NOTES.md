@@ -193,8 +193,8 @@ Concavity of a flexible functional form like AIDS/QUAIDS cannot be imposed
 result in the demand-systems literature (Diewert & Wales, 1987), not a gap
 in this implementation. [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)
 imposes it *locally*, at the sample mean, for LA-AIDS/AIDS
-(`aCtl.linear = 1`; QUAIDS is deferred -- see
-[Feature Support Matrix](FEATURE_SUPPORT_MATRIX.md)).
+(`aCtl.linear = 1`) and, since Milestone 13, QUAIDS (`aCtl.linear = 0`)
+too -- see [Feature Support Matrix](FEATURE_SUPPORT_MATRIX.md).
 
 The reparametrization: write the upper-left `(n-1) x (n-1)` block of the
 gamma matrix as `gamma = -A*A' - K0`, where `A` is lower triangular and
@@ -206,7 +206,16 @@ GAUSS's `optmt` package searches only over `A`'s free elements
 (`vech(A)`), with the remaining coefficients exactly identified by OLS
 once the reparametrized gamma is substituted in as a fixed offset --
 within an outer iteration that mirrors `quaidsFit()`'s own translog-
-price-index iteration.
+price-index iteration. For QUAIDS, `beta` and `lambda` are profiled out
+alongside the intercept/gamma the same way -- `beta` appears both in the
+plain `beta'beta` term (shared with AIDS) and, via `b(p)=exp(beta'p)`,
+inside a `lambda`-scaled cross-term; both are lagged by one outer round
+to build that round's regressors, exactly mirroring how `quaidsFit()`'s
+own loop lags `beta` to build its `lx2` regressor -- so `optmt`'s search
+dimension (`vech(A)` only) never grows for QUAIDS. QUAIDS's outer loop is
+measurably less stable than AIDS's own, found empirically: `aCtl.relax`
+(the same field `quaidsFit()` uses, see "Estimation Algorithm Summary"
+above) is effectively required for QUAIDS, not just optional.
 
 Standard errors are a simplified, homoskedastic-NLS delta-method
 approximation, not a full SUR/GMM sandwich, and are known to be

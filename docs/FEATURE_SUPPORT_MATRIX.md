@@ -23,7 +23,7 @@ for the exact switch values.
 | Exact algebraic identity validation (Engel/Cournot/homogeneity) | Yes | Yes | Yes |
 | Slutzky negativity diagnostic | Yes (`quaidsSlutzky`) | Yes | Yes |
 | Welfare measures (exact CV/EV) | Yes (`quaidsWelfareFit`, no extra dependency) | Yes | Yes |
-| Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | No (diagnosis only) -- deferred, see Notes |
+| Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | Yes since Milestone 13, requires `aCtl.relax` -- see Notes |
 | Dataframe/column-name entry point | Yes (`quaidsFull`) | Yes | Yes |
 | Formula-string (`"y ~ x"`) API | Not applicable (multi-equation system) | Not applicable | Not applicable |
 | `pubtable` export (LaTeX/Markdown/CSV/...) | Yes (`src/pubtable_quaids.src`, optional) | Yes | Yes |
@@ -90,23 +90,38 @@ for the exact switch values.
   tier of evidence than cross-implementation agreement on real published
   data. Documented here rather than silently claimed as equivalent.
 - Curvature imposition (Diewert-Wales Cholesky reparametrization,
-  `quaidsCurvatureFit`, Milestone 10) is available for LA-AIDS/AIDS
-  (`aCtl.linear=1`), imposed locally at the sample mean, requiring the
-  `optmt` package (`package.json`'s `deps` array, no longer empty). QUAIDS
-  is deferred, not silently absent -- its Slutzky matrix adds cross-terms
-  entangling three nonlinear parameter blocks instead of two. Standard
-  errors from `quaidsCurvatureFit` are a simplified delta-method
-  approximation, known to be unreliable when the estimated Cholesky
-  factor has boundary (near-zero) entries (a standard complication of
-  Cholesky-based negative-semidefinite-cone estimation) -- point estimates
-  and the exact curvature property at the reference point are unaffected.
-  There is no independent published/cross-implementation validation for
-  the *imposed* estimator (only synthetic-DGP recovery,
-  `tests/quaids_curvature_test.e`): even the R `micEconAids` reference
-  implementation used elsewhere in this library only diagnoses curvature,
-  never imposes it. See
+  `quaidsCurvatureFit`) is available for LA-AIDS/AIDS (`aCtl.linear=1`,
+  Milestone 10) and QUAIDS (`aCtl.linear=0`, Milestone 13), imposed
+  locally at the sample mean, requiring the `optmt` package
+  (`package.json`'s `deps` array, no longer empty). QUAIDS was initially
+  deferred at Milestone 10 -- its Slutzky matrix adds a `lambda`-
+  dependent cross-term entangling three nonlinear parameter blocks
+  instead of two -- but this resolved (Milestone 13) using the same
+  lag-then-solve trick `quaidsFit()`'s own iteration already uses, with
+  no growth in what `optmt` searches over. QUAIDS's curvature outer loop
+  is measurably less stable than AIDS's own though: `aCtl.relax`
+  (Milestone 12) is effectively required, not optional, for QUAIDS --
+  undamped runs on the validation fixture diverge to NaN within a
+  handful of iterations. Standard errors from `quaidsCurvatureFit` are a
+  simplified delta-method approximation, known to be unreliable when the
+  estimated Cholesky factor has boundary (near-zero) entries (a standard
+  complication of Cholesky-based negative-semidefinite-cone estimation)
+  -- point estimates and the exact curvature property at the reference
+  point are unaffected. There is no independent published/cross-
+  implementation validation for the *imposed* estimator on either model:
+  even the R `micEconAids` reference implementation used elsewhere in
+  this library only diagnoses curvature, never imposes it. For QUAIDS
+  specifically, `tests/quaids_curvature_test.e` validates convergence/
+  exact negative-semidefiniteness/non-vacuousness/shape rather than
+  "recovers a known true curvature-consistent gamma" the way the AIDS
+  block does -- a real, committed attempt to build a QUAIDS analog of the
+  AIDS fixture found dozens of numerically self-consistent, genuinely
+  NSD candidate seeds, but every one implied economically implausible
+  mean budget shares, so this is a deliberately weaker (but still real)
+  tier of evidence, documented as such rather than silently equated with
+  AIDS's. See
   [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
-  and `GOLD_STANDARD_TODO.md`'s Milestone 10 section.
+  and `GOLD_STANDARD_TODO.md`'s Milestone 10 and 13 sections.
 
 Related documentation:
 

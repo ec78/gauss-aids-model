@@ -5,6 +5,52 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.9.0 - 2026-07-25
+
+### Added
+- `quaidsCurvatureFit()` (`src/quaidscurvature.src`) now accepts QUAIDS
+  fits (`aCtl.linear=0`), not just AIDS -- deferred at Milestone 10
+  because QUAIDS's Slutzky matrix has an extra `lambda`-dependent cross-
+  term. Resolved using the same lag-then-solve trick `quaidsFit()`'s own
+  iteration already uses: `beta`/`lambda` are profiled out by OLS every
+  outer round rather than joining `optmt`'s searched parameter set, which
+  stays `vech(A)`-only, unchanged in size. `quaidsCurvatureFit()`'s
+  signature is unchanged; no new proc, no new required struct field --
+  version bumped anyway, since this is a real capability addition (QUAIDS
+  curvature imposition going from unsupported to supported), not a bugfix.
+- `tests/quaids_curvature_test.e` extended (17 -> 31 checks) with a QUAIDS
+  block: convergence, exact negative-semidefiniteness at the reference
+  point, non-vacuousness, shape/finiteness -- deliberately does NOT test
+  "recovers a known true curvature-consistent gamma" the way the AIDS
+  block does (see Notes).
+
+### Fixed
+- A real, pre-existing bug in `_quaidsCurvRecoverFull()`, latent since
+  Milestone 10: the adding-up recovery for extra intercept-shifter rows
+  (`aCtl`'s `intcpt` argument with `nint>0`) incorrectly applied the
+  CONSTANT row's "sums to 1" formula to every intercept row, including
+  shifter rows that must sum to 0. Never triggered before because the
+  AIDS-only curvature fixture deliberately has no intercept shifters
+  (`nint=0`); found only once a `nint>0` QUAIDS fixture was tried.
+
+### Notes
+- QUAIDS's curvature outer loop is measurably less stable than AIDS's own
+  two-block version (found empirically) -- `aCtl.relax` (Milestone 12)
+  is effectively required, not just optional, for QUAIDS; `maxOuterIter`
+  (an internal constant) was bumped from 50 to 300 to accommodate the
+  slower damped convergence this requires. AIDS is unaffected (still
+  converges in ~10-20 iterations, well under either cap).
+- A dedicated QUAIDS analog of the AIDS-only curvature fixture (a true
+  gamma that is curvature-consistent at its own self-consistent sample
+  mean) was attempted but not shipped: a broad screen found dozens of
+  seeds where the construction is numerically self-consistent and
+  genuinely negative-semidefinite, but every one implied economically
+  implausible mean budget shares. The QUAIDS test instead validates
+  against the existing general QUAIDS fixture, checking convergence/NSD/
+  shape rather than true-parameter recovery -- a real, documented,
+  weaker tier of evidence than the AIDS block's. See
+  `GOLD_STANDARD_TODO.md`'s Milestone 13 section.
+
 ## 0.8.0 - 2026-07-23
 
 ### Added

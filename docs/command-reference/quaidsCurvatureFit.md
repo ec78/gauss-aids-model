@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Re-estimates a homogeneity+symmetry-constrained LA-AIDS/AIDS fit under an
-additional local curvature (Slutzky negative semidefiniteness) restriction
-at the sample mean, via the Diewert-Wales (1987) Cholesky
+Re-estimates a homogeneity+symmetry-constrained AIDS or QUAIDS fit under
+an additional local curvature (Slutzky negative semidefiniteness)
+restriction at the sample mean, via the Diewert-Wales (1987) Cholesky
 reparametrization. Silent, no printing -- see
 [printQuaidsCurvature](printQuaidsCurvature.md).
 
@@ -18,23 +18,25 @@ cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 ## Parameters
 
 - `qOut` (*`quaidsOut` structure*) - from [quaidsFit](quaidsFit.md), called
-  with `aCtl.homogenous = 1` and `aCtl.linear = 1`. **Errors clearly if
-  either requirement is not met** -- QUAIDS's quadratic term is not yet
-  supported (see Remarks).
+  with `aCtl.homogenous = 1` (either `aCtl.linear = 1` for AIDS or
+  `aCtl.linear = 0` for QUAIDS -- both supported since Milestone 13).
+  **Errors clearly if `aCtl.homogenous = 1` was not used.**
 - `w` (*TxN matrix*) - budget shares, the same sample used to fit `qOut`.
 - `prices` (*TxN matrix*) - absolute log prices, same sample.
 - `totexp` (*Tx1 vector*) - log total expenditure, same sample.
 - `aCtl` (*`quaidsControl` structure*) - `aCtl.err` controls the outer
   iteration's convergence tolerance, same as [quaidsFit](quaidsFit.md).
+  `aCtl.relax` (see Remarks) is effectively required for QUAIDS.
 
 ## Returns
 
 `cOut` is a `quaidsCurvOut` structure:
 
 - `cholA` - the estimated `(n-1) x (n-1)` lower-triangular Cholesky factor.
-- `b`, `v`, `se` - the curvature-constrained coefficient matrix (same row
-  layout as `qOut.bestB`: intercept | gamma | beta), its covariance, and
-  standard errors.
+- `b`, `v`, `se` - the curvature-constrained coefficient matrix (intercept
+  | gamma | beta, plus a trailing `lambda` row for QUAIDS fits -- no `u`
+  row either way, unlike `qOut.bestB`), its covariance, and standard
+  errors.
 - `gama` - the `n x n` curvature-constrained price-effect matrix (also
   `b`'s gamma block).
 - `converged`, `iterations`, `finalErr` - outer-iteration diagnostics.
@@ -45,11 +47,25 @@ cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 
 ## Remarks
 
-**Scope**: LA-AIDS/AIDS only (`aCtl.linear = 1`) in this release. QUAIDS's
-quadratic log-expenditure term adds cross-terms to the Slutzky matrix that
-entangle three nonlinear parameter blocks instead of two, a bounded but
-not-yet-implemented follow-on -- see
-`GOLD_STANDARD_TODO.md`'s Milestone 10 section.
+**Scope**: LA-AIDS/AIDS and QUAIDS, both supported. QUAIDS was initially
+deferred at Milestone 10 -- its quadratic log-expenditure term adds a
+`lambda`-dependent cross-term to the Slutzky matrix, entangling three
+nonlinear parameter blocks instead of two -- but this resolved at
+Milestone 13 using the same lag-then-solve trick
+[quaidsFit](quaidsFit.md)'s own iteration already uses for its `beta`/
+`lambda` coefficients: they're profiled out by OLS every outer round
+rather than joining `optmt`'s search, which stays `vech(A)`-only,
+unchanged in size. See `GOLD_STANDARD_TODO.md`'s Milestone 10 and 13
+sections.
+
+**QUAIDS needs `aCtl.relax`**: QUAIDS's curvature outer loop is
+measurably less stable than AIDS's own two-block version (found
+empirically, not assumed) -- undamped (`aCtl.relax=1`, the default) runs
+can diverge to `NaN` within a handful of iterations. `aCtl.relax=.25`
+(the same opt-in damping field [quaidsFit](quaidsFit.md) uses, Milestone
+12) was found to converge cleanly on this library's own validation
+fixture; not needed for AIDS, whose outer loop converges reliably
+undamped.
 
 **Why the sample mean, and not a caller-supplied point**: concavity of a
 flexible functional form cannot be imposed globally (a standard
@@ -88,12 +104,14 @@ library optmt;
 
 struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
-aCtl.linear = 1;
+aCtl.linear = 0;         // 0 for QUAIDS, 1 for AIDS
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+aCtl.relax = .25;    // recommended for QUAIDS; not needed for AIDS
 
 struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);

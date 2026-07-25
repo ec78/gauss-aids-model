@@ -150,8 +150,12 @@ struct quaidsCurvOut {
     matrix nint;      // number of extra intercept-shifter variables
     matrix wnam;      // legacy character matrix of good names
     matrix cholA;     // n1 x n1, the estimated lower-triangular Cholesky factor
-    matrix b;         // curvature-constrained coefficient matrix, same row
-                      //   layout as qOut.bestB (intercept | gamma | beta | u)
+    matrix b;         // curvature-constrained coefficient matrix: intercept
+                      //   | gamma | beta, plus a trailing lambda row for
+                      //   QUAIDS fits (Milestone 13). No u row (unlike
+                      //   qOut.bestB) -- the u-coefficient is estimated
+                      //   internally (profiled out alongside beta/lambda
+                      //   given each candidate A) but not reported here
     matrix v;         // covariance of vec(b), via the delta method
     matrix se;        // standard errors, same shape as b
     matrix gama;      // n x n curvature-constrained price-effect matrix

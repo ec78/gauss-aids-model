@@ -11,9 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.8.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11 and 12**, as of
-2026-07-23: 0
+The repository is pre-alpha, package version `0.9.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-13**, as of
+2026-07-25: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -34,7 +34,13 @@ formula against Shephard's lemma and catching it wrong), and 12
 200-seed convergence sweep replacing an informal probe that never
 survived in this repo's history, one confirmed crash bugfix, and one
 modest evidence-backed opt-in damping mitigation; see that section below
-for why "convergence guaranteed" was never a realistic exit criterion).
+for why "convergence guaranteed" was never a realistic exit criterion),
+and 13 (QUAIDS curvature imposition — extending Milestone 10's AIDS-only
+`quaidsCurvatureFit()` to QUAIDS too, resolving the extra `lambda`-
+cross-term entanglement via the same lag-then-solve trick used throughout
+this codebase, plus a real pre-existing adding-up bug found and fixed
+along the way; see that section below for why a fully curvature-
+consistent QUAIDS synthetic fixture was attempted but not shipped).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -174,6 +180,21 @@ for why "convergence guaranteed" was never a realistic exit criterion).
   scale, and added an opt-in damping field (`aCtl.relax`, default `1`)
   that measurably, modestly reduces the failure rate. Does not claim the
   underlying instability is solved. See the Milestone 12 entry below.
+- Milestone 13: QUAIDS curvature imposition. Extended
+  `quaidsCurvatureFit()` (Milestone 10, AIDS-only) to QUAIDS, resolving
+  the deferred `lambda`-cross-term entanglement via the same lag-then-
+  solve trick used throughout this codebase -- verified via an exact
+  algebraic identity check before implementation. Found and fixed a real
+  pre-existing adding-up bug (latent since Milestone 10, never triggered
+  until a `nint>0` QUAIDS fixture was tried) and a genuine QUAIDS-specific
+  numerical instability (fixed via `aCtl.relax`, reusing Milestone 12's
+  field). A fully curvature-consistent QUAIDS synthetic fixture was
+  attempted (tens of thousands of seeds screened) but not shipped --
+  every numerically self-consistent, genuinely NSD candidate implied
+  economically implausible shares -- so the QUAIDS test validates
+  convergence/NSD/shape against the general QUAIDS fixture instead, a
+  real but weaker tier of evidence than AIDS's, documented as such. See
+  the Milestone 13 entry below.
 
 `docs/` now exists (Milestone 8, above).
 
@@ -1304,8 +1325,11 @@ independently confirmed here since this is the final gate).
   `tests/quaids_curvature_test.e`, 17 checks), including a non-vacuousness
   check (the unconstrained fit genuinely violates curvature on this
   fixture).
-- [x] QUAIDS curvature imposition explicitly scoped out and documented,
-  not silently absent.
+- [x] QUAIDS curvature imposition -- initially scoped out and documented
+  as deferred (not silently absent), then implemented at Milestone 13
+  (see that section below); its validation deliberately checks
+  convergence/NSD/shape rather than true-gamma recovery, a real, weaker,
+  documented tier of evidence than AIDS's own.
 
 This was requested directly by the repo owner after Milestone 9 closed
 ("are there any next-level extensions that make sense?" → curvature
@@ -1614,6 +1638,133 @@ have warranted a bump, per the Milestone 3/7-9 precedent for pure
 bugfixes with no new API surface — the bump here is attributable
 specifically to `aCtl.relax`.)
 
+### Milestone 13 — QUAIDS Curvature Imposition — COMPLETE (2026-07-25)
+
+**Context**: after Milestone 12 closed, the repo owner asked what's next.
+Recommended extending `quaidsCurvatureFit()` (Milestone 10) to QUAIDS —
+it had hard-errored on any QUAIDS fit (`qOut.linear /= 1`), deferred at
+the time because QUAIDS's Slutzky matrix has an extra `lambda`-dependent
+cross-term "entangling three nonlinear parameter blocks instead of two."
+
+**The simplification, verified before implementation**: the apparent
+three-way entanglement resolves via the *same* lag-then-solve trick
+`quaidsFit()`'s own main iteration loop already uses everywhere else in
+this codebase — `beta`/`lambda` never need to join `optmt`'s searched
+parameter set alongside `vech(A)`. Confirmed by direct code reading (not
+assumed) against both `src/quaids.src` (the main loop reads `_beta` from
+the *previous* round's `b` to build `b_p`/`lx2`, then re-estimates a
+*fresh* `beta`/`lambda`/`gamma` jointly via one `solpd()`) and
+`src/quaidscurvature.src` (which already lags `beta` by one outer round
+when building `K0`, the identical pattern). `a_p`/`lx` have no `lambda`
+dependence at all, so the existing deflator plumbing needed no change.
+
+**Exact algebraic identity check, before touching any production code**:
+hand-transcribed the K0-split version of `quaidsSlutzky()`'s QUAIDS
+formula (`wepc = -diag(w)+w*w'+gama+(beta'beta+beta'mu+mu'beta+2*mu'mu)*lx`,
+`mu=lambda*lx/b(p)`) and confirmed it exactly reproduces
+`quaidsSlutzky()`'s own formula (copied verbatim for the comparison side,
+not re-derived, to avoid making the same transcription error twice) —
+match to ~3.5e-15, floating-point noise. This is the same "verify before
+trusting a derived formula" discipline as Milestone 11's welfare-formula
+check.
+
+**Implementation** (`src/quaidscurvature.src`): `_quaidsCurvGivenA()`
+gained an `lx2Fixed` regressor column (built from the previous round's
+`beta`, exactly mirroring `quaids.src:279-280`'s own `b_p`/`lx2`
+construction) so the same one-shot OLS solve now also estimates `lambda`;
+`_quaidsCurvRecoverFull()` gained a third output (`lambda`, adding-up
+recovered the same way `beta` already is); the outer loop's `K0`/warm-
+start construction gained the `mu`-cross-term, using the previous round's
+`beta`/`lambda`. The Hessian's dimensionality (over `vech(A)`) is
+unchanged — confirmed, not assumed, since this was the plan's most
+load-bearing "genuinely doesn't need to change" claim.
+
+**A real crash-adjacent numerical-instability finding, found only by
+running it, not by re-reading the algebra**: the very first attempt (a
+generic QUAIDS fixture, `seed=204`, `aCtl.relax=1` default) diverged —
+`beta`/`gamma` grew geometrically each outer round (0.36→2.1→6.5→66→NaN
+within 8 rounds) before crashing. Root cause: `b(p)=exp(prices*beta')`
+inside the lagged `lx2Fixed`/`mu` construction creates a genuinely
+stronger feedback loop than AIDS's own `beta'beta` term (which has no
+exponential amplification). Applying `aCtl.relax` (Milestone 12) to the
+curvature loop's own `alpha`/`beta`/`lambda` update (deliberately *not*
+`gama`, which must stay exactly `-A*A'-K0` by construction) stabilized
+it; `relax=.25` converged cleanly (`maxEig≈8.5e-8`) but needed ~185
+outer rounds, well past the original AIDS-only `maxOuterIter=50` cap —
+bumped to 300 (a no-op for AIDS, which still converges in ~10-20 rounds
+either way).
+
+**A second, real, pre-existing bug found along the way, not introduced by
+this milestone**: `_quaidsCurvRecoverFull()`'s adding-up recovery applied
+the CONSTANT row's "sums to 1" formula (`1 - sumc(...)`) to *every*
+intercept-related row, including any extra demographic-shifter rows
+(`nint>0`), which must instead sum to 0 (a shifter reallocates shares, it
+doesn't change their total — the same distinction
+`tests/quaidsfixtures.src`'s own `al`/`al1` construction already draws).
+Latent since Milestone 10, never triggered because the AIDS-only
+curvature fixture deliberately has no intercept shifters (`nint=0`) —
+surfaced only once a `nint>0` QUAIDS fixture was tried, causing `sum(wPt)
+≈ 2.99` instead of `1` and a spurious `+23` Slutzky eigenvalue that took
+substantial isolation work to trace back to this one-line bug (ruled out,
+in order: a staleness mismatch between the loop's `wPt` and freshly-
+computed `gama`; the general "does the full n×n matrix inherit NSD from
+its (n-1)×(n-1) block" property, verified separately via a clean
+self-consistent-K0 check that *did* hold for arbitrary parameters — which
+correctly indicated the reparametrization itself was fine and the bug lay
+elsewhere). Fixed with a one-line change (only the first intercept row
+uses the constant-row formula); verified as a pure no-op for `nint=0`
+(the AIDS fixture's exact case), so zero regression risk.
+
+**The QUAIDS-analog curvature-consistent fixture was attempted but not
+shipped, documented honestly rather than forced**: mirroring
+`_quaidsCurvatureSyntheticDGP()`'s AIDS-only self-consistent fixed-point
+construction (extended with the `mu`-cross-term in its own per-round
+`K0`), a broad screen (tens of thousands of seed/`aScale`/starting-point
+combinations, multiple `lambda`-scale and initial-guess variants) found
+dozens of seeds where the fixed-point construction is numerically
+self-consistent (to floating-point precision) *and* genuinely negative-
+semidefinite (`maxEig` ~1e-16) — but **every single one** implied
+economically nonsensical mean budget shares (large negative entries,
+entries exceeding 1). This was confirmed to be a structural property of
+this fixed-point map for this DGP family (persisted across `aScale`
+0.01–0.15, `lambda`-scale reduced 20x, and an alternative "start from the
+true alpha" initial guess), not a "wrong seed" problem — unlike AIDS's
+own construction, which found a working seed (`500`) after screening
+"dozens," not tens of thousands, and landed on plausible shares. Rather
+than force an implausible fixture, `tests/quaids_curvature_test.e`'s
+QUAIDS block instead validates against the library's own already-
+validated general QUAIDS fixture (`_quaidsSyntheticDGP(seed=204)`),
+checking convergence, exact negative-semidefiniteness at the reference
+point, non-vacuousness (the unconstrained fit really does violate
+curvature), and shape/finiteness — a real, deliberately weaker tier of
+evidence than the AIDS block's "recovers a known true gamma" check,
+documented as such rather than silently equated with it. This mirrors
+this project's established honesty standard for partial results (the
+curvature-SE boundary-inference caveat, QUAIDS's own "no independent
+reference implementation" gap in published-data validation).
+
+**Testing**: `tests/quaids_curvature_test.e` extended in place (not a
+new file — the existing AIDS block's checks and the new QUAIDS block's
+checks are different in kind, so no shared helper was forced; each
+block stays self-contained) from 17 to 31 checks, all passing.
+`tests/package_public_api.e` gained a third inline dataset (`seed=204`
+QUAIDS, mirroring `_quaidsSyntheticDGP`) exercising the QUAIDS curvature
+path against the real installed package. The full existing 10-file
+source-tree suite (all AIDS/QUAIDS estimation, hypothesis-test,
+elasticities, welfare, and reliability-regression tests) re-ran clean
+with unchanged tolerances — the crash-history/instability fixes only
+touch `not aCtl.linear` branches or new lines, and the `nint>0` recovery
+fix is a proven no-op at `nint=0`.
+
+**Version bump to `0.9.0`**: `quaidsCurvatureFit()`'s signature is
+unchanged (no new proc, no new required `quaidsControl` field — it
+reuses `aCtl.relax` from Milestone 12), so this doesn't meet the letter
+of the established "new proc/new field" bump policy. Bumped anyway,
+since QUAIDS curvature support going from unsupported (hard error) to
+supported is a real, user-facing capability addition, not a bugfix —
+judged closer in spirit to Milestone 10/11's additions than to Milestone
+3/7-9's non-bumping pure-bugfix/tooling precedent.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -1645,9 +1796,9 @@ specifically to `aCtl.relax`.)
 - [x] Elasticities are computable at arbitrary evaluation points with
   delta-method standard errors.
 - [x] Slutzky negativity diagnostics ship by default; curvature imposition
-  is implemented for LA-AIDS/AIDS (`quaidsCurvatureFit`, Milestone 10, at
-  the sample mean, standard-error caveats documented) and explicitly
-  scoped out (not silently absent) for QUAIDS.
+  is implemented for both AIDS (`quaidsCurvatureFit`, Milestone 10) and
+  QUAIDS (Milestone 13), at the sample mean, standard-error caveats
+  documented for both.
 - [x] `pubtable_quaids.src` provides LaTeX/Markdown/CSV export.
 - [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
@@ -1666,12 +1817,15 @@ committed" as current status (that language in earlier milestone
 write-ups reflected the state at the time, before an automated commit/
 push process was discovered to already be capturing this work, and before
 the repo owner asked for explicit commits at breakpoints going forward).
-Two substantive, honestly-documented gaps remain, both explicitly scoped
+One substantive, honestly-documented gap remains, explicitly scoped
 rather than silently absent: QUAIDS's lack of an independent published/
 cross-implementation validation reference (Milestone 9,
-`docs/FEATURE_SUPPORT_MATRIX.md`) and QUAIDS curvature imposition
-(Milestone 10, same doc) — neither is a blocker with tools currently
-available (no comparably-established QUAIDS reference implementation
-exists for the first; the second is a bounded, well-understood follow-on
-once justified). Welfare measures (Milestone 11) needed no such scoping
-gap — the closed-form formula is unified across all three model choices.
+`docs/FEATURE_SUPPORT_MATRIX.md`) — not a blocker with tools currently
+available, since no comparably-established QUAIDS reference
+implementation exists. Welfare measures (Milestone 11) needed no such
+scoping gap — the closed-form formula is unified across all three model
+choices. QUAIDS curvature imposition (Milestone 10's original gap) was
+closed at Milestone 13, though its own validation is a real, documented,
+weaker tier of evidence than AIDS's (convergence/NSD/shape, not
+true-gamma recovery — no curvature-consistent QUAIDS synthetic fixture
+with plausible economic values was found despite a broad screen).

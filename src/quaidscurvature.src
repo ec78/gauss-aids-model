@@ -3,12 +3,25 @@
 **
 ** Milestone 10: local curvature (Slutzky negative semidefiniteness)
 ** imposition via the Diewert-Wales (1987) Cholesky reparametrization,
-** scoped to LA-AIDS/AIDS (aCtl.linear=1; QUAIDS's quadratic term is
-** deferred -- see GOLD_STANDARD_TODO.md's Milestone 10 section).
+** originally scoped to LA-AIDS/AIDS only. Milestone 13 extends it to
+** QUAIDS (aCtl.linear=0) too -- see that milestone's section of
+** GOLD_STANDARD_TODO.md for how the apparent extra entanglement (beta
+** appears both in the plain beta'beta term AND, via b(p), inside the
+** lambda-scaled cross-term) resolves using the same lag-then-solve trick
+** quaidsFit()'s own main iteration loop already uses: beta/lambda never
+** join optmt's searched parameter set, they're profiled out by OLS every
+** outer round just like alpha/beta already were for AIDS. QUAIDS's outer
+** loop is measurably less stable than AIDS's own two-block version
+** though (found empirically, not assumed) -- aCtl.relax (Milestone 12)
+** optionally under-relaxes it; default 1 is a no-op, byte-identical to
+** every prior release.
 **
 ** quaidsSlutzky() already computes, per observation, the matrix that must
 ** be negative semidefinite for the expenditure function to be concave:
-**   wepc = -diag(w) + w*w' + gama + (beta'beta)*lx      [AIDS: mu=0]
+**   wepc = -diag(w) + w*w' + gama + (beta'beta)*lx                 [AIDS]
+**   wepc = -diag(w) + w*w' + gama
+**        + (beta'beta + beta'mu + mu'beta + 2*mu'mu)*lx            [QUAIDS,
+**                                              mu = lambda*lx/b(p)]
 ** Concavity of a flexible functional form cannot be imposed globally (a
 ** standard result, not a gap here) -- Diewert & Wales impose it locally,
 ** at one reference point. This uses the SAMPLE MEAN (intcptFull/prices/
@@ -20,22 +33,24 @@
 ** homogeneity/symmetry) as
 **   gama[1:n1,1:n1] = -A*A' - K0
 ** where A is n1 x n1 lower triangular and K0 = wepc's non-gamma part
-** evaluated at the reference point. This makes wepc = -A*A' at that point
-** by construction, for ANY A -- negative semidefinite regardless of the
+** evaluated at the reference point (for QUAIDS, this includes the
+** lambda-cross-term above). This makes wepc = -A*A' at that point by
+** construction, for ANY A -- negative semidefinite regardless of the
 ** data. The remaining row/column of gama is recovered via the same
 ** adding-up identity used everywhere else in this codebase.
 **
 ** Estimation: nonlinear IV. Within each outer iteration (mirroring
 ** quaidsFit()'s own translog-price-index iteration -- K0 and the
-** full-sample deflator are held fixed within an iteration and updated
+** full-sample deflator(s) are held fixed within an iteration and updated
 ** between iterations), the free elements of A (vech(A), a small
 ** parameter vector) are found by minimizing the IV residual sum of
 ** squares via GAUSS's installed optmt package. For ANY candidate A, the
-** remaining coefficients (intercept, beta, IV-residual coefficients) are
-** exactly identified by ordinary least squares once gama(A) is
-** substituted in as a fixed offset -- a "concentrated"/profiled nonlinear
-** least squares problem, so optmt only ever searches over vech(A), not
-** the full parameter vector.
+** remaining coefficients (intercept, beta, [lambda,] IV-residual
+** coefficients) are exactly identified by ordinary least squares once
+** gama(A) is substituted in as a fixed offset -- a "concentrated"/profiled
+** nonlinear least squares problem, so optmt only ever searches over
+** vech(A), never lambda and never the full parameter vector, for either
+** model.
 **
 ** Standard errors: a classical (homoskedastic) nonlinear least squares
 ** covariance for vech(A) -- 2*sigma2*Hessian(SSR)^-1, with the Hessian
@@ -49,7 +64,8 @@
 /*
 ** _quaidsCurvGamma: given vech(A) and a fixed K0, returns the full n x n
 ** curvature-reparametrized gamma. Internal helper, no #ifDef guard needed
-** (does not depend on quaidsControl).
+** (does not depend on quaidsControl). Unchanged by the QUAIDS extension --
+** gamma's reparametrization never involves lambda.
 */
 proc (1) = _quaidsCurvGamma(vechA, K0, n1);
     local A, C, ga;
@@ -63,11 +79,13 @@ proc (1) = _quaidsCurvGamma(vechA, K0, n1);
 endp;
 
 /*
-** _quaidsCurvGivenA: given vech(A) and fixed K0/deflator, the "given A"
+** _quaidsCurvGivenA: given vech(A) and fixed K0/deflator(s), the "given A"
 ** closed-form regression -- returns the full gamma and the exactly-
-** identified (intercept, beta, u-coefficient) block, plus the SSR.
+** identified (intercept, beta, [lambda,] u-coefficient) block, plus the
+** SSR. lx2Fixed is a fixed (previous-outer-round) QUAIDS quadratic-term
+** regressor, ignored when linear==1 (AIDS).
 */
-proc (3) = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, u, K0, n1, n);
+proc (3) = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, lx2Fixed, u, K0, n1, n, linear);
     local ga, wtilde, i, X, m, gg, gw, bHat, sse, ssrTotal;
 
     ga = _quaidsCurvGamma(vechA, K0, n1);
@@ -79,7 +97,11 @@ proc (3) = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, u, K0, n1, n
         i = i + 1;
     endo;
 
-    X = intcptFull~lxFixed~u;
+    if linear;
+        X = intcptFull~lxFixed~u;
+    else;
+        X = intcptFull~lxFixed~lx2Fixed~u;
+    endif;
     m = moment(X~wtilde, 0);
     gg = m[1:cols(X), 1:cols(X)];
     gw = m[1:cols(X), cols(X)+1:cols(X)+n1];
@@ -90,12 +112,12 @@ proc (3) = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, u, K0, n1, n
     retp(ga, bHat, ssrTotal);
 endp;
 
-proc (1) = _quaidsCurvObj(struct PV p, w, prices, intcptFull, lxFixed, u, K0, n1, n, ind);
+proc (1) = _quaidsCurvObj(struct PV p, w, prices, intcptFull, lxFixed, lx2Fixed, u, K0, n1, n, linear, ind);
     local vechA, ga, bHat, ssr;
     struct modelResults mm;
 
     vechA = pvUnpack(p, 1);
-    { ga, bHat, ssr } = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, u, K0, n1, n);
+    { ga, bHat, ssr } = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, lx2Fixed, u, K0, n1, n, linear);
 
     if ind[1];
         mm.function = ssr;
@@ -104,27 +126,52 @@ proc (1) = _quaidsCurvObj(struct PV p, w, prices, intcptFull, lxFixed, u, K0, n1
 endp;
 
 /*
-** _quaidsCurvRecoverFull: recovers the full n-good (alpha, beta) from the
-** n1-good exactly-identified regression block, via the adding-up identity.
+** _quaidsCurvRecoverFull: recovers the full n-good (alpha, beta, lambda)
+** from the n1-good exactly-identified regression block, via the adding-up
+** identity. lambda is returned as scalar 0 when linear==1 (AIDS) -- always
+** 3 outputs regardless of model, since GAUSS procs have a fixed return
+** count.
 */
-proc (2) = _quaidsCurvRecoverFull(bHat, nint);
-    local alphaN1, betaN1, alphaN, betaN, alpha, beta;
+proc (3) = _quaidsCurvRecoverFull(bHat, nint, linear);
+    local alphaN1, betaN1, lambdaN1, alphaN, betaN, lambdaN, alpha, beta, lambda;
 
+    /* Milestone 13 finding: a real, pre-existing bug latent since
+       Milestone 10, exposed only now because the AIDS-only curvature
+       fixture (tests/quaidsfixtures.src's _quaidsCurvatureSyntheticDGP)
+       deliberately has no extra intercept shifters (nint=0), so this
+       never ran with nint>0 before. Adding-up recovers the CONSTANT row
+       (sums to 1 across goods -- budget shares sum to 1) differently from
+       any extra intercept-SHIFTER rows (must sum to 0 across goods -- a
+       demographic shifter reallocates shares, it doesn't change their
+       total), exactly the distinction _quaidsSyntheticDGP() itself
+       already draws (al~(1-sumc(al')) for the constant vs.
+       al1~(-sumc(al1')) for a shifter). The original one-line
+       `1 - sumc(alphaN1')` silently applied the constant-row formula to
+       every row whenever nint>0. */
     alphaN1 = bHat[1:1+nint, .];
     betaN1 = bHat[2+nint, .];
-    alphaN = 1 - sumc(alphaN1');
+    alphaN = -sumc(alphaN1');
+    alphaN[1] = 1 - sumc(alphaN1[1, .]');
     betaN = -sumc(betaN1');
     alpha = alphaN1~alphaN;
     beta = betaN1~betaN;
 
-    retp(alpha, beta);
+    if linear;
+        lambda = 0;
+    else;
+        lambdaN1 = bHat[3+nint, .];
+        lambdaN = -sumc(lambdaN1');
+        lambda = lambdaN1~lambdaN;
+    endif;
+
+    retp(alpha, beta, lambda);
 endp;
 
 /*******************************************************************************
 **
 ** QUAIDSCURVATUREFIT
 **
-** Purpose:  re-estimates a homogeneity+symmetry-constrained LA-AIDS/AIDS
+** Purpose:  re-estimates a homogeneity+symmetry-constrained AIDS or QUAIDS
 **           fit under an additional local curvature (Slutzky negative
 **           semidefiniteness) restriction at the sample mean, via the
 **           Diewert-Wales Cholesky reparametrization. Silent, no printing
@@ -133,12 +180,11 @@ endp;
 ** Format:     struct quaidsCurvOut cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 **
 ** Input:    qOut -- struct quaidsOut, from quaidsFit() called with
-**                   aCtl.homogenous = 1 and aCtl.linear = 1 (QUAIDS's
-**                   quadratic term is not yet supported -- see
-**                   GOLD_STANDARD_TODO.md's Milestone 10 section).
-**                   Errors clearly if either requirement is not met.
-**                   Supplies starting values (qOut.bestB) and the
-**                   first-stage IV residual (qOut.u).
+**                   aCtl.homogenous = 1 (either aCtl.linear = 1 [AIDS] or
+**                   aCtl.linear = 0 [QUAIDS] -- both supported since
+**                   Milestone 13). Errors clearly if not homogeneity+
+**                   symmetry-constrained. Supplies starting values
+**                   (qOut.bestB) and the first-stage IV residual (qOut.u).
 **
 **             w -- TxN budget shares (same sample used to fit qOut).
 **
@@ -147,7 +193,9 @@ endp;
 **             totexp -- Tx1 log total expenditure.
 **
 **             aCtl -- quaidsControl struct (aCtl.err controls the outer
-**                   iteration's convergence tolerance, same as quaidsFit()).
+**                   iteration's convergence tolerance, same as quaidsFit();
+**                   aCtl.alpha0 fixes the translog intercept, same as
+**                   elsewhere in this codebase).
 **
 ** Output:  struct quaidsCurvOut -- see quaids.sdf. Curvature is imposed at
 **           the sample mean (qOut.intcptFull/prices/totexp column means);
@@ -162,23 +210,21 @@ endp;
 proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, prices, totexp, struct quaidsControl aCtl);
 
     local n, n1, nint, intcptFull, uResid, pricesPt, totexpPt, intcptPt,
-        alpha, gama, beta, a_pPt, lxPt, wPt, K0, Cstart, va, ve, vechA,
-        bstack0, bstack, maxOuterIter, tol, iter, ok, alphaFull, a_pFull,
-        lxFixed, bHat, ssr, err, alphaN1, betaN1, wepc, eigs,
-        vechAHat, K, Kfree, jacG, e, be, ee, i, j, gPlus, gMinus, vechA_p,
-        vechA_m, gaP, bP, alphaP, betaP, gaM, bM, alphaM, betaM, gVec,
-        hessMat, hStep, ssrCenter, ssrPP, ssrPM, ssrMP, ssrMM, sigma2, covA,
-        vAll, bAll, seAll, vechDim;
+        alpha, gama, beta, lambda, alphaOld, betaOld, lambdaOld, a_pPt, lxPt, b_pPt, lx2Pt, muPt, wPt, K0,
+        Cstart, va, ve, vechA, bstack0, bstack, maxOuterIter, tol, iter, ok,
+        alphaFull, a_pFull, lxFixed, b_pFull, lx2Fixed, bHat, ssr, err, linear,
+        wepc, eigs, vechAHat, K, Kfree, jacG, e, be, ee, i, j, gPlus, gMinus,
+        vechA_p, vechA_m, gaP, bP, alphaP, betaP, lambdaP, gaM, bM, alphaM,
+        betaM, lambdaM, gVec, hessMat, hStep, ssrCenter, ssrPP, ssrPM, ssrMP,
+        ssrMM, sigma2, covA, vAll, bAll, seAll, vechDim, dofX;
     struct quaidsCurvOut cOut;
 
     if qOut.homogenous /= 1;
         errorlog "quaidsCurvatureFit: qOut must come from a homogeneity+symmetry-constrained fit (aCtl.homogenous=1).";
         end;
     endif;
-    if qOut.linear /= 1;
-        errorlog "quaidsCurvatureFit: only LA-AIDS/AIDS (aCtl.linear=1) is supported -- QUAIDS curvature imposition is deferred (see GOLD_STANDARD_TODO.md Milestone 10).";
-        end;
-    endif;
+
+    linear = qOut.linear;
 
     n = qOut.n;
     n1 = n - 1;
@@ -193,36 +239,82 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
     alpha = qOut.bestB[1:1+nint, .];
     gama = qOut.bestB[1+nint+1:1+nint+n, .];
     beta = qOut.bestB[1+nint+n+1, .];
+    if linear;
+        lambda = zeros(1, n);
+    else;
+        lambda = qOut.bestB[1+nint+n+2, .];
+    endif;
 
     /* Warm-start vech(A) from the starting fit's own gamma: project
        gama+K0 onto the nearest negative semidefinite matrix (clipping any
        positive eigenvalues to zero) and take its Cholesky-type square
        root. */
-    a_pPt = intcptPt'alpha*pricesPt + .5*pricesPt'gama*pricesPt;
+    a_pPt = aCtl.alpha0 + intcptPt'alpha*pricesPt + .5*pricesPt'gama*pricesPt;
     lxPt = totexpPt - a_pPt;
-    wPt = alpha'intcptPt + gama'pricesPt + beta'lxPt;
-    K0 = -diagrv(eye(n), wPt) + wPt*wPt' + beta'beta*lxPt;
+    if linear;
+        wPt = alpha'intcptPt + gama'pricesPt + beta'lxPt;
+        K0 = -diagrv(eye(n), wPt) + wPt*wPt' + beta'beta*lxPt;
+    else;
+        b_pPt = exp(pricesPt'beta');
+        lx2Pt = (lxPt^2)/b_pPt;
+        muPt = lambda*lxPt/b_pPt;
+        wPt = alpha'intcptPt + gama'pricesPt + beta'lxPt + lambda'lx2Pt;
+        K0 = -diagrv(eye(n), wPt) + wPt*wPt'
+            + (beta'beta + beta'muPt + muPt'beta + 2*muPt'muPt)*lxPt;
+    endif;
     Cstart = gama[1:n1, 1:n1] + K0[1:n1, 1:n1];
     Cstart = (Cstart + Cstart')/2;
     { va, ve } = eighv(-Cstart);
     va = va .* (va .> 0);
     vechA = vech(lowmat(ve*diagrv(eye(n1), sqrt(va))));
 
-    bstack0 = alpha|gama|beta;
-    maxOuterIter = 50;
+    if linear;
+        bstack0 = alpha|gama|beta;
+    else;
+        bstack0 = alpha|gama|beta|lambda;
+    endif;
+    /* Milestone 13: bumped from 50 -- AIDS still converges well under
+       that (unchanged, ~10-20 iterations typically), but QUAIDS's
+       necessarily-damped outer loop (see aCtl.relax above) can
+       legitimately need on the order of 100-200 rounds to bring finalErr
+       under aCtl.err, confirmed empirically, not guessed. */
+    maxOuterIter = 300;
     tol = aCtl.err;
     iter = 1;
     ok = 1;
+    lx2Fixed = 0;
     do while ok;
 
+        alphaOld = alpha;
+        betaOld = beta;
+        lambdaOld = lambda;
+
         alphaFull = intcptFull*alpha;
-        a_pFull = sumc((prices.*alphaFull)') + .5*sumc(((prices*gama).*prices)');
+        a_pFull = aCtl.alpha0 + sumc((prices.*alphaFull)') + .5*sumc(((prices*gama).*prices)');
         lxFixed = totexp - a_pFull;
 
-        a_pPt = intcptPt'alpha*pricesPt + .5*pricesPt'gama*pricesPt;
+        a_pPt = aCtl.alpha0 + intcptPt'alpha*pricesPt + .5*pricesPt'gama*pricesPt;
         lxPt = totexpPt - a_pPt;
-        wPt = alpha'intcptPt + gama'pricesPt + beta'lxPt;
-        K0 = -diagrv(eye(n), wPt) + wPt*wPt' + beta'beta*lxPt;
+
+        if linear;
+            wPt = alpha'intcptPt + gama'pricesPt + beta'lxPt;
+            K0 = -diagrv(eye(n), wPt) + wPt*wPt' + beta'beta*lxPt;
+        else;
+            /* beta lagged by one outer round to build b_p/lx2Fixed --
+               exactly the trick quaidsFit()'s own main loop uses to build
+               that round's lx2 regressor (quaids.src:279-280), applied
+               here so this round's OLS solve (inside _quaidsCurvGivenA)
+               can re-estimate a fresh beta/lambda given a now-fixed
+               regressor column. */
+            b_pFull = exp(prices*beta');
+            lx2Fixed = (lxFixed^2)./b_pFull;
+            b_pPt = exp(pricesPt'beta');
+            lx2Pt = (lxPt^2)/b_pPt;
+            muPt = lambda*lxPt/b_pPt;
+            wPt = alpha'intcptPt + gama'pricesPt + beta'lxPt + lambda'lx2Pt;
+            K0 = -diagrv(eye(n), wPt) + wPt*wPt'
+                + (beta'beta + beta'muPt + muPt'beta + 2*muPt'muPt)*lxPt;
+        endif;
 
         struct PV p0;
         p0 = pvCreate;
@@ -233,13 +325,34 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
         c0.printIters = 0;
 
         struct optmtResults outR;
-        outR = optmt(&_quaidsCurvObj, p0, w, prices, intcptFull, lxFixed, uResid, K0, n1, n, c0);
+        outR = optmt(&_quaidsCurvObj, p0, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear, c0);
         vechA = pvUnpack(outR.par, 1);
 
-        { gama, bHat, ssr } = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
-        { alpha, beta } = _quaidsCurvRecoverFull(bHat, nint);
+        { gama, bHat, ssr } = _quaidsCurvGivenA(vechA, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
+        { alpha, beta, lambda } = _quaidsCurvRecoverFull(bHat, nint, linear);
 
-        bstack = alpha|gama|beta;
+        /* Milestone 13: optional under-relaxation, reusing aCtl.relax
+           (Milestone 12) -- default 1 means this is a no-op, byte-
+           identical to every prior release (including AIDS, where the
+           outer loop converges quickly and reliably without it). QUAIDS's
+           extra beta->b_p->lx2 feedback (see the file header) makes this
+           loop meaningfully less stable than AIDS's own two-block
+           version; testing found undamped QUAIDS runs can diverge to
+           NaN within a handful of iterations, while aCtl.relax<1 trades
+           iteration count for stability -- gama itself is deliberately
+           NOT damped (it must stay exactly -A*A'-K0 by construction; only
+           the K0-building inputs alpha/beta/lambda are). */
+        alpha = aCtl.relax*alpha + (1-aCtl.relax)*alphaOld;
+        beta = aCtl.relax*beta + (1-aCtl.relax)*betaOld;
+        if not linear;
+            lambda = aCtl.relax*lambda + (1-aCtl.relax)*lambdaOld;
+        endif;
+
+        if linear;
+            bstack = alpha|gama|beta;
+        else;
+            bstack = alpha|gama|beta|lambda;
+        endif;
         err = maxc(maxc(abs((bstack-bstack0)./(bstack0 + (bstack0 .== 0)))));
 
         bstack0 = bstack;
@@ -256,7 +369,8 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
        vech(A) -- 2*sigma2*Hessian(SSR)^-1, Hessian computed numerically --
        propagated to the full reported coefficient vector via a numerical-
        Jacobian delta method (same finite-difference technique as
-       quaidsElasFit()). K0/lxFixed are held at their converged values. */
+       quaidsElasFit()). K0/lxFixed/lx2Fixed are held at their converged
+       values. */
 
     /* Numerical Hessians need larger steps than gradients (a second
        difference amplifies floating-point noise) -- calibrated
@@ -272,34 +386,34 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
             vechA_p[i] = vechA_p[i] + hStep[i];
             if j == i;
                 vechA_p[j] = vechA_p[j] + hStep[j];
-                { gaP, bP, ssrPP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
+                { gaP, bP, ssrPP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
 
                 vechA_m = vechAHat;
                 vechA_m[i] = vechA_m[i] - hStep[i];
-                { gaM, bM, ssrMM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
+                { gaM, bM, ssrMM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
 
-                { gaP, bP, ssrCenter } = _quaidsCurvGivenA(vechAHat, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
+                { gaP, bP, ssrCenter } = _quaidsCurvGivenA(vechAHat, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
                 hessMat[i, i] = (ssrPP - 2*ssrCenter + ssrMM)/(hStep[i]*hStep[i]);
             else;
                 vechA_p[j] = vechA_p[j] + hStep[j];
-                { gaP, bP, ssrPP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
+                { gaP, bP, ssrPP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
 
                 vechA_p = vechAHat;
                 vechA_p[i] = vechA_p[i] + hStep[i];
                 vechA_m = vechAHat;
                 vechA_m[j] = vechA_m[j] - hStep[j];
                 vechA_m[i] = vechA_m[i] + hStep[i];
-                { gaP, bP, ssrPM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
+                { gaP, bP, ssrPM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
 
                 vechA_p = vechAHat;
                 vechA_p[j] = vechA_p[j] + hStep[j];
                 vechA_p[i] = vechA_p[i] - hStep[i];
-                { gaP, bP, ssrMP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
+                { gaP, bP, ssrMP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
 
                 vechA_m = vechAHat;
                 vechA_m[i] = vechA_m[i] - hStep[i];
                 vechA_m[j] = vechA_m[j] - hStep[j];
-                { gaM, bM, ssrMM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
+                { gaM, bM, ssrMM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
 
                 hessMat[i, j] = (ssrPP - ssrPM - ssrMP + ssrMM)/(4*hStep[i]*hStep[j]);
                 hessMat[j, i] = hessMat[i, j];
@@ -309,7 +423,12 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
         i = i + 1;
     endo;
 
-    sigma2 = ssr/(rows(w)*n1 - K - cols(intcptFull~lxFixed~uResid));
+    if linear;
+        dofX = cols(intcptFull~lxFixed~uResid);
+    else;
+        dofX = cols(intcptFull~lxFixed~lx2Fixed~uResid);
+    endif;
+    sigma2 = ssr/(rows(w)*n1 - K - dofX);
     hessMat = (hessMat + hessMat')/2;
     { va, ve } = eighv(hessMat);
     /* Guard against a mildly non-positive-definite numerical Hessian
@@ -320,33 +439,48 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
     covA = 2*sigma2*(ve*diagrv(eye(K), 1./va)*ve');
 
     /* Delta method: Jacobian of the reported coefficient vector
-       [alpha;gama;beta] with respect to vech(A), at the converged K0. */
-    vAll = alpha|gama|beta;
+       [alpha;gama;beta[;lambda]] with respect to vech(A), at the
+       converged K0. */
+    if linear;
+        vAll = alpha|gama|beta;
+    else;
+        vAll = alpha|gama|beta|lambda;
+    endif;
     vechDim = rows(vAll)*cols(vAll);
     jacG = zeros(vechDim, K);
     i = 1;
     do while i <= K;
         vechA_p = vechAHat;
         vechA_p[i] = vechA_p[i] + hStep[i];
-        { gaP, bP, ssrPP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
-        { alphaP, betaP } = _quaidsCurvRecoverFull(bP, nint);
+        { gaP, bP, ssrPP } = _quaidsCurvGivenA(vechA_p, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
+        { alphaP, betaP, lambdaP } = _quaidsCurvRecoverFull(bP, nint, linear);
 
         vechA_m = vechAHat;
         vechA_m[i] = vechA_m[i] - hStep[i];
-        { gaM, bM, ssrMM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, uResid, K0, n1, n);
-        { alphaM, betaM } = _quaidsCurvRecoverFull(bM, nint);
+        { gaM, bM, ssrMM } = _quaidsCurvGivenA(vechA_m, w, prices, intcptFull, lxFixed, lx2Fixed, uResid, K0, n1, n, linear);
+        { alphaM, betaM, lambdaM } = _quaidsCurvRecoverFull(bM, nint, linear);
 
-        gPlus = vec(alphaP|gaP|betaP);
-        gMinus = vec(alphaM|gaM|betaM);
+        if linear;
+            gPlus = vec(alphaP|gaP|betaP);
+            gMinus = vec(alphaM|gaM|betaM);
+        else;
+            gPlus = vec(alphaP|gaP|betaP|lambdaP);
+            gMinus = vec(alphaM|gaM|betaM|lambdaM);
+        endif;
         jacG[., i] = (gPlus - gMinus)/(2*hStep[i]);
         i = i + 1;
     endo;
 
     vAll = jacG*covA*jacG';
     seAll = sqrt(diag(vAll));
-    seAll = reshape(seAll, rows(alpha|gama|beta), cols(alpha));
+    seAll = reshape(seAll, rows(bstack0), cols(alpha));
 
-    wepc = -diagrv(eye(n), wPt) + wPt*wPt' + gama + (beta'beta)*lxPt;
+    if linear;
+        wepc = -diagrv(eye(n), wPt) + wPt*wPt' + gama + (beta'beta)*lxPt;
+    else;
+        wepc = -diagrv(eye(n), wPt) + wPt*wPt' + gama
+            + (beta'beta + beta'muPt + muPt'beta + 2*muPt'muPt)*lxPt;
+    endif;
     eigs = eigh(wepc);
 
     cOut.n = n;
@@ -354,7 +488,11 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
     cOut.nint = nint;
     cOut.wnam = qOut.wnam;
     cOut.cholA = lowmat(xpnd(vechAHat));
-    cOut.b = alpha|gama|beta;
+    if linear;
+        cOut.b = alpha|gama|beta;
+    else;
+        cOut.b = alpha|gama|beta|lambda;
+    endif;
     cOut.v = vAll;
     cOut.se = seAll;
     cOut.gama = gama;

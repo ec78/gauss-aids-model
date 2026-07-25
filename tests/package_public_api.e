@@ -53,6 +53,15 @@ new;
 ** value, confirming the installed package's .sdf/.lcg picked up the new
 ** field, not just that it compiles source-tree-side.
 **
+** Milestone 13 extended quaidsCurvatureFit() to also accept QUAIDS
+** (aCtl.linear=0) fits, not just AIDS. A third inline dataset below
+** (seed=204, quadratic=1/endogenous=1, mirroring
+** tests/quaidsfixtures.src's _quaidsSyntheticDGP()) exercises the QUAIDS
+** path -- requires aCtl.relax=.25, since QUAIDS's curvature outer loop
+** is measurably less stable than AIDS's own (undamped runs on this
+** fixture diverge, confirmed directly -- see src/quaidscurvature.src's
+** header and tests/quaids_curvature_test.e for the full story).
+**
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
 */
@@ -338,6 +347,73 @@ call assert_true(maxc(cOut.eigenvalues) < 1e-3,
     "quaidsCurvatureFit: Slutzky matrix at the reference point is not negative semidefinite");
 
 call printQuaidsCurvature(cOut);
+
+
+/* --- quaidsCurvatureFit() on QUAIDS (Milestone 13) ---
+   Needs aCtl.relax (Milestone 12) -- QUAIDS's curvature outer loop is
+   measurably less stable than AIDS's own (see src/quaidscurvature.src's
+   header); undamped runs on this fixture diverge, confirmed directly.
+   Mirrors tests/quaidsfixtures.src's _quaidsSyntheticDGP(seed=204,
+   quadratic=1, endogenous=1) -- duplicated inline rather than reused,
+   per this file's own "no dependency on tests/-only fixture code"
+   principle, same as the AIDS block above. */
+
+Nq = 5;
+seedQ = 204;
+tobsQ = 3000;
+
+alQ = round(rndns(1, Nq-1, seedQ)*10)/10;
+alQ = alQ~(1-sumc(alQ'));
+al1Q = .5*round(rndns(1, Nq-1, seedQ)*10)/10;
+al1Q = al1Q~(-sumc(al1Q'));
+gaQ0 = round(rndns(Nq-1, Nq-1, seedQ)*10)/10;
+gaQ0 = xpnd(vech(gaQ0));
+gaQ0 = gaQ0|(-sumc(gaQ0)');
+gaQ0 = gaQ0~(-sumc(gaQ0'));
+beQ = .5*round(rndns(1, Nq-1, seedQ)*10)/10;
+beQ = beQ~(-sumc(beQ'));
+laQ = .01*round(rndns(1, Nq-1, seedQ)*10)/10;
+laQ = laQ~(-sumc(laQ'));
+roQ = round(rndns(1, Nq-1, seedQ)*10)/10;
+
+pricesQ = 1+rndns(tobsQ, Nq, seedQ);
+instrQ = 5+5*rndns(tobsQ, 1, seedQ);
+intcptQ = 2+2*rndns(tobsQ, 1, seedQ);
+uQ = .1*rndns(tobsQ, 1, seedQ);
+totexpQ = .85*instrQ + uQ;
+eNoiseQ = 2*rndns(tobsQ, Nq-1, seedQ) + uQ*roQ;
+eNoiseQ = eNoiseQ~(-sumc(eNoiseQ'));
+
+a_pQ = sumc((pricesQ.*(alQ+intcptQ*al1Q))') + .5*sumc(((pricesQ*gaQ0).*pricesQ)');
+lxQ = totexpQ - a_pQ;
+b_pQ = pricesQ*beQ';
+lx2Q = (lxQ^2)./exp(b_pQ);
+
+wQ = alQ + pricesQ*gaQ0 + lxQ*beQ + eNoiseQ + intcptQ*al1Q + lx2Q*laQ;
+
+struct quaidsControl aCtlQ;
+aCtlQ = quaidsControlCreate();
+aCtlQ.linear = 0;
+aCtlQ.maxiter = 100;
+aCtlQ.homogenous = 1;
+aCtlQ.err = .0001;
+
+struct quaidsOut qOutQ;
+qOutQ = quaidsFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ);
+call assert_true(qOutQ.converged == 1, "quaidsCurvatureFit (QUAIDS) prerequisite fit did not converge");
+
+struct quaidsControl aCtlCurvQ;
+aCtlCurvQ = aCtlQ;
+aCtlCurvQ.relax = .25;
+
+struct quaidsCurvOut cOutQ;
+cOutQ = quaidsCurvatureFit(qOutQ, wQ, pricesQ, totexpQ, aCtlCurvQ);
+call assert_true(cOutQ.converged == 1, "quaidsCurvatureFit (QUAIDS) did not converge");
+call assert_true(maxc(cOutQ.eigenvalues) < 1e-3,
+    "quaidsCurvatureFit (QUAIDS): Slutzky matrix at the reference point is not negative semidefinite");
+call assert_true(rows(cOutQ.b) == 1+qOutQ.nint+Nq+2, "quaidsCurvatureFit (QUAIDS): cOut.b missing the lambda row");
+
+call printQuaidsCurvature(cOutQ);
 
 
 print "package_public_api.e: PASS";

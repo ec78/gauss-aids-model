@@ -194,22 +194,29 @@ formula and how it was verified.
 ## Imposing Curvature (Diewert-Wales)
 
 `quaidsSlutzky()` always diagnoses curvature (Slutzky negative
-semidefiniteness) but never imposes it. For LA-AIDS/AIDS
-(`aCtl.linear = 1`), [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)
-can impose it locally, at the sample mean, requiring the `optmt` package:
+semidefiniteness) but never imposes it.
+[quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md) can impose
+it locally, at the sample mean, for LA-AIDS/AIDS (`aCtl.linear = 1`) and,
+since Milestone 13, QUAIDS (`aCtl.linear = 0`) too -- requires the
+`optmt` package either way:
 
 ```gauss
 library optmt, quaids;
 
 struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
-aCtl.linear = 1;
+aCtl.linear = 1;         // or 0 for QUAIDS
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;    // required -- quaidsCurvatureFit needs a
                         // homogeneity+symmetry-constrained starting fit
 
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+aCtl.relax = .25;    // recommended for QUAIDS -- its curvature outer
+                     // loop is measurably less stable than AIDS's own;
+                     // undamped (relax=1, the default) runs can diverge.
+                     // Not needed for AIDS.
 
 struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
@@ -218,9 +225,10 @@ call printQuaidsCurvature(cOut);
 print "Slutzky eigenvalues at the sample mean:" cOut.eigenvalues';  // all <= 0
 ```
 
-QUAIDS (`aCtl.linear = 0`) is not yet supported -- `quaidsCurvatureFit`
-errors clearly if called on a QUAIDS fit. See the
-[Limitations section](#limitations) below for the standard-error caveat.
+For QUAIDS, `cOut.b`/`cOut.se` gain a trailing `lambda` row (no `u` row
+either way -- see [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)).
+See the [Limitations section](#limitations) below for the standard-error
+caveat, which applies to both models.
 
 ## Reporting (`pubtable`)
 
@@ -249,12 +257,17 @@ runnable example.
 ## Limitations
 
 - Curvature **imposition** ([quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md))
-  is only available for LA-AIDS/AIDS, at the sample mean, and its standard
-  errors are a simplified delta-method approximation that is known to be
-  unreliable when the estimated Cholesky factor has boundary (near-zero)
-  entries -- see the [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
+  is available for LA-AIDS/AIDS and QUAIDS, at the sample mean, and its
+  standard errors are a simplified delta-method approximation that is
+  known to be unreliable when the estimated Cholesky factor has boundary
+  (near-zero) entries -- see the [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
   for why this happens and why point estimates and the exact curvature
-  property are unaffected. QUAIDS curvature imposition is deferred.
+  property are unaffected. For QUAIDS, `aCtl.relax` is effectively
+  required (its curvature outer loop is measurably less stable than
+  AIDS's own), and there is no known-curvature-consistent synthetic
+  fixture to validate true-parameter recovery against (unlike AIDS) --
+  `tests/quaids_curvature_test.e`'s QUAIDS checks validate convergence/
+  exact NSD/shape instead, a real but weaker tier of evidence.
 - No guaranteed convergence for the iterated estimator (or the curvature-
   constrained outer iteration built on top of it) -- see "Choosing A
   Model" above. `aCtl.relax` (Milestone 12) is an evidence-backed, opt-in
