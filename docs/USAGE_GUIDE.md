@@ -262,10 +262,18 @@ runnable example.
   known to be unreliable when the estimated Cholesky factor has boundary
   (near-zero) entries -- see the [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
   for why this happens and why point estimates and the exact curvature
-  property are unaffected. For QUAIDS, `aCtl.relax` is effectively
-  required (its curvature outer loop is measurably less stable than
-  AIDS's own), and there is no known-curvature-consistent synthetic
-  fixture to validate true-parameter recovery against (unlike AIDS) --
+  property are unaffected. [quaidsCurvatureBootstrapFit](command-reference/quaidsCurvatureBootstrapFit.md)
+  (Milestone 15) offers a bootstrap alternative that does not share this
+  weakness, reported alongside (not replacing) the delta-method SE --
+  see [printQuaidsCurvatureBootstrap](command-reference/printQuaidsCurvatureBootstrap.md).
+  It has no default replication count: a single AIDS curvature fit takes
+  under a second, but a single QUAIDS curvature fit takes several seconds,
+  so a conventional replication count (200-1000) can mean anywhere from a
+  few minutes to a couple of hours depending on the model -- choose `B`
+  deliberately. For QUAIDS, `aCtl.relax` is effectively required (its
+  curvature outer loop is measurably less stable than AIDS's own), and
+  there is no known-curvature-consistent synthetic fixture to validate
+  true-parameter recovery against (unlike AIDS) --
   `tests/quaids_curvature_test.e`'s QUAIDS checks validate convergence/
   exact NSD/shape instead, a real but weaker tier of evidence.
 - No guaranteed convergence for the iterated estimator (or the curvature-

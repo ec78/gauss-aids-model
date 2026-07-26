@@ -14,6 +14,13 @@ name: Test suite
 # suite) -- not the full release-verification/rebuild-and-reinstall
 # pipeline, which mutates the shared GAUSS package install
 # (c:\gauss26\pkgs\quaids) and stays a manually-run command for now.
+#
+# Passes -SkipBootstrap: quaids_curvature_bootstrap_test.e (Milestone 15)
+# adds roughly 45-50s to this script's runtime (refitting the whole
+# estimation pipeline B times per model), close to doubling the routine
+# push-triggered run. It stays available for manual/release-verification
+# runs (run_source_tests.ps1 without this flag) but opted out of the
+# automatic per-push run to keep CI fast.
 
 on:
   push:
@@ -37,4 +44,4 @@ jobs:
         # different account from the maintainer's own, whose default
         # execution policy blocks running any .ps1 file at all.
         shell: cmd
-        run: powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1
+        run: powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1 -SkipBootstrap

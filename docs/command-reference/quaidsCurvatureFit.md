@@ -95,7 +95,10 @@ delta-method inference is known to be unreliable (the same boundary-
 inference complication that arises for non-negativity-constrained
 variance components elsewhere in econometrics). Point estimates and the
 exact curvature property at the reference point are unaffected; treat
-standard errors for near-zero Cholesky-factor entries with caution.
+standard errors for near-zero Cholesky-factor entries with caution. See
+[quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md) (Milestone
+15) for a bootstrap alternative that does not share this boundary-
+inference weakness.
 
 ## Examples
 
@@ -127,4 +130,6 @@ print "Slutzky eigenvalues at the sample mean:" cOut.eigenvalues';
 ## See Also
 
 [printQuaidsCurvature](printQuaidsCurvature.md), [quaidsFit](quaidsFit.md),
-[quaidsSlutzky](quaidsSlutzky.md)
+[quaidsSlutzky](quaidsSlutzky.md),
+[quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md) (a bootstrap
+alternative to this proc's delta-method standard errors)

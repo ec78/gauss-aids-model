@@ -227,6 +227,46 @@ estimates and the exact curvature property are unaffected. See
 [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md) and the
 [usage guide's Limitations section](USAGE_GUIDE.md#limitations).
 
+### Bootstrap Standard Errors (Milestone 15)
+
+[quaidsCurvatureBootstrapFit](command-reference/quaidsCurvatureBootstrapFit.md)
+closes the gap above with a nonparametric i.i.d. row (pairs) bootstrap:
+resample `T` rows with replacement (one draw of row indices applied
+identically to `w`/`intcpt`/`prices`/`totexp`/`instr`), refit the *whole*
+pipeline (`quaidsFit()` then `quaidsCurvatureFit()`) on each resample, and
+take the empirical standard deviation of the resulting coefficient draws.
+Refitting the whole pipeline, not just perturbing the already-fitted
+curvature struct, is deliberate -- it captures first-stage IV sampling
+variability as well as the curvature reparametrization's own variability.
+A replication is included only if both stages converge and the resulting
+coefficient vector is finite; up to `5*B` resamples are attempted before
+giving up on reaching `B` completed replications, matching the same
+attempt-cap convention this author's `gauss-qardl` package already uses
+for its own moving-block bootstrap.
+
+No default replication count is given: a single AIDS curvature fit
+measures well under a second, but a single QUAIDS curvature fit measures
+several seconds (and typically needs `aCtl.relax < 1` to converge, as
+above) -- at conventional bootstrap sizes (200-1000), QUAIDS alone can
+take on the order of half an hour to a couple of hours. `B` is a required
+argument so this tradeoff is chosen deliberately rather than defaulted.
+
+Building this bootstrap surfaced a real, separate finding about
+[quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md) itself: on a
+sufficiently degenerate resample, its internal eigendecomposition calls
+(`eighv()`, used both for the warm start and for the Hessian-based
+standard error) can fail outright rather than merely return a poor answer
+-- and this specific failure mode (GAUSS returning fewer values than a
+multiple-assignment expects) is not intercepted by this codebase's usual
+`trap`/`scalmiss` guard (confirmed directly: trapping the call alone did
+not prevent it). `quaidsCurvatureFit()` was hardened with an explicit
+pre-call finiteness check (catching both NaN, via `x .eq x`, and plain
+Inf, which is *not* caught by that check since `Inf .eq Inf` is true under
+IEEE 754 and requires a separate magnitude bound) ahead of both `eighv()`
+calls, falling back to a harmless identity decomposition on failure --
+this degrades the standard error for that one fit rather than crashing
+the entire bootstrap run.
+
 ## References
 
 - Deaton, A., Muellbauer, J. (1980). "An Almost Ideal Demand System."

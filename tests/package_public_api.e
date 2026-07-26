@@ -348,6 +348,18 @@ call assert_true(maxc(cOut.eigenvalues) < 1e-3,
 
 call printQuaidsCurvature(cOut);
 
+/* --- quaidsCurvatureBootstrapFit() / printQuaidsCurvatureBootstrap()
+   (Milestone 15) --- B kept tiny (this is a release gate, not a
+   statistical validation -- see tests/quaids_curvature_bootstrap_test.e
+   for the real check) since it refits the whole pipeline B times. */
+struct quaidsCurvBootOut bootOut;
+bootOut = quaidsCurvatureBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 2, 42);
+call assert_true(bootOut.nCompleted >= 1, "quaidsCurvatureBootstrapFit: no replications completed");
+call assert_true(rows(bootOut.seBoot) == rows(cOut.b) and cols(bootOut.seBoot) == cols(cOut.b),
+    "quaidsCurvatureBootstrapFit: seBoot shape does not match cOut.b");
+
+call printQuaidsCurvatureBootstrap(bootOut);
+
 
 /* --- quaidsCurvatureFit() on QUAIDS (Milestone 13) ---
    Needs aCtl.relax (Milestone 12) -- QUAIDS's curvature outer loop is

@@ -172,6 +172,28 @@ struct quaidsCurvOut {
 };
 
 /*
+** quaidsCurvBootOut -- struct returned by quaidsCurvatureBootstrapFit(): an
+** i.i.d. row (pairs) bootstrap standard error for a quaidsCurvatureFit()
+** coefficient vector, reported alongside (not replacing) the existing
+** delta-method SE. See the Milestone 15 section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsCurvBootOut {
+    matrix n;           // number of goods
+    matrix n1;          // n - 1
+    matrix nint;        // number of extra intercept-shifter variables
+    matrix wnam;        // legacy character matrix of good names
+    matrix b;           // point estimate: original unresampled cOut.b
+    matrix seDelta;     // original unresampled cOut.se (delta method), for comparison
+    matrix seBoot;      // bootstrap standard error, same shape as b
+    matrix bBoot;       // nCompleted x (rows(b)*cols(b)), raw vec(b) draws
+    matrix nRequested;  // B as passed in
+    matrix nCompleted;  // replications actually used in seBoot
+    matrix nFailed;     // replications attempted but excluded (non-convergence or a trapped error)
+    matrix nAttempts;   // total resamples drawn (>= nCompleted+nFailed only if the attempt cap was hit)
+    matrix seed;        // seed as passed in, echoed for reproducibility records
+};
+
+/*
 ** quaidsWelfareOut -- struct returned by quaidsWelfareFit(): exact
 ** compensating variation (CV) and equivalent variation (EV) for a price
 ** change from a base point to a new point, holding nominal expenditure

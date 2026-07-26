@@ -5,6 +5,62 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.10.0 - 2026-07-26
+
+### Added
+- `quaidsCurvatureBootstrapFit()` and `printQuaidsCurvatureBootstrap()`
+  (`src/quaidscurvature.src`), plus a new `quaidsCurvBootOut` struct
+  (`src/quaids.sdf`): a nonparametric i.i.d. row (pairs) bootstrap
+  standard error for `quaidsCurvatureFit()`'s coefficient vector,
+  reported alongside (not replacing) the existing delta-method SE. Closes
+  a gap documented since Milestone 10: the delta-method SE is known to be
+  unreliable whenever the estimated Cholesky factor sits at the boundary
+  of the negative-semidefinite cone. Resamples rows of `(w, intcpt,
+  prices, totexp, instr)` with replacement and refits the whole pipeline
+  (`quaidsFit()` then `quaidsCurvatureFit()`) on each resample. No default
+  replication count (`B` is required) given a roughly order-of-magnitude
+  timing gap between a single AIDS curvature fit (~0.9s) and a single
+  QUAIDS curvature fit (~7.3s).
+- `tests/quaids_curvature_bootstrap_test.e` (26 checks; opt-in via a new
+  `-SkipBootstrap` flag in `tests/run_source_tests.ps1`, since it adds
+  ~45-50s to that script's runtime even at a small `B`).
+- `.github/workflows/tests.yml` (Milestone 14, no version bump of its own
+  at the time): push-triggered CI on a self-hosted GitHub Actions runner,
+  since this repo's tests require licensed GAUSS unavailable on GitHub-
+  hosted runners. Triggers on `push` to `master` only (never
+  `pull_request`), a deliberate mitigation for the fork/PR code-execution
+  risk self-hosted runners carry on public repositories. Passes
+  `-SkipBootstrap` to keep the routine per-push run fast.
+
+### Fixed
+- `quaidsCurvatureFit()`'s two internal `eighv()` calls (the warm-start
+  and the Hessian-based standard error) could crash the entire calling
+  job on a sufficiently degenerate input (`error G0528: More returns than
+  targets`) -- a call-arity failure mode that this codebase's usual
+  `trap`/`scalmiss` guard does not intercept. Found by stress-testing
+  under bootstrap resampling. Fixed with an explicit pre-call finiteness
+  check (both NaN and plain `Inf`, which `x .eq x` alone does not catch)
+  ahead of both calls, falling back to a harmless identity decomposition
+  on failure.
+- `tests/run_source_tests.ps1`'s `Invoke-GaussBatch` helper could deadlock
+  (child process hangs indefinitely, observed for over eight hours before
+  being killed) when a test produces enough combined stdout+stderr output
+  to fill both OS pipe buffers -- a classic .NET `Process` issue caused by
+  reading stdout fully before stderr. `quaids_curvature_bootstrap_test.e`
+  is the first test file to produce enough stderr volume (harmless
+  "Optmt: function evaluation failed" diagnostics from bad bootstrap
+  resamples) to trigger it. Fixed by draining both streams asynchronously
+  via `OutputDataReceived`/`ErrorDataReceived` events instead of
+  sequential `ReadToEnd()` calls.
+
+### Notes
+- Building the bootstrap's plausibility test found that the delta-method
+  SE's boundary-inference unreliability does not stay confined to the
+  specific gamma row/column tied to a boundary Cholesky entry -- it can
+  inflate the reported SE anywhere in the coefficient vector, since the
+  classical NLS covariance is for the whole `vech(A)` vector at once. See
+  `GOLD_STANDARD_TODO.md`'s Milestone 15 section.
+
 ## 0.9.0 - 2026-07-25
 
 ### Added

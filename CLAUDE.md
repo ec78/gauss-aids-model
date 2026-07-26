@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.9.0`) and is not yet
+The library is **pre-alpha** (package version `0.10.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-13)
+## Repository layout (post-Milestone-15)
 
 ```
 src/
@@ -77,7 +77,13 @@ src/
                     #   package.json's src array (required public API),
                     #   so `optmt` is now a real package dependency
                     #   (package.json's deps array). See "Milestone 10:
-                    #   curvature imposition" below.
+                    #   curvature imposition" below. Milestone 15 adds
+                    #   quaidsCurvatureBootstrapFit()/
+                    #   printQuaidsCurvatureBootstrap() -- an i.i.d. row
+                    #   bootstrap standard error for quaidsCurvatureFit(),
+                    #   reported alongside (not replacing) its delta-method
+                    #   SE. No new package dependency. See "Milestone 15:
+                    #   bootstrap standard errors" below.
   quaidswelfare.src # Milestone 11: quaidsWelfareFit()/printQuaidsWelfare()
                     #   -- exact compensating/equivalent variation for a
                     #   price change, holding nominal expenditure fixed.
@@ -218,6 +224,20 @@ tests/
                     #   the optmt package installed. See "Milestone 10:
                     #   curvature imposition" and "Milestone 13: QUAIDS
                     #   curvature imposition" below.
+  quaids_curvature_bootstrap_test.e  # Milestone 15: 26 checks -- bootstrap
+                    #   run bookkeeping (requested/completed/failed/
+                    #   attempts), shape/finiteness of the bootstrap SE,
+                    #   exact echo of the base point estimate/delta-method
+                    #   SE, and a plausibility check that the bootstrap SE
+                    #   stays well-behaved where the delta-method SE does
+                    #   not -- on both an AIDS (B=15) and a QUAIDS (B=5)
+                    #   fixture, small B chosen to bound this file's own
+                    #   runtime (~45-50s) given the ~0.9s/~7.3s per-
+                    #   replication cost. NOT run by run_source_tests.ps1's
+                    #   default (unflagged) invocation -- see
+                    #   -SkipBootstrap below. Requires the optmt package
+                    #   installed. See "Milestone 15: bootstrap standard
+                    #   errors" below.
   quaids_welfare_test.e        # Milestone 11: 20 checks -- exact zero-
                     #   price-change identity, exact round-trip inverse-
                     #   function identity (feeding e(p1,u0) back into
@@ -275,7 +295,16 @@ tests/
                     #   quaids_convergence_sweep.e, deliberately not a
                     #   pass/fail gate -- see "Testing status" below),
                     #   checking this repo's own PASS/FAIL-line convention
-                    #   (not just tgauss's exit code).
+                    #   (not just tgauss's exit code). Milestone 15 adds
+                    #   -SkipBootstrap (default: NOT skipped when this
+                    #   script is run directly, matching the existing
+                    #   -SkipPubtable/-SkipCurvature naming pattern) --
+                    #   but .github/workflows/tests.yml's automatic
+                    #   push-triggered CI run passes -SkipBootstrap
+                    #   explicitly, since quaids_curvature_bootstrap_test.e
+                    #   adds ~45-50s, close to doubling that run's
+                    #   baseline. Run without the flag locally or during
+                    #   release verification to exercise it.
   run_convergence_sweep.ps1  # Milestone 12: runs quaids_convergence_sweep.e
                     #   and captures its output to
                     #   tests/convergence_sweep_report.txt (gitignored --
@@ -350,14 +379,33 @@ docs/
                     #   optional pubtable_quaids.src adapter's 6 procs
                     #   (documented despite being outside package.json's
                     #   src array, since they're real public API surface).
-package.json      # GAUSS package manifest (name: quaids, version: 0.7.0,
+.github/
+  workflows/
+    tests.yml       # Milestone 14: CI on a self-hosted GitHub Actions
+                  #   runner (this repo's tests need licensed GAUSS,
+                  #   unavailable on GitHub-hosted runners). Triggers on
+                  #   push to master only (plus workflow_dispatch), never
+                  #   pull_request -- a deliberate public-repo security
+                  #   choice, since self-hosted runners on public repos
+                  #   are a real fork/PR code-execution risk otherwise.
+                  #   Runs tests/run_source_tests.ps1 -SkipBootstrap (the
+                  #   -SkipBootstrap flag added at Milestone 15 to keep
+                  #   the routine per-push run fast -- see "Milestone 15"
+                  #   below). See "Milestone 14: continuous integration"
+                  #   below for the shell-invocation subtlety this
+                  #   required (shell: cmd, not the default
+                  #   shell: powershell).
+package.json      # GAUSS package manifest (name: quaids, version: 0.10.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
                   #   quaidscurvature.src IS listed (required public API),
                   #   so deps now lists "optmt" -- this library's first
                   #   real external package dependency (Milestone 10).
                   #   quaidswelfare.src (Milestone 11) is also listed but
-                  #   adds no new dependency.
+                  #   adds no new dependency. Milestone 15 (bootstrap
+                  #   standard errors) adds new public API inside
+                  #   quaidscurvature.src but no new src array entry or
+                  #   new dependency.
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
@@ -385,7 +433,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-13:
+The original ten-milestone roadmap is complete, plus Milestones 11-15:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -395,9 +443,13 @@ standard integration gate), 10 (curvature imposition via Diewert-Wales,
 requested by the repo owner after Milestone 9 closed), 11 (exact
 welfare measures, requested by the repo owner after Milestone 10 closed),
 12 (numerical reliability of the iterated estimator, requested by the
-repo owner after Milestone 11 closed), and 13 (QUAIDS curvature
+repo owner after Milestone 11 closed), 13 (QUAIDS curvature
 imposition -- extending Milestone 10's AIDS-only support, requested by
-the repo owner after Milestone 12 closed).
+the repo owner after Milestone 12 closed), 14 (continuous integration via
+a self-hosted GitHub Actions runner, requested by the repo owner after
+Milestone 13 closed), and 15 (bootstrap standard errors for
+`quaidsCurvatureFit()`, requested by the repo owner after Milestone 14
+closed).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -1661,6 +1713,252 @@ of the established "new proc/new field" bump policy. Bumped anyway,
 since QUAIDS curvature support going from unsupported (hard error) to
 supported is a real, user-facing capability addition, not a bugfix.
 
+## Milestone 14: continuous integration
+
+```yaml
+# .github/workflows/tests.yml
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: [self-hosted, Windows, gauss]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run source-tree test suite
+        shell: cmd
+        run: powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1 -SkipBootstrap
+```
+
+Requested by the repo owner after Milestone 13 closed ("what's next" ->
+offered bootstrap standard errors for `quaidsCurvatureFit()` or CI; repo
+owner chose CI first, bootstrap SEs as an explicit follow-up -- see
+"Milestone 15" below).
+
+**The one fact that shapes this milestone**: this repo's tests require
+GAUSS (`tgauss.exe`), a commercial, licensed product installed only on
+the maintainer's machine -- GitHub-hosted runners cannot run them, so CI
+requires a **self-hosted runner on this machine**, confirmed with the
+repo owner rather than assumed, given the standing system-change/blast-
+radius considerations for anything installing persistent background
+services.
+
+**A real, load-bearing fact found during planning**: `gh repo view`
+confirmed this repository is **public**. GitHub's own guidance is
+explicit that self-hosted runners on public repos are a real security
+risk -- a fork could open a pull request that runs arbitrary workflow
+code on the runner machine. Mitigation: the workflow triggers on `push`
+to `master` only (plus manual `workflow_dispatch`), **never**
+`pull_request` -- push access is restricted to repo collaborators
+(currently just the repo owner), closing the fork/PR attack vector
+entirely. Branch protection requiring status checks to pass was
+considered and explicitly **not** enabled: doing so would require the
+workflow to also trigger on `pull_request` to gate merges, reopening
+exactly the risk the push-only design avoids -- a genuine design
+tension, not a simple add-on, surfaced when the repo owner asked about it
+directly.
+
+**Runner setup**: a GitHub Actions runner (v2.336.0) registered at the
+repo level via a short-lived token (`gh api repos/.../actions/runners/
+registration-token -X POST`), installed and started as a Windows service
+via `config.cmd --runasservice` (not the older, separate `svc.cmd`/
+`RunnerService.exe install` two-step, which this runner version does not
+support the same way -- confirmed via a web search after `RunnerService.exe
+install` produced a Windows Forms dialog rather than installing anything).
+Installing a Windows service requires an elevated shell the assistant's
+own shell did not have (confirmed via a `WindowsPrincipal`/
+`IsInRole(Administrator)` check) -- this one step was handed to the repo
+owner to run themselves in their own elevated PowerShell session, rather
+than attempting any self-elevation or bypass.
+
+**A real, non-obvious bug found and fixed by reading the actual failed
+run's log, not by guessing**: the first real CI run failed with
+`PSSecurityException: UnauthorizedAccess -- running scripts is disabled
+on this system` (the runner service's account, `NT AUTHORITY\NETWORK
+SERVICE`, has a restrictive default PowerShell execution policy). Adding
+`-ExecutionPolicy Bypass` directly inside the workflow's `run:` block
+under `shell: powershell` did **not** fix it -- confirmed by re-running
+and seeing the identical error. Root cause, found by examining the
+failed run's log closely: GitHub Actions' `shell: powershell` invokes the
+entire `run:` block via `powershell -command ". 'tempfile.ps1'"` --
+GitHub Actions writes the whole block (including the `-ExecutionPolicy
+Bypass` text) into a temp `.ps1` file, then dot-sources THAT file via a
+bare, unqualified call with no bypass flag of its own, so the OUTER
+invocation hits the policy wall before the inner command is ever reached.
+Fixed by switching to `shell: cmd` for the step (no PowerShell execution-
+policy layer at all for the outer invocation) with the actual command
+being an explicit `powershell -ExecutionPolicy Bypass -File
+tests\run_source_tests.ps1` -- now the first and only PowerShell
+invocation, and the bypass applies correctly. Verified via `gh run view
+--log` showing genuine execution of all test files with correct PASS
+summaries, not a silently-skipped success.
+
+**Scope, deliberately**: only `tests/run_source_tests.ps1` (the fast,
+read-only source-tree suite) runs automatically -- not the full release-
+verification/rebuild-and-reinstall pipeline, which mutates the shared,
+installed GAUSS package directory (`c:\gauss26\pkgs\quaids`) and stays a
+manually-run command, consistent with "don't mutate shared machine state
+on every push."
+
+**No version bump**: CI tooling doesn't change GAUSS public API surface,
+matching this project's established policy (version bumps track public
+API changes, not every milestone).
+
+## Milestone 15: bootstrap standard errors
+
+```gauss
+library optmt, quaids;
+
+struct quaidsControl aCtl;
+aCtl = quaidsControlCreate();
+aCtl.linear = 1;          // 1 for AIDS, 0 for QUAIDS (needs aCtl.relax)
+aCtl.maxiter = 100;
+aCtl.homogenous = 1;
+
+struct quaidsCurvBootOut bootOut;
+bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, 42);
+call printQuaidsCurvatureBootstrap(bootOut);
+```
+
+Requested by the repo owner after Milestone 14 closed, per the ordering
+established when Milestone 14 itself was scoped ("CI first, then
+bootstrap"). Closes a gap `quaidsCurvatureFit()`'s own header has
+documented since Milestone 10: its classical delta-method standard error
+is known to be unreliable whenever the estimated Cholesky factor sits at
+the boundary (a near-zero entry) of the negative-semidefinite cone -- a
+frequent, confirmed occurrence in both the AIDS and QUAIDS test fixtures.
+A bootstrap (resample, refit, take the empirical spread) is the standard
+fix for exactly this class of boundary-constrained-estimation inference
+problem.
+
+**A real timing measurement, gathered before designing anything, shaped
+the whole milestone**: a single AIDS curvature fit measures ~0.87s (23
+outer iterations); a single QUAIDS curvature fit measures ~7.26s (185
+outer iterations, needs `aCtl.relax=.25` per Milestone 13's own finding).
+At conventional bootstrap replication counts (200-1000), QUAIDS alone
+would take 24 minutes to 2 hours. This is why `quaidsCurvatureBootstrapFit()`
+has **no default `B`** -- the caller must choose deliberately, confirmed
+with the repo owner via explicit scoping questions (also resolved this
+way: no default progress printing during the loop, matching this
+codebase's own silent-Fit-proc convention and this author's own sibling-
+repo bootstrap precedents in `gauss-qardl`/`dccelib`; no in-proc
+percentile confidence intervals in this pass, though raw draws are kept
+in `bootOut.bBoot` for a caller or a later milestone to use; and the new
+automated test stays opt-in via a `-SkipBootstrap` flag rather than
+running in the default per-push CI, since it adds ~45-50s -- roughly
+doubling `run_source_tests.ps1`'s baseline runtime even at a small `B`).
+
+**Design, informed by this same author's existing GAUSS bootstrap code in
+sibling repos** (`gauss-qardl`'s `blockBootstrapQARDLDiag`,
+`dccelib`'s `mgBootstrap`/`mgBootstrapSE`): a nonparametric i.i.d. row
+(pairs) bootstrap (the correct choice for this cross-sectional data, as
+opposed to `gauss-qardl`'s block bootstrap, which exists there for
+genuine time-series dependence not present here) -- one draw of row
+indices applied identically to `w`/`intcpt`/`prices`/`totexp`/`instr`,
+refitting the *whole* pipeline (`quaidsFit()` then `quaidsCurvatureFit()`)
+on each resample rather than re-perturbing the already-fitted curvature
+struct, so first-stage IV sampling variability is captured too. A
+replication counts only if both stages converge and the resulting
+coefficient vector is finite -- up to `5*B` total resamples are attempted
+before giving up on reaching `B` completed replications, the same
+attempt-cap convention `blockBootstrapQARDLDiag` already uses. `intcpt`'s
+`== 0` ("no extra intercept shifters") convention is preserved during
+resampling (checked directly -- indexing a scalar `0` with row indices
+errors, confirmed by running it, not assumed).
+
+**Two real, non-obvious GAUSS failure modes found and fixed while
+building this, both by running real stress tests, not by reasoning about
+the language spec**:
+
+1. **A struct-returning proc call CAN be safely wrapped in this
+   codebase's `trap`/`scalmiss` idiom** (Milestone 12's pattern,
+   `src/quaids.src:552-563`) -- confirmed empirically with a small
+   isolated probe before relying on it: GAUSS does not abort the whole
+   statement when a trapped error occurs inside a called proc: it
+   substitutes a scalar-missing value for the erroring expression and
+   lets that proc's own execution continue to its `retp()`, so checking
+   the specific fields a caller reads afterward (e.g. `converged`) is
+   sufficient -- there is no way to `scalmiss()` a whole struct directly
+   (it takes a matrix, not a struct). This let both
+   `quaidsFit()` and `quaidsCurvatureFit()` be wrapped per bootstrap
+   replication (a new private helper, `_quaidsCurvBootOneRep()`) without
+   modifying either proc's own signature.
+2. **`trap 1` does NOT catch every failure mode** -- a real crash
+   (`error G0528: More returns than targets`) surfaced when stress-
+   testing the QUAIDS path under resampling, inside
+   `quaidsCurvatureFit()`'s own `{ va, ve } = eighv(...)` calls (the
+   warm-start and the Hessian-based SE block), **even with the whole call
+   wrapped in `trap 1`**. Root cause, confirmed by direct probing (not
+   assumed): on a sufficiently degenerate input, `eighv()` itself returns
+   *fewer* values than the destructuring assignment expects -- a call-
+   arity mismatch, not a trappable numerical error, so `trap` does not
+   intercept it. Narrowed the trigger with a focused probe script: a
+   zero matrix and a singular (rank-deficient) matrix both still return 2
+   values fine; a matrix containing a plain `Inf` does not. A `x .eq x`
+   NaN-detection pre-check alone was **not enough**, since `Inf .eq Inf`
+   is `TRUE` under IEEE 754 -- a separate `abs(x) < 1e100` magnitude bound
+   was needed too. Fixed by pre-checking finiteness (both NaN and Inf)
+   before ever calling `eighv()` in both places inside
+   `quaidsCurvatureFit()` itself, falling back to a harmless identity
+   decomposition (`va=1s, ve=I`) on failure -- a real, general robustness
+   improvement to `quaidsCurvatureFit()`, not just a bootstrap-specific
+   workaround, since the underlying gap (no internal guard around these
+   two calls) predates this milestone and was explicitly flagged as a
+   risk during this milestone's own design review.
+
+**A test-design lesson, found while writing the plausibility check, not
+assumed going in**: the delta-method SE's boundary-inference
+unreliability does **not** stay confined to the specific gamma row/column
+tied to a boundary Cholesky entry -- the classical NLS covariance is for
+the *whole* `vech(A)` vector at once, and the numerical-Jacobian delta
+method mixes every `vech(A)` parameter into every reported coefficient's
+SE, so a single boundary entry can inflate `seDelta` anywhere in the
+vector (confirmed directly: `seDelta` reached into the hundreds on rows
+with no boundary-adjacent Cholesky entry of their own, on the very
+fixture this test uses). An initial per-cell "same order of magnitude,
+excluding boundary rows" check was written, run, and found to fail for
+exactly this reason -- replaced with a plausibility check on the concrete
+thing this milestone is actually for: `seBoot` itself stays well-behaved
+and bounded where `seDelta` does not.
+
+**Testing**: `tests/quaids_curvature_bootstrap_test.e` (26 checks) --
+bootstrap run bookkeeping, shape/finiteness of the bootstrap SE, exact
+echo of the base point estimate/delta-method SE, and the well-behaved-SE
+plausibility check above, on both an AIDS (`B=15`, ~13s) and QUAIDS
+(`B=5`, ~36s) fixture reusing `tests/quaidsfixtures.src`'s existing
+`tobs=3000` datasets unchanged (only `B` was kept small, not `tobs` --
+shrinking `tobs` risked changing convergence behavior already validated
+at that size). Not part of `run_source_tests.ps1`'s default run (see
+`-SkipBootstrap` above).
+
+**A third real bug, found only by running the full local suite for
+real**: `run_source_tests.ps1`'s `Invoke-GaussBatch` helper (Milestone 7)
+read the child `tgauss.exe` process's stdout fully before touching its
+stderr -- a classic .NET `Process` deadlock precondition (if a child
+fills both OS pipe buffers before either is drained, it blocks mid-write
+while the parent blocks reading the other stream, and neither proceeds).
+No prior test file produced enough combined output to trigger it;
+`quaids_curvature_bootstrap_test.e`'s QUAIDS block does, since a bad
+resample routinely makes `optmt` print dozens to hundreds of harmless
+"Optmt: function evaluation failed" lines to stderr. Confirmed directly:
+running the same file straight via `tgauss -b -x
+quaids_curvature_bootstrap_test.e` (a real console, no pipe to fill)
+finished in under a minute, while running it through
+`run_source_tests.ps1` left the child sitting idle for over eight hours
+before the hang was noticed and the process killed. Fixed by draining
+both streams asynchronously (`OutputDataReceived`/`ErrorDataReceived` +
+`BeginOutputReadLine()`/`BeginErrorReadLine()`) instead of two sequential
+`ReadToEnd()` calls -- the standard fix for this well-known .NET pitfall.
+Re-ran the full local suite (11 files, no skips) afterward and confirmed
+it completes cleanly with no hang.
+
+**Version bump to `0.10.0`**: a new required public proc
+(`quaidsCurvatureBootstrapFit`) and a new required public struct
+(`quaidsCurvBootOut`), matching this project's established policy of
+bumping on real new public API surface. No new package dependency --
+pure GAUSS built-ins plus the already-required `optmt`.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -1754,7 +2052,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Ten automated tests exist, all run from `tests/` as the working directory:
+Eleven automated tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -1767,6 +2065,7 @@ tgauss -b -x quaids_pubtable_test.e
 tgauss -b -x quaids_curvature_test.e
 tgauss -b -x quaids_welfare_test.e
 tgauss -b -x quaids_reliability_regression_test.e
+tgauss -b -x quaids_curvature_bootstrap_test.e
 ```
 
 - `quaids_schema_test.e` (Milestone 1, 34 checks): asserts `quaidsOut` field
@@ -1832,13 +2131,24 @@ tgauss -b -x quaids_reliability_regression_test.e
   never-converged fit into a correctly-converged one. See "Milestone 12:
   numerical reliability" above.
 
-All ten print one `PASS`/`FAIL` line per check and a final `...: ALL N
+- `quaids_curvature_bootstrap_test.e` (Milestone 15, 26 checks; requires
+  the `optmt` package installed): bootstrap run bookkeeping (requested/
+  completed/failed/attempts), shape/finiteness of the bootstrap SE, exact
+  echo of the base (unresampled) point estimate and delta-method SE, and
+  a plausibility check that the bootstrap SE stays well-behaved where the
+  delta-method SE does not — on both an AIDS and a QUAIDS fixture, with a
+  small `B` (15/5 respectively) chosen to bound this file's own runtime.
+  **Not** run by `run_source_tests.ps1`'s default invocation — see
+  `-SkipBootstrap` and "Milestone 15: bootstrap standard errors" above.
+
+All eleven print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
 harness. `tests/run_source_tests.ps1` (Milestone 7) runs
-`verify_package_manifest.ps1` plus all 10 of these in one shot and checks
-this same summary-line convention (not just GAUSS-level compile/execute
-errors).
+`verify_package_manifest.ps1` plus all of these in one shot (except
+`quaids_curvature_bootstrap_test.e` when `-SkipBootstrap` is passed, as
+the automatic CI workflow does) and checks this same summary-line
+convention (not just GAUSS-level compile/execute errors).
 
 `tests/quaids_convergence_sweep.e` (Milestone 12) is a real, committed
 diagnostic tool, but is deliberately **not** one of the ten above — it

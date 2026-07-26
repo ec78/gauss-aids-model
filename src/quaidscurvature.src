@@ -216,7 +216,7 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
         wepc, eigs, vechAHat, K, Kfree, jacG, e, be, ee, i, j, gPlus, gMinus,
         vechA_p, vechA_m, gaP, bP, alphaP, betaP, lambdaP, gaM, bM, alphaM,
         betaM, lambdaM, gVec, hessMat, hStep, ssrCenter, ssrPP, ssrPM, ssrMP,
-        ssrMM, sigma2, covA, vAll, bAll, seAll, vechDim, dofX;
+        ssrMM, sigma2, covA, vAll, bAll, seAll, vechDim, dofX, oldtrp;
     struct quaidsCurvOut cOut;
 
     if qOut.homogenous /= 1;
@@ -264,7 +264,34 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
     endif;
     Cstart = gama[1:n1, 1:n1] + K0[1:n1, 1:n1];
     Cstart = (Cstart + Cstart')/2;
-    { va, ve } = eighv(-Cstart);
+    /* Milestone 15 finding: stress-testing this proc under bootstrap
+       resampling surfaced a real gap -- on a sufficiently degenerate
+       resample, eighv() can itself fail (not just return a numerically
+       poor answer), and an unguarded call here crashed the entire calling
+       job, not just this one fit. A pre-call finiteness check guards
+       against a call-arity failure (error G0528 "More returns than
+       targets") that trap 1 does not intercept (confirmed directly --
+       trapping the call alone did not prevent this error); trap/scalmiss
+       (Milestone 12's idiom, src/quaids.src:552-563) remains as a second
+       layer for ordinary trappable numerical errors on an otherwise-finite
+       input. On either kind of failure, fall back to a harmless identity
+       decomposition (va=1s, ve=I) so the warm start is merely
+       uninformative rather than fatal -- the outer iteration below still
+       has to actually converge on its own merits regardless of how
+       vechA was initialized. */
+    if sumc(sumc(Cstart .eq Cstart)) == n1*n1 and maxc(maxc(abs(Cstart))) < 1e100;
+        oldtrp = trapchk(1);
+        trap 1,1;
+        { va, ve } = eighv(-Cstart);
+        trap oldtrp,1;
+        if scalmiss(va) or scalmiss(ve);
+            va = ones(n1, 1);
+            ve = eye(n1);
+        endif;
+    else;
+        va = ones(n1, 1);
+        ve = eye(n1);
+    endif;
     va = va .* (va .> 0);
     vechA = vech(lowmat(ve*diagrv(eye(n1), sqrt(va))));
 
@@ -430,7 +457,43 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
     endif;
     sigma2 = ssr/(rows(w)*n1 - K - dofX);
     hessMat = (hessMat + hessMat')/2;
-    { va, ve } = eighv(hessMat);
+    /* Milestone 15: same trap/scalmiss guard as the warm-start eighv()
+       call above -- a numerical Hessian built from finite differences at
+       a badly-behaved (e.g. bootstrap-resampled) point can be degenerate
+       enough that eighv() itself fails outright, not just returns a poor
+       answer. Fall back to a harmless identity decomposition; the
+       resulting SE is then uninformative for this fit, which is
+       acceptable (this is a genuinely pathological case, not the normal
+       "boundary Cholesky entry" situation already documented above) and
+       does not affect cOut.b/cOut.converged, which are already fixed by
+       this point. */
+    /* Milestone 15 finding: trap 1 does NOT catch every failure mode
+       here -- on a sufficiently degenerate (e.g. NaN-filled) hessMat,
+       eighv() can return FEWER return values than the call expects,
+       which is a call-arity mismatch (error G0528 "More returns than
+       targets"), not a trappable numerical error, and trap 1 does not
+       intercept it. A pre-call finiteness check (the same "x .eq x"
+       NaN-detection idiom used elsewhere in this milestone) avoids ever
+       calling eighv() on bad input, rather than trying to catch a failure
+       mode trap cannot catch. */
+    /* Milestone 15 finding: the "x .eq x" NaN check alone is not enough --
+       eighv() also hits the same non-trappable reduced-arity failure on a
+       matrix containing plain Inf (confirmed directly: Inf .eq Inf is
+       TRUE under IEEE 754, so a NaN-only check misses it), so both are
+       checked explicitly here. */
+    if sumc(sumc(hessMat .eq hessMat)) == K*K and maxc(maxc(abs(hessMat))) < 1e100;
+        oldtrp = trapchk(1);
+        trap 1,1;
+        { va, ve } = eighv(hessMat);
+        trap oldtrp,1;
+        if scalmiss(va) or scalmiss(ve);
+            va = ones(K, 1);
+            ve = eye(K);
+        endif;
+    else;
+        va = ones(K, 1);
+        ve = eye(K);
+    endif;
     /* Guard against a mildly non-positive-definite numerical Hessian
        (finite-difference noise near a flat direction) rather than let
        invpd hard-error -- clip tiny/negative eigenvalues up to a small
@@ -547,6 +610,261 @@ proc 0 = printQuaidsCurvature(struct quaidsCurvOut cOut);
     print "Slutzky matrix eigenvalues at the reference point (sample mean)"\
         " -- all should be <= 0 to numerical precision:";
     print cOut.eigenvalues';
+    print;
+
+endp;
+
+/*
+** _quaidsCurvBootOneRep: one bootstrap replication's worth of work -- refit
+** quaidsFit() then quaidsCurvatureFit() on a resampled dataset, trapping
+** both calls (Milestone 12's own trap/scalmiss idiom, src/quaids.src:552-
+**563) since a bootstrap exercises far more random draws than any single
+** prior test run, and quaidsCurvatureFit() has no internal guard of its own
+** around its eighv()/Hessian-inversion calls. Empirically confirmed (not
+** assumed) that trapping a struct-returning proc call degrades gracefully
+** here: GAUSS does not abort the whole statement on a trapped error inside
+** a called proc, it substitutes a scalar-missing value for the erroring
+** expression and lets that proc's own execution continue to its retp(),
+** so checking the specific fields this helper reads afterward is sufficient
+** -- no separate struct-level scalmiss() call is needed (and would not work;
+** scalmiss() takes a matrix, not a struct).
+**
+** Returns (status, bVec): status=1 and bVec=vec(cOutB.b)' on a genuine,
+** fully-converged, finite replication; status=0 (bVec=0, unused by the
+** caller) otherwise. A replication counts only if BOTH stages converge --
+** a non-converged first-stage fit feeding the second stage is not a valid
+** draw from the target sampling distribution, so there is no partial-
+** inclusion rule. The explicit `b .eq b` finite-check catches ordinary
+** floating-point NaN from a diverged fit (a different bit pattern than
+** GAUSS's own "missing value" NaN, so scalmiss() alone would miss it) --
+** any element failing to equal itself is NaN, trapped-missing or not.
+*/
+proc (2) = _quaidsCurvBootOneRep(wB, intcptB, pricesB, totexpB, instrB, struct quaidsControl aCtl);
+    local oldtrp, status, bVec, hasNonFinite;
+    struct quaidsOut qOutB;
+    struct quaidsCurvOut cOutB;
+
+    status = 0;
+    bVec = 0;
+
+    oldtrp = trapchk(1);
+    trap 1,1;
+    qOutB = quaidsFit(wB, intcptB, pricesB, totexpB, instrB, aCtl);
+    trap oldtrp,1;
+
+    if not scalmiss(qOutB.converged) and qOutB.converged == 1;
+        oldtrp = trapchk(1);
+        trap 1,1;
+        cOutB = quaidsCurvatureFit(qOutB, wB, pricesB, totexpB, aCtl);
+        trap oldtrp,1;
+
+        if not scalmiss(cOutB.converged) and cOutB.converged == 1;
+            hasNonFinite = minc(minc(cOutB.b .eq cOutB.b)) == 0;
+            if not hasNonFinite;
+                status = 1;
+                bVec = vec(cOutB.b)';
+            endif;
+        endif;
+    endif;
+
+    retp(status, bVec);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSCURVATUREBOOTSTRAPFIT
+**
+** Purpose:  nonparametric i.i.d. row (pairs) bootstrap standard error for a
+**           quaidsCurvatureFit() coefficient vector -- closes a documented
+**           gap in the existing classical delta-method SE, which is known
+**           to be unreliable whenever the estimated Cholesky factor lands
+**           on the boundary of the negative-semidefinite cone (a frequent,
+**           confirmed occurrence in both the AIDS and QUAIDS test
+**           fixtures). Resamples rows of (w, intcpt, prices, totexp, instr)
+**           with replacement, refits the WHOLE pipeline (quaidsFit() then
+**           quaidsCurvatureFit()) on each resample -- not just the already-
+**           fitted curvature struct -- so first-stage IV sampling
+**           variability is captured too. Silent, no printing -- see
+**           printQuaidsCurvatureBootstrap().
+**
+**           No default replication count: a single AIDS curvature fit
+**           measures ~0.87s and a single QUAIDS curvature fit ~7.26s
+**           (Milestone 13's own aCtl.relax finding), so at conventional
+**           bootstrap sizes (200-1000) QUAIDS alone can take 24 minutes to
+**           2 hours -- B must be chosen deliberately by the caller, not
+**           defaulted to a "reasonable-sounding" number that quietly means
+**           something very different for QUAIDS than for AIDS.
+**
+** Format:     struct quaidsCurvBootOut bootOut =
+**                 quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed);
+**
+** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
+**                   quaidsFit(). Must satisfy aCtl.homogenous = 1 (checked
+**                   up front, before any resampling).
+**
+**             aCtl -- quaidsControl struct, passed through unchanged to
+**                   every quaidsFit()/quaidsCurvatureFit() call (including
+**                   aCtl.relax for QUAIDS -- see quaidsCurvatureFit()'s own
+**                   header for why that is often required for convergence).
+**
+**             B -- positive integer scalar, the number of bootstrap
+**                   replications to complete. Required -- no default (see
+**                   above).
+**
+**             seed -- scalar. If seed > 0, rndseed is set before drawing
+**                   any resamples (reproducible runs); seed = 0 leaves
+**                   GAUSS's current random state unchanged. Same convention
+**                   as gauss-qardl's blockBootstrapQARDLDiag().
+**
+** Output:  struct quaidsCurvBootOut -- see quaids.sdf. Reports the delta-
+**           method SE (seDelta) and the new bootstrap SE (seBoot) side by
+**           side for direct comparison -- the existing SE is exposed, not
+**           replaced. Up to 5*B total resamples are attempted before
+**           giving up on reaching B completed replications (a resample
+**           where either quaidsFit() or quaidsCurvatureFit() fails to
+**           converge, traps an internal error, or returns a non-finite
+**           coefficient is skipped and counted as failed, not included).
+**
+*******************************************************************************/
+
+proc (struct quaidsCurvBootOut) = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, B, seed);
+
+    local tobs, n, n1, nint, wnam, bDim1, bDim2, bVecDim,
+        completed, failed, attempts, maxAttempts, idx,
+        wB, intcptB, pricesB, totexpB, instrB, status, bVec, bBoot, seBoot;
+    struct quaidsOut qOut;
+    struct quaidsCurvOut cOut;
+    struct quaidsCurvBootOut bootOut;
+
+    if aCtl.homogenous /= 1;
+        errorlog "quaidsCurvatureBootstrapFit: aCtl.homogenous must be 1 (curvature imposition requires a homogeneity+symmetry-constrained fit).";
+        end;
+    endif;
+
+    if rows(B)*cols(B) /= 1 or B < 1 or round(B) /= B;
+        errorlog "quaidsCurvatureBootstrapFit: B must be a positive integer scalar.";
+        end;
+    endif;
+
+    /* Base (unresampled) fit -- supplies the point estimate and the
+       existing delta-method SE, and fails fast if the base fit itself
+       doesn't converge, before any resampling is attempted. */
+    qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+    if qOut.converged /= 1;
+        errorlog "quaidsCurvatureBootstrapFit: the base (unresampled) quaidsFit() did not converge.";
+        end;
+    endif;
+
+    cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
+    if cOut.converged /= 1;
+        errorlog "quaidsCurvatureBootstrapFit: the base (unresampled) quaidsCurvatureFit() did not converge -- refusing to bootstrap around a non-converged point estimate.";
+        end;
+    endif;
+
+    tobs = rows(w);
+    n = qOut.n;
+    n1 = n - 1;
+    nint = qOut.nint;
+    wnam = qOut.wnam;
+    bDim1 = rows(cOut.b);
+    bDim2 = cols(cOut.b);
+    bVecDim = bDim1*bDim2;
+
+    if seed > 0;
+        rndseed seed;
+    endif;
+
+    bBoot = zeros(B, bVecDim);
+    completed = 0;
+    failed = 0;
+    attempts = 0;
+    maxAttempts = 5*B;
+
+    do until completed >= B or attempts >= maxAttempts;
+        attempts = attempts + 1;
+
+        idx = ceil(rndu(tobs, 1) * tobs);
+        wB      = w[idx, .];
+        if intcpt == 0;
+            intcptB = 0;
+        else;
+            intcptB = intcpt[idx, .];
+        endif;
+        pricesB = prices[idx, .];
+        totexpB = totexp[idx, .];
+        instrB  = instr[idx, .];
+
+        { status, bVec } = _quaidsCurvBootOneRep(wB, intcptB, pricesB, totexpB, instrB, aCtl);
+
+        if status == 1;
+            completed = completed + 1;
+            bBoot[completed, .] = bVec;
+        else;
+            failed = failed + 1;
+        endif;
+    endo;
+
+    if completed < 1;
+        errorlog "quaidsCurvatureBootstrapFit: no valid bootstrap replications completed.";
+        end;
+    endif;
+
+    if completed < B;
+        bBoot = bBoot[1:completed, .];
+    endif;
+
+    seBoot = reshape(stdc(bBoot), bDim1, bDim2);
+
+    bootOut.n = n;
+    bootOut.n1 = n1;
+    bootOut.nint = nint;
+    bootOut.wnam = wnam;
+    bootOut.b = cOut.b;
+    bootOut.seDelta = cOut.se;
+    bootOut.seBoot = seBoot;
+    bootOut.bBoot = bBoot;
+    bootOut.nRequested = B;
+    bootOut.nCompleted = completed;
+    bootOut.nFailed = failed;
+    bootOut.nAttempts = attempts;
+    bootOut.seed = seed;
+
+    retp(bootOut);
+endp;
+
+/*******************************************************************************
+**
+** PRINTQUAIDSCURVATUREBOOTSTRAP
+**
+** Purpose:  prints the curvature-constrained coefficient table with the
+**           delta-method and bootstrap standard errors side by side, plus
+**           the bootstrap run diagnostics (requested/completed/failed/
+**           attempts/seed), from a quaidsCurvBootOut structure.
+**
+** Format:     call printQuaidsCurvatureBootstrap(bootOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsCurvatureBootstrap(struct quaidsCurvBootOut bootOut);
+
+    local i;
+
+    print;
+    "CURVATURE-CONSTRAINED COEFFICIENT ESTIMATES -- DELTA-METHOD vs. BOOTSTRAP STANDARD ERRORS";
+    print "Bootstrap replications -- requested:" bootOut.nRequested "completed:" bootOut.nCompleted
+        "failed:" bootOut.nFailed "attempts:" bootOut.nAttempts "seed:" bootOut.seed;
+    print;
+    format /rd 10, 4;
+    print$ ""~bootOut.wnam';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i = 1;
+    do while i <= rows(bootOut.b);
+        print$ (0$+ftocv(i, 1, 0))~ftocv(bootOut.b[i, .], 0, 4);
+        print$ (0$+"delta")~(0$+"("$+ftocv(bootOut.seDelta[i, .], 0, 2)$+")");
+        print$ (0$+"boot")~(0$+"("$+ftocv(bootOut.seBoot[i, .], 0, 2)$+")");
+        i = i + 1;
+    endo;
     print;
 
 endp;
