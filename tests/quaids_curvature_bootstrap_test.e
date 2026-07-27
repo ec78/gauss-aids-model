@@ -35,6 +35,17 @@
 **
 ** Uses a fixed seed (42) throughout for full reproducibility.
 **
+** Milestone 18 adds quaidsCurvatureBootstrapCI() percentile-CI checks
+** (shape, ordering, containment of the point estimate, and a direct
+** quantile() cross-check at a specific flattened index), plus a
+** regression guard confirming seBoot's individual cells are positioned
+** correctly relative to bootOut.b -- this caught a real, silent bug
+** (GAUSS's reshape() fills row-major, not column-major like vec()) that
+** had scrambled cOut.se/bootOut.seBoot's cell positions since Milestone
+** 10/15, invisible to the shape/sign/finiteness checks already in place
+** (those are permutation-invariant). See GOLD_STANDARD_TODO.md's
+** Milestone 18 section.
+**
 ** Run from the tests/ directory:
 **   tgauss -b -x quaids_curvature_bootstrap_test.e
 */
@@ -109,6 +120,16 @@ call check(sumc(sumc(bootOut.seBoot .== bootOut.seBoot)) == rows(bootOut.seBoot)
 call check(rows(bootOut.bBoot) == bootOut.nCompleted and cols(bootOut.bBoot) == rows(cOut.b)*cols(cOut.b),
     "AIDS: bBoot has one row per completed replication and one column per coefficient");
 
+/* Milestone 18 regression guard: seBoot's INDIVIDUAL CELLS must match
+   an independent per-column stdc(bBoot) at the correct vec(bootOut.b)-
+   order position -- not just have the right shape/sign/finiteness
+   (permutation-invariant checks that would still pass even if every SE
+   were scrambled to the wrong coefficient, exactly what a real, silent
+   reshape bug did here before it was caught). */
+seBootFromStdc = reshape(stdc(bootOut.bBoot), cols(bootOut.b), rows(bootOut.b))';
+call check(maxc(maxc(abs(bootOut.seBoot - seBootFromStdc))) < 1e-10,
+    "AIDS: seBoot's cells are correctly positioned relative to bootOut.b (not scrambled by row/column-major reshape mismatch)");
+
 /* Plausibility check -- NOT a per-cell "same order of magnitude"
    comparison against seDelta. Building this test found that the
    delta-method SE's boundary-inference unreliability does not stay
@@ -126,6 +147,27 @@ call check(rows(bootOut.bBoot) == bootOut.nCompleted and cols(bootOut.bBoot) == 
    does not inherit the delta method's boundary blow-up. */
 call check(maxc(maxc(bootOut.seBoot)) < 2.0,
     "AIDS: seBoot stays well-behaved (bounded) even though seDelta reaches into the hundreds on this fixture");
+
+/* Percentile confidence intervals (Milestone 18). */
+alphaCI = 0.05;
+{ ciLower, ciUpper } = quaidsCurvatureBootstrapCI(bootOut, alphaCI);
+call check(rows(ciLower) == rows(bootOut.b) and cols(ciLower) == cols(bootOut.b), "AIDS: ciLower matches bootOut.b's shape");
+call check(rows(ciUpper) == rows(bootOut.b) and cols(ciUpper) == cols(bootOut.b), "AIDS: ciUpper matches bootOut.b's shape");
+call check(minc(minc(ciUpper - ciLower)) >= 0, "AIDS: ciUpper >= ciLower elementwise");
+call check(sumc(sumc((ciLower .<= bootOut.b) .and (bootOut.b .<= ciUpper))) == rows(bootOut.b)*cols(bootOut.b),
+    "AIDS: the point estimate falls within its own percentile CI at every cell (expected on this well-behaved fixture)");
+
+/* Direct cross-check against a hand-computed quantile at one specific
+   flattened (vec-order) position, confirming the reshape/index mapping
+   -- not just that the proc runs. Position k=5 in vec(bootOut.b)-order
+   maps to row ((k-1) mod rowsB)+1, col floor((k-1)/rowsB)+1. */
+rowsB1 = rows(bootOut.b);
+kCheck = 5;
+iCheck = ((kCheck-1) % rowsB1) + 1;
+jCheck = floor((kCheck-1)/rowsB1) + 1;
+qLoDirect = quantile(bootOut.bBoot[., kCheck], alphaCI/2);
+call check(abs(qLoDirect - ciLower[iCheck, jCheck]) < 1e-10,
+    "AIDS: ciLower at a specific flattened index matches a direct quantile() call at the correctly-mapped (row, col)");
 
 call printQuaidsCurvatureBootstrap(bootOut);
 call check(1, "AIDS: printQuaidsCurvatureBootstrap() runs without error");
@@ -171,6 +213,22 @@ call check(sumc(sumc(bootOutQ.seBoot .== bootOutQ.seBoot)) == rows(bootOutQ.seBo
 
 call check(rows(bootOutQ.bBoot) == bootOutQ.nCompleted and cols(bootOutQ.bBoot) == rows(cOutQ.b)*cols(cOutQ.b),
     "QUAIDS: bBoot has one row per completed replication and one column per coefficient");
+
+seBootFromStdcQ = reshape(stdc(bootOutQ.bBoot), cols(bootOutQ.b), rows(bootOutQ.b))';
+call check(maxc(maxc(abs(bootOutQ.seBoot - seBootFromStdcQ))) < 1e-10,
+    "QUAIDS: seBoot's cells are correctly positioned relative to bootOutQ.b (not scrambled by row/column-major reshape mismatch)");
+
+{ ciLowerQ, ciUpperQ } = quaidsCurvatureBootstrapCI(bootOutQ, alphaCI);
+call check(rows(ciLowerQ) == rows(bootOutQ.b) and cols(ciLowerQ) == cols(bootOutQ.b), "QUAIDS: ciLower matches bootOutQ.b's shape");
+call check(rows(ciUpperQ) == rows(bootOutQ.b) and cols(ciUpperQ) == cols(bootOutQ.b), "QUAIDS: ciUpper matches bootOutQ.b's shape");
+call check(minc(minc(ciUpperQ - ciLowerQ)) >= 0, "QUAIDS: ciUpper >= ciLower elementwise");
+
+rowsBQ = rows(bootOutQ.b);
+qLoDirectQ = quantile(bootOutQ.bBoot[., kCheck], alphaCI/2);
+iCheckQ = ((kCheck-1) % rowsBQ) + 1;
+jCheckQ = floor((kCheck-1)/rowsBQ) + 1;
+call check(abs(qLoDirectQ - ciLowerQ[iCheckQ, jCheckQ]) < 1e-10,
+    "QUAIDS: ciLower at a specific flattened index matches a direct quantile() call at the correctly-mapped (row, col)");
 
 call printQuaidsCurvatureBootstrap(bootOutQ);
 call check(1, "QUAIDS: printQuaidsCurvatureBootstrap() runs without error");

@@ -50,4 +50,5 @@ call printQuaidsCurvatureBootstrap(bootOut);
 ## See Also
 
 [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md),
-[quaidsCurvatureFit](quaidsCurvatureFit.md)
+[quaidsCurvatureFit](quaidsCurvatureFit.md),
+[quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md)

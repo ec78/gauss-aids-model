@@ -27,6 +27,7 @@ for the exact switch values.
 | Welfare measures (exact CV/EV) | Yes (`quaidsWelfareFit`, no extra dependency) | Yes | Yes |
 | Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | Yes since Milestone 13, requires `aCtl.relax` -- see Notes |
 | Curvature bootstrap standard errors | Yes (`quaidsCurvatureBootstrapFit`, since Milestone 15 -- see Notes) | Yes (same) | Yes (same) |
+| Curvature bootstrap percentile CIs | Yes (`quaidsCurvatureBootstrapCI`, since Milestone 18) | Yes (same) | Yes (same) |
 | Dataframe/column-name entry point | Yes (`quaidsFull`) | Yes | Yes |
 | Formula-string (`"y ~ x"`) API | Not applicable (multi-equation system) | Not applicable | Not applicable |
 | `pubtable` export (LaTeX/Markdown/CSV/...) | Yes (`src/pubtable_quaids.src`, optional) | Yes | Yes |
@@ -116,7 +117,16 @@ for the exact switch values.
   replacing the delta-method SE; it has no default replication count, since
   a single AIDS curvature fit and a single QUAIDS curvature fit differ in
   runtime by roughly an order of magnitude, making a one-size-fits-all
-  default misleading. There is no independent published/cross-
+  default misleading. `quaidsCurvatureBootstrapCI` (Milestone 18) adds
+  percentile confidence intervals directly from the bootstrap's raw
+  draws, no new resampling needed. Building it surfaced a real, silent
+  bug (present since Milestone 10/15): `quaidsCurvatureFit`'s `se` and
+  `quaidsCurvatureBootstrapFit`'s `seBoot` had their individual cells
+  scrambled relative to `b` (GAUSS's `reshape()` fills row-major, not
+  column-major like `vec()`) -- invisible to shape/sign/finiteness
+  checks, since those are permutation-invariant. Fixed in both places;
+  `v` (the full covariance) was never affected. There is no independent
+  published/cross-
   implementation validation for the *imposed* estimator on either model:
   even the R `micEconAids` reference implementation used elsewhere in
   this library only diagnoses curvature, never imposes it. For QUAIDS

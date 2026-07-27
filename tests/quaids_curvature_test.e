@@ -195,6 +195,16 @@ call check(sumc(sumc(cOut.se .== cOut.se)) == rows(cOut.se)*cols(cOut.se), "cOut
 call check(minc(abs(vech(cOut.cholA))) < 1e-6,
     "estimated Cholesky factor has at least one boundary (near-zero) entry, as documented");
 
+/* Milestone 18 regression guard: cOut.se's INDIVIDUAL CELLS must match
+   cOut.v's diagonal at the correct vec(cOut.b)-order position, not just
+   have the right shape/sign/finiteness (those are permutation-invariant
+   and would still pass even if every SE were scrambled to the wrong
+   coefficient -- exactly what a real, silent reshape bug did here from
+   Milestone 10 until this was caught and fixed). */
+seFromV = reshape(sqrt(diag(cOut.v)), cols(cOut.b), rows(cOut.b))';
+call check(maxc(maxc(abs(cOut.se - seFromV))) < 1e-10,
+    "cOut.se's cells are correctly positioned relative to cOut.b (not scrambled by row/column-major reshape mismatch)");
+
 
 /* --- printQuaidsCurvature() runs without error. --- */
 call printQuaidsCurvature(cOut);
@@ -267,6 +277,13 @@ call check(rows(cOutQ.b) == 1+nintQ+nQ+2 and cols(cOutQ.b) == nQ, "QUAIDS: cOut.
 call check(rows(cOutQ.se) == rows(cOutQ.b) and cols(cOutQ.se) == cols(cOutQ.b), "QUAIDS: cOut.se matches cOut.b's shape");
 call check(minc(minc(cOutQ.se)) >= 0, "QUAIDS: cOut.se are all non-negative");
 call check(sumc(sumc(cOutQ.se .== cOutQ.se)) == rows(cOutQ.se)*cols(cOutQ.se), "QUAIDS: cOut.se contains no NaN/missing values");
+
+/* Milestone 18 regression guard (see the identical AIDS-block check
+   above for why this is not redundant with the shape/sign/finiteness
+   checks -- those are permutation-invariant). */
+seFromVQ = reshape(sqrt(diag(cOutQ.v)), cols(cOutQ.b), rows(cOutQ.b))';
+call check(maxc(maxc(abs(cOutQ.se - seFromVQ))) < 1e-10,
+    "QUAIDS: cOut.se's cells are correctly positioned relative to cOut.b (not scrambled by row/column-major reshape mismatch)");
 
 call printQuaidsCurvature(cOutQ);
 call check(1, "QUAIDS: printQuaidsCurvature() runs without error");

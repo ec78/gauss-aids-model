@@ -100,6 +100,17 @@ standard errors for near-zero Cholesky-factor entries with caution. See
 15) for a bootstrap alternative that does not share this boundary-
 inference weakness.
 
+**A real bug, found and fixed (Milestone 18)**: `se`'s individual cells
+were silently scrambled relative to `b` from this proc's original
+Milestone 10 release until it was caught while building
+[quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md)'s ground-
+truth cross-check (GAUSS's `reshape()` fills row-major, not column-major
+like `vec()` -- a subtle, easily-missed distinction). Invisible to
+shape/sign/finiteness checks, since those are permutation-invariant. `v`
+(the full covariance) was never affected, only the reshaped `se` display
+convenience. If you used `se` from a version before this fix, re-run
+with the current release.
+
 ## Examples
 
 ```gauss
@@ -132,4 +143,5 @@ print "Slutzky eigenvalues at the sample mean:" cOut.eigenvalues';
 [printQuaidsCurvature](printQuaidsCurvature.md), [quaidsFit](quaidsFit.md),
 [quaidsSlutzky](quaidsSlutzky.md),
 [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md) (a bootstrap
-alternative to this proc's delta-method standard errors)
+alternative to this proc's delta-method standard errors),
+[quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md)

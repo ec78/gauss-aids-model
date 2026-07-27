@@ -11,8 +11,8 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.12.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-17**, as of
+The repository is pre-alpha, package version `0.13.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-18**, as of
 2026-07-27: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
@@ -55,12 +55,20 @@ method's boundary-inference unreliability actually propagates), and 16
 the first item of a full-demand-system-workflow outline the repo owner
 asked for after Milestone 15 closed, being worked through in order; see
 that section below for why this is a deliberately independent third copy
-of a formula already duplicated twice elsewhere, not a refactor), and 17
+of a formula already duplicated twice elsewhere, not a refactor), 17
 (a standalone AIDS-vs-QUAIDS specification test, `quaidsQuadraticTest` --
 a Wald test of whether the quadratic log-expenditure term is needed, the
 second item of that same outline; see that section below for why this
 test additionally requires an unconstrained QUAIDS fit specifically,
-since an AIDS fit never estimates the parameter being tested at all).
+since an AIDS fit never estimates the parameter being tested at all),
+and 18 (percentile bootstrap confidence intervals,
+`quaidsCurvatureBootstrapCI`, the third item of that outline -- building
+it found and fixed a real, silent bug present since Milestone 10/15: a
+row-major-vs-column-major `reshape()` mismatch had scrambled
+`quaidsCurvatureFit()`'s `se` and `quaidsCurvatureBootstrapFit()`'s
+`seBoot` cell positions, invisible to permutation-invariant shape/sign/
+finiteness checks; see that section below for the full finding and the
+regression guards added).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -2160,6 +2168,95 @@ installed-package gate.
 bumping on real new public API surface. No new struct, no new file, no
 new package dependency.
 
+### Milestone 18 — Percentile Bootstrap Confidence Intervals — COMPLETE (2026-07-27)
+
+**Context**: third item of the full-demand-system-workflow outline the
+repo owner asked to work through in order (after Milestone 16's
+`quaidsSharesFit` and Milestone 17's `quaidsQuadraticTest`). Milestone
+15's own header comment had explicitly scoped this out at the time: "no
+in-proc percentile confidence intervals in this pass, though raw draws
+are kept in `bootOut.bBoot` for a caller or a later milestone to use" --
+this milestone is exactly that follow-on. No new resampling or refitting
+needed: `bootOut.bBoot` already holds every completed replication's
+coefficient vector.
+
+**New proc, not a signature change to `quaidsCurvatureBootstrapFit()`**:
+changing that already-shipped (v0.10.0) proc's signature would be a
+breaking change to released public API for a purely additive feature.
+`quaidsCurvatureBootstrapCI(bootOut, alpha)` is a separate consumer proc,
+returning a bare `(ciLower, ciUpper)` tuple -- mirrors
+`quaidsHomogeneityTest`/`quaidsJointTest`/`quaidsQuadraticTest`'s
+existing bare-tuple, no-struct, no-printer convention for a derived-
+quantity utility proc, not the heavier struct+printer "Fit" convention.
+`alpha` is required (no default), matching
+`quaidsCurvatureBootstrapFit()`'s own `B`/`seed` philosophy. Mechanics
+mirror `gauss-qardl`'s own `blockBootstrapQARDLDiag` quantile-CI idiom
+(`quantile(boot_beta[.,jj], q_lo)`, looped per column) rather than
+inventing a new one.
+
+**A real, significant bug found and fixed, spanning two already-shipped
+milestones**: building this proc's own ground-truth cross-check (does
+`ciLower`/`ciUpper` actually bracket the point estimate at the *correct*
+cell?) surfaced that GAUSS's `reshape()` fills row-major, not
+column-major like `vec()` -- confirmed empirically with a small,
+synthetic, hand-verifiable example: `X = {1 2 3, 4 5 6}`,
+`reshape(vec(X), rows(X), cols(X))` does **not** recover `X` (it returns
+`{1 4 2, 5 3 6}`); the correct inverse is `reshape(v, cols(X),
+rows(X))'` -- reshape into the *transposed* shape, then transpose back.
+`src/quaids.src`'s own pre-existing code already used this correct
+transpose-based idiom consistently (e.g. `reshape(stderr, n, ng)'`, in
+several places) -- but `quaidsCurvatureFit()`'s `seAll = reshape(seAll,
+rows(bstack0), cols(alpha));` (Milestone 10, shipped since v0.6.0) and
+`quaidsCurvatureBootstrapFit()`'s `seBoot = reshape(stdc(bBoot), bDim1,
+bDim2);` (Milestone 15, shipped since v0.10.0) both dropped the
+transpose when they were written, silently scrambling `cOut.se`/
+`bootOut.seBoot`'s individual cells relative to `cOut.b`/`bootOut.b`
+ever since.
+
+**Invisible to every existing test, and why**: every existing check on
+these fields tests shape (`rows`/`cols` match), sign (non-negative), and
+finiteness (no NaN) -- all *permutation-invariant* properties that pass
+identically whether or not the individual cells are scrambled to the
+wrong position. Confirmed directly against real fitted data, not just
+reasoned about: `cOut.se[i,j]` did **not** equal `sqrt(cOut.v[k,k])` at
+the true vec-order position `k` for `cOut.b[i,j]` (by a wide margin --
+values from entirely different coefficients), until fixed; after the
+fix, the max absolute difference across every cell is exactly `0`.
+`cOut.v` (the full covariance matrix) was never affected -- only the
+reshaped `se`/`seBoot` display convenience derived from its diagonal.
+Fixed in all three places: `quaidsCurvatureFit`'s `seAll`,
+`quaidsCurvatureBootstrapFit`'s `seBoot`, and this milestone's own
+`quaidsCurvatureBootstrapCI` (caught in the last before it ever shipped,
+since its own first implementation attempt had the identical bug).
+
+**Regression guards added, not just a silent fix**: `tests/
+quaids_curvature_test.e` and `tests/quaids_curvature_bootstrap_test.e`
+both gained an explicit cell-position check -- `cOut.se` (respectively
+`seBoot`) compared directly against a fresh, independent
+`reshape(sqrt(diag(cOut.v)), cols(b), rows(b))'` (respectively
+`reshape(stdc(bBoot), cols(b), rows(b))'`) recomputation -- checking the
+*specific* property the existing shape/sign/finiteness checks could not
+catch, so this exact bug class cannot silently return.
+
+**Testing**: `tests/quaids_curvature_bootstrap_test.e` extended in place
+(26 -> 37 checks) -- `quaidsCurvatureBootstrapCI()` shape/ordering
+(`ciUpper >= ciLower` elementwise)/containment (`ciLower <= b <=
+ciUpper` at every cell) checks, and a direct `quantile()` cross-check at
+one specific flattened index against the correctly-mapped `(row, col)`
+cell of `ciLower` -- verifying the reshape/index mapping itself, not
+just "it runs". `tests/quaids_curvature_test.e` gained the `cOut.se`
+position-correctness regression guard described above on both its AIDS
+and QUAIDS blocks (31 -> 33 total checks). `tests/package_public_api.e`
+gained a call to `quaidsCurvatureBootstrapCI()` too, exercising it
+through the installed-package gate.
+
+**Version bump to `0.13.0`**: a new required public proc
+(`quaidsCurvatureBootstrapCI`), matching this project's established
+policy of bumping on real new public API surface -- bundled with the
+reshape bugfix in the same release, per this project's practice of not
+holding a real correctness fix for a separate release when a version
+bump is already warranted.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -2199,7 +2296,11 @@ new package dependency.
   QUAIDS (Milestone 13), at the sample mean, standard-error caveats
   documented for both, and a bootstrap alternative to the delta-method SE
   is available (`quaidsCurvatureBootstrapFit`, Milestone 15) that does not
-  share its boundary-inference weakness.
+  share its boundary-inference weakness, with percentile confidence
+  intervals available too (`quaidsCurvatureBootstrapCI`, Milestone 18).
+  Milestone 18 also fixed a real, silent bug (present since Milestone
+  10/15) that had scrambled `cOut.se`/`bootOut.seBoot`'s individual cell
+  positions relative to `cOut.b`/`bootOut.b`.
 - [x] `pubtable_quaids.src` provides LaTeX/Markdown/CSV export.
 - [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
@@ -2210,8 +2311,8 @@ new package dependency.
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-17 extend it beyond the original scope, as of 2026-07-27
-(package version `0.12.0`). Commits are now being made (and pushed to
+Milestones 11-18 extend it beyond the original scope, as of 2026-07-27
+(package version `0.13.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -2238,4 +2339,8 @@ budget shares at an arbitrary point are now directly computable
 worked through in order with the repo owner. Whether QUAIDS's quadratic
 term is actually needed over plain AIDS is now a formal, testable
 question (`quaidsQuadraticTest`, Milestone 17), the second item of that
-outline.
+outline. Percentile bootstrap confidence intervals are now available for
+curvature-constrained coefficients (`quaidsCurvatureBootstrapCI`,
+Milestone 18), the third item of that outline -- building it also found
+and fixed a real, silent cell-position bug in `cOut.se`/`bootOut.seBoot`
+present since Milestone 10/15.

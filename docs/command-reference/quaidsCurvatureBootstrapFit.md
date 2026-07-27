@@ -84,9 +84,18 @@ resample could crash the whole run, not just fail one replication (see
 **Silent during the loop**: no progress printing, even on a long-running
 QUAIDS bootstrap -- matches this codebase's own silent-Fit-proc convention.
 
-**Percentile confidence intervals are out of scope for this proc**: raw
-draws are kept in `bBoot` so a caller (or a future proc) can compute them;
-this pass ships standard errors only.
+**Percentile confidence intervals** are computed by the separate
+[quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md) (Milestone
+18) directly from `bBoot`'s raw draws -- no new resampling needed.
+
+**A real bug, found and fixed (Milestone 18)**: `seBoot`'s individual
+cells were silently scrambled relative to `b` from this proc's original
+Milestone 15 release until it was caught building
+`quaidsCurvatureBootstrapCI()`'s own ground-truth cross-check (GAUSS's
+`reshape()` fills row-major, not column-major like `vec()` -- a subtle,
+easily-missed distinction). Invisible to shape/sign/finiteness checks,
+since those are permutation-invariant. If you used `seBoot` from a
+version before this fix, re-run with the current release.
 
 ## Examples
 
@@ -113,4 +122,5 @@ print "completed:" bootOut.nCompleted "failed:" bootOut.nFailed;
 ## See Also
 
 [printQuaidsCurvatureBootstrap](printQuaidsCurvatureBootstrap.md),
-[quaidsCurvatureFit](quaidsCurvatureFit.md), [quaidsFit](quaidsFit.md)
+[quaidsCurvatureFit](quaidsCurvatureFit.md), [quaidsFit](quaidsFit.md),
+[quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md)

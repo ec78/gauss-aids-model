@@ -362,6 +362,14 @@ call assert_true(rows(bootOut.seBoot) == rows(cOut.b) and cols(bootOut.seBoot) =
 
 call printQuaidsCurvatureBootstrap(bootOut);
 
+/* quaidsCurvatureBootstrapCI() (Milestone 18) -- percentile CIs from
+   bootOut's already-computed raw draws, no new resampling. */
+{ ciLowerBoot, ciUpperBoot } = quaidsCurvatureBootstrapCI(bootOut, 0.05);
+call assert_true(rows(ciLowerBoot) == rows(cOut.b) and cols(ciLowerBoot) == cols(cOut.b),
+    "quaidsCurvatureBootstrapCI: ciLower shape does not match cOut.b");
+call assert_true(minc(minc(ciUpperBoot - ciLowerBoot)) >= 0,
+    "quaidsCurvatureBootstrapCI: ciUpper must be >= ciLower elementwise");
+
 
 /* --- quaidsCurvatureFit() on QUAIDS (Milestone 13) ---
    Needs aCtl.relax (Milestone 12) -- QUAIDS's curvature outer loop is

@@ -5,6 +5,38 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.13.0 - 2026-07-27
+
+### Added
+- `quaidsCurvatureBootstrapCI()` (`src/quaidscurvature.src`): percentile
+  bootstrap confidence intervals for a `quaidsCurvatureFit()` coefficient
+  vector, computed directly from an already-computed
+  `quaidsCurvatureBootstrapFit()` result's raw draws (`bootOut.bBoot`) --
+  no new resampling or refitting. Returns a bare `(ciLower, ciUpper)`
+  tuple, matching this codebase's existing bare-tuple hypothesis-test
+  convention. `alpha` is required, no default.
+- `tests/quaids_curvature_bootstrap_test.e` gained 11 checks (26 -> 37):
+  shape/ordering/containment checks for the new CI proc, plus a direct
+  `quantile()` cross-check at a specific flattened index verifying the
+  reshape/index mapping.
+
+### Fixed
+- **A real, silent bug present since Milestone 10/15**:
+  `quaidsCurvatureFit()`'s `se` and `quaidsCurvatureBootstrapFit()`'s
+  `seBoot` had their individual cells scrambled relative to `b`/`bootOut.b`
+  -- GAUSS's `reshape()` fills row-major, not column-major like `vec()`,
+  and both procs' reshape calls had dropped the transpose needed to
+  correctly invert `vec()`'s ordering. Invisible to existing shape/sign/
+  finiteness checks (all permutation-invariant). Confirmed directly
+  against real fitted data: `se`'s cells did not match
+  `sqrt(diag(v))` at the correct positions until fixed; `v` (the full
+  covariance) was never affected. Found while building
+  `quaidsCurvatureBootstrapCI()`'s own ground-truth cross-check. Both
+  `tests/quaids_curvature_test.e` and `tests/
+  quaids_curvature_bootstrap_test.e` gained explicit cell-position
+  regression guards (2 and part of the 11 checks above, respectively) so
+  this bug class cannot silently return.
+
 ## 0.12.0 - 2026-07-27
 
 ### Added

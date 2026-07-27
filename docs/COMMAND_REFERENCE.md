@@ -54,6 +54,7 @@ required public API) but has a hard compile-time dependency on GAUSS's
 - [printQuaidsCurvature](command-reference/printQuaidsCurvature.md)
 - [quaidsCurvatureBootstrapFit](command-reference/quaidsCurvatureBootstrapFit.md)
 - [printQuaidsCurvatureBootstrap](command-reference/printQuaidsCurvatureBootstrap.md)
+- [quaidsCurvatureBootstrapCI](command-reference/quaidsCurvatureBootstrapCI.md)
 
 ## Reporting (optional, requires `pubtable`)
 

@@ -536,7 +536,18 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
 
     vAll = jacG*covA*jacG';
     seAll = sqrt(diag(vAll));
-    seAll = reshape(seAll, rows(bstack0), cols(alpha));
+    /* Milestone 18 finding: GAUSS's reshape() fills row-major, not
+       column-major like vec() (confirmed empirically -- reshape(vec(X),
+       rows(X), cols(X)) does NOT recover X in general). seAll is a
+       column-major-ordered vector (built from vec(alphaP|gaP|betaP|...)
+       above), so it must be reshaped into the TRANSPOSED shape and then
+       transposed back, not reshaped directly -- the same idiom
+       src/quaids.src already uses correctly elsewhere (e.g.
+       `reshape(stderr, n, ng)'`). This was a real, silent bug present
+       since Milestone 10: cOut.se's individual cells were scrambled
+       relative to cOut.b, even though shape/sign/finiteness checks all
+       still passed (those properties are permutation-invariant). */
+    seAll = reshape(seAll, cols(alpha), rows(bstack0))';
 
     if linear;
         wepc = -diagrv(eye(n), wPt) + wPt*wPt' + gama + (beta'beta)*lxPt;
@@ -813,7 +824,11 @@ proc (struct quaidsCurvBootOut) = quaidsCurvatureBootstrapFit(w, intcpt, prices,
         bBoot = bBoot[1:completed, .];
     endif;
 
-    seBoot = reshape(stdc(bBoot), bDim1, bDim2);
+    /* Milestone 18 finding: same row-major-vs-column-major reshape bug
+       fixed in quaidsCurvatureFit()'s seAll above -- bBoot's columns are
+       vec(cOutB.b)'-ordered (column-major), so this must reshape into
+       the transposed shape and transpose back, not reshape directly. */
+    seBoot = reshape(stdc(bBoot), bDim2, bDim1)';
 
     bootOut.n = n;
     bootOut.n1 = n1;
@@ -867,4 +882,73 @@ proc 0 = printQuaidsCurvatureBootstrap(struct quaidsCurvBootOut bootOut);
     endo;
     print;
 
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSCURVATUREBOOTSTRAPCI
+**
+** Purpose:  percentile bootstrap confidence intervals for a
+**           quaidsCurvatureFit() coefficient vector, from an
+**           already-computed quaidsCurvBootOut's raw draws (bootOut.bBoot)
+**           -- no new resampling or refitting. Milestone 18.
+**
+** Format:     { ciLower, ciUpper } = quaidsCurvatureBootstrapCI(bootOut, alpha);
+**
+** Input:      bootOut -- struct quaidsCurvBootOut, from
+**                        quaidsCurvatureBootstrapFit().
+**
+**             alpha -- scalar in (0, 1), e.g. 0.05 for a 95% interval.
+**                        Required -- no default, matching this library's
+**                        own quaidsCurvatureBootstrapFit()'s convention of
+**                        never silently guessing an inference-affecting
+**                        parameter on the caller's behalf.
+**
+** Output:     ciLower, ciUpper -- matrices the same shape as bootOut.b,
+**                        the alpha/2 and 1-alpha/2 empirical quantiles of
+**                        bootOut.bBoot's columns (reshaped back to
+**                        bootOut.b's row/column layout).
+**
+** Remarks:    Percentile CIs from a small B (this library's own test
+**             fixtures use B=15/B=5 to bound runtime) are necessarily
+**             crude -- a caller choosing a small B for
+**             quaidsCurvatureBootstrapFit() should expect correspondingly
+**             wide, noisy intervals here, not a false sense of precision.
+**
+*******************************************************************************/
+
+proc (2) = quaidsCurvatureBootstrapCI(struct quaidsCurvBootOut bootOut, alpha);
+
+    local rowsB, colsB, K, qLo, qHi, ciLowerVec, ciUpperVec, ciLower, ciUpper, j;
+
+    if rows(alpha)*cols(alpha) /= 1 or alpha <= 0 or alpha >= 1;
+        errorlog "quaidsCurvatureBootstrapCI: alpha must be a scalar in (0, 1).";
+        end;
+    endif;
+
+    rowsB = rows(bootOut.b);
+    colsB = cols(bootOut.b);
+    K = rowsB*colsB;
+    qLo = alpha/2;
+    qHi = 1 - qLo;
+
+    ciLowerVec = zeros(K, 1);
+    ciUpperVec = zeros(K, 1);
+    j = 1;
+    do while j <= K;
+        ciLowerVec[j] = quantile(bootOut.bBoot[., j], qLo);
+        ciUpperVec[j] = quantile(bootOut.bBoot[., j], qHi);
+        j = j + 1;
+    endo;
+
+    /* ciLowerVec/ciUpperVec are column-major-ordered (one entry per
+       column of bootOut.bBoot, which is vec(cOutB.b)'-ordered) -- must
+       reshape into the transposed shape and transpose back, not reshape
+       directly (GAUSS's reshape() fills row-major; see the identical
+       finding fixed in quaidsCurvatureFit()/quaidsCurvatureBootstrapFit()
+       above, caught here before this proc ever shipped). */
+    ciLower = reshape(ciLowerVec, colsB, rowsB)';
+    ciUpper = reshape(ciUpperVec, colsB, rowsB)';
+
+    retp(ciLower, ciUpper);
 endp;

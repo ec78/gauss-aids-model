@@ -319,6 +319,11 @@ runnable example.
   true-parameter recovery against (unlike AIDS) --
   `tests/quaids_curvature_test.e`'s QUAIDS checks validate convergence/
   exact NSD/shape instead, a real but weaker tier of evidence.
+  [quaidsCurvatureBootstrapCI](command-reference/quaidsCurvatureBootstrapCI.md)
+  (Milestone 18) computes percentile confidence intervals directly from
+  `quaidsCurvatureBootstrapFit()`'s raw draws (`bootOut.bBoot`) -- no new
+  resampling needed, but intervals from a small `B` are correspondingly
+  crude.
 - No guaranteed convergence for the iterated estimator (or the curvature-
   constrained outer iteration built on top of it) -- see "Choosing A
   Model" above. `aCtl.relax` (Milestone 12) is an evidence-backed, opt-in
