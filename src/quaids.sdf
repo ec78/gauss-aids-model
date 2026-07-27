@@ -138,6 +138,20 @@ struct quaidsElasOut {
 };
 
 /*
+** quaidsSharesOut -- struct returned by quaidsSharesFit(): the model-
+** implied predicted budget share vector (and its delta-method covariance/
+** standard errors) at a single evaluation point. See the Milestone 16
+** section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsSharesOut {
+    matrix n;      // number of goods
+    matrix wnam;   // legacy character matrix of good names (see quaidsOut.wnam)
+    matrix w;      // n x 1, predicted budget shares at the point
+    matrix se;     // n x 1, delta-method standard errors of w
+    matrix v;      // n x n, full delta-method covariance of w
+};
+
+/*
 ** quaidsCurvOut -- struct returned by quaidsCurvatureFit(): a homogeneity+
 ** symmetry-constrained AIDS/LA-AIDS fit re-estimated under an additional
 ** local curvature (Slutzky negative semidefiniteness) restriction at the

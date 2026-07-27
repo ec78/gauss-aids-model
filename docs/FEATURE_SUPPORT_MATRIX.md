@@ -20,6 +20,7 @@ for the exact switch values.
 | Standalone joint homogeneity+symmetry test | Yes (`quaidsJointTest`) | Yes | Yes |
 | Elasticities at arbitrary points | Yes (`quaidsElasFit`) | Yes | Yes |
 | Delta-method elasticity standard errors | Yes | Yes | Yes |
+| Predicted budget shares at arbitrary points | Yes (`quaidsSharesFit`, since Milestone 16, no extra dependency) | Yes | Yes |
 | Exact algebraic identity validation (Engel/Cournot/homogeneity) | Yes | Yes | Yes |
 | Slutzky negativity diagnostic | Yes (`quaidsSlutzky`) | Yes | Yes |
 | Welfare measures (exact CV/EV) | Yes (`quaidsWelfareFit`, no extra dependency) | Yes | Yes |

@@ -205,25 +205,21 @@ call assert_true(rows(elasOut.er) == N and rows(elasOut.ep) == N and cols(elasOu
 
 /* Engel aggregation (sum_i w_i*er_i == 1) is a property of the MODEL-
    IMPLIED share at the evaluation point, not the noisy empirical mean
-   share meanc(w) -- see tests/quaids_elasticities_test.e's identical
-   modelShareAt() helper and its header comment for why. Recomputed here
-   rather than reused, since that helper is tests/-only source, not part
-   of the installed package this test exercises. */
-alphaPt = intcptMean'qOut.bestB[1:1+nint, .];
-gamaPt = qOut.bestB[1+nint+1:1+nint+n, .];
-betaPt = qOut.bestB[1+nint+n+1, .];
-a_pPt = aCtl.alpha0 + alphaPt*pricesMean + .5*pricesMean'gamaPt*pricesMean;
-lxPt = totexpMean - a_pPt;
-wModelPt = alphaPt' + gamaPt'pricesMean + betaPt'lxPt;
-if not aCtl.linear;
-    b_pPt = exp(betaPt*pricesMean);
-    lambdaPt = qOut.bestB[1+nint+n+2, .];
-    lx2Pt = (lxPt^2)./b_pPt;
-    wModelPt = wModelPt + lambdaPt'lx2Pt;
-endif;
-call assert_true(abs(sumc(wModelPt.*elasOut.er) - 1) < 1e-6,
+   share meanc(w). Milestone 16: uses the real, installed
+   quaidsSharesFit() rather than a fourth hand-inlined copy of the share
+   formula (this file used to recompute it inline here, duplicating
+   quaidsElas_() and tests/quaids_elasticities_test.e's own former
+   modelShareAt() helper). */
+struct quaidsSharesOut sharesOut;
+sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
+call assert_true(rows(sharesOut.w) == N and rows(sharesOut.se) == N and rows(sharesOut.v) == N and cols(sharesOut.v) == N,
+    "quaidsSharesFit output shape invalid");
+call assert_true(abs(sumc(sharesOut.w) - 1) < 1e-6,
+    "quaidsSharesFit predicted shares fail adding-up (sum to 1)");
+call assert_true(abs(sumc(sharesOut.w.*elasOut.er) - 1) < 1e-6,
     "quaidsElasFit income elasticities fail Engel aggregation");
 
+call printQuaidsShares(sharesOut);
 call printQuaidsElas(elasOut);
 
 /* quaidsElas() is a thin fit-then-print wrapper (see

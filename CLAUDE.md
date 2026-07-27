@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.10.0`) and is not yet
+The library is **pre-alpha** (package version `0.11.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-15)
+## Repository layout (post-Milestone-16)
 
 ```
 src/
@@ -50,6 +50,13 @@ src/
                     #   wrapper: fit then print) -- elasticities at a
                     #   point. See "Milestone 5: elasticities
                     #   generalization" below.
+  quaidsshares.src  # Milestone 16: quaidsSharesFit()/printQuaidsShares()
+                    #   -- the model-implied predicted budget share vector
+                    #   (with full delta-method covariance) at an
+                    #   arbitrary point. A deliberately independent third
+                    #   copy of the share formula quaidsElas_() already
+                    #   computes internally (not a refactor of it -- see
+                    #   "Milestone 16" below). No new package dependency.
   quaidsslutzky.src # quaidsSlutzky() -- Slutzky negativity diagnostic.
   quaids.src        # quaidsFit() (silent, struct-returning estimation core;
                     #   calls _quaidsIVFirstStage()), printQuaids() (the
@@ -200,7 +207,17 @@ tests/
                     #   aggregation, elasticity homogeneity) checked at a
                     #   real out-of-sample observation and a synthetic
                     #   counterfactual price scenario -- not just the four
-                    #   points quaids() has always used.
+                    #   points quaids() has always used. Milestone 16
+                    #   replaced this file's own private modelShareAt()
+                    #   helper with a direct call to the new
+                    #   quaidsSharesFit(), removing that duplication.
+  quaids_shares_test.e         # Milestone 16: 21 checks -- quaidsSharesFit()'s
+                    #   point estimate matches an independent, freshly
+                    #   hand-evaluated share formula (both AIDS and QUAIDS
+                    #   fixtures); exact adding-up (sum(w)==1); shape/
+                    #   finiteness/non-negativity of se/v and se==sqrt(diag(v));
+                    #   a shifted evaluation point gives a genuinely
+                    #   different share (non-vacuous).
   quaids_pubtable_test.e       # Milestone 6: 30 checks -- exact numeric
                     #   parity between pubtable ptModel.estimates/
                     #   stdErrors and the qOut.bestB/qOut.bestV/
@@ -433,7 +450,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-15:
+The original ten-milestone roadmap is complete, plus Milestones 11-16:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -447,9 +464,12 @@ repo owner after Milestone 11 closed), 13 (QUAIDS curvature
 imposition -- extending Milestone 10's AIDS-only support, requested by
 the repo owner after Milestone 12 closed), 14 (continuous integration via
 a self-hosted GitHub Actions runner, requested by the repo owner after
-Milestone 13 closed), and 15 (bootstrap standard errors for
+Milestone 13 closed), 15 (bootstrap standard errors for
 `quaidsCurvatureFit()`, requested by the repo owner after Milestone 14
-closed).
+closed), and 16 (predicted budget shares at an arbitrary point,
+`quaidsSharesFit`, the first item of a full-demand-system-workflow
+outline the repo owner asked for after Milestone 15 closed, being worked
+through in order).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -1959,6 +1979,85 @@ it completes cleanly with no hang.
 bumping on real new public API surface. No new package dependency --
 pure GAUSS built-ins plus the already-required `optmt`.
 
+## Milestone 16: predicted budget shares
+
+```gauss
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+n = qOut.n;
+nint = qOut.nint;
+intcptPt = meanc(qOut.intcptFull);
+pricesPt = meanc(prices);
+totexpPt = meanc(totexp);
+
+struct quaidsSharesOut sharesOut;
+sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
+call printQuaidsShares(sharesOut);
+print "sum of predicted shares:" sumc(sharesOut.w);   // exactly 1
+```
+
+After Milestone 15 closed, the repo owner asked for a broader outline of
+what a "full demand-system workflow" would still need, then asked to work
+through the resulting list in order. First item: expose the model's
+predicted budget share at an arbitrary point as a standalone public proc
+-- useful for out-of-sample prediction and policy simulation, previously
+only available by hand-deriving the share equation.
+
+**Not a new formula -- a third, deliberately independent copy of an
+existing one.** Direct exploration confirmed the exact share equation
+already exists as an intermediate step inside `quaidsElas_()`
+(`src/quaidselas.src:49-61`, on the way to computing elasticities), and
+was independently duplicated a second time in
+`tests/quaids_elasticities_test.e`'s own private `modelShareAt()` helper
+(needed only so that test could check its Engel/Cournot/homogeneity
+identities against the right `w`). Rather than refactor `quaidsElas_()`
+to share code with a new proc, `quaidsSharesFit()` (`src/quaidsshares.src`)
+implements its own small private helper (`_quaidsSharesAt()`) with the
+identical formula, honestly documented as a third copy -- matching this
+project's established preference (Milestone 2's scoping note) against
+touching already-shipped, tested code without a strong reason. This was
+an explicit scoping choice, confirmed with the repo owner via
+`AskUserQuestion` alongside two other choices: the proc/struct naming
+(`quaidsSharesFit`/`printQuaidsShares`, matching the existing noun-based
+`quaidsCurvatureFit`/`quaidsElasFit`/`quaidsWelfareFit` convention) and
+scope (budget shares only, not derived physical quantities -- computing
+`q_i = w_i*exp(totexp)/exp(price_i)` would require assuming `prices`/
+`totexp` are logs of levels in mutually consistent units, which nothing
+else in this library requires of the caller).
+
+**Standard errors differ in kind from `quaidsElasFit`/`quaidsWelfareFit`**:
+those two only ever need marginal standard errors, so they accumulate
+variances via a cheaper recursive formula. `quaidsSharesFit()` reports the
+**full `n x n` covariance** of the predicted share vector (`sharesOut.v`),
+built via an explicit numerical Jacobian propagated as `jacW*v*jacW'` --
+the same matrix-form delta method `quaidsCurvatureFit()` already uses --
+so a caller can correctly test hypotheses spanning more than one good
+(e.g. whether two goods' shares differ significantly), not just read off
+marginal SEs.
+
+**Testing**: `tests/quaids_shares_test.e` (21 checks) -- the point
+estimate matches a *fresh*, independently hand-evaluated version of the
+share formula (written directly in the test, not calling any `src/` proc)
+on both an AIDS (`nint=0`) and QUAIDS (`nint=1`) fixture; exact adding-up
+(`sum(w)==1`, a direct consequence of `qOut.bestB`'s own adding-up
+construction); shape/finiteness/non-negativity of `se`/`v`, and that `se`
+exactly equals `sqrt(diag(v))`; a shifted evaluation point gives a
+genuinely different predicted share (non-vacuous). Additionally,
+`tests/quaids_elasticities_test.e`'s private `modelShareAt()` helper was
+removed and replaced with direct calls to `quaidsSharesFit()` -- its
+existing Engel/Cournot/homogeneity exact-identity checks (which only hold
+given the *correct* model-implied `w`) re-ran clean, serving as a real
+cross-check that the new proc's point estimate is right, not just that it
+runs. `tests/package_public_api.e` gained a call to
+`quaidsSharesFit()`/`printQuaidsShares()` too, exercising it through the
+installed-package gate.
+
+**Version bump to `0.11.0`**: a new required public proc
+(`quaidsSharesFit`) and a new required public struct (`quaidsSharesOut`),
+matching this project's established policy of bumping on real new public
+API surface. No new package dependency.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -2052,7 +2151,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Eleven automated tests exist, all run from `tests/` as the working directory:
+Twelve automated tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -2061,6 +2160,7 @@ tgauss -b -x quaids_synthetic_validation_test.e
 tgauss -b -x quaids_published_validation_test.e
 tgauss -b -x quaids_hypothesis_tests_test.e
 tgauss -b -x quaids_elasticities_test.e
+tgauss -b -x quaids_shares_test.e
 tgauss -b -x quaids_pubtable_test.e
 tgauss -b -x quaids_curvature_test.e
 tgauss -b -x quaids_welfare_test.e
@@ -2098,6 +2198,14 @@ tgauss -b -x quaids_curvature_bootstrap_test.e
   `quaidsElasFit()`/`printQuaidsElas()` and `quaidsElas_()`, plus three
   exact algebraic identities checked at points other than the four
   standard ones. See "Milestone 5: elasticities generalization" above.
+  Milestone 16 replaced its private `modelShareAt()` helper with a direct
+  call to the new `quaidsSharesFit()`.
+- `quaids_shares_test.e` (Milestone 16, 21 checks): `quaidsSharesFit()`'s
+  point estimate matches a fresh, independently hand-evaluated share
+  formula on both an AIDS and QUAIDS fixture; exact adding-up
+  (`sum(w)==1`); shape/finiteness/non-negativity of `se`/`v` and
+  `se==sqrt(diag(v))`; non-vacuousness at a shifted point. See "Milestone
+  16: predicted budget shares" above.
 - `quaids_pubtable_test.e` (Milestone 6, 30 checks; requires the `pubtable`
   package installed): exact numeric parity between `pubtable`
   `ptModel.estimates`/`stdErrors` and the `qOut`/`elasOut` values they're
@@ -2141,7 +2249,7 @@ tgauss -b -x quaids_curvature_bootstrap_test.e
   **Not** run by `run_source_tests.ps1`'s default invocation — see
   `-SkipBootstrap` and "Milestone 15: bootstrap standard errors" above.
 
-All eleven print one `PASS`/`FAIL` line per check and a final `...: ALL N
+All twelve print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
 harness. `tests/run_source_tests.ps1` (Milestone 7) runs
@@ -2158,8 +2266,8 @@ Run it manually via `tests/run_convergence_sweep.ps1` whenever you want
 to re-measure the iterated estimator's convergence-failure rate — see
 "Milestone 12: numerical reliability" above.
 
-An eleventh test, `tests/package_public_api.e` (Milestone 7), is different
-in kind from the ten above: it loads `library quaids;` against a real
+A thirteenth test, `tests/package_public_api.e` (Milestone 7), is different
+in kind from the twelve above: it loads `library quaids;` against a real
 *installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
 than `#include`-ing the source tree, so it only runs correctly after
 `scripts/run_release_verification.ps1 -InstallArtifact` (or equivalent)
@@ -2194,9 +2302,14 @@ of the installed package (see "Milestone 6" above).
 ## Package manifest
 
 `package.json` lists (relative to `src/`, in load order): `quaids.sdf`,
-`quaidsutil.src`, `quaidsiv.src`, `quaidselas.src`, `quaidsslutzky.src`,
-`quaids.src`, `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`,
-`quaidswelfare.src`.
+`quaidsutil.src`, `quaidsiv.src`, `quaidselas.src`, `quaidsshares.src`,
+`quaidsslutzky.src`, `quaids.src`, `quaidsformula.src`, `quaidstests.src`,
+`quaidscurvature.src`, `quaidswelfare.src`.
+`quaidsshares.src` (Milestone 16) has no load-order dependency on
+anything beyond `quaids.sdf` (its private `_quaidsSharesAt()` helper is
+a fresh, independent implementation, not a call into `quaidselas.src`)
+and adds no new entry to `deps` — pure closed-form algebra, same
+footprint as `quaidswelfare.src`.
 `quaids.src` must load after `quaidsiv.src`/`quaidselas.src`/
 `quaidsslutzky.src` since it calls procs they define; `quaidsformula.src`
 must load after `quaids.src` since `quaidsFull()` calls `quaidsFit()`.

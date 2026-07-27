@@ -162,6 +162,30 @@ against `qOut.bestB`/`qOut.bestV` -- "whichever is the most-constrained
 estimate actually fit" (symmetric if homogeneity was imposed, else the
 recovered unconstrained fit).
 
+## Predicted Budget Shares At Any Point
+
+[quaidsSharesFit](command-reference/quaidsSharesFit.md) (Milestone 16)
+exposes the same model-implied share `quaidsElasFit`'s elasticities are
+built on, directly, at any evaluation point -- useful for out-of-sample
+prediction and policy simulation without hand-deriving the share
+equation:
+
+```gauss
+struct quaidsSharesOut sharesOut;
+sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
+call printQuaidsShares(sharesOut);
+
+print "sum of predicted shares:" sumc(sharesOut.w);   // exactly 1, by construction
+```
+
+Reports budget shares only (`w_i`, the fraction of expenditure spent on
+good `i`), not physical quantities demanded -- converting to quantities
+would require assuming `prices`/`totexp` are logs of levels in mutually
+consistent units, which nothing else in this library requires. `sharesOut.v`
+is the full covariance of `w` (not just marginal standard errors), so
+hypotheses spanning more than one good -- e.g. whether two goods' shares
+differ significantly -- can be tested with the correct combined variance.
+
 ## Welfare Analysis (Compensating/Equivalent Variation)
 
 [quaidsWelfareFit](command-reference/quaidsWelfareFit.md) computes exact

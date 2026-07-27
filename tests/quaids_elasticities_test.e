@@ -28,6 +28,7 @@ new;
 #include ../src/quaidsutil.src
 #include ../src/quaidsiv.src
 #include ../src/quaidselas.src
+#include ../src/quaidsshares.src
 #include ../src/quaidsslutzky.src
 #include ../src/quaids.src;
 #include quaidsfixtures.src;
@@ -62,28 +63,13 @@ proc (0) = checkIdentities(label, struct quaidsElasOut elasOut, wPt);
     call check(maxc(abs(homog)) < 1e-8, label $+ ": elasticity homogeneity sum(ep)+er==0");
 endp;
 
-/* Recomputes the model-implied share at a point, matching quaidsElas_()'s
-   own internal formula exactly (needed only so this test can check the
-   identities above against the RIGHT w; not part of the public API). */
-proc (1) = modelShareAt(b, intcptPt, pricesPt, totexpPt, struct quaidsControl aCtl);
-    local nint, n, alpha, gama, _beta, lambda, a_p, lx, lx2, b_p, wPt;
-    nint = rows(intcptPt);
-    n = rows(pricesPt);
-    alpha = intcptPt'b[1:nint,.];
-    gama = b[nint+1:nint+n,.];
-    _beta = b[nint+n+1,.];
-    a_p = aCtl.alpha0 + alpha*pricesPt + .5*pricesPt'gama*pricesPt;
-    lx = totexpPt - a_p;
-    wPt = alpha' + gama'pricesPt + _beta'lx;
-    if not aCtl.linear;
-        b_p = exp(_beta*pricesPt);
-        lambda = b[nint+n+2,.];
-        lx2 = (lx^2)./b_p;
-        wPt = wPt + lambda'lx2;
-    endif;
-    retp(wPt);
-endp;
-
+/* Milestone 16: the model-implied share at a point used to be recomputed
+   here via a private modelShareAt() helper duplicating quaidsElas_()'s
+   own formula, needed only so this test could check the identities below
+   against the RIGHT w. Now uses the public quaidsSharesFit() instead --
+   the Engel/Cournot/homogeneity identity checks below are themselves a
+   real cross-check that its point estimate is correct (they are exact
+   algebraic identities that only hold given the true model-implied w). */
 
 struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
@@ -118,8 +104,9 @@ call check(rows(elasMean.ser) == n, "quaidsElasFit.ser has n rows");
 call check(minc(minc(elasMean.sep)) >= 0, "quaidsElasFit.sep (standard errors) are all non-negative");
 call check(minc(minc(elasMean.sepc)) >= 0, "quaidsElasFit.sepc (standard errors) are all non-negative");
 
-wMean = modelShareAt(qOut.bestB, intcptMean, pricesMean, totexpMean, aCtl);
-call checkIdentities("at sample mean", elasMean, wMean);
+struct quaidsSharesOut sharesMean;
+sharesMean = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
+call checkIdentities("at sample mean", elasMean, sharesMean.w);
 
 
 /* --- Genuinely arbitrary evaluation points: NOT mean/Q1/median/Q3. --- */
@@ -131,8 +118,9 @@ pricesPt1 = prices[pt,.]';
 totexpPt1 = totexp[pt];
 struct quaidsElasOut elasObs;
 elasObs = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt1, pricesPt1, totexpPt1, aCtl);
-wObs = modelShareAt(qOut.bestB, intcptPt1, pricesPt1, totexpPt1, aCtl);
-call checkIdentities("at observation 500", elasObs, wObs);
+struct quaidsSharesOut sharesObs;
+sharesObs = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt1, pricesPt1, totexpPt1, aCtl);
+call checkIdentities("at observation 500", elasObs, sharesObs.w);
 
 /* A fully synthetic counterfactual point (e.g. a hypothetical 20% price
    increase on good 1 relative to the sample mean), demonstrating the
@@ -143,8 +131,9 @@ pricesPt2[1] = pricesPt2[1] + ln(1.20);
 totexpPt2 = totexpMean;
 struct quaidsElasOut elasCounterfactual;
 elasCounterfactual = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt2, pricesPt2, totexpPt2, aCtl);
-wCf = modelShareAt(qOut.bestB, intcptPt2, pricesPt2, totexpPt2, aCtl);
-call checkIdentities("at a synthetic counterfactual (20% price-1 increase)", elasCounterfactual, wCf);
+struct quaidsSharesOut sharesCf;
+sharesCf = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt2, pricesPt2, totexpPt2, aCtl);
+call checkIdentities("at a synthetic counterfactual (20% price-1 increase)", elasCounterfactual, sharesCf.w);
 
 call check(maxc(maxc(abs(elasCounterfactual.er - elasMean.er))) > 1e-6,
     "counterfactual point gives genuinely different elasticities than the sample mean");

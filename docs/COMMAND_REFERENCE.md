@@ -33,6 +33,8 @@ sections.
 - [quaidsElasFit](command-reference/quaidsElasFit.md)
 - [printQuaidsElas](command-reference/printQuaidsElas.md)
 - [quaidsElas](command-reference/quaidsElas.md)
+- [quaidsSharesFit](command-reference/quaidsSharesFit.md)
+- [printQuaidsShares](command-reference/printQuaidsShares.md)
 - [quaidsSlutzky](command-reference/quaidsSlutzky.md)
 
 ## Welfare Analysis

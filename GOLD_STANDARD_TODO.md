@@ -11,8 +11,8 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.10.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-15**, as of
+The repository is pre-alpha, package version `0.11.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-16**, as of
 2026-07-26: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
@@ -50,7 +50,12 @@ found and fixed by reading a failed run's log directly), and 15
 Milestone 10 first documented; see that section below for two real,
 non-obvious GAUSS `trap`/`eighv()` failure-mode findings from stress-
 testing under resampling, and a test-design lesson about how the delta
-method's boundary-inference unreliability actually propagates).
+method's boundary-inference unreliability actually propagates), and 16
+(predicted budget shares at an arbitrary point, `quaidsSharesFit` --
+the first item of a full-demand-system-workflow outline the repo owner
+asked for after Milestone 15 closed, being worked through in order; see
+that section below for why this is a deliberately independent third copy
+of a formula already duplicated twice elsewhere, not a refactor).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -2010,6 +2015,78 @@ skips) then completed without hanging.
 bumping on real new public API surface. No new package dependency — pure
 GAUSS built-ins plus the already-required `optmt`.
 
+### Milestone 16 — Predicted Budget Shares — COMPLETE (2026-07-26)
+
+**Context**: after Milestone 15 closed, the repo owner asked for a
+broader outline of what a "full demand-system workflow" would still
+need, then asked to work through the resulting list in order. First
+item: expose the model's predicted budget share at an arbitrary point as
+a standalone public proc — useful for out-of-sample prediction and
+policy simulation, previously only available by hand-deriving the share
+equation.
+
+**Not a new formula — a third, deliberately independent copy of an
+existing one**: exploration confirmed the exact share equation already
+exists as an intermediate step inside `quaidsElas_()`
+(`src/quaidselas.src:49-61`, on the way to elasticities), and was
+independently duplicated a second time in
+`tests/quaids_elasticities_test.e`'s own private `modelShareAt()` helper
+(needed only so that test could check its Engel/Cournot/homogeneity
+identities against the right `w`). Confirmed via a direct code
+comparison, not re-derived. Three explicit scoping questions were put to
+the repo owner before writing any code: (1) naming
+(`quaidsSharesFit`/`printQuaidsShares`, matching the existing noun-based
+`quaidsCurvatureFit`/`quaidsElasFit`/`quaidsWelfareFit` convention, chosen
+over a `quaidsPredictFit` alternative); (2) scope (budget shares only,
+not derived physical quantities — `q_i = w_i*exp(totexp)/exp(price_i)`
+would require assuming `prices`/`totexp` are logs of levels in mutually
+consistent units, which nothing else in this library requires of the
+caller); (3) whether to refactor `quaidsElas_()` to share code with the
+new proc, or implement independently — chose independent, matching this
+project's established preference (Milestone 2's scoping note) against
+touching already-shipped, tested code without a strong reason. The new
+proc's own private helper (`_quaidsSharesAt()`, `src/quaidsshares.src`)
+is therefore a third copy of the same ~13-line formula, honestly
+documented as such rather than silently duplicated.
+
+**Standard errors differ in kind from `quaidsElasFit`/`quaidsWelfareFit`**:
+those two only ever need marginal standard errors, so they accumulate
+variances via a cheaper recursive formula (`vt = vt + 2*dtk.*(dt*v[...])
++ v[k,k]*dtk^2`). `quaidsSharesFit()` instead reports the full `n x n`
+covariance of the predicted share vector — built via an explicit
+numerical Jacobian (`jacW`, same finite-difference stepsize as the other
+two procs) propagated as `jacW*v*jacW'`, the same matrix-form delta
+method `quaidsCurvatureFit()` already uses — so a caller can correctly
+test hypotheses spanning more than one good (e.g. whether two goods'
+shares differ significantly, or the variance of an aggregated group),
+not just read off marginal SEs.
+
+**Testing**: `tests/quaids_shares_test.e` (21 checks, new) — the point
+estimate matches a *fresh*, independently hand-evaluated version of the
+share formula (written directly in the test, not calling any `src/`
+proc) on both an AIDS (`nint=0`) and QUAIDS (`nint=1`) fixture; exact
+adding-up (`sum(w)==1`, a direct consequence of `qOut.bestB`'s own
+adding-up construction, holding regardless of evaluation point); shape/
+finiteness/non-negativity of `se`/`v`, and `se` exactly equals
+`sqrt(diag(v))`; a shifted evaluation point gives a genuinely different
+predicted share (non-vacuous). `tests/quaids_elasticities_test.e`'s
+private `modelShareAt()` helper was removed and replaced with direct
+calls to the new `quaidsSharesFit()` — its existing Engel/Cournot/
+homogeneity exact-identity checks (which only hold given the *correct*
+model-implied `w`) re-ran clean (17/17), a real cross-check that the new
+proc's point estimate is right, not just that it compiles.
+`tests/package_public_api.e` gained a call to
+`quaidsSharesFit()`/`printQuaidsShares()` too, exercising it through the
+installed-package gate. `tests/run_source_tests.ps1` gained
+`quaids_shares_test.e` in its default (unflagged) list — no
+`-Skip...` flag warranted, since a single point evaluation has no heavy
+per-call cost unlike curvature/bootstrap.
+
+**Version bump to `0.11.0`**: a new required public proc
+(`quaidsSharesFit`) and a new required public struct (`quaidsSharesOut`),
+matching this project's established policy of bumping on real new public
+API surface. No new package dependency.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -2039,7 +2116,9 @@ GAUSS built-ins plus the already-required `optmt`.
   "standalone... procs" (literally false for two of the three) to
   "tested" (true for all).
 - [x] Elasticities are computable at arbitrary evaluation points with
-  delta-method standard errors.
+  delta-method standard errors. Predicted budget shares themselves (not
+  just elasticities) are also directly computable at an arbitrary point,
+  with a full delta-method covariance (`quaidsSharesFit`, Milestone 16).
 - [x] Slutzky negativity diagnostics ship by default; curvature imposition
   is implemented for both AIDS (`quaidsCurvatureFit`, Milestone 10) and
   QUAIDS (Milestone 13), at the sample mean, standard-error caveats
@@ -2056,8 +2135,8 @@ GAUSS built-ins plus the already-required `optmt`.
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-15 extend it beyond the original scope, as of 2026-07-26
-(package version `0.10.0`). Commits are now being made (and pushed to
+Milestones 11-16 extend it beyond the original scope, as of 2026-07-26
+(package version `0.11.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -2078,4 +2157,7 @@ true-gamma recovery — no curvature-consistent QUAIDS synthetic fixture
 with plausible economic values was found despite a broad screen). Push-
 triggered CI now runs the source-tree test suite on a self-hosted runner
 (Milestone 14), and the curvature imposition's own delta-method standard-
-error weakness now has a bootstrap alternative (Milestone 15).
+error weakness now has a bootstrap alternative (Milestone 15). Predicted
+budget shares at an arbitrary point are now directly computable
+(Milestone 16), the first item of a broader full-workflow outline being
+worked through in order with the repo owner.

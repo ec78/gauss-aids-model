@@ -5,6 +5,32 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.11.0 - 2026-07-26
+
+### Added
+- `quaidsSharesFit()` and `printQuaidsShares()` (`src/quaidsshares.src`),
+  plus a new `quaidsSharesOut` struct (`src/quaids.sdf`): the model-
+  implied predicted budget share vector, and its full delta-method
+  covariance, at an arbitrary evaluation point -- useful for out-of-
+  sample prediction and policy simulation without hand-deriving the
+  share equation. Reports the full `n x n` covariance of `w` (not just
+  marginal SEs), built via a numerical Jacobian propagated as
+  `jacW*v*jacW'`. A deliberately independent third implementation of the
+  share formula (already duplicated in `quaidsElas_()` and a test-only
+  helper) rather than a refactor of shipped code -- see
+  `GOLD_STANDARD_TODO.md`'s Milestone 16 section.
+- `tests/quaids_shares_test.e` (21 checks): point-estimate correctness
+  against an independent hand-evaluated formula (AIDS and QUAIDS
+  fixtures), exact adding-up, SE/covariance shape and consistency,
+  non-vacuousness.
+
+### Changed
+- `tests/quaids_elasticities_test.e`'s private `modelShareAt()` helper
+  removed; its Engel/Cournot/homogeneity identity checks now use the
+  public `quaidsSharesFit()` directly, removing a formula duplicated
+  three times across the codebase down to two (the estimator's own
+  internal share equation, and `quaidsSharesFit()`).
+
 ## 0.10.0 - 2026-07-26
 
 ### Added

@@ -1,0 +1,185 @@
+/*
+** quaidsshares.src
+**
+** Milestone 16: exposes the model-implied predicted budget share at an
+** arbitrary (intcpt, prices, totexp) point as a standalone public proc --
+** useful for out-of-sample prediction and policy simulation. The share
+** formula itself is not new: quaidsElas_() (src/quaidselas.src) already
+** computes it as an intermediate step on the way to elasticities, and
+** tests/quaids_elasticities_test.e independently duplicates it in a
+** private modelShareAt() helper just to check elasticity identities. This
+** file is a third, deliberately independent copy of that same formula --
+** confirmed by direct code comparison, not re-derived -- rather than a
+** refactor of quaidsElas_() itself, matching this project's established
+** preference (Milestone 2's scoping note) against touching already-
+** shipped, tested code without a strong reason.
+**
+** Standard errors: unlike quaidsElasFit()/quaidsWelfareFit() (which only
+** ever need marginal standard errors and so accumulate variances via a
+** cheaper recursive formula), quaidsSharesFit() reports the FULL n x n
+** covariance of the predicted share vector (so a caller can test, e.g.,
+** whether two goods' shares differ significantly, or aggregate several
+** goods' shares with a correct combined variance) -- built via an
+** explicit numerical Jacobian (same finite-difference stepsize as
+** quaidsElasFit()/quaidsWelfareFit()) propagated as jacW*v*jacW', the
+** same matrix-form delta method quaidsCurvatureFit() already uses.
+*/
+
+/*
+** _quaidsSharesAt: given a coefficient matrix b (row order intcpt|gamma|
+** beta|[lambda], same convention as quaidsElas_() -- the "u" IV-residual
+** rows must not be included) and one evaluation point, returns the
+** predicted budget share vector w (n x 1). Internal helper, no #ifDef
+** guard needed (does not depend on pubtable or any optional package).
+*/
+proc (1) = _quaidsSharesAt(b, intcpt, prices, totexp, struct quaidsControl aCtl);
+    local nint, n, alpha, gama, _beta, lambda, a_p, lx, lx2, b_p, w;
+
+    nint = rows(intcpt);
+    n = rows(prices);
+
+    alpha = intcpt'b[1:nint, .];
+    gama = b[nint+1:nint+n, .];
+    _beta = b[nint+n+1, .];
+
+    a_p = aCtl.alpha0 + alpha*prices + .5*prices'gama*prices;
+    lx = totexp - a_p;
+    w = alpha' + gama'prices + _beta'lx;
+    if not aCtl.linear;
+        b_p = exp(_beta*prices);
+        lambda = b[nint+n+2, .];
+        lx2 = (lx^2)./b_p;
+        w = w + lambda'lx2;
+    endif;
+
+    retp(w);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSSHARESFIT
+**
+** Purpose:  computes the model-implied predicted budget share vector, and
+**           its delta-method covariance/standard errors, at one arbitrary
+**           evaluation point. Silent, no printing -- see
+**           printQuaidsShares().
+**
+** Format:     struct quaidsSharesOut sharesOut = quaidsSharesFit(b, v, intcpt, prices, totexp, aCtl);
+**
+** Input:    b -- parameter matrix; each column corresponds to a specific
+**                share; row order is intcp|gamma|lx|lx2|u. Typically
+**                qOut.bestB. Do not include the "u" (IV-residual) part --
+**                not used, same as quaidsElasFit()/quaidsWelfareFit().
+**
+**           v -- variance of vec(b). Typically qOut.bestV.
+**
+**             intcpt -- vector of independent variables at the evaluation
+**                       point, INCLUDING the leading constant (length
+**                       1+nint) -- same convention as quaidsElasFit()/
+**                       quaidsWelfareFit(); pass a scalar 1 if there are
+**                       no extra intercept shifters.
+**
+**             prices -- vector of log prices (absolute) at the evaluation point.
+**
+**             totexp -- log total expenditure at the evaluation point.
+**
+** Output:  struct quaidsSharesOut -- see quaids.sdf. sharesOut.w is the
+**           point estimate (same as _quaidsSharesAt()); sharesOut.v is
+**           its full n x n delta-method covariance; sharesOut.se is the
+**           matching n x 1 vector of standard errors (sqrt of the
+**           diagonal of sharesOut.v).
+**
+*******************************************************************************/
+
+proc (struct quaidsSharesOut) = quaidsSharesFit(b, v, intcpt, prices, totexp, struct quaidsControl aCtl);
+
+    local nint, n, wnam, w, wE, b0, ab0, dab0, e, be, i, j, k, jacW, vAll, se;
+    struct quaidsSharesOut sharesOut;
+
+    nint = rows(intcpt);
+    n = rows(prices);
+
+    if aCtl.othnam $== 0;
+        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+    else;
+        wnam = aCtl.othnam[nint:nint-1+n];
+    endif;
+
+    w = _quaidsSharesAt(b, intcpt, prices, totexp, aCtl);
+
+    /* Computation of stepsize (e) for the numerical Jacobian -- identical
+       technique to quaidsElasFit()/quaidsWelfareFit(). */
+    b0 = vec(b);
+    ab0 = abs(b0);
+    if b0 /= 0;
+        dab0 = b0./ab0;
+    else;
+        dab0 = 1;
+    endif;
+    e = (1e-8)*maxc((ab0~(1e-2)*ones(rows(b0), 1))').*dab0;
+    be = b0+e;
+    e = be-b0;
+
+    jacW = zeros(n, rows(b0));
+    k = 1;
+    i = 1;
+    do while i <= cols(b);
+        j = 1;
+        do while j <= rows(b);
+            be = b;
+            be[j, i] = b[j, i] - e[k];
+            wE = _quaidsSharesAt(be, intcpt, prices, totexp, aCtl);
+            jacW[., k] = (wE - w)/e[k];
+            j = j + 1;
+            k = k + 1;
+        endo;
+        i = i + 1;
+    endo;
+
+    vAll = jacW*v*jacW';
+    se = sqrt(diag(vAll));
+
+    sharesOut.n = n;
+    sharesOut.wnam = wnam;
+    sharesOut.w = w;
+    sharesOut.se = se;
+    sharesOut.v = vAll;
+
+    retp(sharesOut);
+endp;
+
+/*******************************************************************************
+**
+** PRINTQUAIDSSHARES
+**
+** Purpose:  prints the predicted budget shares and standard errors
+**           captured in a quaidsSharesOut structure.
+**
+** Format:     call printQuaidsShares(sharesOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsShares(struct quaidsSharesOut sharesOut);
+
+    local n, wnam, w, se, omat, i;
+
+    n = sharesOut.n;
+    wnam = sharesOut.wnam;
+    w = sharesOut.w;
+    se = sharesOut.se;
+
+    print;
+    "PREDICTED BUDGET SHARES";
+    print;
+    format /rd 10, 4;
+    omat = wnam[1]~ftocv(w[1], 0, 4)~ftocv(se[1], 0, 4);
+    i = 2;
+    do while i <= n;
+        omat = omat|wnam[i]~ftocv(w[i], 0, 4)~ftocv(se[i], 0, 4);
+        i = i + 1;
+    endo;
+    print$ "Good"~"Share"~"SE";
+    print$ omat;
+    print;
+
+endp;
