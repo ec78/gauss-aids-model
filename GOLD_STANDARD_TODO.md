@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-07-26
+Status date: 2026-07-27
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,9 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.11.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-16**, as of
-2026-07-26: 0
+The repository is pre-alpha, package version `0.12.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-17**, as of
+2026-07-27: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -55,7 +55,12 @@ method's boundary-inference unreliability actually propagates), and 16
 the first item of a full-demand-system-workflow outline the repo owner
 asked for after Milestone 15 closed, being worked through in order; see
 that section below for why this is a deliberately independent third copy
-of a formula already duplicated twice elsewhere, not a refactor).
+of a formula already duplicated twice elsewhere, not a refactor), and 17
+(a standalone AIDS-vs-QUAIDS specification test, `quaidsQuadraticTest` --
+a Wald test of whether the quadratic log-expenditure term is needed, the
+second item of that same outline; see that section below for why this
+test additionally requires an unconstrained QUAIDS fit specifically,
+since an AIDS fit never estimates the parameter being tested at all).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -2087,6 +2092,74 @@ per-call cost unlike curvature/bootstrap.
 matching this project's established policy of bumping on real new public
 API surface. No new package dependency.
 
+### Milestone 17 — AIDS-vs-QUAIDS Specification Test — COMPLETE (2026-07-27)
+
+**Context**: second item of the full-demand-system-workflow outline the
+repo owner asked to work through in order after Milestone 15 closed
+(first was Milestone 16's `quaidsSharesFit`). Closes a real workflow gap:
+a user fitting QUAIDS had no formal way to check whether the quadratic
+log-expenditure term's extra complexity was actually justified by the
+data, only informal before/after comparison.
+
+**Mirrors `quaidsHomogeneityTest()`/`quaidsJointTest()` exactly**
+(confirmed via direct exploration of `src/quaidstests.src`, both existing
+tests, lines 60-166): same file, same `proc (3) =
+...(struct quaidsOut qOut);` returning a bare `(stat, pval, df)` tuple
+(not a struct), same `qOut.homogenous /= 0` guard and `"ERROR - ...";
+stop;` idiom, same standard Wald construction (`L`, a selection matrix
+such that `L'*vec(qOut.b)` is the restriction vector, covariance
+`L'*qOut.v*L`). `quaidsQuadraticTest()`'s own `L` is structurally simpler
+than the sibling tests', since `lambda_i` is already a single scalar
+coefficient per equation (one row per equation's column block of
+`vec(qOut.b)`), not a row-sum across several gamma columns needing
+summation. `df = n-1`, same reasoning as the existing tests: equation
+`n`'s restriction is implied by adding-up once the other `n-1` hold, so
+it adds no independent information.
+
+**A second guard, not present on the sibling tests**: also requires
+`qOut.linear == 0`. Confirmed by direct exploration of `src/quaids.src`
+(the `qOut.b`/`qOut.v` population, guarded throughout by `if not
+aCtl.linear`, lines 233-690) that when `aCtl.linear = 1` (AIDS), `lambda`
+is not a nuisance parameter fixed at zero -- it is **not estimated at
+all**, and `qOut.b` is one row shorter with no lambda row to select.
+There is no way to "test whether QUAIDS is needed starting from an AIDS
+fit"; this test only makes sense as a check on an already-fitted QUAIDS
+model, telling a user whether the simpler AIDS specification would have
+done just as well. The row position (`lambdaRow = 1+nint+n+2`,
+immediately after beta and immediately before the u-residual rows) was
+confirmed against `src/quaids.src`'s own recovery step and independently
+corroborated by `quaidsCurvOut`'s doc comment (`src/quaids.sdf`)
+describing the identical "trailing lambda row" convention from Milestone
+10/13's curvature work.
+
+**A real test-design finding**: GAUSS's `stop` (used by this file's
+existing guard idiom, and reused here for consistency) halts the *entire
+batch job*, not just the current proc call -- confirmed directly with a
+small probe before attempting to write a "confirm it errors" check, which
+turned out to be impossible to express in this project's `check()`-based
+test harness (there is no way to assert a call errors and then continue
+to the next check in the same script). Neither `quaidsHomogeneityTest`'s
+nor `quaidsJointTest`'s own guards have such a check in
+`tests/quaids_hypothesis_tests_test.e` either -- consistent with this,
+not an oversight specific to this milestone.
+
+**Testing**: `tests/quaids_hypothesis_tests_test.e` extended in place
+(19 -> 22 checks) -- reuses the file's *existing* `qOutTrue` fixture
+(`_quaidsSyntheticDGP(3000, 204, 1, 1)`, `quadratic=1`, true `lambda`
+genuinely nonzero) directly for the POWER check (no new fit needed,
+confirmed by direct exploration that this fixture already fits exactly
+what was needed), plus one fresh `quadratic=0` fixture (true `lambda`
+forced to exact zero) for SIZE, both fit with `aCtl.linear=0` (required
+either way, per the guard above). `tests/package_public_api.e` gained a
+call to `quaidsQuadraticTest()` against its own QUAIDS fixture, matching
+this project's standard of exercising every public proc through the
+installed-package gate.
+
+**Version bump to `0.12.0`**: a new required public proc
+(`quaidsQuadraticTest`), matching this project's established policy of
+bumping on real new public API surface. No new struct, no new file, no
+new package dependency.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -2114,7 +2187,9 @@ API surface. No new package dependency.
   are validated for size and/or power in
   `tests/quaids_hypothesis_tests_test.e`. Corrected the aspiration from
   "standalone... procs" (literally false for two of the three) to
-  "tested" (true for all).
+  "tested" (true for all). A fifth standalone test, `quaidsQuadraticTest`
+  (Milestone 17), additionally checks whether QUAIDS's quadratic term is
+  needed at all over plain AIDS.
 - [x] Elasticities are computable at arbitrary evaluation points with
   delta-method standard errors. Predicted budget shares themselves (not
   just elasticities) are also directly computable at an arbitrary point,
@@ -2135,8 +2210,8 @@ API surface. No new package dependency.
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-16 extend it beyond the original scope, as of 2026-07-26
-(package version `0.11.0`). Commits are now being made (and pushed to
+Milestones 11-17 extend it beyond the original scope, as of 2026-07-27
+(package version `0.12.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -2160,4 +2235,7 @@ triggered CI now runs the source-tree test suite on a self-hosted runner
 error weakness now has a bootstrap alternative (Milestone 15). Predicted
 budget shares at an arbitrary point are now directly computable
 (Milestone 16), the first item of a broader full-workflow outline being
-worked through in order with the repo owner.
+worked through in order with the repo owner. Whether QUAIDS's quadratic
+term is actually needed over plain AIDS is now a formal, testable
+question (`quaidsQuadraticTest`, Milestone 17), the second item of that
+outline.

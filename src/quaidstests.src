@@ -1,12 +1,14 @@
 /*
 ** quaidstests.src
 **
-** Standalone Wald hypothesis tests for the AIDS/QUAIDS homogeneity and
-** symmetry restrictions, operating on an UNCONSTRAINED (aCtl.homogenous=0)
-** quaidsFit() result. Both tests read qOut.b (the final, absolute-price-
-** form, unconstrained gamma matrix -- rows (1+nint+1)..(1+nint+n) hold the
-** raw price-effect coefficients gamma_ij, one row per price j, one column
-** per equation i) and qOut.v (its covariance), and build a linear
+** Standalone Wald hypothesis tests for the AIDS/QUAIDS homogeneity/
+** symmetry restrictions and (Milestone 17) the QUAIDS quadratic term,
+** operating on an UNCONSTRAINED (aCtl.homogenous=0)
+** quaidsFit() result. All three read qOut.b (the final, absolute-price-
+** form, unconstrained coefficient matrix -- rows (1+nint+1)..(1+nint+n)
+** hold the raw price-effect coefficients gamma_ij, one row per price j,
+** one column per equation i; row 1+nint+n+2 holds lambda_i, the quadratic
+** term, for a QUAIDS fit) and qOut.v (its covariance), and build a linear
 ** combination via a selection matrix L such that L'*vec(qOut.b) is the
 ** vector of restrictions being tested, with covariance L'*qOut.v*L --
 ** this is the standard delta-method/Wald construction for a linear
@@ -30,8 +32,12 @@
 **     separately here; use quaidsJointTest, or the existing
 **     symmetry-given-homogeneity test on a homogenous=1 fit if homogeneity
 **     is not in question).
+**   Quadratic term (Milestone 17): n-1 (lambda_i = 0 for each
+**     independently-estimated equation i -- only ever testable on a
+**     QUAIDS fit; an AIDS fit never estimates lambda at all, so there is
+**     nothing to restrict).
 **
-** Both tests are standard Wald chi2 tests: asymptotically valid under the
+** All three are standard Wald chi2 tests: asymptotically valid under the
 ** same regularity conditions as the rest of this library's asymptotic
 ** (delta-method/FGLS) inference -- large-T, correctly specified
 ** instruments, no claim of finite-sample exactness. Validated (both size
@@ -154,6 +160,71 @@ proc (3) = quaidsJointTest(struct quaidsOut qOut);
             col = col+1;
             j = j+1;
         endo;
+        i = i+1;
+    endo;
+
+    rvec = L' * vec(qOut.b);
+    Vsub = L' * qOut.v * L;
+    stat = rvec' * invpd(Vsub) * rvec;
+    pval = cdfchic(stat, df);
+
+    retp(stat, pval, df);
+endp;
+
+
+/*******************************************************************************
+**
+** QUAIDSQUADRATICTEST
+**
+** Purpose:  Wald test of H0: the QUAIDS quadratic log-expenditure term is
+**           not needed (lambda_i = 0 for every good i), against an
+**           unconstrained (aCtl.homogenous=0) QUAIDS (aCtl.linear=0)
+**           quaidsFit() result -- i.e. whether plain AIDS would fit
+**           equally well. Milestone 17.
+**
+** Format:     { stat, pval, df } = quaidsQuadraticTest(qOut);
+**
+** Input:      qOut -- struct quaidsOut, from quaidsFit() called with
+**                      aCtl.homogenous = 0 and aCtl.linear = 0. Errors if
+**                      qOut.homogenous /= 0 (needs an unconstrained fit,
+**                      same as the other tests in this file) or
+**                      qOut.linear /= 0 (an AIDS fit never estimates
+**                      lambda at all -- there is nothing to restrict).
+**
+** Output:     stat -- Wald chi2 statistic.
+**             pval -- p-value, cdfchic(stat, df).
+**             df   -- degrees of freedom, n-1.
+**
+*******************************************************************************/
+
+proc (3) = quaidsQuadraticTest(struct quaidsOut qOut);
+
+    local n, nint, ng, lambdaRow, df, L, i, idx, rvec, Vsub, stat, pval;
+
+    if qOut.homogenous /= 0;
+        "ERROR - quaidsQuadraticTest requires an unconstrained fit";
+        "        (call quaidsFit with aCtl.homogenous = 0).";
+        stop;
+    endif;
+
+    if qOut.linear /= 0;
+        "ERROR - quaidsQuadraticTest requires a QUAIDS fit";
+        "        (call quaidsFit with aCtl.linear = 0) -- an AIDS fit";
+        "        never estimates a quadratic (lambda) term to test.";
+        stop;
+    endif;
+
+    n = qOut.n;
+    nint = qOut.nint;
+    ng = qOut.ng;
+    lambdaRow = 1+nint+n+2;
+    df = n-1;
+
+    L = zeros(ng*n, df);
+    i = 1;
+    do while i <= n-1;
+        idx = lambdaRow + (i-1)*ng;
+        L[idx, i] = 1;
         i = i+1;
     endo;
 

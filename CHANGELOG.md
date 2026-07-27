@@ -5,6 +5,20 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.12.0 - 2026-07-27
+
+### Added
+- `quaidsQuadraticTest()` (`src/quaidstests.src`): a standalone Wald test
+  of whether the QUAIDS quadratic log-expenditure term (`lambda`) is
+  needed at all, or whether plain AIDS would fit equally well. Mirrors
+  `quaidsHomogeneityTest()`/`quaidsJointTest()` exactly (same file, same
+  `(stat, pval, df)` return, same unconstrained-fit guard), plus an
+  additional guard requiring `qOut.linear == 0` -- an AIDS fit never
+  estimates `lambda` at all, so there is nothing to test. `df = n-1`.
+- `tests/quaids_hypothesis_tests_test.e` gained 3 checks (19 -> 22): size
+  and power for the new test, reusing the file's existing `quadratic=1`
+  fixture for power and a fresh `quadratic=0` fixture for size.
+
 ## 0.11.0 - 2026-07-26
 
 ### Added

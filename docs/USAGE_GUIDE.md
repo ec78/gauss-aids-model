@@ -130,6 +130,25 @@ Both [quaidsHomogeneityTest](command-reference/quaidsHomogeneityTest.md)
 and [quaidsJointTest](command-reference/quaidsJointTest.md) error clearly
 if called on a `qOut.homogenous == 1` fit.
 
+## Is QUAIDS Needed? (`quaidsQuadraticTest`)
+
+If `aCtl.linear = 0` (QUAIDS) and `aCtl.homogenous = 0` (same
+unconstrained-fit requirement as above),
+[quaidsQuadraticTest](command-reference/quaidsQuadraticTest.md) is a Wald
+test of whether the quadratic log-expenditure term is actually needed --
+a failure to reject means plain AIDS (`aCtl.linear = 1`, simpler, more
+numerically stable, see "Choosing A Model" above) fits just as well:
+
+```gauss
+{ statQ, pvalQ, dfQ } = quaidsQuadraticTest(qOut);
+if pvalQ > 0.05;
+    print "Quadratic term not statistically justified -- consider AIDS.";
+endif;
+```
+
+Only callable on a QUAIDS fit -- an AIDS fit (`aCtl.linear = 1`) never
+estimates the quadratic term at all, so there is nothing to test.
+
 ## Elasticities At Any Point
 
 `quaidsElas_()` (the low-level computation) always accepted an arbitrary

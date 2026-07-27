@@ -56,4 +56,5 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 ## See Also
 
-[quaidsHomogeneityTest](quaidsHomogeneityTest.md), [quaidsFit](quaidsFit.md)
+[quaidsHomogeneityTest](quaidsHomogeneityTest.md), [quaidsFit](quaidsFit.md),
+[quaidsQuadraticTest](quaidsQuadraticTest.md)

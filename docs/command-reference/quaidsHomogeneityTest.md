@@ -60,4 +60,5 @@ endif;
 
 ## See Also
 
-[quaidsJointTest](quaidsJointTest.md), [quaidsFit](quaidsFit.md)
+[quaidsJointTest](quaidsJointTest.md), [quaidsFit](quaidsFit.md),
+[quaidsQuadraticTest](quaidsQuadraticTest.md)

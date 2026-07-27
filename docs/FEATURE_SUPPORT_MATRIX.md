@@ -18,6 +18,7 @@ for the exact switch values.
 | Symmetry-given-homogeneity test | Yes (built into `quaidsFit`) | Yes (built into `quaidsFit`) | Yes (built into `quaidsFit`) |
 | Standalone homogeneity test | Yes (`quaidsHomogeneityTest`, needs `aCtl.homogenous=0` fit) | Yes | Yes |
 | Standalone joint homogeneity+symmetry test | Yes (`quaidsJointTest`) | Yes | Yes |
+| Quadratic-term (AIDS-vs-QUAIDS) specification test | Not applicable (no quadratic term to test) | Not applicable | Yes (`quaidsQuadraticTest`, since Milestone 17) |
 | Elasticities at arbitrary points | Yes (`quaidsElasFit`) | Yes | Yes |
 | Delta-method elasticity standard errors | Yes | Yes | Yes |
 | Predicted budget shares at arbitrary points | Yes (`quaidsSharesFit`, since Milestone 16, no extra dependency) | Yes | Yes |

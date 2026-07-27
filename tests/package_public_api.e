@@ -275,6 +275,12 @@ call assert_true(pvalH >= 0 and pvalH <= 1 and dfH == N-1, "quaidsHomogeneityTes
 { statJ, pvalJ, dfJ } = quaidsJointTest(qOutU);
 call assert_true(pvalJ >= 0 and pvalJ <= 1 and dfJ == (N-1) + (N-1)*(N-2)/2, "quaidsJointTest output invalid");
 
+/* quaidsQuadraticTest() (Milestone 17) -- reuses qOutU, already an
+   unconstrained QUAIDS (aCtlU.linear=0) fit, exactly what this test
+   requires. */
+{ statQ2, pvalQ2, dfQ2 } = quaidsQuadraticTest(qOutU);
+call assert_true(pvalQ2 >= 0 and pvalQ2 <= 1 and dfQ2 == N-1, "quaidsQuadraticTest output invalid");
+
 
 /* --- quaidsCurvatureFit() / printQuaidsCurvature() (Milestone 10) ---
    Needs its own dataset: the seed=11 fixture above is a known non-

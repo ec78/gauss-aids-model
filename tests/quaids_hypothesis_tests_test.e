@@ -7,7 +7,10 @@
 ** exercises the overidentification test for the first time in this
 ** repo's history (every prior fixture used exactly-identified instruments,
 ** ninst==nu, so qOut.overidValid was always 0 -- an untested code path
-** until now).
+** until now). Milestone 17 adds quaidsQuadraticTest(), a Wald test of
+** whether the QUAIDS quadratic term is needed at all -- reuses the
+** existing qOutTrue fixture (quadratic=1, true lambda nonzero) for its
+** power check and one fresh quadratic=0 fixture for size.
 **
 ** Every hypothesis test here is checked for both SIZE (does it correctly
 ** fail to reject when the null is true by construction?) and, where
@@ -224,6 +227,35 @@ call check(minc(qOutOI.overidPvf) >= 0 and maxc(qOutOI.overidPvf) <= 1, "overID 
    -- not a hard guarantee for every single equation at any one seed, but
    the MEAN p-value across equations should be comfortably away from 0. */
 call check(meanc(qOutOI.overidPvf) > 0.10, "overID test SIZE: mean p-value across equations is not close to 0 (both instruments valid by construction)");
+
+
+/* ==========================================================================
+   Quadratic-term test (Milestone 17): size and power.
+   POWER reuses qOutTrue directly -- it was already fit on
+   _quaidsSyntheticDGP(3000, 204, 1, 1), quadratic=1, so lambda is
+   genuinely nonzero by construction. SIZE needs a fresh fixture with
+   quadratic=0 (lambda forced to exact zero), fit with the same
+   aCtl.linear=0/aCtl.homogenous=0 -- fitting with aCtl.linear=1 would
+   have no lambda to test at all (confirmed: an AIDS fit never estimates
+   it), which is exactly why quaidsQuadraticTest() requires qOut.linear==0.
+   Note: unlike the checks above, a guard-violation call (e.g. passing an
+   AIDS fit) is not exercised here as a `check()` -- quaidsQuadraticTest()
+   calls GAUSS's `stop` on that path (matching quaidsHomogeneityTest()/
+   quaidsJointTest()'s own existing guard convention in this file), which
+   halts the whole batch job rather than returning control to the caller,
+   so it cannot be asserted against and continue to the next check.
+   ========================================================================== */
+
+{ statQ, pvalQ, dfQ } = quaidsQuadraticTest(qOutTrue);
+call check(dfQ == qOutTrue.n - 1, "quadratic-term test: df == n-1 (4)");
+call check(pvalQ < 0.01, "quadratic-term test POWER: rejects on a true-QUAIDS (quadratic=1) DGP (pval < 0.01)");
+
+{ wLin, intcptLin, pricesLin, totexpLin, instrLin, tpLin } = _quaidsSyntheticDGP(3000, 204, 0, 1);
+struct quaidsOut qOutLinTrue;
+qOutLinTrue = quaidsFit(wLin, intcptLin, pricesLin, totexpLin, instrLin, aCtl);
+
+{ statQ0, pvalQ0, dfQ0 } = quaidsQuadraticTest(qOutLinTrue);
+call check(pvalQ0 > 0.05, "quadratic-term test SIZE: fails to reject on a true-AIDS (quadratic=0) DGP (pval > 0.05)");
 
 
 print;

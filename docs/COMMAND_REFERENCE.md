@@ -27,6 +27,7 @@ sections.
 
 - [quaidsHomogeneityTest](command-reference/quaidsHomogeneityTest.md)
 - [quaidsJointTest](command-reference/quaidsJointTest.md)
+- [quaidsQuadraticTest](command-reference/quaidsQuadraticTest.md)
 
 ## Elasticities and Diagnostics
 

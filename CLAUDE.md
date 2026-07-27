@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.11.0`) and is not yet
+The library is **pre-alpha** (package version `0.12.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-16)
+## Repository layout (post-Milestone-17)
 
 ```
 src/
@@ -72,6 +72,11 @@ src/
                     #   Wald tests, operating on an already-computed
                     #   unconstrained (aCtl.homogenous=0) quaidsOut. See
                     #   "Milestone 4: new hypothesis tests" below.
+                    #   Milestone 17 adds quaidsQuadraticTest() -- a Wald
+                    #   test of whether the QUAIDS quadratic term is
+                    #   needed, additionally requiring qOut.linear==0
+                    #   (an AIDS fit never estimates lambda, so there is
+                    #   nothing to test). See "Milestone 17" below.
   quaidscurvature.src # Milestone 10: quaidsCurvatureFit()/
                     #   printQuaidsCurvature() -- local curvature (Slutzky
                     #   negative semidefiniteness) imposition for LA-AIDS/
@@ -199,7 +204,11 @@ tests/
                     #   power check for the existing symmetry-given-
                     #   homogeneity test, and the first-ever exercise of
                     #   the overidentification test (every prior fixture
-                    #   was exactly identified, ninst==nu).
+                    #   was exactly identified, ninst==nu). Milestone 17
+                    #   adds 3 checks (22 total) for quaidsQuadraticTest()
+                    #   -- size and power, reusing the file's existing
+                    #   quadratic=1 fixture for power and one fresh
+                    #   quadratic=0 fixture for size.
   quaids_elasticities_test.e   # Milestone 5: 17 checks -- parity between
                     #   quaidsElasFit()/printQuaidsElas() and the
                     #   pre-split quaidsElas_(), plus three EXACT
@@ -450,7 +459,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-16:
+The original ten-milestone roadmap is complete, plus Milestones 11-17:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -469,7 +478,9 @@ Milestone 13 closed), 15 (bootstrap standard errors for
 closed), and 16 (predicted budget shares at an arbitrary point,
 `quaidsSharesFit`, the first item of a full-demand-system-workflow
 outline the repo owner asked for after Milestone 15 closed, being worked
-through in order).
+through in order), and 17 (a standalone AIDS-vs-QUAIDS specification
+test, `quaidsQuadraticTest` -- a Wald test of whether the quadratic
+log-expenditure term is needed, the second item of that same outline).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -2058,6 +2069,78 @@ installed-package gate.
 matching this project's established policy of bumping on real new public
 API surface. No new package dependency.
 
+## Milestone 17: AIDS-vs-QUAIDS specification test
+
+```gauss
+struct quaidsControl aCtl;
+aCtl = quaidsControlCreate();
+aCtl.linear = 0;         // QUAIDS -- required, see below
+aCtl.homogenous = 0;     // unconstrained -- required, same as the other standalone tests
+
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+{ statQ, pvalQ, dfQ } = quaidsQuadraticTest(qOut);
+if pvalQ > 0.05;
+    print "Quadratic term not statistically justified -- consider AIDS.";
+endif;
+```
+
+Second item of the full-demand-system-workflow outline the repo owner
+asked to work through in order after Milestone 15 closed (first item was
+Milestone 16's `quaidsSharesFit`). Closes a real workflow gap: a user
+fitting QUAIDS had no formal way to check whether the extra quadratic-
+term complexity was actually justified by the data, only informal
+before/after comparison.
+
+**Mirrors `quaidsHomogeneityTest()`/`quaidsJointTest()` exactly** (same
+file, `src/quaidstests.src`; same `proc (3) = ...(struct quaidsOut qOut);`
+returning a bare `(stat, pval, df)` tuple, not a struct; same
+`qOut.homogenous /= 0` guard and `"ERROR - ..."; stop;` idiom) -- a
+standard Wald test of `H0: lambda_i = 0` for every good, `df = n-1` for
+the same reason the existing tests use `n-1` (equation `n`'s restriction
+is implied by adding-up once the other `n-1` hold). Structurally simpler
+than `quaidsHomogeneityTest`'s own `L` construction, since `lambda` is
+already a single scalar coefficient per equation (one row per equation's
+column block of `vec(qOut.b)`), not a row-sum across several gamma
+columns needing summation.
+
+**A second guard, not present on the sibling tests**: this test also
+requires `qOut.linear == 0`. Confirmed by direct exploration of
+`src/quaids.src` (the `qOut.b`/`qOut.v` population, guarded throughout by
+`if not aCtl.linear`) that when `aCtl.linear = 1` (AIDS), `lambda` is not
+a nuisance parameter fixed at zero -- it is **not estimated at all**, and
+`qOut.b` is one row shorter with no lambda row to select. There is no way
+to "test whether QUAIDS is needed starting from an AIDS fit"; this test
+only makes sense as a check on an already-fitted QUAIDS model. The row
+position itself (`lambdaRow = 1+nint+n+2`, immediately after beta and
+immediately before the u-residual rows) was confirmed against
+`src/quaids.src`'s own recovery step and independently corroborated by
+`quaidsCurvOut`'s doc comment (`src/quaids.sdf`) describing the identical
+"trailing lambda row" convention from Milestone 10/13's curvature work.
+
+**A real test-design finding**: GAUSS's `stop` (used by this file's
+existing guard idiom) halts the *entire batch job*, not just the current
+proc call -- there is no way to assert "this call errors" and then
+continue to the next check in the same script, confirmed by a direct
+probe before attempting to write such a check. Neither
+`quaidsHomogeneityTest`'s nor `quaidsJointTest`'s own guards have a
+"confirm it errors" test in `tests/quaids_hypothesis_tests_test.e`
+either -- consistent, not an oversight specific to this milestone.
+
+**Testing**: `tests/quaids_hypothesis_tests_test.e` extended in place
+(19 -> 22 checks) -- reuses the file's *existing* `qOutTrue` fixture
+(`_quaidsSyntheticDGP(3000, 204, 1, 1)`, `quadratic=1`, true `lambda`
+genuinely nonzero) directly for the POWER check (no new fit needed), plus
+one fresh `quadratic=0` fixture (true `lambda` forced to exact zero) for
+SIZE, both fit with `aCtl.linear=0` (required either way, per the guard
+above).
+
+**Version bump to `0.12.0`**: a new required public proc
+(`quaidsQuadraticTest`), matching this project's established policy of
+bumping on real new public API surface. No new struct, no new file, no
+new package dependency.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -2189,11 +2272,12 @@ tgauss -b -x quaids_curvature_bootstrap_test.e
   starting-value bug — see "Milestone 3: real bug found and fixed" above.
   Milestone 9 extended it (11 -> 19 checks) to also validate iterated
   AIDS against R `aidsEst(method="IL", ...)` — see "Milestone 9" above.
-- `quaids_hypothesis_tests_test.e` (Milestone 4, 19 checks): size and power
+- `quaids_hypothesis_tests_test.e` (Milestone 4, 22 checks): size and power
   for `quaidsHomogeneityTest()`/`quaidsJointTest()`, a power check for the
   existing symmetry-given-homogeneity test, and the first-ever exercise of
   the overidentification test. See "Milestone 4: new hypothesis tests"
-  above.
+  above. Milestone 17 added 3 checks for `quaidsQuadraticTest()` (size and
+  power) -- see "Milestone 17: AIDS-vs-QUAIDS specification test" above.
 - `quaids_elasticities_test.e` (Milestone 5, 17 checks): parity between
   `quaidsElasFit()`/`printQuaidsElas()` and `quaidsElas_()`, plus three
   exact algebraic identities checked at points other than the four
