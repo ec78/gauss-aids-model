@@ -225,4 +225,35 @@ struct quaidsWelfareOut {
     matrix totexpPt0;
 };
 
+/*
+** quaidsZeroOut -- struct returned by quaidsZeroFit(): AIDS/QUAIDS
+** coefficients corrected for zero budget shares via the Shonkwiler-Yen
+** (1999) two-step procedure -- an unconstrained (no homogeneity/symmetry
+** imposition in this first pass) fit, with a per-good first-stage probit
+** correcting for the probability of a corner (zero-share) solution. See
+** the Milestone 19 section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsZeroOut {
+    matrix n;          // number of goods (every good is directly estimated -- no
+                       //   adding-up recovery in this unconstrained-only pass)
+    matrix nint;       // number of extra intercept-shifter variables
+    matrix nobs;
+    matrix xnam;       // legacy character matrix of intercept-block names
+    matrix wnam;       // legacy character matrix of good names
+    matrix unam;       // legacy character matrix of IV-residual names
+    matrix probitB;    // first-stage probit coefficients, one column per good
+    matrix probitSE;   // first-stage probit standard errors, same shape as probitB
+    matrix probitConverged;  // n x 1, 1 if that good's probit converged
+    matrix shareZeroFrac;    // n x 1, observed fraction of zero shares per good
+    matrix b;    // corrected coefficient matrix: intcpt | gamma | beta | [lambda]
+                // | u | delta (trailing n x n block, diagonal by construction --
+                //   see quaidsZeroFit()'s own header for why this block is n x n
+                //   rows, not a single row like every other block)
+    matrix v;    // covariance of vec(b) -- a simplified formula, see Remarks
+    matrix se;   // standard errors, same shape as b
+    matrix converged;  // 1 if the outer (translog price index) iteration converged
+    matrix iterations;
+    matrix finalErr;
+};
+
 #endif

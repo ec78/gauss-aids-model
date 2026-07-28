@@ -5,6 +5,50 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.14.0 - 2026-07-27
+
+### Added
+- `quaidsZeroFit()`/`printQuaidsZero()` (`src/quaidszerocorrect.src`, new
+  file): AIDS/QUAIDS estimation corrected for zero budget shares (corner
+  solutions) via the Shonkwiler & Yen (1999) two-step procedure. A
+  per-good first-stage probit's fitted probability is divided into the
+  second-stage share equation, turning what would otherwise be a
+  regressor-rescaling problem (incompatible with the shared-design-matrix
+  Kronecker-product identity every stage of `quaidsFit()` relies on) into
+  a dependent-variable transform plus one new shared regressor column per
+  equation. A new minimum-distance restriction (mirroring `quaidsFit()`'s
+  own symmetry-restriction machinery) forces the resulting hazard-
+  coefficient block to be diagonal, as the method requires. Unconstrained
+  only in this pass (errors if `aCtl.homogenous=1`); standard errors are a
+  simplified `S .*. inv(gg)` formula; adding-up does not hold exactly for
+  the corrected coefficients (a real property of the method itself, not a
+  bug) -- all documented explicitly, not silently absent. Uses GAUSS's
+  built-in `glm()` for the probit stage, no new package dependency.
+- New `quaidsZeroOut` struct (`src/quaids.sdf`).
+- `tests/quaidsfixtures.src`: `_quaidsZeroSyntheticDGP()`, a 5-good QUAIDS
+  fixture with a known latent (uncensored) DGP, censored the economically
+  correct way (`w_i = max(0,latent_i) / sum_j max(0,latent_j)`) to
+  produce a genuine, non-degenerate zero-share pattern.
+- `tests/quaids_zero_test.e` (17 checks): diagonal-delta restriction
+  correctness, shape/finiteness, and the core validation -- corrected
+  recovery of the true latent-DGP parameters beats naive `quaidsFit()` on
+  the same censored data, on both a max- and mean-absolute-difference
+  basis.
+- `tests/package_public_api.e` extended to exercise `quaidsZeroFit()`/
+  `printQuaidsZero()` against the installed package.
+- New docs: `docs/command-reference/quaidsZeroFit.md`,
+  `printQuaidsZero.md`; new sections in `docs/USAGE_GUIDE.md` and
+  `docs/METHODOLOGY_NOTES.md`; new row in
+  `docs/FEATURE_SUPPORT_MATRIX.md`.
+
+### Known limitation
+- GAUSS's built-in `glm()` (used for the first-stage probits) can
+  hard-crash on some degenerate inputs (`Intel MKL ERROR ... DGELS`), a
+  failure mode not intercepted by this codebase's usual `trap`/`scalmiss`
+  guard -- the same class of non-trappable failure already documented for
+  `eighv()` inside `quaidsCurvatureBootstrapFit()`. Not hardened against
+  in this pass.
+
 ## 0.13.0 - 2026-07-27
 
 ### Added

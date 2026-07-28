@@ -34,6 +34,7 @@ for the exact switch values.
 | Synthetic deterministic validation | Yes (`tests/quaids_synthetic_validation_test.e`) | Yes | Yes |
 | Published-data cross-validation vs. R | Yes (`Blanciforti86` vs. 3SLS, `tests/quaids_published_validation_test.e`) | Yes (`Blanciforti86` vs. `method="IL"`, wider tolerance -- see Notes) | No independent reference implementation exists (see Notes) |
 | Iteration convergence guarantee | Not applicable (one-step) | No -- a 200-seed sweep measured a 58% failure rate (never-converges or converges to a wrong answer) at default settings; check `qOut.converged`. `aCtl.relax=.75` measurably reduces this -- see Notes | No -- same caveat, 76% failure rate measured |
+| Zero budget share correction | Yes (`quaidsZeroFit`, since Milestone 19, unconstrained only -- see Notes) | Yes (same) | Yes (same) |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
 ## Notes
@@ -141,6 +142,32 @@ for the exact switch values.
   AIDS's. See
   [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
   and `GOLD_STANDARD_TODO.md`'s Milestone 10 and 13 sections.
+
+- Zero budget share correction (Shonkwiler-Yen, `quaidsZeroFit`, Milestone
+  19) addresses real survey/microdata's corner solutions (zero-expenditure
+  goods), which `quaidsFit()` does not model. A per-good first-stage
+  probit's fitted probability `F_i` is divided into the second-stage share
+  equation (`w_i/F_i = ...`), which avoids breaking the shared-design-
+  matrix Kronecker-product identity every stage of `quaidsFit()` relies on
+  -- a literal textbook implementation (rescaling every regressor by
+  `F_i`) would not. **Unconstrained only in this pass** -- no homogeneity/
+  symmetry imposition on the corrected model (errors if
+  `aCtl.homogenous=1`); combining the method's own diagonal-delta
+  restriction with a second, simultaneous homogeneity/symmetry
+  restriction is left for a follow-up. Standard errors are a simplified
+  `S .*. inv(gg)` formula that does not correct for the nonlinear
+  translog-price-index feedback or first-stage probit/IV
+  generated-regressor uncertainty. Adding-up does not hold exactly for the
+  corrected coefficients -- a real, known property of the method itself,
+  not a bug. Validated on a synthetic fixture with a known latent
+  (uncensored) DGP and a genuine, non-degenerate zero-share censoring
+  pattern (`tests/quaids_zero_test.e`): the corrected fit recovers the
+  true latent parameters measurably better than naively fitting
+  `quaidsFit()` on the same censored data. GAUSS's built-in `glm()` (used
+  for the first-stage probits, no new package dependency) can hard-crash
+  on some degenerate inputs, a known non-trappable failure mode not
+  hardened against in this pass. See
+  [Methodology Notes](METHODOLOGY_NOTES.md#zero-budget-share-correction-shonkwiler-yen).
 
 Related documentation:
 

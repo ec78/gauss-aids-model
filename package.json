@@ -21,6 +21,7 @@
         "quaids.sdf",
         "quaidsutil.src",
         "quaidsiv.src",
+        "quaidszerocorrect.src",
         "quaidselas.src",
         "quaidsshares.src",
         "quaidsslutzky.src",
@@ -30,5 +31,5 @@
         "quaidscurvature.src",
         "quaidswelfare.src"
     ],
-    "version": "0.13.0"
+    "version": "0.14.0"
 }

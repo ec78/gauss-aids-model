@@ -273,6 +273,41 @@ either way -- see [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md))
 See the [Limitations section](#limitations) below for the standard-error
 caveat, which applies to both models.
 
+## Zero Budget Shares (Corner Solutions)
+
+Real survey/microdata routinely has corner solutions -- some households
+report zero expenditure on some goods. Fitting [quaidsFit](command-reference/quaidsFit.md)
+directly on such data is a known source of bias, since the linear/log-
+linear share equation has no mechanism for a censored dependent variable.
+[quaidsZeroFit](command-reference/quaidsZeroFit.md) corrects for this via
+the Shonkwiler & Yen (1999) two-step procedure -- a per-good first-stage
+probit (the probability of a non-zero share) followed by a corrected
+second-stage GLS fit:
+
+```gauss
+struct quaidsControl aCtl;
+aCtl = quaidsControlCreate();
+aCtl.linear = 0;          // 1 for AIDS, 0 for QUAIDS
+aCtl.maxiter = 100;
+aCtl.homogenous = 0;      // required -- see Limitations below
+
+struct quaidsZeroOut zOut;
+zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
+call printQuaidsZero(zOut);
+
+print "fraction of zero shares per good:" zOut.shareZeroFrac';
+```
+
+`zOut.b`'s trailing `n x n` block (`delta`) is the estimated own-good
+hazard coefficient, restricted to be diagonal (each good's correction only
+depends on its own censoring probability) by construction. See
+[Methodology Notes](METHODOLOGY_NOTES.md#zero-budget-share-correction-shonkwiler-yen)
+for the full derivation and the [Limitations section](#limitations) below
+for what is deliberately out of scope in this first pass (no homogeneity/
+symmetry imposition, a simplified standard-error formula, and adding-up
+not holding exactly for the corrected coefficients -- a real property of
+the method itself, not a bug).
+
 ## Reporting (`pubtable`)
 
 `src/pubtable_quaids.src` is an optional adapter onto the `pubtable`
@@ -329,3 +364,12 @@ runnable example.
   Model" above. `aCtl.relax` (Milestone 12) is an evidence-backed, opt-in
   mitigation, not a fix.
 - IV is mandatory; there is no exogenous-total-expenditure estimation mode.
+- [quaidsZeroFit](command-reference/quaidsZeroFit.md) (Milestone 19) is
+  unconstrained only -- it errors if `aCtl.homogenous = 1` -- and reports
+  a simplified standard error that does not account for the nonlinear
+  translog-price-index feedback or first-stage probit/IV generated-
+  regressor uncertainty. Adding-up does not hold exactly for its corrected
+  coefficients, a real property of the Shonkwiler-Yen method itself. Its
+  first-stage probit relies on GAUSS's built-in `glm()`, which can
+  hard-crash (not just fail to converge) on some degenerate inputs -- a
+  known, non-trappable failure mode, not hardened against in this pass.

@@ -1,0 +1,408 @@
+/*
+** quaidszerocorrect.src
+**
+** Milestone 19: AIDS/QUAIDS estimation corrected for zero budget shares
+** via the Shonkwiler-Yen (1999) two-step procedure -- real survey data
+** routinely has corner solutions (some households report zero
+** expenditure on some goods), which quaidsFit() does not address.
+**
+** A self-contained sibling to quaidsFit(), not a modification of it --
+** every one of quaidsFit()'s estimation stages (the GLS coefficient
+** solve, the variance formula, the homogeneity/symmetry minimum-distance
+** restriction, the overidentification test, the absolute-price recovery)
+** is built on a Kronecker-product identity (e.g. `S[1:n-1,1:n-1].*.gg`,
+** quaids.src:375) that only holds because every equation shares the same
+** design matrix X. A literal, textbook Shonkwiler-Yen correction --
+** rescaling every regressor by a per-equation, per-observation
+** probability F_i -- breaks that shared-X assumption outright.
+**
+** The reformulation used here avoids that: Shonkwiler-Yen's equation
+**   w_i = F_i*(alpha_i + sum_j gamma_ij*ln(p_j) + beta_i*lx [+ lambda_i*lx2]) + f_i*delta_i + e_i
+** divides cleanly by F_i (a KNOWN, first-stage-fitted quantity, held
+** fixed during the second stage):
+**   w_i/F_i = alpha_i + sum_j gamma_ij*ln(p_j) + beta_i*lx [+ lambda_i*lx2] + (f_i/F_i)*delta_i + e_i/F_i
+** turning the problematic *regressor* rescaling into a dependent-
+** variable transform (wTilde_i = w_i/F_i, computed once) plus one new
+** shared regressor column per equation (h_i = f_i/F_i) -- structurally
+** the same kind of addition as the `u` (IV-residual) columns quaidsFit()
+** already appends to its own shared X. The shared-X trick survives
+** intact, and the whole quaidsFit()-style translog-price-index iteration
+** carries over unchanged, just fed wTilde/h instead of w.
+**
+** What this reformulation does NOT remove: appending n hazard columns
+** (h_1..h_n) to a shared X means the one-shot GLS solve estimates a full
+** n x n cross-equation "delta" block (every equation's response to
+** EVERY good's hazard term), when Shonkwiler-Yen only wants the diagonal
+** (good i's own hazard term in good i's own equation). This needs a
+** minimum-distance restriction forcing the off-diagonal entries to
+** exactly zero -- mechanically the same design()/selection-matrix idiom
+** quaidsFit()'s own symmetry-restriction stage already uses
+** (quaids.src:526-614), just a different restriction pattern (diagonal,
+** not gamma_ij=gamma_ji).
+**
+** Scope of this pass (explicitly deferred, not silently absent):
+** - UNCONSTRAINED only (no homogeneity/symmetry imposition on the
+**   corrected model -- errors clearly if aCtl.homogenous=1). Every good
+**   is directly, independently estimated (n1=n throughout), matching
+**   quaidsFit()'s own aCtl.homogenous=0 branch. Imposing homogeneity/
+**   symmetry on top of the Shonkwiler-Yen correction is real, additional
+**   work (combining two different minimum-distance restrictions in one
+**   pass) left for a follow-up milestone.
+** - Standard errors are a SIMPLIFIED formula: `V(vec(b)) = S .*. inv(gg)`
+**   (the classic SUR-with-shared-regressors covariance), which does NOT
+**   account for (a) the nonlinear translog-price-index feedback the way
+**   quaidsFit()'s own Jacobian-corrected variance does (quaids.src:340-
+**   363), or (b) first-stage probit/IV generated-regressor uncertainty.
+**   Both are real, honestly-documented simplifications, matching this
+**   project's established precedent for `quaidsCurvatureFit()`'s own
+**   "simplified, not a full sandwich" delta-method SE.
+** - Adding-up does NOT hold exactly for the corrected coefficients --
+**   this is a real, known property of Shonkwiler-Yen itself (each
+**   equation is rescaled by its own good-specific F_i), not a bug. No
+**   post-hoc renormalization is applied.
+**
+** Reuses _quaidsIVFirstStage() (quaidsiv.src) for its own IV first
+** stage, and GAUSS's built-in glm() (c:\gauss26\src\glm.src, base
+** runtime, no new package dependency) for the per-good probit stage.
+*/
+
+/*
+** _quaidsZeroDiagRestrict: given the unconstrained coefficient matrix b
+** (ng x n, trailing n rows = the hazard-coefficient block) and its
+** simplified covariance components (S, gg), imposes the diagonal-delta
+** restriction (off-diagonal hazard-coefficient entries = 0) via the same
+** minimum-distance construction quaidsFit()'s own symmetry-restriction
+** stage uses (quaids.src:526-614): b_s = V_s*Vi*vec(b), V_s = X*inv(X'Vi*X)*X'.
+** Internal helper, no #ifDef guard needed.
+*/
+proc (3) = _quaidsZeroDiagRestrict(b, S, gg, ngOld, n);
+    local ng, k, icReg, igDelta, ic, ig, i, Xdelta, j, Xsel, Si, Vi, oldtrp,
+        XViXi, ok, bVec, Vrestricted, bRestricted;
+
+    ng = ngOld + n;
+    k = n*ngOld;
+
+    icReg = seqa(1, 1, ngOld);
+    igDelta = seqa(ngOld+1, 1, n);
+    ic = vec(icReg + seqa(0, ng, n)');
+    ig = vec(igDelta + seqa(0, ng, n)');
+    i = ic|ig;
+    i = sortind(i);
+
+    Xdelta = zeros(n*n, n);
+    j = 1;
+    do while j <= n;
+        Xdelta[(j-1)*n+j, j] = 1;
+        j = j + 1;
+    endo;
+
+    Xsel = ( eye(k)        ~zeros(k, n) )|
+           ( zeros(n*n, k) ~Xdelta       );
+    Xsel = Xsel[i, .];
+
+    ok = 1;
+    oldtrp = trapchk(1);
+    trap 1,1;
+    Si = invpd(S);
+    trap oldtrp,1;
+    if scalmiss(Si);
+        ok = 0;
+    else;
+        Vi = Si .*. gg;
+        oldtrp = trapchk(1);
+        trap 1,1;
+        XViXi = invpd(Xsel'Vi*Xsel);
+        trap oldtrp,1;
+        if scalmiss(XViXi);
+            ok = 0;
+        endif;
+    endif;
+
+    if ok;
+        bVec = vec(b);
+        Vrestricted = Xsel*XViXi*Xsel';
+        bRestricted = Vrestricted*Vi*bVec;
+        bRestricted = reshape(bRestricted, n, ng)';
+    else;
+        /* Degrade gracefully (Milestone 12's established idiom) rather
+           than crash the whole call -- fall back to a harmless diagonal
+           extraction (zero out off-diagonal hazard terms directly,
+           without the minimum-distance efficiency gain) and report an
+           empty covariance; the caller's own convergence flag already
+           reflects whether the main iteration succeeded. */
+        bRestricted = b;
+        j = 1;
+        do while j <= n;
+            bRestricted[ngOld+1:ngOld+n, j] = zeros(n, 1);
+            bRestricted[ngOld+j, j] = b[ngOld+j, j];
+            j = j + 1;
+        endo;
+        Vrestricted = zeros(n*ng, n*ng);
+    endif;
+
+    retp(bRestricted, Vrestricted, ok);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSZEROFIT
+**
+** Purpose:  AIDS/QUAIDS estimation corrected for zero budget shares via
+**           the Shonkwiler-Yen (1999) two-step procedure. Unconstrained
+**           only (no homogeneity/symmetry imposition) in this first
+**           pass -- see this file's header for the full scope notes.
+**           Silent, no printing -- see printQuaidsZero().
+**
+** Format:     struct quaidsZeroOut zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
+**
+** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
+**                   quaidsFit(). Must satisfy aCtl.homogenous = 0
+**                   (checked up front -- see this file's header).
+**
+**             aCtl -- quaidsControl struct, same fields as quaidsFit()
+**                   uses (aCtl.linear, aCtl.maxiter, aCtl.err,
+**                   aCtl.alpha0, aCtl.relax). The first-stage probit
+**                   regresses each good's purchase indicator on
+**                   intcpt/prices/totexp -- no separate regressor
+**                   argument.
+**
+** Output:  struct quaidsZeroOut -- see quaids.sdf.
+**
+*******************************************************************************/
+
+proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
+
+    local nobs, n, nint, xnam, wnam, unam, nu, nz, zzi, m1, enam,
+        u, ivBtmp, ivSEtmp, ivTtmp, ivPvttmp, ivCortmp, ivTvtmp, ivDftmp,
+        ivRsqtmp, ivRbsqtmp, ivSsetmp, ivStdesttmp, ivFstattmp, ivPvftmp,
+        zProbit, F, fDens, wTilde, h, i, yProbit, probitB, probitSE,
+        probitConverged, shareZeroFrac,
+        oldtrp, stone, lx, endog, nendog, m, ngOld, ng, gg, gw,
+        b, b0, ok, iter, err, alpha, gama, a_p, _beta, b_p, lx2, firstIter,
+        iterHist, ww, sse, S, bFinal, Vfinal, restrictOk, se;
+    struct quaidsZeroOut zOut;
+
+    if aCtl.homogenous == 1;
+        errorlog "quaidsZeroFit: homogeneity/symmetry imposition on the zero-corrected model is not yet supported -- call with aCtl.homogenous = 0.";
+        end;
+    endif;
+
+    nobs = rows(w);
+    n = cols(prices);
+
+    if intcpt == 0;
+        intcpt = ones(nobs, 1);
+        nint = 0;
+        xnam = 0$+"CONSTANT";
+    else;
+        nint = cols(intcpt);
+        intcpt = ones(nobs, 1)~intcpt;
+        xnam = 0$+"X"$+ftocv(seqa(1, 1, nint), __vpad*(floor(log(nint)+1), 0));
+        xnam = (0$+"CONSTANT")|xnam;
+    endif;
+
+    wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+
+    /* --- IV first stage -- reuse the existing, cleanly-separable helper --- */
+    { prices, u, zzi, m1, nz, nu, enam,
+        ivBtmp, ivSEtmp, ivTtmp, ivPvttmp, ivCortmp, ivTvtmp, ivDftmp,
+        ivRsqtmp, ivRbsqtmp, ivSsetmp, ivStdesttmp, ivFstattmp, ivPvftmp }
+        = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
+
+    unam = 0$+"U"$+ftocv(seqa(1, 1, nu), __vpad*(floor(log(nu)+1), 0));
+
+    /* --- Probit stage: one probit per good, own purchase indicator on
+       intcpt/prices/totexp (prices here are already the IV-stage's own
+       relative-for-1:n-1/absolute-for-n convention -- irrelevant to the
+       probit itself, which just needs a reasonable regressor set). --- */
+    zProbit = intcpt~prices~totexp;
+
+    F = zeros(nobs, n);
+    fDens = zeros(nobs, n);
+    probitB = zeros(cols(zProbit), n);
+    probitSE = zeros(cols(zProbit), n);
+    probitConverged = zeros(n, 1);
+    shareZeroFrac = zeros(n, 1);
+
+    struct glmControl gCtl;
+    gCtl = glmControlCreate();
+    gCtl.link = "probit";
+    gCtl.constantFlag = -1;     /* zProbit already carries its own constant */
+    gCtl.printFlag = "false";
+
+    struct glmOut gOut;
+
+    i = 1;
+    do while i <= n;
+        yProbit = w[., i] .> 0;
+        shareZeroFrac[i] = 1 - meanc(yProbit);
+
+        gOut = glm(yProbit, zProbit, "binomial", gCtl);
+
+        probitB[., i] = gOut.coef.estimates;
+        probitSE[., i] = gOut.coef.se;
+        probitConverged[i] = gOut.iteration < gOut.maxIters;
+
+        F[., i] = maxc((gOut.yhat)'|(1e-3*ones(1, nobs)));
+        fDens[., i] = pdfn(zProbit*gOut.coef.estimates);
+
+        i = i + 1;
+    endo;
+
+    wTilde = w ./ F;
+    h = fDens ./ F;
+
+    /**************************/
+    /* STARTING VALUE (mirrors quaidsFit()'s own Stone-index block,
+       quaids.src:216-248, targeting wTilde/h instead of w) */
+    /***************************/
+
+    stone = (prices[., 1:n-1] + prices[., n])~prices[., n];
+    stone = stone*meanc(wTilde);
+    lx = totexp - stone;
+    if not aCtl.linear;
+        endog = lx~lx^2;
+    else;
+        endog = lx;
+    endif;
+    nendog = cols(endog);
+
+    m = moment(intcpt~prices[., 1:n]~endog~u~h~wTilde, 0);
+    ngOld = 1+nint+n+nendog+nu;
+    ng = ngOld + n;
+    gg = m[1:ng, 1:ng];
+    gw = m[1:ng, ng+1:ng+n];
+    b = solpd(gw, gg);
+
+    /******************************/
+    /* ITERATION (mirrors quaidsFit()'s own translog-price-index loop,
+       quaids.src:259-321, aCtl.homogenous=0 branch) */
+    /*****************************/
+
+    ok = aCtl.maxiter > 1;
+    iter = 1;
+    firstIter = 1;
+    do while ok;
+        b0 = b;
+        alpha = intcpt*b[1:1+nint, 1:n-1];
+        gama = b[1+nint+1:1+nint+n, 1:n-1];
+
+        a_p = aCtl.alpha0 + prices[., n]
+            + sumc((prices[., 1:n-1].*alpha)')
+            + .5*sumc(((prices*gama).*prices[., 1:n-1])');
+        lx = totexp - a_p;
+        if not aCtl.linear;
+            _beta = b[1+nint+n+1, 1:n-1];
+            b_p = exp(prices[., 1:n-1]*_beta');
+            lx2 = (lx^2)./b_p;
+            endog = lx~lx2;
+        else;
+            endog = lx;
+        endif;
+        m[1+nint+n+1:1+nint+n+nendog, .]
+            = endog'(intcpt~prices[., 1:n]~endog~u~h~wTilde);
+        m[., 1+nint+n+1:1+nint+n+nendog]
+            = m[1+nint+n+1:1+nint+n+nendog, .]';
+        gg = m[1:ng, 1:ng];
+        gw = m[1:ng, ng+1:ng+n];
+        b = solpd(gw, gg);
+
+        b = aCtl.relax*b + (1-aCtl.relax)*b0;
+        err = maxc(maxc(abs((b-b0)./(b0 + (b0 .== 0)))));
+        if err <= aCtl.err or iter >= aCtl.maxiter;
+            ok = 0;
+        else;
+            if firstIter;
+                iterHist = iter~err;
+                firstIter = 0;
+            else;
+                iterHist = iterHist | (iter~err);
+            endif;
+        endif;
+        iter = iter + 1;
+    endo;
+
+    if aCtl.maxiter > 1;
+        zOut.iterations = iter - 1;
+        zOut.finalErr = err;
+        zOut.converged = err <= aCtl.err;
+    else;
+        zOut.iterations = 0;
+        zOut.finalErr = miss(0, 0);
+        zOut.converged = 1;
+    endif;
+
+    /* --- Simplified variance: classic SUR-with-shared-regressors
+       covariance (S .*. inv(gg)), NOT the nonlinear-Jacobian-corrected
+       formula quaidsFit() itself uses -- see this file's header for why
+       this is an honestly-documented simplification, not an oversight. */
+    ww = m[ng+1:ng+n, ng+1:ng+n];
+    sse = ww - b'gw;
+    S = sse/nobs;
+
+    { bFinal, Vfinal, restrictOk } = _quaidsZeroDiagRestrict(b, S, gg, ngOld, n);
+
+    se = zeros(ng, n);
+    if restrictOk;
+        se = reshape(sqrt(diag(Vfinal)), n, ng)';
+    endif;
+
+    zOut.n = n;
+    zOut.nint = nint;
+    zOut.nobs = nobs;
+    zOut.xnam = xnam;
+    zOut.wnam = wnam;
+    zOut.unam = unam;
+    zOut.probitB = probitB;
+    zOut.probitSE = probitSE;
+    zOut.probitConverged = probitConverged;
+    zOut.shareZeroFrac = shareZeroFrac;
+    zOut.b = bFinal;
+    zOut.v = Vfinal;
+    zOut.se = se;
+
+    retp(zOut);
+endp;
+
+/*******************************************************************************
+**
+** PRINTQUAIDSZERO
+**
+** Purpose:  prints the first-stage probit summary and the Shonkwiler-Yen-
+**           corrected coefficient table captured in a quaidsZeroOut
+**           structure.
+**
+** Format:     call printQuaidsZero(zOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsZero(struct quaidsZeroOut zOut);
+
+    local n, i;
+
+    n = zOut.n;
+
+    print;
+    "ZERO-BUDGET-SHARE-CORRECTED (SHONKWILER-YEN) ESTIMATES";
+    print "Converged:" zOut.converged "in" zOut.iterations "iterations, final relative change" zOut.finalErr;
+    print;
+    print "First-stage probit -- fraction of zero shares, and convergence, per good:";
+    print$ ""~zOut.wnam';
+    print$ (0$+"zero frac")~ftocv(zOut.shareZeroFrac', 0, 3);
+    print$ (0$+"converged")~ftocv(zOut.probitConverged', 1, 0);
+    print;
+
+    format /rd 10, 4;
+    print "Corrected coefficient table (intcpt | gamma | beta | [lambda] | u | delta):";
+    print$ ""~zOut.wnam';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i = 1;
+    do while i <= rows(zOut.b);
+        print$ (0$+ftocv(i, 1, 0))~ftocv(zOut.b[i, .], 0, 4);
+        print$ (0$+"")~(0$+"("$+ftocv(zOut.se[i, .], 0, 2)$+")");
+        i = i + 1;
+    endo;
+    print;
+
+endp;

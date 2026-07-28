@@ -51,7 +51,8 @@ $gaussTests = @(
     "quaids_elasticities_test.e",
     "quaids_shares_test.e",
     "quaids_welfare_test.e",
-    "quaids_reliability_regression_test.e"
+    "quaids_reliability_regression_test.e",
+    "quaids_zero_test.e"
 )
 
 if (-not $SkipPubtable) {

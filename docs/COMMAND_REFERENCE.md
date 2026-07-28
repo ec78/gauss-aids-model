@@ -43,6 +43,11 @@ sections.
 - [quaidsWelfareFit](command-reference/quaidsWelfareFit.md)
 - [printQuaidsWelfare](command-reference/printQuaidsWelfare.md)
 
+## Zero Budget Share Correction
+
+- [quaidsZeroFit](command-reference/quaidsZeroFit.md)
+- [printQuaidsZero](command-reference/printQuaidsZero.md)
+
 ## Curvature Imposition (requires `optmt`)
 
 `src/quaidscurvature.src` is listed in `package.json`'s `src` array (real,

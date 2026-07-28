@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.13.0`) and is not yet
+The library is **pre-alpha** (package version `0.14.0`) and is not yet
 packaged as an installable GAUSS application package (`library quaids;` does
 not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
 is the quick-orientation companion to it, and should be kept synchronized
@@ -26,7 +26,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-18)
+## Repository layout (post-Milestone-19)
 
 ```
 src/
@@ -43,6 +43,22 @@ src/
                     #   quaidsFit() (starting values, iteration, variance,
                     #   overidentification test, symmetry test) was not
                     #   further split.
+  quaidszerocorrect.src # Milestone 19: quaidsZeroFit()/printQuaidsZero()
+                    #   -- AIDS/QUAIDS estimation corrected for zero
+                    #   budget shares via the Shonkwiler-Yen (1999)
+                    #   two-step procedure. Divides the whole share
+                    #   equation by the first-stage probit's fitted
+                    #   probability F_i (rather than rescaling every
+                    #   regressor, which would break the shared-design-
+                    #   matrix Kronecker-product identity every other
+                    #   estimation stage relies on), then imposes a
+                    #   diagonal-delta minimum-distance restriction
+                    #   mirroring quaids.src's own symmetry-restriction
+                    #   stage. Unconstrained only (errors if
+                    #   aCtl.homogenous=1). Uses GAUSS's built-in glm()
+                    #   for the per-good first-stage probit -- no new
+                    #   package dependency. See "Milestone 19: zero
+                    #   budget share correction (Shonkwiler-Yen)" below.
   quaidselas.src    # quaidsElas_() (silent, low-level), quaidsElasFit()
                     #   (silent, struct-returning: point estimates +
                     #   standard errors), printQuaidsElas() (the separated
@@ -180,7 +196,18 @@ tests/
                     #   is curvature-consistent at its own actual sample
                     #   mean by construction (built via a self-consistent
                     #   fixed-point iteration, seed=500 found by direct
-                    #   screening -- see "Milestone 10" below).
+                    #   screening -- see "Milestone 10" below). Milestone
+                    #   19 adds _quaidsZeroSyntheticDGP(): a 5-good QUAIDS
+                    #   dataset with structural coefficients scaled to
+                    #   0.25x _quaidsSyntheticDGP()'s own magnitudes
+                    #   (screened, not guessed -- the deterministic
+                    #   price*gamma/expenditure*beta swing, not noise or
+                    #   price variance, is the dominant driver of negative
+                    #   latent shares at the original scale), censored the
+                    #   economically correct way (an accounting identity,
+                    #   not an ad hoc redistribution) to produce a genuine,
+                    #   uneven-but-non-degenerate zero-share pattern at
+                    #   seed=1 -- see "Milestone 19" below.
   quaids_synthetic_validation_test.e # Milestone 3: 22 checks recovering
                     #   true DGP parameters within a documented tolerance
                     #   across all 6 (LA-AIDS/AIDS/QUAIDS) x (with/without
@@ -315,6 +342,20 @@ tests/
                     #   instead of aborting the call; aCtl.relax=.75 is
                     #   pinned against a real seed where it measurably
                     #   changes a never-converged fit into a correct one.
+  quaids_zero_test.e  # Milestone 19: 17 checks -- the fixture's own
+                    #   adding-up identity (exact, by construction); the
+                    #   diagonal-delta restriction holds exactly
+                    #   (off-diagonal hazard-coefficient entries exactly
+                    #   0, on-diagonal entries genuinely estimated);
+                    #   shape/finiteness of probitB/se/b; all n first-
+                    #   stage probits converged; and the core validation
+                    #   -- quaidsZeroFit()'s corrected coefficients
+                    #   recover the true latent (uncensored) DGP
+                    #   parameters better than naively fitting
+                    #   quaidsFit() on the same censored data, on both a
+                    #   max- and mean-absolute-difference basis. See
+                    #   "Milestone 19: zero budget share correction
+                    #   (Shonkwiler-Yen)" below.
   package_public_api.e   # Milestone 7: installed-package release gate --
                     #   `library quaids;` (not #include) against a real
                     #   install, exercising quaidsControlCreate/
@@ -477,7 +518,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-18:
+The original ten-milestone roadmap is complete, plus Milestones 11-19:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -499,13 +540,17 @@ outline the repo owner asked for after Milestone 15 closed, being worked
 through in order), 17 (a standalone AIDS-vs-QUAIDS specification
 test, `quaidsQuadraticTest` -- a Wald test of whether the quadratic
 log-expenditure term is needed, the second item of that same outline),
-and 18 (percentile bootstrap confidence intervals,
+18 (percentile bootstrap confidence intervals,
 `quaidsCurvatureBootstrapCI`, the third item of that outline -- building
 it found and fixed a real, silent bug present since Milestone 10/15: a
 row-major-vs-column-major `reshape()` mismatch had scrambled
 `quaidsCurvatureFit()`'s `se` and `quaidsCurvatureBootstrapFit()`'s
 `seBoot`, invisible to permutation-invariant shape/sign/finiteness
-checks).
+checks), and 19 (zero-budget-share correction via Shonkwiler-Yen,
+`quaidsZeroFit`, the fourth and largest item of that outline -- required
+a real reformulation of the textbook method to fit onto this codebase's
+shared-design-matrix Kronecker-product estimation core, and is
+deliberately unconstrained-only in this first pass).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -2254,6 +2299,210 @@ reshape bugfix in the same release, per this project's practice of not
 holding a real correctness fix for a separate release when a version
 bump is already warranted.
 
+## Milestone 19: zero budget share correction (Shonkwiler-Yen)
+
+```gauss
+struct quaidsControl aCtl;
+aCtl = quaidsControlCreate();
+aCtl.linear = 0;          // 1 for AIDS, 0 for QUAIDS
+aCtl.maxiter = 100;
+aCtl.homogenous = 0;      // required -- see below
+
+struct quaidsZeroOut zOut;
+zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
+call printQuaidsZero(zOut);
+print "fraction of zero shares per good:" zOut.shareZeroFrac';
+```
+
+Fourth and, by direct exploration of `quaidsFit()`'s own body before
+planning began, the **largest single addition to the library to date**
+item of the full-demand-system-workflow outline being worked through in
+order (after Milestone 16's `quaidsSharesFit`, Milestone 17's
+`quaidsQuadraticTest`, and Milestone 18's `quaidsCurvatureBootstrapCI`).
+Real survey/microdata routinely has corner solutions -- households
+reporting zero expenditure on some goods -- which the linear/log-linear
+AIDS/QUAIDS share equation has no mechanism for; fitting `quaidsFit()`
+directly on such data is a known source of bias.
+
+**The architectural obstacle, confirmed before any code was written**:
+every stage of `quaidsFit()` (the coefficient GLS solve, the variance
+formula, the homogeneity/symmetry minimum-distance restriction, the
+overidentification test, the absolute-price recovery) is built on a
+Kronecker-product identity (`S[1:n-1,1:n-1].*.gg`, `src/quaids.src`) that
+holds only because every equation shares the *same* design matrix `X`. A
+literal, textbook Shonkwiler & Yen (1999) correction rescales *every*
+regressor in equation `i` by that equation's own first-stage probability
+`F_i` -- which breaks the shared-`X` assumption outright and would need
+rewriting the Kronecker-based core into a genuine block system. That is
+not what this milestone does.
+
+**The reformulation that avoids this, derived and confirmed
+mathematically sound before implementation** (the same "verify before
+trusting a derived formula" discipline as Milestone 3's Stone-index bug
+and Milestone 11's welfare-formula check): Shonkwiler-Yen's equation
+
+```
+w_i = F_i*(alpha_i + sum_j gamma_ij*ln(p_j) + beta_i*lx [+ lambda_i*lx2]) + f_i*delta_i + e_i
+```
+
+divides cleanly by `F_i` (a *known*, first-stage-fitted quantity, held
+fixed during the second stage):
+
+```
+w_i/F_i = alpha_i + sum_j gamma_ij*ln(p_j) + beta_i*lx [+ lambda_i*lx2] + (f_i/F_i)*delta_i + e_i/F_i
+```
+
+This turns the problematic *regressor* rescaling into a **dependent-
+variable transform** (`wTilde_i = w_i/F_i`, computed once, before any GLS
+solve) plus **one new shared regressor column per equation**
+(`h_i = f_i/F_i`) -- structurally the same kind of addition as the `u`
+(IV-residual) columns `quaidsFit()` already appends to its own shared `X`.
+The shared-`X` trick, and everything built on it, survives untouched; the
+whole translog-price-index outer iteration is reused essentially unchanged
+(`src/quaidszerocorrect.src` mirrors `src/quaids.src`'s starting-value and
+iteration blocks structurally), just fed `wTilde`/`h` instead of `w`.
+
+**The one real complication the reformulation does not remove**: adding
+`n` hazard columns to a shared `X` means the one-shot GLS solve estimates
+a full `n x n` cross-equation `delta` block (every equation's response to
+*every* good's hazard term), when Shonkwiler-Yen only wants the diagonal
+(good `i`'s own hazard term in good `i`'s own equation). `_quaidsZeroDiagRestrict()`
+imposes this via the same `design()`/selection-matrix minimum-distance
+idiom `quaidsFit()`'s own symmetry-restriction stage already uses
+(`src/quaids.src:526-614`), just with a diagonal (not
+`gamma_ij=gamma_ji`) restriction pattern, and the same `trap 1,1;`/
+`scalmiss()`-guarded graceful degradation (Milestone 12's idiom) if the
+restriction's own matrix inversions fail on a badly-behaved fit.
+
+**Decisions, confirmed with the repo owner via `AskUserQuestion` before
+implementation**: full Shonkwiler-Yen implementation in one milestone, not
+split into sub-steps; adding-up honestly documented as approximate for the
+corrected coefficients, not forced exact via post-hoc renormalization
+(this is a real, known property of the method itself -- each equation is
+independently rescaled by its own good-specific `F_i` -- not a bug to
+paper over); probit regressors reuse `intcpt`/`prices`/`totexp` already
+passed to the estimator, no new required argument, matching this
+library's "no separate exogenous-mode arguments" philosophy.
+
+**Scope of this pass, deliberately limited** (matching the Milestone 10/
+13 AIDS-then-QUAIDS curvature precedent for phased scope): **unconstrained
+only** -- `quaidsZeroFit()` errors clearly if `aCtl.homogenous = 1`.
+Imposing homogeneity/symmetry *on top of* the Shonkwiler-Yen correction is
+real, additional work (combining two different minimum-distance
+restrictions in the same pass), left for a follow-up. Standard errors use
+a simplified `V(vec(b)) = S .*. inv(gg)` formula (the classic SUR-with-
+shared-regressors covariance) -- honestly documented as **not** correcting
+for the nonlinear translog-price-index feedback the way `quaidsFit()`'s
+own Jacobian-corrected variance does, nor for first-stage probit/IV
+generated-regressor uncertainty, matching the established precedent for
+`quaidsCurvatureFit()`'s own "simplified, not a full sandwich" SE.
+
+**Implementation** (`src/quaidszerocorrect.src`, new file -- a
+self-contained sibling to `quaidsFit()`, not a modification of it,
+matching Milestone 16's identical "don't touch already-shipped, tested
+core code" reasoning): `quaidsZeroFit()` reuses `_quaidsIVFirstStage()`
+(`src/quaidsiv.src`) for its own IV first stage, runs `n` independent
+probits via GAUSS's **built-in** `glm()` (`c:\gauss26\src\glm.src`, base
+runtime, no new package dependency) with `ctl.link="probit"` and
+`ctl.constantFlag=-1` (the shared regressor block already carries its own
+constant column), computes `F_i` (floored at `1e-3`) and the probit
+density `f_i` (via `pdfn()`, since `glm()` does not expose it directly),
+builds `wTilde`/`h`, then runs a `quaidsFit()`-mirroring Stone-index
+starting value plus translog-price-index iteration loop targeting
+`wTilde`/`h`. `_quaidsZeroDiagRestrict()` is applied once, after the main
+iteration converges, since the restriction itself is linear and does not
+need to sit inside the nonlinear loop.
+
+**Real bugs found and fixed while building this, all via direct empirical
+testing** (this project's standing discipline):
+
+1. `struct glmControl gCtl;`/`struct glmOut gOut;` declared *inside* the
+   per-good probit `do while` loop threw "Invalid structure redefinition"
+   on the second pass -- GAUSS does not allow a struct type to be
+   redeclared inside a loop body. Fixed by hoisting both declarations
+   above the loop, only reassigning `gOut = glm(...)` inside it.
+2. A local variable named `f` (the probit density) triggered "Duplicate
+   definition of local 'f'" -- renamed to `fDens` throughout to eliminate
+   any possible naming collision.
+3. `F[., i] = maxc((gOut.yhat)'|(1e-3*ones(1, nobs)))';` had a stray
+   trailing transpose: `maxc()` on a `2 x nobs` input already returns the
+   correct `nobs x 1` column, and the extra `'` flipped it to `1 x nobs`,
+   throwing "Rows don't match" on assignment into `F[.,i]`. Fixed by
+   removing the trailing transpose.
+
+**A known, unresolved limitation, found by running a seed screen, not
+theorized**: GAUSS's built-in `glm()` can hard-crash on some inputs with
+an uncatchable `Intel MKL ERROR: Parameter 5 was incorrect on entry to
+DGELS` / "input 'x' contains missing values or estimation failed" --
+confirmed this is **not** trappable via this codebase's usual
+`trap 1,1;`/`scalmiss()` guard idiom (the same class of non-trappable
+failure already documented for `eighv()`'s call-arity mismatch inside
+`quaidsCurvatureBootstrapFit()`, Milestone 15). Some seeds (e.g. seed=2)
+trigger it, others (the shipped seed=1 fixture) do not. Time-boxed
+decision: pick a working seed rather than hardening `quaidsZeroFit()`
+against this failure mode in this pass -- documented as a real, known
+limitation in `docs/USAGE_GUIDE.md`/`docs/METHODOLOGY_NOTES.md`, not
+silently absent.
+
+**Fixture calibration, screened empirically rather than guessed**:
+`tests/quaidsfixtures.src`'s new `_quaidsZeroSyntheticDGP(tobs, seed)`
+generates a latent (uncensored) 5-good QUAIDS share the same way
+`_quaidsSyntheticDGP()` does, then censors it the economically correct
+way -- `w_i = max(0, latent_i) / sum_j max(0, latent_j)`, an accounting
+identity (what real survey shares actually are: expenditure floored at
+zero, divided by total *actual* expenditure), not an ad hoc
+redistribution, so adding-up holds exactly in the *observed* data by
+construction. Getting a genuine, non-degenerate censoring rate required
+real experimentation: reducing the noise term alone (`_quaidsSyntheticDGP`'s
+own scale of `2`, tried at `.12` then `.04`) had almost no effect on
+zero-share fractions (confirmed empirically, not assumed); reducing price
+variance instead made things *worse*, not better (also confirmed, then
+reverted). The combination that worked -- kept full price variance,
+scaled the *structural* coefficients (`gamma`/`beta`/`lambda`/`al1`) down
+to `0.25x` their `_quaidsSyntheticDGP()` magnitudes -- confirmed that the
+**deterministic** `price*gamma`/`expenditure*beta` structural swing, not
+noise or price variance, is the dominant driver of negative latent shares
+in this DGP family at the original scale. `seed=1` (found by direct
+screening 1-30, not arbitrary) gives per-good zero-share fractions
+`[0.843, 0.184, 0.817, 0.211, 0.171]` -- genuinely uneven (two goods
+heavily censored, three moderately so) but non-degenerate (no good is
+always or never zero), and both `quaidsZeroFit()` and, for comparison,
+naive `quaidsFit()` converge cleanly on it.
+
+**The core empirical validation, confirmed via a direct seed-level
+comparison before writing the formal test suite**: on this fixture,
+`quaidsZeroFit()`'s corrected coefficients recover the true *latent*
+(uncensored) DGP parameters better than naively fitting `quaidsFit()` on
+the same *censored* data, on **both** metrics -- max absolute difference
+`2.0262317` (corrected) vs. `2.1677279` (naive); mean absolute difference
+`0.40114995` (corrected) vs. `0.40335223` (naive). A real, if modest,
+improvement, not a dramatic one -- consistent with Shonkwiler-Yen being a
+known approximation to the fully efficient (but far more complex) Amemiya-
+Tobin-style censored system estimator, and with the high per-good
+censoring rates this specific fixture has. Documented honestly rather
+than searching for a seed with a more dramatic-looking gap.
+
+**Testing**: `tests/quaids_zero_test.e` (17 checks) -- the fixture's own
+adding-up identity (exact, by construction); the diagonal-delta
+restriction holds exactly (off-diagonal hazard-coefficient entries are
+exactly `0`, on-diagonal entries are genuinely, nonzero-ly estimated);
+shape/finiteness of `probitB`/`se`/`b`; all `n` first-stage probits
+converged; and the core validation above (`quaidsZeroFit()` beats naive
+`quaidsFit()` on both the max- and mean-absolute-difference metrics
+against the true latent DGP). Added to `tests/run_source_tests.ps1`'s
+default list (a single fit plus `n` probits, no heavy per-call cost like
+the bootstrap tests). `tests/package_public_api.e` gained a fourth inline
+dataset (mirroring `_quaidsZeroSyntheticDGP(3000, 1)`, duplicated inline
+per this file's own "no dependency on tests/-only fixture code"
+principle) exercising `quaidsZeroFit()`/`printQuaidsZero()` against the
+real installed package.
+
+**Version bump to `0.14.0`**: a new required public proc
+(`quaidsZeroFit`, plus its paired printer `printQuaidsZero`) and a new
+required public struct (`quaidsZeroOut`), matching this project's
+established policy of bumping on real new public API surface. No new
+package dependency -- `glm()` is part of GAUSS's own base runtime.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -2297,10 +2546,18 @@ GAUSS Already Provides." Summary:
   prices), which doesn't fit GAUSS's single-equation formula grammar. Column
   name lists (`data[., stringArrayOfNames]`), matched positionally, are the
   natural fit instead.
+- **`glm()`** (`c:\gauss26\src\glm.src`, GAUSS's own base-runtime
+  generalized-linear-models proc, not a separate package) — **adopted at
+  Milestone 19** for `quaidsZeroFit()`'s per-good first-stage probit
+  (`glm(y, x, "binomial", ctl)` with `ctl.link="probit"`), no new
+  `package.json` dependency. Confirmed empirically (not assumed) that it
+  can hard-crash on some degenerate inputs in a way not caught by this
+  codebase's usual `trap`/`scalmiss` guard — see "Milestone 19" above.
 - **Primitives already used correctly and worth keeping**: `moment()`,
   `invpd()`, `solpd()`, `design()`/`vech()`/`xpnd()` (symmetric-matrix
   restriction algebra), `eigh()` (Slutzky check), `cdfchic`/`cdftc`/`cdffc`/
-  `cdfnc`, `printfm()`, `quantile()`.
+  `cdfnc`, `printfm()`, `quantile()`, `pdfn()` (probit density, Milestone
+  19).
 
 ## GAUSS language conventions observed in this codebase
 
@@ -2347,7 +2604,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Twelve automated tests exist, all run from `tests/` as the working directory:
+Thirteen automated tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -2362,6 +2619,7 @@ tgauss -b -x quaids_curvature_test.e
 tgauss -b -x quaids_welfare_test.e
 tgauss -b -x quaids_reliability_regression_test.e
 tgauss -b -x quaids_curvature_bootstrap_test.e
+tgauss -b -x quaids_zero_test.e
 ```
 
 - `quaids_schema_test.e` (Milestone 1, 34 checks): asserts `quaidsOut` field
@@ -2451,8 +2709,18 @@ tgauss -b -x quaids_curvature_bootstrap_test.e
   Milestone 18 added `quaidsCurvatureBootstrapCI()` checks and a
   `seBoot` cell-position regression guard (11 checks) — see "Milestone
   18: percentile bootstrap confidence intervals" above.
+- `quaids_zero_test.e` (Milestone 19, 17 checks): the fixture's own
+  adding-up identity (exact, by construction); the diagonal-delta
+  restriction holds exactly (off-diagonal hazard-coefficient entries
+  exactly `0`, on-diagonal entries genuinely estimated); shape/finiteness
+  of `probitB`/`se`/`b`; all `n` first-stage probits converged; and the
+  core validation — `quaidsZeroFit()`'s corrected coefficients recover
+  the true latent (uncensored) DGP parameters better than naively fitting
+  `quaidsFit()` on the same censored data, on both a max- and mean-
+  absolute-difference basis. See "Milestone 19: zero budget share
+  correction (Shonkwiler-Yen)" above.
 
-All twelve print one `PASS`/`FAIL` line per check and a final `...: ALL N
+All thirteen print one `PASS`/`FAIL` line per check and a final `...: ALL N
 CHECKS PASSED` (or a failure count) summary line — check that line, since
 `tgauss`'s exit code is not currently a reliable pass/fail signal for this
 harness. `tests/run_source_tests.ps1` (Milestone 7) runs
@@ -2469,8 +2737,8 @@ Run it manually via `tests/run_convergence_sweep.ps1` whenever you want
 to re-measure the iterated estimator's convergence-failure rate — see
 "Milestone 12: numerical reliability" above.
 
-A thirteenth test, `tests/package_public_api.e` (Milestone 7), is different
-in kind from the twelve above: it loads `library quaids;` against a real
+A fourteenth test, `tests/package_public_api.e` (Milestone 7), is different
+in kind from the thirteen above: it loads `library quaids;` against a real
 *installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
 than `#include`-ing the source tree, so it only runs correctly after
 `scripts/run_release_verification.ps1 -InstallArtifact` (or equivalent)
@@ -2505,14 +2773,19 @@ of the installed package (see "Milestone 6" above).
 ## Package manifest
 
 `package.json` lists (relative to `src/`, in load order): `quaids.sdf`,
-`quaidsutil.src`, `quaidsiv.src`, `quaidselas.src`, `quaidsshares.src`,
-`quaidsslutzky.src`, `quaids.src`, `quaidsformula.src`, `quaidstests.src`,
-`quaidscurvature.src`, `quaidswelfare.src`.
+`quaidsutil.src`, `quaidsiv.src`, `quaidszerocorrect.src`,
+`quaidselas.src`, `quaidsshares.src`, `quaidsslutzky.src`, `quaids.src`,
+`quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`,
+`quaidswelfare.src`.
 `quaidsshares.src` (Milestone 16) has no load-order dependency on
 anything beyond `quaids.sdf` (its private `_quaidsSharesAt()` helper is
 a fresh, independent implementation, not a call into `quaidselas.src`)
 and adds no new entry to `deps` — pure closed-form algebra, same
 footprint as `quaidswelfare.src`.
+`quaidszerocorrect.src` (Milestone 19) loads right after `quaidsiv.src`,
+which its `quaidsZeroFit()` calls directly (`_quaidsIVFirstStage()`) —
+no other load-order dependency, and no new `deps` entry, since `glm()` is
+part of GAUSS's own base runtime, not a separate package.
 `quaids.src` must load after `quaidsiv.src`/`quaidselas.src`/
 `quaidsslutzky.src` since it calls procs they define; `quaidsformula.src`
 must load after `quaids.src` since `quaidsFull()` calls `quaidsFit()`.

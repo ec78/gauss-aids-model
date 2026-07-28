@@ -267,6 +267,104 @@ calls, falling back to a harmless identity decomposition on failure --
 this degrades the standard error for that one fit rather than crashing
 the entire bootstrap run.
 
+## Zero Budget Share Correction (Shonkwiler-Yen)
+
+Real survey/microdata routinely has corner solutions: some households
+report zero expenditure on some goods. The linear/log-linear AIDS/QUAIDS
+share equation has no mechanism for a censored dependent variable, so
+fitting `quaidsFit()` directly on such data is a known source of bias.
+[quaidsZeroFit](command-reference/quaidsZeroFit.md) implements the
+Shonkwiler & Yen (1999) two-step correction.
+
+**The method**: for each good `i`, a first-stage probit estimates
+`F_i = Pr(w_i > 0 | intcpt, prices, totexp)`. The second stage fits
+
+```
+w_i = F_i*(alpha_i + sum_j gamma_ij*ln(p_j) + beta_i*lx [+ lambda_i*lx2]) + f_i*delta_i + e_i
+```
+
+where `f_i` is the probit density at the same point and `delta_i` is an
+estimated coefficient on the resulting inverse-Mills-ratio-like hazard
+term -- the mechanism that lets the corrected model account for the
+selection into a positive share.
+
+**The architectural constraint this library is built around**: every
+stage of `quaidsFit()` (the GLS solve, the variance formula, the
+homogeneity/symmetry minimum-distance restriction, the overidentification
+test, the absolute-price recovery) relies on a Kronecker-product identity
+(e.g. `S[1:n-1,1:n-1].*.gg`, `src/quaids.src`) that holds only because
+every equation shares the *same* design matrix `X`. A literal Shonkwiler-
+Yen implementation rescales *every* regressor in equation `i` by that
+equation's own `F_i`, which breaks that shared-`X` assumption outright.
+
+**The reformulation used here** avoids this by dividing the whole equation
+by `F_i` (a known, first-stage-fitted quantity, held fixed during the
+second stage):
+
+```
+w_i/F_i = alpha_i + sum_j gamma_ij*ln(p_j) + beta_i*lx [+ lambda_i*lx2] + (f_i/F_i)*delta_i + e_i/F_i
+```
+
+This turns the problematic *regressor* rescaling into a **dependent-
+variable transform** (`wTilde_i = w_i/F_i`, computed once from the
+first-stage probit) plus **one new shared regressor column per equation**
+(`h_i = f_i/F_i`) -- structurally the same kind of addition as the `u`
+(IV-residual) column `quaidsFit()` already appends to its own shared `X`.
+The shared-design-matrix machinery, and everything built on it (including
+the whole translog-price-index outer iteration, reused unchanged with
+`wTilde`/`h` substituted for `w`), survives intact.
+
+**The diagonal-delta restriction**: appending `n` hazard columns to a
+shared `X` means the one-shot GLS solve initially estimates a full
+`n x n` cross-equation `delta` block (every equation's response to
+*every* good's hazard term), when Shonkwiler-Yen only wants the diagonal
+(good `i`'s own hazard term in good `i`'s own equation). This is imposed
+by a minimum-distance restriction forcing the off-diagonal entries to
+exactly zero -- the same `design()`-based selection-matrix construction
+`quaidsFit()`'s own symmetry-restriction stage already uses, just with a
+diagonal (not `gamma_ij=gamma_ji`) restriction pattern.
+
+**Scope of this implementation, deliberately limited**:
+
+- **Unconstrained only** -- no homogeneity/symmetry imposition on the
+  corrected model in this pass (errors if `aCtl.homogenous = 1`).
+  Combining the diagonal-delta restriction with a second, simultaneous
+  homogeneity/symmetry restriction is real additional work, left for a
+  follow-up.
+- **Standard errors are a simplified formula**
+  (`V(vec(b)) = S .*. inv(gg)`, the classic SUR-with-shared-regressors
+  covariance) -- unlike `quaidsFit()`'s own variance, it does not correct
+  for the nonlinear translog-price-index feedback, nor for first-stage
+  probit/IV generated-regressor uncertainty.
+- **Adding-up does not hold exactly** for the corrected coefficients --
+  a real, known property of Shonkwiler-Yen itself (each equation is
+  independently rescaled by its own good-specific `F_i`), not a bug. No
+  post-hoc renormalization is applied.
+
+**Validation**: `tests/quaids_zero_test.e` fits a synthetic 5-good QUAIDS
+fixture (`_quaidsZeroSyntheticDGP`, `tests/quaidsfixtures.src`) whose
+*latent* (uncensored) shares are known exactly, then censors them the
+economically correct way -- `w_i = max(0, latent_i) / sum_j max(0,
+latent_j)`, an accounting identity, not an ad hoc redistribution -- to
+produce genuine, non-degenerate per-good zero-share fractions (found by
+direct screening at `seed=1`: roughly 17-84% depending on the good). The
+core check compares `quaidsZeroFit()`'s recovered coefficients against
+the true latent-DGP parameters, and against a naive `quaidsFit()` fit to
+the same censored data: the corrected fit recovers the truth measurably
+better on both a max-absolute-difference and a mean-absolute-difference
+basis. Also checks the diagonal-delta restriction holds exactly (off-
+diagonal entries exactly zero, on-diagonal entries genuinely estimated).
+
+**A known, unresolved limitation**: GAUSS's built-in `glm()` (used for the
+first-stage probits, no new package dependency) can hard-crash on some
+degenerate inputs (`error: Intel MKL ERROR ... DGELS`) -- a failure mode
+that is *not* intercepted by this codebase's usual `trap 1,1;`/
+`scalmiss()` guard idiom, the same class of non-trappable failure already
+documented for `eighv()` inside
+[quaidsCurvatureBootstrapFit](command-reference/quaidsCurvatureBootstrapFit.md).
+Confirmed empirically (some seeds trigger it, others don't); not hardened
+against in this pass.
+
 ## References
 
 - Deaton, A., Muellbauer, J. (1980). "An Almost Ideal Demand System."
@@ -280,3 +378,7 @@ the entire bootstrap run.
 - Diewert, W. E., Wales, T. J. (1987). "Flexible Functional Forms and
   Global Curvature Conditions." *Econometrica*, 55(1), 43-68. The
   Cholesky reparametrization used by `quaidsCurvatureFit()`.
+- Shonkwiler, J. S., Yen, S. T. (1999). "Two-Step Estimation of a
+  Censored System of Equations." *American Journal of Agricultural
+  Economics*, 81(4), 972-982. The two-step zero-budget-share correction
+  used by `quaidsZeroFit()`.

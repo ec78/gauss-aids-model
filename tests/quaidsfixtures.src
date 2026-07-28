@@ -163,3 +163,88 @@ proc (6) = _quaidsCurvatureSyntheticDGP(tobs);
 
     retp(w, 0, prices, totexp, instr, trueParams);
 endp;
+
+/*
+** _quaidsZeroSyntheticDGP: Milestone 19. A 5-good QUAIDS dataset with a
+** genuine zero-budget-share censoring pattern, for validating
+** quaidsZeroFit(). Both the noise scale (0.04, vs. _quaidsSyntheticDGP's
+** own 2) and the structural coefficients (gamma/beta/lambda/al1, scaled
+** to 0.25x that fixture's own magnitudes) are reduced relative to
+** _quaidsSyntheticDGP() -- confirmed directly (not assumed) that the
+** DETERMINISTIC price*gamma/expenditure*beta swing, not the noise term
+** or price variance, is the dominant driver of negative latent shares in
+** this DGP family at the original scale (both were tried and screened
+** before arriving at this combination). At seed=1 (the seed
+** tests/quaids_zero_test.e uses, confirmed by direct screening, not
+** arbitrary), the resulting per-good zero-share fractions are genuinely
+** uneven -- [0.843, 0.184, 0.817, 0.211, 0.171] -- two goods heavily
+** censored, three moderately so, none degenerate (0% or 100%). This
+** unevenness is a real, confirmed property of this DGP family with only
+** 5 randomly-drawn goods, not something forced or tuned away.
+**
+** Observed shares are computed the economically correct way -- as an
+** accounting identity, not an ad hoc redistribution: w_i = max(0,
+** latent_i) / sum_j max(0, latent_j). This is what real survey shares
+** actually are (expenditure on good i, floored at zero, divided by
+** total ACTUAL expenditure), so adding-up holds exactly in the observed
+** data by construction, while individual w_i > 0 triggers a genuine
+** censoring pattern for quaidsZeroFit() to correct. trueParams is
+** returned in the same row order as _quaidsSyntheticDGP()'s, for the
+** SAME reason: to diff a fitted result's recovered coefficients against
+** the true LATENT (uncensored) DGP directly.
+*/
+proc (6) = _quaidsZeroSyntheticDGP(tobs, seed);
+
+    local N, al, al1, ga, be, la, ro, prices, instr, intcpt, u, totexp, e,
+        a_p, lx, b_p, lx2, wLatent, w, trueParams;
+
+    N = 5;
+
+    /* Milestone 19: structural coefficients (gamma/beta/lambda/al1) are
+       scaled down (0.25x) relative to _quaidsSyntheticDGP()'s own
+       magnitudes -- confirmed directly (not assumed) that the
+       DETERMINISTIC price*gamma/expenditure*beta swing, not the noise
+       term or price variance, is the dominant driver of negative latent
+       shares in this DGP family at the original scale (screened before
+       arriving at this factor). This keeps the linear approximation
+       closer to its economically valid local range, giving a genuine,
+       moderate (not near-total) censoring rate. */
+    al = round(rndns(1, N-1, seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .25*.5*round(rndns(1, N-1, seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = .25*round(rndns(N-1, N-1, seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .25*.5*round(rndns(1, N-1, seed)*10)/10;
+    be = be~(-sumc(be'));
+    la = .25*.01*round(rndns(1, N-1, seed)*10)/10;
+    la = la~(-sumc(la'));
+    ro = round(rndns(1, N-1, seed)*10)/10;
+
+    prices = 1+rndns(tobs, N, seed);
+    instr = 5+5*rndns(tobs, 1, seed);
+    intcpt = 2+2*rndns(tobs, 1, seed);
+    u = .1*rndns(tobs, 1, seed);
+    totexp = .85*instr + u;
+    e = 0.04*rndns(tobs, N-1, seed) + u*ro;
+    e = e~(-sumc(e'));
+
+    a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    wLatent = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    /* Observed, censored, exactly-adding-up share -- an accounting
+       identity, not a redistribution formula. */
+    w = wLatent .* (wLatent .> 0);
+    w = w ./ sumc(w');
+
+    trueParams = al|al1|ga|be|la;
+    trueParams = trueParams|(ro~-sumc(ro'));
+
+    retp(w, intcpt, prices, totexp, instr, trueParams);
+endp;

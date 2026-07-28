@@ -438,4 +438,65 @@ call assert_true(rows(cOutQ.b) == 1+qOutQ.nint+Nq+2, "quaidsCurvatureFit (QUAIDS
 call printQuaidsCurvature(cOutQ);
 
 
+/* --- quaidsZeroFit() / printQuaidsZero() (Milestone 19) ---
+   Needs a dataset with a genuine zero-budget-share censoring pattern.
+   Mirrors tests/quaidsfixtures.src's _quaidsZeroSyntheticDGP(3000, 1) --
+   duplicated inline rather than reused, per this file's own "no
+   dependency on tests/-only fixture code" principle, same as the other
+   dedicated blocks above. See that fixture's own header for why the
+   structural coefficients are scaled down (0.25x) and why seed=1 was
+   chosen (direct screening, not arbitrary). */
+
+Nz = 5;
+seedZ = 1;
+tobsZ = 3000;
+
+alZ = round(rndns(1, Nz-1, seedZ)*10)/10;
+alZ = alZ~(1-sumc(alZ'));
+al1Z = .25*.5*round(rndns(1, Nz-1, seedZ)*10)/10;
+al1Z = al1Z~(-sumc(al1Z'));
+gaZ = .25*round(rndns(Nz-1, Nz-1, seedZ)*10)/10;
+gaZ = xpnd(vech(gaZ));
+gaZ = gaZ|(-sumc(gaZ)');
+gaZ = gaZ~(-sumc(gaZ'));
+beZ = .25*.5*round(rndns(1, Nz-1, seedZ)*10)/10;
+beZ = beZ~(-sumc(beZ'));
+laZ = .25*.01*round(rndns(1, Nz-1, seedZ)*10)/10;
+laZ = laZ~(-sumc(laZ'));
+roZ = round(rndns(1, Nz-1, seedZ)*10)/10;
+
+pricesZ = 1+rndns(tobsZ, Nz, seedZ);
+instrZ = 5+5*rndns(tobsZ, 1, seedZ);
+intcptZ = 2+2*rndns(tobsZ, 1, seedZ);
+uZ = .1*rndns(tobsZ, 1, seedZ);
+totexpZ = .85*instrZ + uZ;
+eZ = 0.04*rndns(tobsZ, Nz-1, seedZ) + uZ*roZ;
+eZ = eZ~(-sumc(eZ'));
+
+a_pZ = sumc((pricesZ.*(alZ+intcptZ*al1Z))') + .5*sumc(((pricesZ*gaZ).*pricesZ)');
+lxZ = totexpZ - a_pZ;
+b_pZ = pricesZ*beZ';
+lx2Z = (lxZ^2)./exp(b_pZ);
+
+wLatentZ = alZ + pricesZ*gaZ + lxZ*beZ + eZ + intcptZ*al1Z + lx2Z*laZ;
+
+wZ = wLatentZ .* (wLatentZ .> 0);
+wZ = wZ ./ sumc(wZ');
+
+struct quaidsControl aCtlZ;
+aCtlZ = quaidsControlCreate();
+aCtlZ.linear = 0;
+aCtlZ.maxiter = 100;
+aCtlZ.homogenous = 0;
+aCtlZ.err = .0001;
+
+struct quaidsZeroOut zOut;
+zOut = quaidsZeroFit(wZ, intcptZ, pricesZ, totexpZ, instrZ, aCtlZ);
+call assert_true(zOut.converged == 1, "quaidsZeroFit did not converge");
+call assert_true(rows(zOut.probitB) > 0 and cols(zOut.probitB) == Nz, "quaidsZeroFit probitB shape invalid");
+call assert_true(sumc(zOut.probitConverged) == Nz, "quaidsZeroFit: not all first-stage probits converged");
+
+call printQuaidsZero(zOut);
+
+
 print "package_public_api.e: PASS";
