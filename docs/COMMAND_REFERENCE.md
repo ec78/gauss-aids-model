@@ -48,6 +48,13 @@ sections.
 - [quaidsZeroFit](command-reference/quaidsZeroFit.md)
 - [printQuaidsZero](command-reference/printQuaidsZero.md)
 
+## Robust and Cluster-Robust Standard Errors
+
+- [quaidsRobustFit](command-reference/quaidsRobustFit.md)
+- [printQuaidsRobust](command-reference/printQuaidsRobust.md)
+- [quaidsRobustBootstrapFit](command-reference/quaidsRobustBootstrapFit.md)
+- [printQuaidsRobustBootstrap](command-reference/printQuaidsRobustBootstrap.md)
+
 ## Curvature Imposition (requires `optmt`)
 
 `src/quaidscurvature.src` is listed in `package.json`'s `src` array (real,

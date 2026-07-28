@@ -256,4 +256,51 @@ struct quaidsZeroOut {
     matrix finalErr;
 };
 
+/*
+** quaidsRobustOut -- struct returned by quaidsRobustFit(): a heteroskedasticity-
+** robust or cluster-robust covariance for an already-fitted quaidsFit()
+** result's bestB, generalizing the classic S.*.inv(gg) sandwich to a
+** per-observation (robust) or per-cluster (cluster-robust) score
+** aggregation. Uses a SIMPLIFIED bread (inv(gg)-based, not quaidsFit()'s
+** own nonlinear-feedback-corrected Ji) -- see the Milestone 20 section of
+** GOLD_STANDARD_TODO.md.
+*/
+struct quaidsRobustOut {
+    matrix n;          // number of goods
+    matrix nint;       // number of extra intercept-shifter variables
+    matrix n1;         // number of independently-estimated equations (qOut.n1)
+    matrix nobs;
+    matrix nClusters;  // number of unique clusters; == nobs when clusterId was 0 (robust case)
+    matrix wnam;       // legacy character matrix of good names (first n1 entries used)
+    matrix b;          // exact re-expression of qOut.bestB's first n1 columns
+                       //   in the k-row reduced-form (regressor-aligned) basis
+                       //   -- k rows, n1 columns; k = (1+nint)+n1+nendog+nu
+    matrix v;          // robust/cluster-robust covariance of vec(b)
+    matrix se;         // standard errors, same shape as b
+};
+
+/*
+** quaidsRobustBootOut -- struct returned by quaidsRobustBootstrapFit(): a
+** cluster-aware nonparametric bootstrap alternative to quaidsRobustFit()'s
+** closed-form sandwich, resampling whole clusters (or, when clusterId is
+** unset, plain i.i.d. rows -- the same special case quaidsRobustFit()
+** itself uses). See the Milestone 20 section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsRobustBootOut {
+    matrix n;
+    matrix nint;
+    matrix wnam;
+    matrix b;          // base (unresampled) point estimate, in the same
+                       //   k-row reduced-form basis as quaidsRobustOut.b
+    matrix seRobust;   // base closed-form robust/cluster SE, for comparison
+    matrix seBoot;
+    matrix bBoot;      // nCompleted x (rows(b)*cols(b)), raw vec(b) draws
+    matrix nRequested;
+    matrix nCompleted;
+    matrix nFailed;
+    matrix nAttempts;
+    matrix nClusters;
+    matrix seed;
+};
+
 #endif

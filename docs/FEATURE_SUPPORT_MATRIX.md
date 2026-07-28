@@ -35,6 +35,8 @@ for the exact switch values.
 | Published-data cross-validation vs. R | Yes (`Blanciforti86` vs. 3SLS, `tests/quaids_published_validation_test.e`) | Yes (`Blanciforti86` vs. `method="IL"`, wider tolerance -- see Notes) | No independent reference implementation exists (see Notes) |
 | Iteration convergence guarantee | Not applicable (one-step) | No -- a 200-seed sweep measured a 58% failure rate (never-converges or converges to a wrong answer) at default settings; check `qOut.converged`. `aCtl.relax=.75` measurably reduces this -- see Notes | No -- same caveat, 76% failure rate measured |
 | Zero budget share correction | Yes (`quaidsZeroFit`, since Milestone 19, unconstrained only -- see Notes) | Yes (same) | Yes (same) |
+| Robust / cluster-robust standard errors | Yes (`quaidsRobustFit`, since Milestone 20, simplified bread -- see Notes) | Yes (same) | Yes (same) |
+| Robust / cluster bootstrap | Yes (`quaidsRobustBootstrapFit`, since Milestone 20) | Yes (same) | Yes (same) |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
 ## Notes
@@ -168,6 +170,32 @@ for the exact switch values.
   on some degenerate inputs, a known non-trappable failure mode not
   hardened against in this pass. See
   [Methodology Notes](METHODOLOGY_NOTES.md#zero-budget-share-correction-shonkwiler-yen).
+
+- Robust / cluster-robust standard errors (`quaidsRobustFit`, Milestone
+  20) generalize the pooled, homoskedastic `S.*.inv(gg)` sandwich every
+  other covariance in this library uses to a per-observation
+  (heteroskedasticity-robust) or per-cluster (cluster-robust, with a CR1
+  small-sample correction) score aggregation -- genuinely new math, since
+  neither GAUSS's base runtime nor the `tsmt` package's single-equation
+  `robustSE`/`clusterSE` generalize to this library's stacked multi-
+  equation system. Robust is the literal `G=nobs` special case of
+  cluster-robust, unified through one `clusterId` argument, confirmed by
+  an exact-identity regression test. Uses a **simplified bread**
+  (`inv(gg)`-based, not `quaidsFit()`'s own nonlinear-feedback-corrected
+  Jacobian), which was found, empirically, to make its `se` dramatically
+  more conservative than `qOut`'s own classical SE -- confirmed to be an
+  expected consequence of comparing a simple sandwich against the full
+  cross-equation-efficient FGLS system (not a bug), via an independent
+  hand-derivation using the same regressors/residuals.
+  `quaidsRobustBootstrapFit` (also Milestone 20, shipped in the same pass
+  rather than a later follow-up as Milestone 10/15's curvature/bootstrap
+  split did) offers a cluster-aware nonparametric bootstrap alternative
+  that resamples whole clusters and refits `quaidsFit()` itself, typically
+  landing much closer to `qOut`'s own SE than the closed-form sandwich
+  does. Covers only the `n1` independently-estimated equations, and does
+  not automatically propagate into `qOut.symcV` or into elasticities/
+  shares/welfare's own delta-method SEs. See
+  [Methodology Notes](METHODOLOGY_NOTES.md#robust-and-cluster-robust-standard-errors).
 
 Related documentation:
 

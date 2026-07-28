@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-07-27
+Status date: 2026-07-28
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,9 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.14.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-19**, as of
-2026-07-27: 0
+The repository is pre-alpha, package version `0.15.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-20**, as of
+2026-07-28: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -75,7 +75,16 @@ first-stage probit's fitted probability rather than rescale every
 regressor, preserving the shared-design-matrix Kronecker-product identity
 every other estimation stage relies on; see that section below for the
 full derivation, the fixture-calibration screening process, and why this
-pass is deliberately unconstrained-only).
+pass is deliberately unconstrained-only), and 20 (robust and cluster-
+robust standard errors, `quaidsRobustFit`/`quaidsRobustBootstrapFit`, the
+fifth and final item of that outline -- genuinely new math generalizing
+every other covariance in this library's pooled, homoskedastic sandwich
+to a per-observation or per-cluster score aggregation, unified through
+one `clusterId` argument, with a cluster-aware bootstrap shipped in the
+same pass; see that section below for the empirically-confirmed finding
+that the closed-form sandwich's simplified bread makes it dramatically
+more conservative than `qOut`'s own classical SE -- this completes the
+originally-outlined five-item full-demand-system-workflow).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -2426,6 +2435,170 @@ struct (`quaidsZeroOut`), matching this project's established policy of
 bumping on real new public API surface. No new package dependency --
 `glm()` is part of GAUSS's own base runtime.
 
+### Milestone 20 — Robust and Cluster-Robust Standard Errors — COMPLETE (2026-07-28)
+
+**Context**: fifth and final item of the full-demand-system-workflow
+outline being worked through in order (after Milestone 16's
+`quaidsSharesFit`, Milestone 17's `quaidsQuadraticTest`, Milestone 18's
+`quaidsCurvatureBootstrapCI`, and Milestone 19's `quaidsZeroFit`). Direct
+exploration, before any planning, confirmed every covariance in this
+library (`quaidsFit()`'s `qOut.homogV`/`symcV`, the IV first stage,
+`quaidsCurvatureFit()`'s `cOut.v`, `quaidsZeroFit()`'s `zOut.v`) rests on
+a single pooled, homoskedastic `S = sse/nobs` combined with the shared-
+design-matrix `S.*.inv(gg)` Kronecker sandwich -- no heteroskedasticity-
+robust or cluster-robust computation existed anywhere in this library.
+
+**Neither GAUSS's base runtime nor the installed `tsmt` package could be
+adopted directly**: `c:\gauss26\src\robust.src`'s `robustSE`/`clusterSE`/
+`hacSE` and `tsmt`'s near-identical procs are both single-equation
+`(X'X)^-1 (...) (X'X)^-1` sandwiches for one dependent variable and
+shared regressors -- neither generalizes to this library's stacked
+multi-equation system, where `n1` share equations share one design matrix
+`X`. Adopting either would mean unpacking into exactly the same
+per-cluster score-aggregation math this milestone builds directly, for
+zero net simplification -- the same conclusion this project reached about
+`gmmFitIV` at Milestone 2. This was genuinely new math, not a reuse-an-
+existing-utility milestone.
+
+**Decisions, confirmed with the repo owner via `AskUserQuestion` before
+implementation**:
+
+1. **A new standalone `quaidsRobustFit()` sibling proc**, not a
+   modification of `quaids.src` -- matching this project's dominant
+   precedent since Milestone 16 (curvature, welfare, shares, zero-
+   correction are all self-contained siblings) over Milestone 12's
+   narrower "modify shipped code" exception. Accepted trade-off: a
+   **simplified bread** (`inv(gg)`-based, not `quaidsFit()`'s own
+   intricate nonlinear-price-index-feedback Jacobian correction), the
+   same class of honestly-documented simplification
+   `quaidsCurvatureFit()`/`quaidsZeroFit()` already ship.
+2. **Robust and cluster-robust unified through one `clusterId`
+   argument**, not two separate code paths: `clusterId = 0` means
+   heteroskedasticity-robust (every observation its own cluster,
+   `G = nobs`); a supplied `Tx1` group-label vector means cluster-robust
+   with a CR1 small-sample correction -- marginal extra complexity over
+   robust-only, since `clusterId = 0` is the literal `G = nobs` special
+   case of the same formula.
+3. **A cluster-aware bootstrap ships in this same milestone** -- the
+   repo owner chose to include this now rather than defer it as a
+   separate follow-up, unlike the Milestone 10/15 curvature/bootstrap
+   split.
+
+**The math**, given an already-fitted `qOut` and the raw sample: rebuild
+per-observation model-implied fitted shares at `qOut.bestB` (a fourth
+independent copy of the share formula already duplicated in
+`quaidsElas_()`/`quaidsSharesFit()`, vectorized across the whole sample);
+residuals `U = w[.,1:n1] - fittedW[.,1:n1]`; rebuild the shared regressor
+block `X = intcptFull~pricesHybrid[.,1:n1]~endog~qOut.u` at the converged
+point, mirroring `quaidsFit()`'s own STARTING VALUE block's
+`prices[.,1:n1]` regressor construction for either `aCtl.homogenous`
+value; `Infl[.,(i-1)*k+1:i*k] = X.*U[.,i]` for each of the `n1` equations
+(the standard per-observation score contribution); aggregate `Infl`'s
+rows by `clusterId` (confirmed via a small hand-verifiable example that
+`un = unique(clusterId,1); D = clusterId .== un'; InflG = D'Infl;`
+correctly sums each group's rows, not assumed); `Meat =
+c*(InflG'InflG)/nobs`, `c = (G/(G-1))*((nobs-1)/(nobs-K))` (the standard
+CR1 correction); `bread = eye(n1).*.inv(gg)`; `v = bread*Meat*bread`.
+`rOut.b` is an exact (not approximate) re-expression of `qOut.bestB`'s
+first `n1` columns in the `k`-row reduced-form basis `X`'s own columns
+use -- confirmed by direct algebraic derivation (under homogeneity,
+`gamaFull[.,i]'*prices` collapses exactly to
+`pricesRel[.,1:n1]*gama[1:n1,i]`) before writing the slicing code.
+
+**Real bugs found and fixed while building this, all via direct
+empirical testing**:
+
+1. **GAUSS identifiers are case-insensitive** -- a local named `K`
+   silently collided with an already-declared local `k`
+   (`error G0089: Duplicate definition of local 'K'`), and the subsequent
+   `K = n1*k;` assignment overwrote `k` itself, corrupting the
+   `Infl[.,(i-1)*k+1:i*k]` column-range construction downstream
+   (`error G0046: Columns don't match`). Fixed by renaming to `Kdof`,
+   distinct in more than case from `k`.
+2. **A genuine shape mismatch between the bootstrap and the closed-form
+   sandwich**: an early version of `quaidsRobustBootstrapFit()` tracked
+   `vec(qOut.bestB)`'s full, adding-up-recovered shape as its bootstrap
+   draws, while `quaidsRobustFit()`'s own `se` is in the reduced form,
+   one fewer row. Invisible until `printQuaidsRobustBootstrap()` was
+   actually run against real data (`error G0058: Index out of range`,
+   not a silently-wrong number). Fixed by extracting a shared private
+   helper, `_quaidsRobustReduceB()`, called identically by both procs.
+3. **A genuinely flaky test, found only by running it repeatedly**:
+   `tests/quaids_robust_bootstrap_test.e`'s core "cluster seBoot > naive
+   seBoot" check passed on the first full-suite run but failed on the
+   very next release-verification run with identical code and seed --
+   confirmed nondeterministic by running the file three times in a row
+   directly (pass, fail, fail), not a one-off fluke. Root cause: `tests/
+   quaidsfixtures.src`'s new `_quaidsClusterSyntheticDGP()` drew
+   `clusterId` via bare `ceil(rndu(tobs,1)*nClusters)`, unlike every other
+   draw in this file's fixtures, which all use `rndns(rows,cols,seed)`'s
+   explicit-seed form -- `rndu()` has no such form (confirmed empirically:
+   `rndu(r,c,seed)` throws `error G0136`), so this one draw depended on
+   GAUSS's ambient global random state rather than the fixture's own
+   `seed` argument. Fixed with one `rndseed seed;` call at the top of the
+   proc; re-running the bootstrap test four times afterward all passed
+   identically.
+4. **`tests/package_public_api.e` reused the wrong fixture**: the new
+   `quaidsRobustBootstrapFit()` block initially reused this file's main
+   seed=11 dataset (documented as "a known non-converging seed" -- fine
+   for `quaidsRobustFit()`, which needs no convergence) -- but
+   `quaidsRobustBootstrapFit()` explicitly requires its own internal base
+   `quaidsFit()` call to converge, throwing `"the base (unresampled)
+   quaidsFit() did not converge"` against the real installed package,
+   caught by the release-verification gate itself. Fixed by reusing the
+   file's own already-converging seed=500 AIDS fixture instead.
+
+**A real, empirically-confirmed finding about the simplified bread's
+practical consequence**: comparing `quaidsRobustFit()`'s closed-form `se`
+(`clusterId=0`) against `qOut.homogSE` on a real fitted dataset showed
+the closed-form SE was dramatically more conservative -- often more than
+an order of magnitude larger, especially for the IV-residual coefficient
+(low marginal variance by this fixture family's own strong-instrument
+design). Checked directly rather than assumed to be a bug: an
+independent hand-derivation of a classical (non-robust) `S.*.gg`-style
+formula, built from the *same* `X`/`U` `quaidsRobustFit()` itself uses,
+landed within roughly a factor of 1-3 of the robust `se` -- confirming
+the huge gap against `qOut.homogSE` is entirely attributable to comparing
+a simple equation-by-equation sandwich against the full cross-equation-
+efficient FGLS system, not a defect in the sandwich formula.
+`quaidsRobustBootstrapFit()`'s bootstrap SE, which resamples and refits
+the actual efficient estimator, confirmed this: it landed much closer to
+`qOut.homogSE` than the closed-form sandwich did on the same data.
+Documented prominently in `CLAUDE.md`, `docs/USAGE_GUIDE.md`,
+`docs/METHODOLOGY_NOTES.md`, and `quaidsRobustFit()`'s own command-
+reference page.
+
+**Testing**: `tests/quaids_robust_test.e` (17 checks) -- point-estimate
+cross-check against a fresh, independent hand-evaluation; the exact-
+identity regression guard (`clusterId=0` vs. an explicit
+`seqa(1,1,nobs)` per-row label); the "same order of magnitude as an
+independently-derived classical formula" check described above; the
+reshape/cell-position regression guard (written from day one, not found
+the hard way a third time); shape/finiteness/non-negativity; and the
+core non-vacuous check on a new fixture,
+`_quaidsClusterSyntheticDGP()` (`tests/quaidsfixtures.src`, a genuine
+within-cluster-correlated noise component, needed because every other
+fixture in this file has plain i.i.d. noise) -- cluster-robust `se`
+measurably exceeds the naive `se`. `tests/quaids_robust_bootstrap_test.e`
+(13 checks, added to the existing `-SkipBootstrap`-gated group) mirrors
+this with the bootstrap variant. `tests/package_public_api.e` gained
+calls to all four new procs (`clusterId=0` only, since cluster-specific
+behavior is already thoroughly validated in the two dedicated test files).
+
+**Version bump to `0.15.0`**: two new required public procs
+(`quaidsRobustFit`, `quaidsRobustBootstrapFit`, plus their paired
+printers) and two new required public structs (`quaidsRobustOut`,
+`quaidsRobustBootOut`), matching this project's established policy of
+bumping on real new public API surface. No new package dependency.
+
+**This completes the originally-outlined five-item full-demand-system-
+workflow**: predicted shares (Milestone 16), a quadratic-term
+specification test (Milestone 17), bootstrap percentile confidence
+intervals (Milestone 18), zero-share correction (Milestone 19), and now
+robust/cluster standard errors (Milestone 20). One still-unrequested
+follow-up remains, flagged at Milestone 19: homogeneity/symmetry
+imposition on top of the Shonkwiler-Yen zero-share correction.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -2479,6 +2652,15 @@ bumping on real new public API surface. No new package dependency --
   symmetry imposition on the corrected model yet), a simplified delta-
   method standard error, and adding-up does not hold exactly for the
   corrected coefficients (a real property of the method itself).
+- [x] Robust and cluster-robust standard errors (`quaidsRobustFit`,
+  Milestone 20) generalize the pooled, homoskedastic sandwich every other
+  covariance in this library uses, unified through one `clusterId`
+  argument, with a cluster-aware bootstrap alternative
+  (`quaidsRobustBootstrapFit`). **Deliberately scoped**: a simplified
+  bread makes the closed-form SE dramatically more conservative than
+  `qOut`'s own classical SE (an empirically-confirmed, expected property,
+  not a bug); does not propagate automatically into `qOut.symcV` or into
+  elasticities/shares/welfare's own delta-method SEs.
 - [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
 - [x] Full doc set (`README`, command reference, usage guide, methodology
@@ -2488,8 +2670,8 @@ bumping on real new public API surface. No new package dependency --
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-19 extend it beyond the original scope, as of 2026-07-27
-(package version `0.14.0`). Commits are now being made (and pushed to
+Milestones 11-20 extend it beyond the original scope, as of 2026-07-28
+(package version `0.15.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -2528,4 +2710,14 @@ probit's fitted probability rather than rescaling every regressor) to
 preserve the shared-design-matrix Kronecker-product identity every other
 estimation stage relies on; deliberately unconstrained-only in this first
 pass, with homogeneity/symmetry imposition on the corrected model left
-for a follow-up.
+for a follow-up. Robust and cluster-robust standard errors are now
+available (`quaidsRobustFit`/`quaidsRobustBootstrapFit`, Milestone 20),
+the fifth and final item of that outline -- genuinely new math
+generalizing every other covariance in this library's pooled,
+homoskedastic sandwich to a per-observation or per-cluster score
+aggregation, unified through one `clusterId` argument; a cluster-aware
+bootstrap shipped in the same pass rather than a later follow-up.
+Building it found that the closed-form sandwich's simplified bread makes
+its SE dramatically more conservative than `qOut`'s own classical SE, an
+empirically-confirmed, expected property, not a bug. **This completes the
+originally-outlined five-item full-demand-system-workflow.**

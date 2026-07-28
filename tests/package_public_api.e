@@ -499,4 +499,37 @@ call assert_true(sumc(zOut.probitConverged) == Nz, "quaidsZeroFit: not all first
 call printQuaidsZero(zOut);
 
 
+/* --- quaidsRobustFit() / printQuaidsRobust() / quaidsRobustBootstrapFit()
+   / printQuaidsRobustBootstrap() (Milestone 20) --- quaidsRobustFit()
+   itself needs no convergence (same as quaidsSharesFit()/
+   quaidsWelfareFit() above), so it's exercised against the main seed=11
+   qOut/w/prices/totexp/aCtl fixture; but quaidsRobustBootstrapFit()
+   explicitly requires its own internal base quaidsFit() call to
+   converge (mirroring quaidsCurvatureBootstrapFit()'s identical
+   requirement) -- confirmed directly (seed=11 threw "the base
+   (unresampled) quaidsFit() did not converge" here), so it reuses the
+   already-converging seed=500 AIDS fixture (wC/pricesC/totexpC/instrC/
+   aCtlC) from the quaidsCurvatureFit block above instead. clusterId=0
+   (heteroskedasticity-robust) is exercised here -- cluster-robust
+   behavior itself is already thoroughly validated in
+   tests/quaids_robust_test.e/quaids_robust_bootstrap_test.e, this is a
+   release gate, not a re-validation. B kept tiny, same reasoning as the
+   quaidsCurvatureBootstrapFit block above. */
+
+struct quaidsRobustOut rOut;
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
+call assert_true(rOut.nClusters == qOut.nobs, "quaidsRobustFit: nClusters == nobs when clusterId=0");
+call assert_true(rows(rOut.se) == rows(rOut.b) and cols(rOut.se) == cols(rOut.b), "quaidsRobustFit: se shape does not match b");
+
+call printQuaidsRobust(rOut);
+
+struct quaidsRobustBootOut rbOut;
+rbOut = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 2, 42);
+call assert_true(rbOut.nCompleted >= 1, "quaidsRobustBootstrapFit: no replications completed");
+call assert_true(rows(rbOut.seBoot) == rows(rbOut.b) and cols(rbOut.seBoot) == cols(rbOut.b),
+    "quaidsRobustBootstrapFit: seBoot shape does not match rbOut.b");
+
+call printQuaidsRobustBootstrap(rbOut);
+
+
 print "package_public_api.e: PASS";

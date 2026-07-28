@@ -5,6 +5,77 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.15.0 - 2026-07-28
+
+### Added
+- `quaidsRobustFit()`/`printQuaidsRobust()` (`src/quaidsrobust.src`, new
+  file): heteroskedasticity-robust and cluster-robust standard errors for
+  an already-fitted `quaidsFit()` result, generalizing the pooled,
+  homoskedastic `S.*.inv(gg)` sandwich every other covariance in this
+  library uses to a per-observation or per-cluster score aggregation.
+  Genuinely new math -- neither GAUSS's base runtime nor the `tsmt`
+  package's single-equation `robustSE`/`clusterSE` generalize to this
+  library's stacked multi-equation system. Robust and cluster-robust are
+  unified through one `clusterId` argument (`0` = robust, a `Tx1` group
+  vector = cluster-robust with a CR1 correction), confirmed to be
+  literally the same formula (an exact-identity regression test).
+- `quaidsRobustBootstrapFit()`/`printQuaidsRobustBootstrap()` (same
+  file): a cluster-aware nonparametric bootstrap alternative, resampling
+  whole clusters (or plain rows) and refitting `quaidsFit()` itself.
+- New `quaidsRobustOut`/`quaidsRobustBootOut` structs (`src/quaids.sdf`).
+- `tests/quaidsfixtures.src`: `_quaidsClusterSyntheticDGP()`, a 5-good
+  fixture with a genuine within-cluster-correlated noise component,
+  needed to make the "cluster-robust se exceeds naive se" check
+  non-vacuous.
+- `tests/quaids_robust_test.e` (17 checks) and
+  `tests/quaids_robust_bootstrap_test.e` (13 checks, added to the
+  existing `-SkipBootstrap`-gated group).
+- `tests/package_public_api.e` extended to exercise the four new procs.
+- New docs: `docs/command-reference/quaidsRobustFit.md`,
+  `printQuaidsRobust.md`, `quaidsRobustBootstrapFit.md`,
+  `printQuaidsRobustBootstrap.md`; new sections in
+  `docs/USAGE_GUIDE.md` and `docs/METHODOLOGY_NOTES.md`; new rows in
+  `docs/FEATURE_SUPPORT_MATRIX.md`.
+
+### Found (documented, not a defect)
+- `quaidsRobustFit()`'s simplified bread (`inv(gg)`-based, not
+  `quaidsFit()`'s own nonlinear-feedback-corrected Jacobian) makes its
+  `se` dramatically more conservative (often 10-100x larger) than
+  `qOut.homogSE`/`symcSE` -- confirmed, via an independent hand-
+  derivation using the same regressors/residuals, to be an expected
+  consequence of comparing a simple equation-by-equation sandwich against
+  the full cross-equation-efficient FGLS system, not a bug.
+  `quaidsRobustBootstrapFit()`'s bootstrap SE does not share this gap.
+
+### Fixed (found and fixed before shipping)
+- An early version of the bootstrap tracked the point estimate in
+  `qOut.bestB`'s full (adding-up-recovered) shape while
+  `quaidsRobustFit()`'s own SE is in a reduced form with one fewer row --
+  a genuine shape mismatch caught by running
+  `printQuaidsRobustBootstrap()` against real data
+  (`error G0058: Index out of range`), not by re-reading the code. Fixed
+  by sharing one reduction helper (`_quaidsRobustReduceB()`) between both
+  procs.
+- `tests/quaidsfixtures.src`'s new `_quaidsClusterSyntheticDGP()` drew its
+  `clusterId` via unseeded `rndu()`, unlike every other draw in this
+  codebase's fixtures (`rndns(rows,cols,seed)`'s explicit-seed form) --
+  `rndu()` has no such seeded form, so this one draw depended on GAUSS's
+  ambient global random state, making
+  `tests/quaids_robust_bootstrap_test.e`'s core check genuinely flaky
+  (confirmed by running it three times in a row: pass, fail, fail).
+  Fixed with one `rndseed seed;` call at the top of the fixture.
+- `tests/package_public_api.e`'s `quaidsRobustBootstrapFit()` block reused
+  a known non-converging fixture (fine for `quaidsRobustFit()`, which
+  needs no convergence, but not for `quaidsRobustBootstrapFit()`, which
+  requires its own base fit to converge) -- caught by the release-
+  verification gate against the real installed package. Fixed by reusing
+  the file's own already-converging seed=500 AIDS fixture instead.
+
+This milestone completes the five-item full-demand-system-workflow
+outline (predicted shares, a quadratic-term specification test, bootstrap
+percentile CIs, zero-share correction, and now robust/cluster standard
+errors) worked through in order since Milestone 16.
+
 ## 0.14.0 - 2026-07-27
 
 ### Added

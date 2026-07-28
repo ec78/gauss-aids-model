@@ -28,6 +28,10 @@
 # but the automatic push-triggered CI workflow (.github/workflows/tests.yml)
 # passes -SkipBootstrap so routine pushes stay fast; run without the flag
 # locally, or as part of release verification, to exercise it.
+#
+# quaids_robust_bootstrap_test.e (Milestone 20) has the same "refits the
+# whole pipeline B times" cost, so it shares the same -SkipBootstrap gate
+# rather than introducing a second flag.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -52,7 +56,8 @@ $gaussTests = @(
     "quaids_shares_test.e",
     "quaids_welfare_test.e",
     "quaids_reliability_regression_test.e",
-    "quaids_zero_test.e"
+    "quaids_zero_test.e",
+    "quaids_robust_test.e"
 )
 
 if (-not $SkipPubtable) {
@@ -65,6 +70,7 @@ if (-not $SkipCurvature) {
 
 if (-not $SkipBootstrap) {
     $gaussTests += "quaids_curvature_bootstrap_test.e"
+    $gaussTests += "quaids_robust_bootstrap_test.e"
 }
 
 function Invoke-GaussBatch {

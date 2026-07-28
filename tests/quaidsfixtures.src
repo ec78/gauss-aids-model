@@ -248,3 +248,70 @@ proc (6) = _quaidsZeroSyntheticDGP(tobs, seed);
 
     retp(w, intcpt, prices, totexp, instr, trueParams);
 endp;
+
+/*
+** _quaidsClusterSyntheticDGP: Milestone 20. A 5-good AIDS dataset (same
+** base construction as _quaidsSyntheticDGP) whose noise term has a
+** genuine, deliberate WITHIN-CLUSTER-CORRELATED component -- each row is
+** assigned a cluster label 1..nClusters, and the noise is idiosyncratic
+** noise PLUS a shock shared by every row in the same cluster. This is
+** needed because every other fixture in this file has plain i.i.d. noise
+** across rows, which cannot distinguish a correct cluster-robust SE from
+** an incorrect one that ignores clustering entirely -- ignoring a real
+** shared shock provably understates the true sampling variability of the
+** estimator (the standard textbook justification for cluster-robust
+** standard errors), so this fixture is what makes
+** tests/quaids_robust_test.e's core check ("cluster-robust se is
+** measurably larger than the naive i.i.d.-based se") non-vacuous.
+*/
+proc (6) = _quaidsClusterSyntheticDGP(tobs, seed, nClusters);
+
+    local N, al, al1, ga, be, la, ro, prices, instr, intcpt, u, totexp, e,
+        eCommon, clusterId, a_p, lx, b_p, lx2, w;
+
+    /* clusterId is drawn via rndu(), which (unlike rndns(rows,cols,seed))
+       has no seeded-call form -- confirmed empirically (rndu(r,c,seed)
+       throws error G0136). Without an explicit rndseed here, clusterId
+       (and hence which rows share a within-cluster shock) would differ
+       from run to run even though every other draw in this fixture is
+       seeded, making tests/quaids_robust_bootstrap_test.e's cluster-vs-
+       naive comparison genuinely flaky -- found by running the same test
+       three times in a row and seeing it pass, fail, fail. */
+    rndseed seed;
+
+    N = 5;
+
+    al = round(rndns(1,N-1,seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1,N-1,seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1,N-1,seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1,N-1,seed)*10)/10;
+    be = be~(-sumc(be'));
+    la = .01*round(rndns(1,N-1,seed)*10)/10;
+    la = la~(-sumc(la'));
+    ro = round(rndns(1,N-1,seed)*10)/10;
+
+    prices = 1+rndns(tobs,N,seed);
+    instr = 5+5*rndns(tobs,1,seed);
+    intcpt = 2+2*rndns(tobs,1,seed);
+    u =  .1*rndns(tobs,1,seed);
+    totexp = .85*instr + u;
+
+    clusterId = ceil(rndu(tobs,1)*nClusters);
+    eCommon = 1.5*rndns(nClusters,N-1,seed);
+    e = 1*rndns(tobs,N-1,seed) + eCommon[clusterId,.] + u*ro;
+    e = e~(-sumc(e'));
+
+    a_p = sumc( (prices.*(al+intcpt*al1) )') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    retp(w, intcpt, prices, totexp, instr, clusterId);
+endp;

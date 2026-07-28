@@ -365,6 +365,82 @@ documented for `eighv()` inside
 Confirmed empirically (some seeds trigger it, others don't); not hardened
 against in this pass.
 
+## Robust and Cluster-Robust Standard Errors
+
+Every covariance elsewhere in this library (`quaidsFit()`'s
+`qOut.homogV`/`symcV`, the IV first stage, `quaidsCurvatureFit()`'s
+`cOut.v`, `quaidsZeroFit()`'s `zOut.v`) rests on a single pooled,
+homoskedastic `S = sse/nobs` combined with the shared-design-matrix
+`S.*.inv(gg)` Kronecker sandwich -- a real, if standard, simplification:
+it assumes the same error covariance for every observation, and does not
+allow for correlation within groups (e.g. multiple observations per
+household or region). [quaidsRobustFit](command-reference/quaidsRobustFit.md)
+generalizes this to a heteroskedasticity-robust (White) or cluster-robust
+sandwich.
+
+**Why this needed genuinely new math, not an existing utility**: GAUSS's
+base runtime (`robustSE`/`clusterSE`/`hacSE` in `robust.src`) and the
+separately-licensed `tsmt` package's near-identical procs are both
+single-equation `(X'X)^-1 (...) (X'X)^-1` sandwiches for one dependent
+variable and shared regressors -- neither generalizes to this library's
+*stacked multi-equation* system, where `n1` share equations share the
+same design matrix `X` but have their own residual columns. Reusing them
+would require unpacking into exactly the same per-cluster score
+aggregation this library builds directly, for zero net simplification --
+the same conclusion this project reached about `gmmFitIV` at Milestone 2.
+
+**The construction**: given an already-fitted `qOut` and the raw sample,
+
+1. Rebuild per-observation model-implied fitted shares at `qOut.bestB`
+   (the same formula `quaidsElas_()`/`quaidsSharesFit()` already
+   duplicate independently, vectorized across the whole sample). Residuals
+   `U = w[.,1:n1] - fittedW[.,1:n1]` (only the `n1` independently-
+   estimated equations).
+2. Rebuild the shared regressor block `X` at the converged point (one
+   evaluation, not a re-iteration) -- the same reduced-form regressor set
+   `quaidsFit()`'s own STARTING VALUE block uses (`intcptFull~pricesHybrid[.,1:n1]~endog~u`).
+3. `Infl[.,(i-1)*k+1:i*k] = X.*U[.,i]` for each of the `n1` equations --
+   the standard "per-observation score contribution."
+4. Aggregate `Infl`'s rows by cluster label (or leave ungrouped for the
+   robust case): `Meat = c*(InflG'InflG)/nobs`, with a CR1 finite-sample
+   correction `c = (G/(G-1))*((nobs-1)/(nobs-K))` unifying the robust
+   (`G=nobs`) and cluster (`G<nobs`) cases through the same formula.
+5. `bread = eye(n1).*.inv(gg)`; `v = bread*Meat*bread`.
+
+Robust is the literal `G=nobs` (every row its own cluster) special case
+of cluster-robust -- confirmed by an exact-identity regression test
+(`tests/quaids_robust_test.e`: `clusterId=0` and an explicit
+`seqa(1,1,nobs)` per-row label give byte-identical output), not just
+argued algebraically.
+
+**A real, empirically-confirmed finding, not a theoretical worry**: this
+sandwich's `bread` is `inv(gg)` -- it does *not* replicate
+`quaidsFit()`'s own nonlinear-translog-price-index-feedback Jacobian
+correction (its `Ji`/`J` construction). Building this milestone's test
+surfaced that this makes `quaidsRobustFit()`'s `se` dramatically more
+*conservative* (often more than an order of magnitude larger) than
+`qOut.homogSE`/`symcSE` -- confirmed, via an independent hand-derivation
+in `tests/quaids_robust_test.e`, to be entirely attributable to comparing
+a simple equation-by-equation sandwich against the full cross-equation-
+efficient FGLS system (the same hand-derived formula, applied to the
+*same* regressors/residuals this proc itself uses, lands in the same
+order of magnitude under genuine homoskedasticity) -- not a defect in the
+sandwich formula itself.
+[quaidsRobustBootstrapFit](command-reference/quaidsRobustBootstrapFit.md)'s
+bootstrap SE, which resamples and refits the actual efficient estimator,
+does not share this gap and is typically much closer to `qOut`'s own SE.
+
+**Scope, deliberately limited** (the same "new sibling, not a
+modification of already-shipped code" choice as curvature/welfare/
+shares/zero-correction): covers only the `n1` independently-estimated
+equations; does not propagate automatically into `qOut.symcV` or into
+elasticities/shares/welfare's own delta-method SEs (a caller passes the
+new `v` in explicitly if wanted); and the cluster bootstrap resamples
+whole clusters and refits `quaidsFit()` only, not
+`quaidsRobustFit()`'s own sandwich, mirroring
+`quaidsCurvatureBootstrapFit()`'s identical "refit the estimator, not its
+SE stage, each replication" pattern.
+
 ## References
 
 - Deaton, A., Muellbauer, J. (1980). "An Almost Ideal Demand System."

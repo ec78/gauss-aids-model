@@ -1,0 +1,547 @@
+/*
+** quaidsrobust.src
+**
+** Milestone 20: heteroskedasticity-robust and cluster-robust standard
+** errors for an already-fitted quaidsFit() result -- the fifth and final
+** item of the full-demand-system-workflow outline (after Milestone 16's
+** quaidsSharesFit, Milestone 17's quaidsQuadraticTest, Milestone 18's
+** quaidsCurvatureBootstrapCI, and Milestone 19's quaidsZeroFit).
+**
+** Every existing covariance in this library (qOut.homogV/symcV, the IV
+** first stage, quaidsCurvatureFit's cOut.v, quaidsZeroFit's zOut.v) rests
+** on a single POOLED, HOMOSKEDASTIC S = sse/nobs combined with the shared-
+** design-matrix S.*.inv(gg) Kronecker sandwich. Neither GAUSS's base
+** runtime (robust.src's robustSE/clusterSE/hacSE) nor the installed tsmt
+** package's near-identical procs generalize to this library's STACKED
+** MULTI-EQUATION system with a shared regressor matrix -- both are
+** single-equation (X'X)^-1 (...) (X'X)^-1 sandwiches. This file builds
+** the genuinely new generalization directly, reusing the shared-X trick
+** every other file in this codebase already exploits.
+**
+** A self-contained sibling to quaidsFit(), not a modification of it --
+** matching this project's dominant precedent since Milestone 16
+** (curvature, welfare, shares, zero-correction). Uses a SIMPLIFIED bread
+** (inv(gg)-based) rather than replicating quaidsFit()'s own intricate
+** nonlinear-price-index-feedback Jacobian correction (its Ji/J
+** construction, quaids.src:342-382) -- the same class of honestly-
+** documented simplification quaidsCurvatureFit()/quaidsZeroFit() already
+** ship. Does NOT automatically propagate into qOut.symcV or into
+** elasticities/shares/welfare's own delta-method SEs; a caller who wants
+** that passes this proc's v into those explicitly.
+**
+** Robust and cluster-robust are unified through one clusterId argument:
+** clusterId = 0 means heteroskedasticity-robust (every observation is its
+** own cluster, G = nobs); a supplied Tx1 group-label vector means
+** cluster-robust with a CR1 small-sample correction. One code path, not
+** two -- clusterId = 0 is the literal G = nobs special case of the same
+** formula, confirmed by an exact-identity regression test in
+** tests/quaids_robust_test.e (clusterId=0 vs. an explicit
+** seqa(1,1,nobs) per-row label give byte-identical output).
+**
+** THE MATH, given an already-fitted qOut (from quaidsFit(), any
+** aCtl.homogenous) and the raw sample:
+**
+** 1. Rebuild per-observation model-implied fitted shares at qOut.bestB
+**    using the SAME share formula already independently duplicated in
+**    quaidsElas_()/quaidsSharesFit()'s own _quaidsSharesAt() -- a FOURTH
+**    independent copy (_quaidsRobustFittedW() below), vectorized across
+**    every sample row at once (the same sumc()-based idiom
+**    tests/quaidsfixtures.src's own DGP construction and quaidsFit()'s/
+**    quaidsZeroFit()'s own iteration loops already use for whole-sample
+**    evaluation), rather than looping quaidsSharesFit()'s single-point
+**    formula T times. Residuals U = w[.,1:n1] - fittedW[.,1:n1] (only the
+**    n1 independently-estimated equations -- equation n is recovered via
+**    adding-up, never separately estimated, and gets no independent SE
+**    here either, matching every other diagnostic in this library).
+** 2. Rebuild the shared regressor block X = intcptFull~pricesHybrid[.,1:n1]
+**    ~endog~qOut.u at the converged point (one evaluation, not a
+**    re-iteration -- endog uses qOut's own final coefficients, mirroring
+**    how quaidsCurvatureFit() already lags/evaluates at a fixed point).
+**    pricesHybrid mirrors _quaidsIVFirstStage()'s own mutation (columns
+**    1:n-1 relative to the reference good n, column n left absolute) --
+**    when n1=n-1 (aCtl.homogenous=1) this drops the reference column
+**    entirely; when n1=n (aCtl.homogenous=0) it keeps all n hybrid
+**    columns, exactly mirroring quaidsFit()'s own STARTING VALUE block's
+**    `prices[.,1:n1]` regressor construction (quaids.src:240) for either
+**    case -- a real, honestly-documented simplification: this sandwich is
+**    built over the model's REDUCED-FORM moment-condition regressor set,
+**    not the exact post-minimum-distance-restriction regressor set
+**    quaidsFit()'s own homogeneity/symmetry stages additionally refine.
+** 3. gg = moment(X,0)/nobs.
+** 4. Infl (nobs x (n1*k), k=cols(X)): for i=1..n1, Infl[.,(i-1)*k+1:i*k]
+**    = X.*U[.,i] -- the standard "per-observation score contribution"
+**    construction, built without a per-observation loop via GAUSS's
+**    column-broadcast multiply.
+** 5. clusterId=0: InflG=Infl, G=nobs. Else: aggregate Infl's rows by
+**    clusterId (sum within each unique cluster label, via an indicator-
+**    matrix multiply -- confirmed empirically against a small hand-
+**    verifiable example that `un = unique(clusterId,1); D = clusterId
+**    .== un'; InflG = D'Infl;` correctly sums each group's rows, not
+**    assumed from GAUSS's docs alone) into InflG (G x (n1*k)).
+** 6. Meat = c*(InflG'InflG)/nobs, c = (G/(G-1))*((nobs-1)/(nobs-K)),
+**    K=n1*k -- the standard CR1 finite-sample correction, unifying the
+**    robust (G=nobs) and cluster (G<nobs) cases through the same formula.
+** 7. bread = eye(n1).*.inv(gg); v = bread*Meat*bread.
+** 8. se = reshape(sqrt(diag(v)), n1, k)' -- the exact reshape/transpose
+**    idiom Milestone 18 found broken twice already (Milestone 10/15).
+**    This file writes the cell-position regression guard in
+**    tests/quaids_robust_test.e from day one, not after finding the bug a
+**    third time.
+**
+** This collapses exactly to the existing S.*.inv(gg) formula under the
+** degenerate case Meat=S.*.gg, c=1 -- confirmed by hand before trusting
+** the implementation, the same "verify before trusting a derived
+** formula" discipline as every prior milestone.
+**
+** rOut.b is NOT a slice of qOut.bestB's full (adding-up-recovered,
+** n-row-gamma) form -- it is an EXACT (not approximate) re-expression of
+** the SAME point estimate in the k-row reduced-form basis X's own column
+** structure uses: qOut.bestB's gamma block's n-th row is dropped (it
+** carries no additional information under exact homogeneity/adding-up,
+** and is never a free regressor in X), giving rOut.b exactly k rows,
+** matching rOut.se/rOut.v's own shape with no approximation involved.
+*/
+
+/*
+** _quaidsRobustFittedW: given the FULL (n-row-gamma) coefficient matrix b
+** (qOut.bestB's row layout: intcpt|gamma(n rows)|beta|[lambda]|u -- u rows
+** ignored, same convention as quaidsElas_()/_quaidsSharesAt()) and the
+** whole sample's intcptFull/prices/totexp, returns the model-implied
+** fitted budget share matrix (nobs x n), plus lx/lx2 (nobs x 1 each,
+** lx2=0 scalar for linear/AIDS) for reuse in the caller's own regressor
+** construction. Internal helper, no #ifDef guard needed.
+*/
+proc (3) = _quaidsRobustFittedW(b, intcptFull, prices, totexp, struct quaidsControl aCtl);
+    local nint1, n, alpha, gama, _beta, lambda, a_p, lx, lx2, b_p, W;
+
+    nint1 = cols(intcptFull);
+    n = cols(prices);
+
+    alpha = intcptFull*b[1:nint1, .];
+    gama = b[nint1+1:nint1+n, .];
+    _beta = b[nint1+n+1, .];
+
+    a_p = aCtl.alpha0 + sumc((prices.*alpha)') + .5*sumc(((prices*gama).*prices)');
+    lx = totexp - a_p;
+    W = alpha + prices*gama + lx*_beta;
+    if not aCtl.linear;
+        b_p = exp(prices*_beta');
+        lambda = b[nint1+n+2, .];
+        lx2 = (lx^2)./b_p;
+        W = W + lx2*lambda;
+    else;
+        lx2 = 0;
+    endif;
+
+    retp(W, lx, lx2);
+endp;
+
+/*
+** _quaidsRobustReduceB: exact (not approximate) re-expression of a FULL
+** (n-row-gamma) bestB-shaped coefficient matrix in the k-row reduced-form
+** basis X's own columns use inside quaidsRobustFit() -- drops gamma's
+** (n1+1..n)-th rows (redundant under homogeneity/adding-up, and never a
+** free regressor in X) and restricts to the first n1 equation columns
+** (equation n is recovered via adding-up, never independently estimated,
+** and gets no independent SE anywhere in this file). Shared by
+** quaidsRobustFit() and _quaidsRobustBootOneRep() so both report the
+** identically-shaped reduced form -- not two independently-drifting
+** copies of the same slicing logic.
+*/
+proc (1) = _quaidsRobustReduceB(bestB, nint, n, n1, struct quaidsControl aCtl);
+    local bAlpha, bGamma, bBeta, bLambda, bU, bReduced;
+
+    bAlpha = bestB[1:1+nint, 1:n1];
+    bGamma = bestB[1+nint+1:1+nint+n1, 1:n1];
+    bBeta = bestB[1+nint+n+1, 1:n1];
+    if aCtl.linear;
+        bU = bestB[1+nint+n+2:rows(bestB), 1:n1];
+        bReduced = bAlpha|bGamma|bBeta|bU;
+    else;
+        bLambda = bestB[1+nint+n+2, 1:n1];
+        bU = bestB[1+nint+n+3:rows(bestB), 1:n1];
+        bReduced = bAlpha|bGamma|bBeta|bLambda|bU;
+    endif;
+
+    retp(bReduced);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSROBUSTFIT
+**
+** Purpose:  heteroskedasticity-robust or cluster-robust covariance for an
+**           already-fitted quaidsFit() result's bestB, generalizing the
+**           classic S.*.inv(gg) sandwich to a per-observation (robust) or
+**           per-cluster (cluster-robust) score aggregation. Silent, no
+**           printing -- see printQuaidsRobust().
+**
+** Format:     struct quaidsRobustOut rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+**
+** Input:    qOut -- struct quaidsOut, from quaidsFit() (any aCtl.homogenous).
+**
+**             w, prices, totexp -- same sample used to fit qOut.
+**
+**             aCtl -- quaidsControl struct (aCtl.linear/aCtl.alpha0 used to
+**                   rebuild the model-implied fitted shares; must match
+**                   what was passed to quaidsFit() to produce qOut).
+**
+**             clusterId -- 0 for heteroskedasticity-robust (every
+**                   observation its own cluster), or a Tx1 vector of
+**                   cluster group labels for cluster-robust.
+**
+** Output:  struct quaidsRobustOut -- see quaids.sdf.
+**
+*******************************************************************************/
+
+proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices, totexp, struct quaidsControl aCtl, clusterId);
+
+    local nobs, n, nint, n1, nendog, intcptFull, fittedW, lx, lx2, U,
+        pricesHybrid, endog, X, k, Kdof, gg, Infl, i, un, G, D, InflG,
+        Meat, c, bread, v, se, bHatReduced;
+    struct quaidsRobustOut rOut;
+
+    nobs = rows(w);
+    n = qOut.n;
+    nint = qOut.nint;
+    n1 = qOut.n1;
+    intcptFull = qOut.intcptFull;
+
+    { fittedW, lx, lx2 } = _quaidsRobustFittedW(qOut.bestB, intcptFull, prices, totexp, aCtl);
+    U = w[., 1:n1] - fittedW[., 1:n1];
+
+    pricesHybrid = prices;
+    pricesHybrid[., 1:n-1] = prices[., 1:n-1] - prices[., n];
+
+    if aCtl.linear;
+        endog = lx;
+        nendog = 1;
+    else;
+        endog = lx~lx2;
+        nendog = 2;
+    endif;
+
+    X = intcptFull~pricesHybrid[., 1:n1]~endog~qOut.u;
+    k = cols(X);
+    Kdof = n1*k;
+
+    gg = moment(X, 0)/nobs;
+
+    Infl = zeros(nobs, n1*k);
+    i = 1;
+    do while i <= n1;
+        Infl[., (i-1)*k+1:i*k] = X.*U[., i];
+        i = i + 1;
+    endo;
+
+    if clusterId == 0;
+        InflG = Infl;
+        G = nobs;
+    else;
+        un = unique(clusterId, 1);
+        G = rows(un);
+        D = clusterId .== un';
+        InflG = D'Infl;
+    endif;
+
+    c = (G/(G-1))*((nobs-1)/(nobs-Kdof));
+    Meat = c*(InflG'InflG)/nobs;
+
+    bread = eye(n1).*.invpd(gg);
+    v = bread*Meat*bread;
+    se = reshape(sqrt(diag(v)), n1, k)';
+
+    bHatReduced = _quaidsRobustReduceB(qOut.bestB, nint, n, n1, aCtl);
+
+    rOut.n = n;
+    rOut.nint = nint;
+    rOut.n1 = n1;
+    rOut.nobs = nobs;
+    rOut.nClusters = G;
+    rOut.wnam = qOut.wnam;
+    rOut.b = bHatReduced;
+    rOut.v = v;
+    rOut.se = se;
+
+    retp(rOut);
+endp;
+
+/*******************************************************************************
+**
+** PRINTQUAIDSROBUST
+**
+** Purpose:  prints the reduced-form coefficient table with robust/cluster-
+**           robust standard errors captured in a quaidsRobustOut structure.
+**
+** Format:     call printQuaidsRobust(rOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsRobust(struct quaidsRobustOut rOut);
+
+    local i;
+
+    print;
+    "ROBUST / CLUSTER-ROBUST STANDARD ERRORS (REDUCED-FORM COEFFICIENTS)";
+    print "Observations:" rOut.nobs "Clusters:" rOut.nClusters;
+    print;
+    format /rd 10, 4;
+    print$ ""~rOut.wnam[1:rOut.n1]';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i = 1;
+    do while i <= rows(rOut.b);
+        print$ (0$+ftocv(i, 1, 0))~ftocv(rOut.b[i, .], 0, 4);
+        print$ (0$+"")~(0$+"("$+ftocv(rOut.se[i, .], 0, 2)$+")");
+        i = i + 1;
+    endo;
+    print;
+
+endp;
+
+/*
+** _quaidsRobustBootOneRep: one bootstrap replication's worth of work --
+** refit quaidsFit() on a resampled dataset, trapping the call (Milestone
+** 12's established trap/scalmiss idiom). Mirrors
+** _quaidsCurvBootOneRep() (quaidscurvature.src) exactly, refitting only
+** the estimator (not its own SE-computation stage) each replication.
+** Reduces qOutB.bestB via the SAME _quaidsRobustReduceB() helper
+** quaidsRobustFit() itself uses, so bVec is directly comparable (same
+** k x n1 shape, vec()-ordered) to quaidsRobustFit()'s own rOut.b/se --
+** a real shape mismatch (bootstrap tracking the FULL n-row bestB while
+** the closed-form sandwich reports the k-row reduced form) was caught by
+** running printQuaidsRobustBootstrap() against real data before this fix,
+** not by re-reading the code.
+*/
+proc (2) = _quaidsRobustBootOneRep(wB, intcptB, pricesB, totexpB, instrB, struct quaidsControl aCtl, nint, n, n1);
+    local oldtrp, status, bVec, hasNonFinite, bReduced;
+    struct quaidsOut qOutB;
+
+    status = 0;
+    bVec = 0;
+
+    oldtrp = trapchk(1);
+    trap 1,1;
+    qOutB = quaidsFit(wB, intcptB, pricesB, totexpB, instrB, aCtl);
+    trap oldtrp,1;
+
+    if not scalmiss(qOutB.converged) and qOutB.converged == 1;
+        bReduced = _quaidsRobustReduceB(qOutB.bestB, nint, n, n1, aCtl);
+        hasNonFinite = minc(minc(bReduced .eq bReduced)) == 0;
+        if not hasNonFinite;
+            status = 1;
+            bVec = vec(bReduced)';
+        endif;
+    endif;
+
+    retp(status, bVec);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSROBUSTBOOTSTRAPFIT
+**
+** Purpose:  cluster-aware nonparametric bootstrap alternative to
+**           quaidsRobustFit()'s closed-form sandwich -- resamples WHOLE
+**           CLUSTERS with replacement when clusterId is supplied (every
+**           row belonging to each of G resampled cluster labels is
+**           gathered and stacked; the resampled row count varies by
+**           replication, standard for a cluster bootstrap and needing no
+**           special handling in GAUSS), or plain i.i.d. rows when it
+**           isn't (the literal special case G=nobs, sharing the same
+**           resampling code path). Refits only quaidsFit() per
+**           replication (not quaidsRobustFit() too), mirroring Milestone
+**           15's own "refit the estimator, not its SE stage, each rep"
+**           pattern. Silent, no printing -- see
+**           printQuaidsRobustBootstrap().
+**
+** Format:     struct quaidsRobustBootOut rbOut =
+**                 quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed);
+**
+** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
+**                   quaidsFit().
+**
+**             aCtl -- quaidsControl struct, passed through unchanged to
+**                   every quaidsFit() call.
+**
+**             clusterId -- 0 for a plain i.i.d. row bootstrap, or a Tx1
+**                   vector of cluster group labels for a cluster (block)
+**                   bootstrap.
+**
+**             B -- positive integer scalar, the number of bootstrap
+**                   replications to complete. Required -- no default,
+**                   matching quaidsCurvatureBootstrapFit()'s own
+**                   precedent of never silently guessing an inference-
+**                   affecting parameter.
+**
+**             seed -- scalar. If seed > 0, rndseed is set before drawing
+**                   any resamples (reproducible runs); seed = 0 leaves
+**                   GAUSS's current random state unchanged.
+**
+** Output:  struct quaidsRobustBootOut -- see quaids.sdf. Up to 5*B total
+**           resamples are attempted before giving up on reaching B
+**           completed replications (matching the established attempt-cap
+**           convention).
+**
+*******************************************************************************/
+
+proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId, B, seed);
+
+    local nobs, n, nint, n1, wnam, bDim1, bDim2, bVecDim, nClusters, un, G,
+        completed, failed, attempts, maxAttempts, gDraw, idx,
+        wB, intcptB, pricesB, totexpB, instrB, status, bVec, bBoot, seBoot,
+        j, oneCluster;
+    struct quaidsOut qOut;
+    struct quaidsRobustOut rOut;
+    struct quaidsRobustBootOut rbOut;
+
+    if rows(B)*cols(B) /= 1 or B < 1 or round(B) /= B;
+        errorlog "quaidsRobustBootstrapFit: B must be a positive integer scalar.";
+        end;
+    endif;
+
+    nobs = rows(w);
+
+    /* Base (unresampled) fit -- supplies the point estimate and the base
+       closed-form robust/cluster SE, and fails fast if the base fit
+       itself doesn't converge, before any resampling is attempted. */
+    qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+    if qOut.converged /= 1;
+        errorlog "quaidsRobustBootstrapFit: the base (unresampled) quaidsFit() did not converge.";
+        end;
+    endif;
+
+    rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+
+    n = qOut.n;
+    nint = qOut.nint;
+    n1 = qOut.n1;
+    wnam = qOut.wnam;
+    bDim1 = rows(rOut.b);
+    bDim2 = cols(rOut.b);
+    bVecDim = bDim1*bDim2;
+
+    if clusterId == 0;
+        nClusters = nobs;
+    else;
+        un = unique(clusterId, 1);
+        nClusters = rows(un);
+    endif;
+
+    if seed > 0;
+        rndseed seed;
+    endif;
+
+    bBoot = zeros(B, bVecDim);
+    completed = 0;
+    failed = 0;
+    attempts = 0;
+    maxAttempts = 5*B;
+
+    do until completed >= B or attempts >= maxAttempts;
+        attempts = attempts + 1;
+
+        if clusterId == 0;
+            idx = ceil(rndu(nobs, 1) * nobs);
+        else;
+            G = nClusters;
+            gDraw = un[ceil(rndu(G, 1) * G)];
+            idx = 0;
+            j = 1;
+            do while j <= G;
+                oneCluster = selif(seqa(1, 1, nobs), clusterId .== gDraw[j]);
+                if j == 1;
+                    idx = oneCluster;
+                else;
+                    idx = idx|oneCluster;
+                endif;
+                j = j + 1;
+            endo;
+        endif;
+
+        wB      = w[idx, .];
+        if intcpt == 0;
+            intcptB = 0;
+        else;
+            intcptB = intcpt[idx, .];
+        endif;
+        pricesB = prices[idx, .];
+        totexpB = totexp[idx, .];
+        instrB  = instr[idx, .];
+
+        { status, bVec } = _quaidsRobustBootOneRep(wB, intcptB, pricesB, totexpB, instrB, aCtl, nint, n, n1);
+
+        if status == 1;
+            completed = completed + 1;
+            bBoot[completed, .] = bVec;
+        else;
+            failed = failed + 1;
+        endif;
+    endo;
+
+    if completed < 1;
+        errorlog "quaidsRobustBootstrapFit: no valid bootstrap replications completed.";
+        end;
+    endif;
+
+    if completed < B;
+        bBoot = bBoot[1:completed, .];
+    endif;
+
+    /* Same row-major-vs-column-major reshape idiom Milestone 18 found
+       broken twice already -- written correctly from day one here. */
+    seBoot = reshape(stdc(bBoot), bDim2, bDim1)';
+
+    rbOut.n = n;
+    rbOut.nint = nint;
+    rbOut.wnam = wnam;
+    rbOut.b = rOut.b;
+    rbOut.seRobust = rOut.se;
+    rbOut.seBoot = seBoot;
+    rbOut.bBoot = bBoot;
+    rbOut.nRequested = B;
+    rbOut.nCompleted = completed;
+    rbOut.nFailed = failed;
+    rbOut.nAttempts = attempts;
+    rbOut.nClusters = nClusters;
+    rbOut.seed = seed;
+
+    retp(rbOut);
+endp;
+
+/*******************************************************************************
+**
+** PRINTQUAIDSROBUSTBOOTSTRAP
+**
+** Purpose:  prints the coefficient table with the base closed-form
+**           robust/cluster SE and the bootstrap SE side by side, plus the
+**           bootstrap run diagnostics, from a quaidsRobustBootOut
+**           structure.
+**
+** Format:     call printQuaidsRobustBootstrap(rbOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsRobustBootstrap(struct quaidsRobustBootOut rbOut);
+
+    local i;
+
+    print;
+    "COEFFICIENT ESTIMATES -- CLOSED-FORM vs. BOOTSTRAP ROBUST/CLUSTER STANDARD ERRORS";
+    print "Clusters:" rbOut.nClusters "Bootstrap replications -- requested:" rbOut.nRequested
+        "completed:" rbOut.nCompleted "failed:" rbOut.nFailed "attempts:" rbOut.nAttempts "seed:" rbOut.seed;
+    print;
+    format /rd 10, 4;
+    print$ ""~rbOut.wnam[1:cols(rbOut.b)]';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i = 1;
+    do while i <= rows(rbOut.b);
+        print$ (0$+ftocv(i, 1, 0))~ftocv(rbOut.b[i, .], 0, 4);
+        print$ (0$+"closed")~(0$+"("$+ftocv(rbOut.seRobust[i, .], 0, 2)$+")");
+        print$ (0$+"boot")~(0$+"("$+ftocv(rbOut.seBoot[i, .], 0, 2)$+")");
+        i = i + 1;
+    endo;
+    print;
+
+endp;

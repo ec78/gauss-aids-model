@@ -308,6 +308,65 @@ symmetry imposition, a simplified standard-error formula, and adding-up
 not holding exactly for the corrected coefficients -- a real property of
 the method itself, not a bug).
 
+## Robust and Cluster-Robust Standard Errors
+
+[quaidsRobustFit](command-reference/quaidsRobustFit.md) generalizes every
+other covariance in this library (which are all built on a pooled,
+homoskedastic `S = sse/nobs`) to a heteroskedasticity-robust or
+cluster-robust sandwich, given an already-fitted `qOut`:
+
+```gauss
+struct quaidsOut qOut;
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+// Heteroskedasticity-robust:
+struct quaidsRobustOut rOut;
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
+call printQuaidsRobust(rOut);
+
+// Cluster-robust (householdId is a Tx1 vector of group labels):
+struct quaidsRobustOut rOutCluster;
+rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, householdId);
+call printQuaidsRobust(rOutCluster);
+```
+
+Robust and cluster-robust are the same formula -- `clusterId = 0` means
+heteroskedasticity-robust (every observation is its own cluster); a
+supplied `Tx1` vector of group labels means cluster-robust with a CR1
+small-sample correction.
+
+A cluster-aware bootstrap is also available, resampling whole clusters
+(or plain rows, when `clusterId` is unset) and refitting
+[quaidsFit](command-reference/quaidsFit.md) on each resample:
+
+```gauss
+struct quaidsRobustBootOut rbOut;
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, householdId, 200, 42);
+call printQuaidsRobustBootstrap(rbOut);
+```
+
+**A real, important caveat, found empirically**:
+[quaidsRobustFit](command-reference/quaidsRobustFit.md)'s closed-form
+sandwich uses a *simplified* bread (`inv(gg)`-based, not the full
+nonlinear-price-index-feedback Jacobian correction
+[quaidsFit](command-reference/quaidsFit.md) itself uses), which makes its
+`se` dramatically more *conservative* (often 10-100x larger) than
+`qOut.homogSE`/`symcSE` -- confirmed to be an expected consequence of
+comparing a simple equation-by-equation sandwich against the full,
+cross-equation-efficient FGLS system, not a bug in the formula itself
+(verified against an independent hand-derivation using the same
+regressors/residuals). `quaidsRobustBootstrapFit`'s `seBoot`, which
+resamples the *actual* estimator, is typically much closer to `qOut`'s
+own SE -- prefer it when this gap matters. See
+[Methodology Notes](METHODOLOGY_NOTES.md#robust-and-cluster-robust-standard-errors)
+for the full derivation.
+
+Only covers the `n1` independently-estimated equations (equation `n` is
+recovered via adding-up, matching every other diagnostic in this
+library), and does not automatically propagate into `qOut.symcV` or into
+elasticities/shares/welfare's own delta-method SEs -- pass the new `v` in
+explicitly if you want those to reflect it.
+
 ## Reporting (`pubtable`)
 
 `src/pubtable_quaids.src` is an optional adapter onto the `pubtable`
@@ -373,3 +432,11 @@ runnable example.
   first-stage probit relies on GAUSS's built-in `glm()`, which can
   hard-crash (not just fail to converge) on some degenerate inputs -- a
   known, non-trappable failure mode, not hardened against in this pass.
+- [quaidsRobustFit](command-reference/quaidsRobustFit.md) (Milestone 20)
+  uses a simplified bread, making its closed-form `se` dramatically more
+  conservative than `qOut`'s own classical SE (a confirmed, expected
+  property, not a bug -- see that proc's own Remarks).
+  [quaidsRobustBootstrapFit](command-reference/quaidsRobustBootstrapFit.md)'s
+  bootstrap SE does not share this weakness. Neither proc's covariance
+  propagates automatically into `qOut.symcV` or into elasticities/shares/
+  welfare's own delta-method SEs.
