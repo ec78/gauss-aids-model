@@ -6,6 +6,9 @@
 ** tested public procs into the default post-estimation path: fit the demand
 ** system, evaluate predicted shares and elasticities at the sample mean, and
 ** compute robust/cluster-robust standard errors when the base fit converged.
+** A second proc, quaidsWorkflowScenarioFit(), adds exact welfare measures for
+** one explicit price-change scenario without changing quaidsWorkflowFit()'s
+** signature.
 */
 
 /*******************************************************************************
@@ -22,7 +25,7 @@
 
 proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId);
 
-    local n, nint, m_, intcptPt, pricesPt, totexpPt;
+    local n, nint, m_, intcptPt, pricesPt, totexpPt, statQ, pvalQ, dfQ;
     struct quaidsOut qOut;
     struct quaidsSharesOut sharesOut;
     struct quaidsElasOut elasOut;
@@ -44,11 +47,47 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     wfOut.n = qOut.n;
     wfOut.nobs = qOut.nobs;
     wfOut.nint = qOut.nint;
+    wfOut.wnam = qOut.wnam;
     wfOut.converged = qOut.converged;
     wfOut.iterations = qOut.iterations;
     wfOut.finalErr = qOut.finalErr;
     wfOut.symValid = qOut.symValid;
+    if qOut.symValid == 1;
+        wfOut.symStat = qOut.symStat;
+        wfOut.symPval = qOut.symPval;
+        wfOut.symDf = qOut.symDf;
+        wfOut.symReject05 = qOut.symPval < .05;
+    else;
+        wfOut.symStat = miss(0, 0);
+        wfOut.symPval = miss(0, 0);
+        wfOut.symDf = miss(0, 0);
+        wfOut.symReject05 = miss(0, 0);
+    endif;
     wfOut.overidValid = qOut.overidValid;
+    if qOut.overidValid == 1;
+        wfOut.overidFstat = qOut.overidFstat;
+        wfOut.overidPvf = qOut.overidPvf;
+        wfOut.overidDf = qOut.overidDf;
+        wfOut.overidReject05 = qOut.overidPvf .< .05;
+    else;
+        wfOut.overidFstat = miss(0, 0);
+        wfOut.overidPvf = miss(0, 0);
+        wfOut.overidDf = miss(0, 0);
+        wfOut.overidReject05 = miss(0, 0);
+    endif;
+    wfOut.quadraticValid = 0;
+    wfOut.quadraticStat = miss(0, 0);
+    wfOut.quadraticPval = miss(0, 0);
+    wfOut.quadraticDf = miss(0, 0);
+    wfOut.quadraticReject05 = miss(0, 0);
+    if qOut.linear == 0 and qOut.homogenous == 0;
+        { statQ, pvalQ, dfQ } = quaidsQuadraticTest(qOut);
+        wfOut.quadraticValid = 1;
+        wfOut.quadraticStat = statQ;
+        wfOut.quadraticPval = pvalQ;
+        wfOut.quadraticDf = dfQ;
+        wfOut.quadraticReject05 = pvalQ < .05;
+    endif;
     wfOut.b = qOut.b;
     wfOut.v = qOut.v;
     wfOut.bS = qOut.bS;
@@ -74,6 +113,17 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     wfOut.robustV = miss(0, 0);
     wfOut.robustSE = miss(0, 0);
     wfOut.robustNClusters = miss(0, 0);
+    wfOut.welfareValid = 0;
+    wfOut.cv = miss(0, 0);
+    wfOut.ev = miss(0, 0);
+    wfOut.seCV = miss(0, 0);
+    wfOut.seEV = miss(0, 0);
+    wfOut.u0 = miss(0, 0);
+    wfOut.u1 = miss(0, 0);
+    wfOut.scenarioIntcpt = miss(0, 0);
+    wfOut.scenarioPrices0 = miss(0, 0);
+    wfOut.scenarioPrices1 = miss(0, 0);
+    wfOut.scenarioTotexp0 = miss(0, 0);
 
     if qOut.converged == 1;
         sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
@@ -95,6 +145,46 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
         wfOut.robustV = robustOut.v;
         wfOut.robustSE = robustOut.se;
         wfOut.robustNClusters = robustOut.nClusters;
+    endif;
+
+    retp(wfOut);
+endp;
+
+
+/*******************************************************************************
+**
+** QUAIDSWORKFLOWSCENARIOFIT
+**
+** Purpose:   fit the default workflow and add exact CV/EV welfare measures
+**            for one explicit price-change scenario.
+**
+** Format:    struct quaidsWorkflowOut wfOut =
+**                quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr,
+**                    aCtl, clusterId, intcptPt, pricesPt0, pricesPt1, totexpPt0);
+**
+*******************************************************************************/
+
+proc (struct quaidsWorkflowOut) = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId,
+    intcptPt, pricesPt0, pricesPt1, totexpPt0);
+
+    struct quaidsWorkflowOut wfOut;
+    struct quaidsWelfareOut wOut;
+
+    wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+
+    if wfOut.postValid == 1;
+        wOut = quaidsWelfareFit(wfOut.bestB, wfOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
+        wfOut.welfareValid = 1;
+        wfOut.cv = wOut.cv;
+        wfOut.ev = wOut.ev;
+        wfOut.seCV = wOut.seCV;
+        wfOut.seEV = wOut.seEV;
+        wfOut.u0 = wOut.u0;
+        wfOut.u1 = wOut.u1;
+        wfOut.scenarioIntcpt = intcptPt;
+        wfOut.scenarioPrices0 = pricesPt0;
+        wfOut.scenarioPrices1 = pricesPt1;
+        wfOut.scenarioTotexp0 = totexpPt0;
     endif;
 
     retp(wfOut);

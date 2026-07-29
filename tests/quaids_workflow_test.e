@@ -3,8 +3,9 @@
 **
 ** Milestone 21 seed: validates quaidsWorkflowFit() as a thin composition
 ** layer over quaidsFit(), quaidsSharesFit(), quaidsElasFit(), and
-** quaidsRobustFit(). The point is parity with the explicit manual workflow,
-** not new econometrics.
+** quaidsRobustFit(); plus quaidsWorkflowScenarioFit() as the explicit
+** welfare-scenario extension. The point is parity with the explicit manual
+** workflow, not new econometrics.
 **
 ** Run from the tests/ directory:
 **   tgauss -b -x quaids_workflow_test.e
@@ -18,6 +19,8 @@ new;
 #include ../src/quaidsshares.src
 #include ../src/quaidsslutzky.src
 #include ../src/quaids.src;
+#include ../src/quaidstests.src
+#include ../src/quaidswelfare.src
 #include ../src/quaidsrobust.src
 #include ../src/quaidsworkflow.src
 #include quaidsfixtures.src;
@@ -64,6 +67,7 @@ totexpMean = m_[1+nint+n+1];
 struct quaidsSharesOut sharesOut;
 struct quaidsElasOut elasOut;
 struct quaidsRobustOut robustOut;
+struct quaidsWelfareOut welfareOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 robustOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
@@ -72,6 +76,14 @@ call check(wfOut.converged == 1 and wfOut.postValid == 1 and wfOut.robustValid =
     "workflow fit converged and computed post-estimation outputs");
 call check(wfOut.model $== qOut.model and wfOut.n == qOut.n and wfOut.nobs == qOut.nobs,
     "workflow metadata matches quaidsFit");
+call check(wfOut.symValid == qOut.symValid and wfOut.symStat == qOut.symStat and wfOut.symPval == qOut.symPval and wfOut.symDf == qOut.symDf,
+    "workflow symmetry summary matches quaidsFit");
+call check(wfOut.overidValid == 0 and scalmiss(wfOut.overidPvf),
+    "workflow overidentification summary is missing when exactly identified");
+call check(wfOut.quadraticValid == 0 and scalmiss(wfOut.quadraticPval),
+    "workflow quadratic summary is missing when model is AIDS");
+call check(wfOut.welfareValid == 0 and scalmiss(wfOut.cv),
+    "base workflow leaves welfare scenario fields missing");
 call check(maxc(maxc(abs(wfOut.bestB - qOut.bestB))) == 0,
     "workflow bestB matches quaidsFit exactly");
 call check(maxc(abs(wfOut.evalIntcpt - intcptMean)) == 0 and maxc(abs(wfOut.evalPrices - pricesMean)) == 0 and wfOut.evalTotexp == totexpMean,
@@ -88,6 +100,40 @@ call check(maxc(maxc(abs(wfOut.compPriceElas - elasOut.epc))) == 0,
     "workflow compensated price elasticities match quaidsElasFit exactly");
 call check(maxc(maxc(abs(wfOut.robustSE - robustOut.se))) == 0 and wfOut.robustNClusters == robustOut.nClusters,
     "workflow robust SE match quaidsRobustFit exactly");
+
+pricesPt1 = pricesMean;
+pricesPt1[1] = pricesPt1[1] + ln(1.05);
+
+struct quaidsWorkflowOut wfScenario;
+wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl, 0, intcptMean, pricesMean, pricesPt1, totexpMean);
+welfareOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
+
+call check(wfScenario.welfareValid == 1,
+    "workflow scenario computed welfare outputs");
+call check(wfScenario.cv == welfareOut.cv and wfScenario.ev == welfareOut.ev,
+    "workflow scenario CV/EV match quaidsWelfareFit exactly");
+call check(wfScenario.seCV == welfareOut.seCV and wfScenario.seEV == welfareOut.seEV,
+    "workflow scenario welfare SE match quaidsWelfareFit exactly");
+call check(maxc(abs(wfScenario.scenarioPrices1 - pricesPt1)) == 0 and wfScenario.scenarioTotexp0 == totexpMean,
+    "workflow scenario echoes welfare scenario inputs");
+
+struct quaidsControl aCtlQ;
+aCtlQ = quaidsControlCreate();
+aCtlQ.linear = 0;
+aCtlQ.maxiter = 100;
+aCtlQ.homogenous = 0;
+aCtlQ.err = .0001;
+
+struct quaidsWorkflowOut wfQ;
+struct quaidsOut qOutQ;
+wfQ = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtlQ, 0);
+qOutQ = quaidsFit(w, intcpt, prices, totexp, instr, aCtlQ);
+{ statQ, pvalQ, dfQ } = quaidsQuadraticTest(qOutQ);
+
+call check(wfQ.quadraticValid == 1,
+    "workflow quadratic summary is valid for unconstrained QUAIDS");
+call check(wfQ.quadraticStat == statQ and wfQ.quadraticPval == pvalQ and wfQ.quadraticDf == dfQ,
+    "workflow quadratic summary matches quaidsQuadraticTest exactly");
 
 print;
 print "-----------------------------------------------------------";

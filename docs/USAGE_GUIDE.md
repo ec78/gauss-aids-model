@@ -54,7 +54,26 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, householdId);
 The workflow object is intentionally a composition layer, not a separate
 estimator. Its fit fields come from `quaidsFit()`, and its post-estimation
 fields match direct calls to `quaidsSharesFit()`, `quaidsElasFit()`, and
-`quaidsRobustFit()` on the same sample-mean evaluation point.
+`quaidsRobustFit()` on the same sample-mean evaluation point. It also
+includes model/restriction summary fields such as `symPval`,
+`overidPvf`, and, for unconstrained QUAIDS fits, `quadraticPval`.
+
+Use [quaidsWorkflowScenarioFit](command-reference/quaidsWorkflowScenarioFit.md)
+when the same workflow should also return exact CV/EV for a price-change
+scenario:
+
+```gauss
+pricesPt1 = wfOut.evalPrices;
+pricesPt1[1] = pricesPt1[1] + ln(1.05);
+
+wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
+    0, wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
+
+if wfScenario.welfareValid;
+    print wfScenario.cv wfScenario.seCV;
+    print wfScenario.ev wfScenario.seEV;
+endif;
+```
 
 There is no formula-string (`"y ~ x1 + x2"`) API -- AIDS/QUAIDS is a
 multi-equation system (N budget shares against N parallel log prices),
@@ -396,6 +415,7 @@ and `pubtable` are available:
 
 ```gauss
 library pubtable, quaids;
+#include quaids.sdf
 #include pubtable_quaids.src
 
 struct ptTable coefTbl;
@@ -405,6 +425,10 @@ call ptExport(coefTbl, "results.tex");
 struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);   // 3x1: income, uncompensated, compensated
 call ptExport(elasTbls[1], "income_elasticities.md");
+
+struct ptTable workflowTbls;
+workflowTbls = ptTablesFromQuaidsWorkflow(wfOut);  // shares + elasticity tables, plus welfare if present
+call ptExport(workflowTbls[1], "workflow_shares.md");
 ```
 
 See the [command reference](COMMAND_REFERENCE.md#reporting-optional-requires-pubtable)

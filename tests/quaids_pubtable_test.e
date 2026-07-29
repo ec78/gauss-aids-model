@@ -3,9 +3,10 @@
 **
 ** Milestone 6: validates the pubtable adapter (src/pubtable_quaids.src) --
 ** ptModelFromQuaids/ptFromQuaids (coefficient tables), ptModelFromQuaidsElas/
-** ptFromQuaidsElas/ptTablesFromQuaidsElas (elasticity tables), and the
+** ptFromQuaidsElas/ptTablesFromQuaidsElas (elasticity tables),
+** ptTablesFromQuaidsWorkflow (workflow table bundle), and the
 ** ptFromQuaidsFamily dispatcher -- against a real quaidsFit()/
-** quaidsElasFit() result.
+** quaidsElasFit()/quaidsWorkflowFit() result.
 **
 ** Checks exact numeric parity between ptModel.estimates/stdErrors and the
 ** qOut.bestB/qOut.bestV (or elasOut.er/ser) values they're built from --
@@ -24,8 +25,13 @@ library pubtable;
 #include ../src/quaidsutil.src
 #include ../src/quaidsiv.src
 #include ../src/quaidselas.src
+#include ../src/quaidsshares.src
 #include ../src/quaidsslutzky.src
 #include ../src/quaids.src;
+#include ../src/quaidstests.src
+#include ../src/quaidswelfare.src
+#include ../src/quaidsrobust.src
+#include ../src/quaidsworkflow.src
 #include ../src/pubtable_quaids.src;
 #include quaidsfixtures.src;
 
@@ -162,6 +168,35 @@ call check(dispQ.title $== coefTbl.title, "ptFromQuaidsFamily(qOut): matches ptF
 struct ptTable dispE;
 dispE = ptFromQuaidsFamily(elasOut);
 call check(dispE.title $== elasIncomeTbl.title, "ptFromQuaidsFamily(elasOut): matches ptFromQuaidsElas");
+
+
+/* --- ptTablesFromQuaidsWorkflow: applied workflow bundle. --- */
+
+struct quaidsWorkflowOut wfOut;
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
+call check(wfOut.postValid == 1 and wfOut.robustValid == 1,
+    "quaidsWorkflowFit prerequisite for pubtable bundle is valid");
+
+struct ptTable wfTbls;
+wfTbls = ptTablesFromQuaidsWorkflow(wfOut);
+call check(rows(wfTbls) == 4, "ptTablesFromQuaidsWorkflow: returns 4 tables without welfare scenario");
+call check(wfTbls[1].title $== "Predicted budget shares",
+    "ptTablesFromQuaidsWorkflow[1]: predicted shares");
+call check(wfTbls[2].title $== "Income elasticities",
+    "ptTablesFromQuaidsWorkflow[2]: income elasticities");
+call check(strindx(wfTbls[3].title, "Uncompensated", 1) > 0,
+    "ptTablesFromQuaidsWorkflow[3]: uncompensated price elasticities");
+call check(strindx(wfTbls[4].title, "Compensated", 1) > 0,
+    "ptTablesFromQuaidsWorkflow[4]: compensated price elasticities");
+
+pricesPt1 = pricesMean;
+pricesPt1[1] = pricesPt1[1] + ln(1.05);
+
+struct quaidsWorkflowOut wfScenario;
+wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl, 0, intcptMean, pricesMean, pricesPt1, totexpMean);
+wfTbls = ptTablesFromQuaidsWorkflow(wfScenario);
+call check(rows(wfTbls) == 5 and wfTbls[5].title $== "Welfare scenario",
+    "ptTablesFromQuaidsWorkflow: includes welfare table when welfareValid");
 
 
 /* --- End-to-end export smoke test: LaTeX/Markdown/CSV. --- */

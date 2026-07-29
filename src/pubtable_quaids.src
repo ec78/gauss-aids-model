@@ -5,6 +5,7 @@
 ** estimation and elasticities):
 ** - quaidsOut       (quaidsFit(), quaids(), quaidsFull())
 ** - quaidsElasOut   (quaidsElasFit(), quaidsElas())
+** - quaidsWorkflowOut (quaidsWorkflowFit(), quaidsWorkflowScenarioFit())
 **
 ** Follows the same pattern as pubtable's own bundled pubtable_qardl.src
 ** adapter (c:\gauss26\pkgs\pubtable\src\pubtable_qardl.src): activated when
@@ -226,6 +227,51 @@ proc (struct ptTable) = ptTablesFromQuaidsElas(...);
         tbls = reshape(ptFromQuaidsElas(elasOut), 3, 1);
         tbls[2] = _ptQuaidsElasMatrixTable("Uncompensated (Marshallian) price elasticities", elasOut.ep, elasOut.sep, wnamSA, 3);
         tbls[3] = _ptQuaidsElasMatrixTable("Compensated (Hicksian) price elasticities", elasOut.epc, elasOut.sepc, wnamSA, 3);
+    #else;
+        _library_missing_error(currentprocname(), "QUAIDS");
+    #endif;
+
+    retp(tbls);
+endp;
+
+/*
+** ptTablesFromQuaidsWorkflow: applied workflow table bundle -- predicted
+** shares, income elasticities, uncompensated price elasticities, compensated
+** price elasticities, and (when available) one welfare scenario table. This
+** intentionally reports the workflow's applied outputs, not a duplicate
+** coefficient table; use ptFromQuaids(qOut) for coefficient reporting.
+*/
+proc (struct ptTable) = ptTablesFromQuaidsWorkflow(...);
+    local wnamSA, mdl, nTbls;
+    struct ptTable tbls;
+
+    #ifDef QUAIDS_SDF_INCLUDED
+        struct quaidsWorkflowOut wfOut;
+        wfOut = dynargsGet(1);
+
+        if wfOut.postValid /= 1;
+            errorlog "ptTablesFromQuaidsWorkflow: wfOut.postValid must be 1.";
+            end;
+        endif;
+
+        wnamSA = _ptQuaidsToStrArray(wfOut.wnam);
+
+        nTbls = 4 + (wfOut.welfareValid == 1);
+        mdl = ptModelCreate("Predicted budget shares", wfOut.shares, wfOut.sharesSE);
+        mdl = ptModelSetNames(mdl, wnamSA);
+        tbls = reshape(ptModelTable(mdl), nTbls, 1);
+
+        mdl = ptModelCreate("Income elasticities", wfOut.incomeElas, wfOut.incomeElasSE);
+        mdl = ptModelSetNames(mdl, wnamSA);
+        tbls[2] = ptModelTable(mdl);
+        tbls[3] = _ptQuaidsElasMatrixTable("Uncompensated (Marshallian) price elasticities", wfOut.priceElas, wfOut.priceElasSE, wnamSA, 3);
+        tbls[4] = _ptQuaidsElasMatrixTable("Compensated (Hicksian) price elasticities", wfOut.compPriceElas, wfOut.compPriceElasSE, wnamSA, 3);
+
+        if wfOut.welfareValid == 1;
+            mdl = ptModelCreate("Welfare scenario", wfOut.cv|wfOut.ev, wfOut.seCV|wfOut.seEV);
+            mdl = ptModelSetNames(mdl, "CV"$|"EV");
+            tbls[5] = ptModelTable(mdl);
+        endif;
     #else;
         _library_missing_error(currentprocname(), "QUAIDS");
     #endif;

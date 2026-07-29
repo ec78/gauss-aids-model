@@ -317,11 +317,25 @@ struct quaidsWorkflowOut {
     matrix n;
     matrix nobs;
     matrix nint;
+    matrix wnam;
     matrix converged;
     matrix iterations;
     matrix finalErr;
     matrix symValid;
+    matrix symStat;
+    matrix symPval;
+    matrix symDf;
+    matrix symReject05;
     matrix overidValid;
+    matrix overidFstat;
+    matrix overidPvf;
+    matrix overidDf;
+    matrix overidReject05;
+    matrix quadraticValid;
+    matrix quadraticStat;
+    matrix quadraticPval;
+    matrix quadraticDf;
+    matrix quadraticReject05;
     matrix b;
     matrix v;
     matrix bS;
@@ -346,6 +360,17 @@ struct quaidsWorkflowOut {
     matrix robustV;
     matrix robustSE;
     matrix robustNClusters;
+    matrix welfareValid;
+    matrix cv;
+    matrix ev;
+    matrix seCV;
+    matrix seEV;
+    matrix u0;
+    matrix u1;
+    matrix scenarioIntcpt;
+    matrix scenarioPrices0;
+    matrix scenarioPrices1;
+    matrix scenarioTotexp0;
 };
 
 #endif

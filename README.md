@@ -114,7 +114,8 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
 - Dataframe/column-name entry point (`quaidsFull`) alongside the matrix API.
 - Applied workflow entry point (`quaidsWorkflowFit`) that bundles
   `quaidsFit`, mean-point predicted shares, elasticities, and robust or
-  cluster-robust standard errors.
+  cluster-robust standard errors; `quaidsWorkflowScenarioFit` adds exact
+  CV/EV for one explicit price-change scenario.
 - Optional LaTeX/Markdown/CSV/RTF/HTML/XLSX export via the `pubtable`
   package (`src/pubtable_quaids.src`).
 - Cross-implementation validated against an independent R (`micEconAids`)
@@ -145,6 +146,7 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
 
 ```gauss
 library pubtable, quaids;
+#include quaids.sdf
 #include pubtable_quaids.src   // not in package.json's src array -- see docs/COMMAND_REFERENCE.md
 
 struct ptTable coefTbl;
@@ -154,6 +156,10 @@ call ptExport(coefTbl, "results.tex");   // .tex/.md/.csv/.rtf/.html/.xlsx by ex
 struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);  // 3x1: income, uncompensated, compensated
 call ptExportAll(elasTbls, "elasticities");
+
+struct ptTable workflowTbls;
+workflowTbls = ptTablesFromQuaidsWorkflow(wfOut);
+call ptExportAll(workflowTbls, "workflow");
 ```
 
 Requires the [pubtable](https://github.com/aptech/gauss_table_creator)
@@ -167,12 +173,13 @@ The `examples/` directory contains runnable GAUSS programs:
 | File | Description |
 | --- | --- |
 | `quaids_example.e` | End-to-end synthetic-data workflow: fit, print, eyeball-compare to true parameters |
+| `workflow_example.e` | One-call workflow: fit, mean-point shares/elasticities, robust SE, and CV/EV scenario |
 | `pubtable_export_example.e` | Export a coefficient table and elasticity tables to LaTeX/Markdown/CSV |
 
 ## Testing
 
-Run the source-tree test suite (7 test files, 150 checks, plus a
-package-manifest consistency check):
+Run the source-tree test suite, including package-manifest consistency and
+expected guard-error checks:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1

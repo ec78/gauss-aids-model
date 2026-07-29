@@ -389,7 +389,7 @@ workflows and methodology extensions in this order:
    model-family extensions such as EASI only after the applied workflow layer
    is stable.
 
-### Milestone 21 — Applied Workflow Driver — IN PROGRESS
+### Milestone 21 — Applied Workflow Driver — COMPLETE
 
 - [x] Add the first workflow-layer proc, `quaidsWorkflowFit()`, as a thin
   composition wrapper around existing public APIs rather than a new
@@ -400,13 +400,15 @@ workflows and methodology extensions in this order:
 - [x] Add source-tree parity coverage proving the workflow output matches
   explicit manual calls to `quaidsFit()`, `quaidsSharesFit()`,
   `quaidsElasFit()`, and `quaidsRobustFit()`.
-- [ ] Add model-choice and restriction-test summaries, including a convenient
+- [x] Add model-choice and restriction-test summaries, including a convenient
   path for `quaidsQuadraticTest()` on an unconstrained QUAIDS comparison fit.
-- [ ] Add optional welfare scenario inputs and output fields.
-- [ ] Add export-ready result bundles or adapters so workflow output can feed
+- [x] Add optional welfare scenario inputs and output fields via
+  `quaidsWorkflowScenarioFit()`, preserving `quaidsWorkflowFit()`'s shorter
+  signature.
+- [x] Add export-ready result bundles or adapters so workflow output can feed
   `pubtable` without manual reshaping.
-- [ ] Add installed-package public API coverage and examples before closing
-  this milestone.
+- [x] Add installed-package public API coverage before closing this milestone.
+- [x] Add examples before closing this milestone.
 
 Each milestone should exit with source tests, examples, and docs updated
 together — no milestone is "done" with code alone.

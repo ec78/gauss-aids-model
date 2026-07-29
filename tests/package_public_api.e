@@ -62,6 +62,10 @@ new;
 ** fixture diverge, confirmed directly -- see src/quaidscurvature.src's
 ** header and tests/quaids_curvature_test.e for the full story).
 **
+** Milestone 21 adds quaidsWorkflowFit()/quaidsWorkflowScenarioFit(), both
+** exercised against the converged seed=500 AIDS fixture used by the
+** curvature block below.
+**
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
 */
@@ -530,6 +534,31 @@ call assert_true(rows(rbOut.seBoot) == rows(rbOut.b) and cols(rbOut.seBoot) == c
     "quaidsRobustBootstrapFit: seBoot shape does not match rbOut.b");
 
 call printQuaidsRobustBootstrap(rbOut);
+
+
+/* --- quaidsWorkflowFit() / quaidsWorkflowScenarioFit() (Milestone 21) ---
+   Uses the same converged seed=500 AIDS fixture as the curvature and
+   robust-bootstrap blocks, so post-estimation and robust outputs should
+   be valid. */
+
+struct quaidsWorkflowOut wfOut;
+wfOut = quaidsWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0);
+call assert_true(wfOut.postValid == 1 and wfOut.robustValid == 1,
+    "quaidsWorkflowFit: post/robust outputs were not computed");
+call assert_true(rows(wfOut.shares) == Nc and rows(wfOut.incomeElas) == Nc,
+    "quaidsWorkflowFit: post-estimation output shapes invalid");
+
+mWF = meanc(qOutC.intcptFull~pricesC~totexpC);
+intcptWF = mWF[1:1+qOutC.nint];
+pricesWF0 = mWF[1+qOutC.nint+1:1+qOutC.nint+qOutC.n];
+totexpWF0 = mWF[1+qOutC.nint+qOutC.n+1];
+pricesWF1 = pricesWF0;
+pricesWF1[1] = pricesWF1[1] + ln(1.02);
+
+struct quaidsWorkflowOut wfScenario;
+wfScenario = quaidsWorkflowScenarioFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, intcptWF, pricesWF0, pricesWF1, totexpWF0);
+call assert_true(wfScenario.welfareValid == 1 and wfScenario.seCV >= 0 and wfScenario.seEV >= 0,
+    "quaidsWorkflowScenarioFit: welfare outputs invalid");
 
 
 print "package_public_api.e: PASS";

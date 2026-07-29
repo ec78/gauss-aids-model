@@ -149,12 +149,17 @@ src/
                     #   applied workflow layer composing quaidsFit(),
                     #   quaidsSharesFit(), quaidsElasFit(), and
                     #   quaidsRobustFit() into one silent struct-returning
-                    #   call. This is not a new estimator; it is the first
-                    #   public one-call workflow bundle for applied scripts.
+                    #   call, plus quaidsWorkflowScenarioFit(), which fills
+                    #   the same struct's welfare fields for one explicit
+                    #   CV/EV price-change scenario. This is not a new
+                    #   estimator; it is the first public one-call workflow
+                    #   bundle for applied scripts.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
                     #   ptTablesFromQuaidsElas() (elasticity tables),
+                    #   ptTablesFromQuaidsWorkflow() (Milestone 21
+                    #   applied workflow table bundle),
                     #   ptFromQuaidsFamily() dispatcher. NOT in
                     #   package.json's src array or self-included by any
                     #   other src/ file -- has a hard compile-time
@@ -181,6 +186,10 @@ examples/
                     #   (except tests/package_public_api.e, which is also
                     #   library-based, by design -- see "Testing status"
                     #   below).
+  workflow_example.e # Milestone 21: installed-package one-call applied
+                    #   workflow example using quaidsWorkflowFit() and
+                    #   quaidsWorkflowScenarioFit() for mean-point shares/
+                    #   elasticities/robust SE and a CV/EV scenario.
   pubtable_export_example.e # Milestone 6: same style, but exports a
                     #   quaidsFit() coefficient table and a
                     #   quaidsElasFit() elasticity report to
@@ -294,11 +303,14 @@ tests/
                     #   finiteness/non-negativity of se/v and se==sqrt(diag(v));
                     #   a shifted evaluation point gives a genuinely
                     #   different share (non-vacuous).
-  quaids_pubtable_test.e       # Milestone 6: 30 checks -- exact numeric
+  quaids_pubtable_test.e       # Milestone 6/Milestone 21: pubtable adapter
+                    #   checks -- exact numeric
                     #   parity between pubtable ptModel.estimates/
                     #   stdErrors and the qOut.bestB/qOut.bestV/
                     #   elasOut.er/ser values they're built from, shape/
                     #   title checks, the ptFromQuaidsFamily dispatcher,
+                    #   ptTablesFromQuaidsWorkflow() workflow bundle
+                    #   checks,
                     #   and an end-to-end export smoke test that writes
                     #   real .tex/.md/.csv files and reads them back.
                     #   Requires the pubtable package installed.
@@ -414,7 +426,9 @@ tests/
   quaids_workflow_test.e  # Milestone 21 seed: parity checks proving
                     #   quaidsWorkflowFit() returns the same fit,
                     #   mean-point shares/elasticities, and robust SE as
-                    #   explicit calls to the underlying public APIs.
+                    #   explicit calls to the underlying public APIs; also
+                    #   checks restriction/model-choice summaries and
+                    #   quaidsWorkflowScenarioFit() welfare parity.
   package_public_api.e   # Milestone 7: installed-package release gate --
                     #   `library quaids;` (not #include) against a real
                     #   install, exercising quaidsControlCreate/
@@ -2826,16 +2840,19 @@ needed downstream quantities together. The first seed is
 `quaidsWorkflowFit()` (`src/quaidsworkflow.src`), which deliberately
 composes existing public APIs rather than adding another estimator:
 `quaidsFit()` for the core fit, `quaidsSharesFit()` and `quaidsElasFit()`
-at the sample mean, and `quaidsRobustFit()` for robust/cluster-robust SE.
-Its flat `quaidsWorkflowOut` struct is meant for scripts, notebooks, and
-future export/reporting adapters that need one object with model status,
-the evaluation point, predicted shares, elasticities, and robust inference.
+at the sample mean, `quaidsRobustFit()` for robust/cluster-robust SE, and
+numeric model/restriction summaries (`symPval`, `overidPvf`,
+`quadraticPval` when the fit is an unconstrained QUAIDS comparison).
+`quaidsWorkflowScenarioFit()` preserves the shorter base signature and adds
+explicit welfare scenario inputs (`intcptPt`, `pricesPt0`, `pricesPt1`,
+`totexpPt0`) to fill the same `quaidsWorkflowOut` struct's CV/EV fields
+via `quaidsWelfareFit()`.
 
 Current scope is intentionally conservative: mean-point post-estimation
-and robust inference only when the base fit converges. Follow-ups tracked
-in `GOLD_STANDARD_TODO.md` include model-choice/restriction summaries,
-optional welfare scenario inputs, export-ready result bundles, installed-
-package public API coverage, and broader workflow validation.
+and robust inference only when the base fit converges, and one explicit
+welfare scenario at a time. Follow-ups tracked in `GOLD_STANDARD_TODO.md`
+include export-ready result bundles/adapters, examples, and broader
+workflow validation.
 
 ## What GAUSS already provides — do not duplicate
 
@@ -3095,7 +3112,10 @@ above.
   `quaidsWorkflowFit()` returns the same core fit, sample-mean evaluation
   point, predicted shares, elasticities, and robust standard errors as
   explicit calls to `quaidsFit()`/`quaidsSharesFit()`/`quaidsElasFit()`/
-  `quaidsRobustFit()` on the same fixture.
+  `quaidsRobustFit()` on the same fixture. It also checks symmetry/
+  overidentification/quadratic summary fields and verifies
+  `quaidsWorkflowScenarioFit()`'s CV/EV fields against
+  `quaidsWelfareFit()`.
 
 All fifteen routine source-tree files print one
 `PASS`/`FAIL` line per check and a final `...: ALL N CHECKS PASSED` (or a

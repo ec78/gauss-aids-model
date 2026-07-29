@@ -29,6 +29,13 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
 - Core fit metadata and coefficient blocks copied from `quaidsOut`:
   `model`, `converged`, `iterations`, `finalErr`, `b`, `v`, `bS`, `vS`,
   `bestB`, `bestV`, `symValid`, and `overidValid`.
+- Restriction/model-choice summaries:
+  `symStat`, `symPval`, `symDf`, `symReject05`, `overidFstat`,
+  `overidPvf`, `overidDf`, `overidReject05`, `quadraticValid`,
+  `quadraticStat`, `quadraticPval`, `quadraticDf`, `quadraticReject05`.
+  The quadratic summary is filled only for unconstrained QUAIDS fits
+  (`aCtl.linear=0`, `aCtl.homogenous=0`), matching
+  [quaidsQuadraticTest](quaidsQuadraticTest.md)'s own contract.
 - Evaluation point fields: `evalIntcpt`, `evalPrices`, `evalTotexp`, all set
   to the sample mean used for post-estimation.
 - Mean-point predicted shares: `shares`, `sharesSE`, `sharesV`.
@@ -36,6 +43,11 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
   `priceElasSE`, `compPriceElas`, `compPriceElasSE`.
 - Robust/cluster-robust outputs: `robustB`, `robustV`, `robustSE`,
   `robustNClusters`.
+- Welfare scenario outputs are present in the struct but left missing by
+  `quaidsWorkflowFit()`: `welfareValid`, `cv`, `ev`, `seCV`, `seEV`,
+  `u0`, `u1`, `scenarioIntcpt`, `scenarioPrices0`, `scenarioPrices1`,
+  `scenarioTotexp0`. Use
+  [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md) to fill them.
 - Flags: `postValid` and `robustValid`, equal to `1` only when the base
   `quaidsFit()` converged and the post-estimation products were computed.
 
@@ -52,6 +64,9 @@ manual sequence:
 
 If `qOut.converged /= 1`, the workflow returns the core fit fields but leaves
 post-estimation fields missing and sets `postValid = robustValid = 0`.
+
+For a one-call workflow that also computes CV/EV for a price-change scenario,
+use [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md).
 
 ## Examples
 
@@ -77,5 +92,6 @@ endif;
 
 ## See Also
 
+[quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md),
 [quaidsFit](quaidsFit.md), [quaidsSharesFit](quaidsSharesFit.md),
 [quaidsElasFit](quaidsElasFit.md), [quaidsRobustFit](quaidsRobustFit.md)

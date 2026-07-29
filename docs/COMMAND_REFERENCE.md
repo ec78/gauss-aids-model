@@ -23,6 +23,7 @@ sections.
 - [quaids](command-reference/quaids.md)
 - [quaidsFull](command-reference/quaidsFull.md)
 - [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md)
+- [quaidsWorkflowScenarioFit](command-reference/quaidsWorkflowScenarioFit.md)
 
 ## Hypothesis Tests
 
@@ -84,4 +85,5 @@ the [Reporting section of the usage guide](USAGE_GUIDE.md#reporting-pubtable).
 - [ptModelFromQuaidsElas](command-reference/ptModelFromQuaidsElas.md)
 - [ptFromQuaidsElas](command-reference/ptFromQuaidsElas.md)
 - [ptTablesFromQuaidsElas](command-reference/ptTablesFromQuaidsElas.md)
+- [ptTablesFromQuaidsWorkflow](command-reference/ptTablesFromQuaidsWorkflow.md)
 - [ptFromQuaidsFamily](command-reference/ptFromQuaidsFamily.md)

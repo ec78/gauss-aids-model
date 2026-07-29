@@ -36,8 +36,22 @@ below match `package.json` at the time each milestone landed.
   applied workflow bundle, composing `quaidsFit()`, `quaidsSharesFit()`,
   `quaidsElasFit()`, and `quaidsRobustFit()` into one silent,
   struct-returning call.
+- `quaidsWorkflowFit()` now includes restriction/model-choice summary
+  fields for symmetry, overidentification, and unconstrained-QUAIDS
+  quadratic-term tests.
+- `quaidsWorkflowScenarioFit()` fills the workflow struct's exact CV/EV
+  welfare fields for one explicit price-change scenario while preserving
+  `quaidsWorkflowFit()`'s shorter base signature.
+- `ptTablesFromQuaidsWorkflow()` in the optional `pubtable_quaids.src`
+  adapter exports workflow shares, elasticities, and welfare-scenario
+  outputs without manual reshaping.
+- `examples/workflow_example.e` demonstrates the installed-package workflow
+  path.
 - `tests/quaids_workflow_test.e` parity coverage proving workflow output
-  matches explicit calls to the underlying public APIs.
+  matches explicit calls to the underlying public APIs, including welfare
+  scenario parity.
+- `tests/package_public_api.e` now exercises the workflow procs against
+  the installed package release gate.
 - Source-test harness coverage for expected guard failures, including
   invalid robust/cluster inputs, invalid curvature inputs, and malformed
   `aCtl.b0` matrices.
