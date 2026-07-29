@@ -379,6 +379,8 @@ workflows and methodology extensions in this order:
 3. **Data validation and diagnostics**: add a preflight diagnostic layer for
    share adding-up, zero/negative shares, weak instruments, collinearity,
    missing values, price variation, convergence risk, and cluster counts.
+   The first increment is now present via `quaidsPreflight()` and
+   `printQuaidsPreflight()`.
 4. **Survey/microdata support**: support sampling weights, clusters, strata,
    replicate weights, and population aggregation workflows. This is the
    highest practical value for household expenditure data.
@@ -433,6 +435,27 @@ workflows and methodology extensions in this order:
   post-estimation fields.
 - [x] Add installed-package public API smoke calls and command-reference
   documentation for both new helpers.
+
+### Milestone 23 -- Preflight Data/Design Diagnostics -- COMPLETE
+
+- [x] Add `quaidsPreflight()` as a silent, struct-returning diagnostic pass
+  that runs before estimation and does not mutate inputs or call
+  `quaidsFit()`.
+- [x] Add `quaidsPreflightOut` fields for dimensions, finite-value checks,
+  share adding-up, zero/negative shares, price/expenditure/instrument
+  variation, first-stage IV F statistics, design invertibility, cluster
+  counts, and convergence-risk screening.
+- [x] Add `printQuaidsPreflight()` as the separated console printer,
+  preserving the package's Fit/print split.
+- [x] Add focused source-tree coverage in `tests/quaids_preflight_test.e`
+  and installed-package smoke coverage in `tests/package_public_api.e`.
+- [x] Add command-reference, usage-guide, feature-matrix, README, changelog,
+  and CLAUDE orientation updates.
+
+Follow-ups: richer weak-IV diagnostics, user-configurable tolerances, a
+workflow field embedding `quaidsPreflightOut`, and survey-design-aware
+preflight checks should be considered with the survey/microdata milestone
+rather than forced into this first diagnostic slice.
 
 Each milestone should exit with source tests, examples, and docs updated
 together — no milestone is "done" with code alone.

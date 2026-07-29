@@ -58,6 +58,7 @@ $gaussTests = @(
     "quaids_reliability_regression_test.e",
     "quaids_zero_test.e",
     "quaids_robust_test.e",
+    "quaids_preflight_test.e",
     "quaids_workflow_test.e"
 )
 

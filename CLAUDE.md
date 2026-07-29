@@ -149,6 +149,12 @@ src/
                     #   qOut.bestB's full basis for shares/elasticities/
                     #   welfare delta-method SE. See "Milestone 20" and
                     #   "Milestone 22" below.
+  quaidsdiagnostics.src # Milestone 23: quaidsPreflight()/
+                    #   printQuaidsPreflight() -- silent, estimator-free
+                    #   preflight diagnostics for dimensions, finite data,
+                    #   share adding-up, zero/negative shares, variation,
+                    #   first-stage IV strength, design invertibility,
+                    #   cluster counts, and convergence-risk screening.
   quaidsworkflow.src # Milestone 21 seed: quaidsWorkflowFit(), a thin
                     #   applied workflow layer composing quaidsFit(),
                     #   quaidsSharesFit(), quaidsElasFit(), and
@@ -433,6 +439,11 @@ tests/
                     #   run_source_tests.ps1's default invocation -- added
                     #   to the same -SkipBootstrap-gated group as
                     #   quaids_curvature_bootstrap_test.e.
+  quaids_preflight_test.e  # Milestone 23: 14 checks -- clean preflight,
+                    #   zero-share warning, negative-share hard failure,
+                    #   adding-up failure, cluster summaries, low price
+                    #   variation warning, singular-design hard failure,
+                    #   and dimension-mismatch return.
   quaids_workflow_test.e  # Milestone 21 seed: parity checks proving
                     #   quaidsWorkflowFit() returns the same fit,
                     #   mean-point shares/elasticities, robust coefficient
@@ -447,6 +458,7 @@ tests/
                     #   getDefaultQuaidsControl, quaidsFit/printQuaids/
                     #   quaids, quaidsFull, quaidsElasFit/quaidsElas/
                     #   printQuaidsElas, quaidsSlutzky,
+                    #   quaidsPreflight/printQuaidsPreflight,
                     #   quaidsHomogeneityTest/quaidsJointTest. Builds its
                     #   own small inline synthetic dataset rather than
                     #   reusing quaidsfixtures.src (tests/-only, not part
@@ -2898,6 +2910,32 @@ Testing added source-tree parity in `tests/quaids_robust_test.e` and
 propagation changes standard errors/covariance only; predicted shares,
 elasticities, and CV/EV point estimates stay identical to the classical
 post-estimation calls.
+
+## Milestone 23: preflight data/design diagnostics (complete)
+
+Milestone 23 adds `src/quaidsdiagnostics.src` with
+`quaidsPreflight()`/`printQuaidsPreflight()`. This is deliberately a
+diagnostic/reporting layer, not a new estimator and not a hidden call to
+`quaidsFit()`: it inspects the raw matrices before estimation and returns a
+flat `quaidsPreflightOut` struct with machine-readable flags and metrics.
+
+The first slice covers dimensions/control validity, finite-value checks
+(`x .== x` plus `scalmiss()`), share adding-up, zero and negative budget
+shares, price/total-expenditure/instrument variation, a first-stage design
+invertibility guard, the same first-stage IV F statistic produced by
+`_quaidsIVFirstStage()`, cluster counts/minimum cluster size/singletons,
+and a simple convergence-risk screen (`0` low, `1` elevated, `2` high).
+Hard failures set `ok=0`; zero shares, low variation, weak IV, few/singleton
+clusters, and elevated convergence risk are warnings.
+
+Testing: `tests/quaids_preflight_test.e` validates the clean path, zero-share
+warning, negative-share hard failure, adding-up failure, explicit cluster
+summaries, low price variation warning, and dimension-mismatch return. The
+installed package smoke test also calls `quaidsPreflight()` and
+`printQuaidsPreflight()` against the stable seed=500 fixture. Follow-ups
+belong with later workflow/survey milestones: user-configurable tolerances,
+embedding preflight output in `quaidsWorkflowOut`, richer weak-IV checks,
+and survey-design-aware diagnostics.
 
 ## What GAUSS already provides — do not duplicate
 

@@ -16,7 +16,7 @@ overidentification).
 This library is **pre-alpha** (package version `0.15.0`). The original
 roadmap plus Milestones 11-20 are complete, and the post-20 workflow
 roadmap has begun with `quaidsWorkflowFit()`. Completed pieces include the estimation core,
-hypothesis tests, elasticities, diagnostics, dataframe entry point,
+hypothesis tests, elasticities, preflight diagnostics, dataframe entry point,
 `pubtable` export, zero-budget correction, robust/bootstrap inference,
 release tooling, and the documentation set. Remaining caveats are documented
 validation and convergence limits -- see `GOLD_STANDARD_TODO.md` for the
@@ -66,6 +66,13 @@ aCtl.linear = 0;          // 0 = QUAIDS, 1 = AIDS/LA-AIDS
 aCtl.maxiter = 100;       // 1 = one-step Stone-index LA-AIDS
 aCtl.homogenous = 1;      // impose homogeneity (and test/report symmetry)
 
+struct quaidsPreflightOut pOut;
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0);
+if not pOut.ok;
+    call printQuaidsPreflight(pOut);
+    end;
+endif;
+
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
@@ -111,6 +118,9 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
   sample mean/quartiles.
 - Slutzky negativity diagnostic (`quaidsSlutzky`), evaluated
   observation-by-observation.
+- Preflight data/design diagnostics (`quaidsPreflight`) for dimensions,
+  non-finite values, share adding-up, zero/negative shares, weak
+  instruments, low variation, and cluster counts.
 - Dataframe/column-name entry point (`quaidsFull`) alongside the matrix API.
 - Applied workflow entry point (`quaidsWorkflowFit`) that bundles
   `quaidsFit`, mean-point predicted shares, elasticities, and robust or

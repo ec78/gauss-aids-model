@@ -304,6 +304,55 @@ struct quaidsRobustBootOut {
 };
 
 /*
+** quaidsPreflightOut -- struct returned by quaidsPreflight(): a silent,
+** estimator-free data and design diagnostic pass for applied workflows.
+** It flags hard input problems before quaidsFit(), plus warnings for
+** issues that commonly explain weak, unstable, or non-converged fits.
+*/
+struct quaidsPreflightOut {
+    matrix ok;
+    matrix nErrors;
+    matrix nWarnings;
+    matrix nobs;
+    matrix n;
+    matrix nint;
+    matrix ninst;
+    matrix n1;
+    matrix dimensionsOk;
+    matrix finiteOk;
+    matrix nonFiniteCount;
+    matrix shareAddOk;
+    matrix shareSumTol;
+    matrix maxShareSumDev;
+    matrix zeroShareCount;
+    matrix zeroShareFrac;
+    matrix negativeShareCount;
+    matrix negativeShareFrac;
+    matrix priceStd;
+    matrix minPriceStd;
+    matrix lowPriceVariation;
+    matrix totexpStd;
+    matrix lowTotexpVariation;
+    matrix instrStd;
+    matrix minInstrStd;
+    matrix lowInstrVariation;
+    matrix designCols;
+    matrix designDf;
+    matrix designInvOk;
+    matrix ivDiagnosticsValid;
+    matrix ivFstat;
+    matrix ivPvf;
+    matrix weakIV;
+    matrix clusterValid;
+    matrix nClusters;
+    matrix minClusterSize;
+    matrix singletonClusters;
+    matrix clusterWarning;
+    matrix controlValid;
+    matrix convergenceRisk;
+};
+
+/*
 ** quaidsWorkflowOut -- struct returned by quaidsWorkflowFit(): a first
 ** high-level applied workflow bundle around quaidsFit(), collecting the
 ** core fit plus the standard mean-point post-estimation products most

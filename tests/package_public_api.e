@@ -67,6 +67,7 @@ new;
 ** curvature block below. Milestone 22 adds
 ** quaidsRobustCovariance()/quaidsRobustBootstrapCovariance(), exercising
 ** robust/cluster covariance propagation from the installed package.
+** Milestone 23 adds quaidsPreflight()/printQuaidsPreflight().
 **
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
@@ -347,6 +348,18 @@ aCtlC.err = .0001;
 struct quaidsOut qOutC;
 qOutC = quaidsFit(wC, 0, pricesC, totexpC, instrC, aCtlC);
 call assert_true(qOutC.converged == 1, "quaidsCurvatureFit prerequisite AIDS fit did not converge");
+
+/* --- quaidsPreflight() / printQuaidsPreflight() (Milestone 23) --- */
+struct quaidsPreflightOut pOutC;
+pOutC = quaidsPreflight(wC, 0, pricesC, totexpC, instrC, aCtlC, 0);
+call assert_true(pOutC.ok == 1 and pOutC.dimensionsOk == 1 and pOutC.designInvOk == 1,
+    "quaidsPreflight: converged seed=500 fixture did not pass preflight");
+call assert_true(pOutC.ivDiagnosticsValid == 1 and rows(pOutC.ivFstat) == 1,
+    "quaidsPreflight: IV diagnostics invalid");
+call assert_true(pOutC.clusterValid == 1 and pOutC.nClusters == tobsC,
+    "quaidsPreflight: clusterId=0 robust cluster summary invalid");
+
+call printQuaidsPreflight(pOutC);
 
 struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOutC, wC, pricesC, totexpC, aCtlC);

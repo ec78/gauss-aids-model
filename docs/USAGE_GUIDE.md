@@ -5,6 +5,22 @@ output conventions for the GAUSS QUAIDS package.
 
 ## Choosing An API
 
+Use [quaidsPreflight](command-reference/quaidsPreflight.md) before fitting
+when you want a silent data/design screen for common applied problems:
+dimension mismatches, non-finite values, share adding-up failures,
+zero/negative shares, weak instruments, low variation, cluster counts, and
+basic convergence-risk hints:
+
+```gauss
+struct quaidsPreflightOut pOut;
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, householdId);
+
+if not pOut.ok;
+    call printQuaidsPreflight(pOut);
+    end;
+endif;
+```
+
 Use [quaidsFit](command-reference/quaidsFit.md) when you want a silent,
 struct-returning call with no console output -- the right choice for
 scripts, simulations, and anywhere you only need the returned structure:

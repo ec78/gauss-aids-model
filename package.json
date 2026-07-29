@@ -31,6 +31,7 @@
         "quaidscurvature.src",
         "quaidswelfare.src",
         "quaidsrobust.src",
+        "quaidsdiagnostics.src",
         "quaidsworkflow.src"
     ],
     "version": "0.15.0"

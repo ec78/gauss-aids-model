@@ -33,6 +33,8 @@ sections.
 
 ## Elasticities and Diagnostics
 
+- [quaidsPreflight](command-reference/quaidsPreflight.md)
+- [printQuaidsPreflight](command-reference/printQuaidsPreflight.md)
 - [quaidsElasFit](command-reference/quaidsElasFit.md)
 - [printQuaidsElas](command-reference/printQuaidsElas.md)
 - [quaidsElas](command-reference/quaidsElas.md)

@@ -24,6 +24,7 @@ for the exact switch values.
 | Predicted budget shares at arbitrary points | Yes (`quaidsSharesFit`, since Milestone 16, no extra dependency) | Yes | Yes |
 | Exact algebraic identity validation (Engel/Cournot/homogeneity) | Yes | Yes | Yes |
 | Slutzky negativity diagnostic | Yes (`quaidsSlutzky`) | Yes | Yes |
+| Preflight data/design diagnostics | Yes (`quaidsPreflight`, since Milestone 23) | Yes | Yes |
 | Welfare measures (exact CV/EV) | Yes (`quaidsWelfareFit`, no extra dependency) | Yes | Yes |
 | Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | Yes since Milestone 13, requires `aCtl.relax` -- see Notes |
 | Curvature bootstrap standard errors | Yes (`quaidsCurvatureBootstrapFit`, since Milestone 15 -- see Notes) | Yes (same) | Yes (same) |

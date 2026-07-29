@@ -1,0 +1,303 @@
+/*
+** quaidsdiagnostics.src
+**
+** Milestone 23: estimator-free preflight diagnostics for applied QUAIDS/
+** AIDS workflows. The public quaidsPreflight() proc is silent and returns
+** a struct; printQuaidsPreflight() is the optional console report.
+*/
+
+/*******************************************************************************
+**
+** QUAIDSPREFLIGHT
+**
+** Purpose:  inspect the raw sample and first-stage design before fitting
+**           quaidsFit(), without mutating inputs or estimating the demand
+**           system.
+**
+** Format:   struct quaidsPreflightOut pOut =
+**               quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+**
+*******************************************************************************/
+
+proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, instr,
+    struct quaidsControl aCtl, clusterId);
+
+    local nobs, n, nint, ninst, n1, scalarIntcptZero, dimsOk, pricesOk,
+        totexpOk, intcptOk, instrOk, controlOk, intcptFull, allData,
+        totalCells, finiteCells, shareSums, zeroCount, negCount, priceStd,
+        totexpStd, instrStd, minPriceStd, minInstrStd, lowPriceVar,
+        lowTotexpVar, lowInstrVar, pricesHybrid, X, gg, ggInv, oldtrp,
+        designCols, designDf, designInvOk, ivValid, weakIV, fstat, pvf,
+        pRel, u, zzi, m1, nz, nu, enam, b, se, t, pvt, cor, tv, df,
+        rsq, rbsq, sse, stdest, clusterScalar, un, D, csz, clusterValid,
+        nClusters, minClusterSize, singletonClusters, clusterWarning,
+        nErrors, nWarnings, convergenceRisk, shareTol;
+    struct quaidsPreflightOut pOut;
+
+    shareTol = 1e-6;
+    nobs = rows(w);
+    n = cols(w);
+    scalarIntcptZero = rows(intcpt)*cols(intcpt) == 1 and intcpt == 0;
+    if scalarIntcptZero;
+        nint = 0;
+    else;
+        nint = cols(intcpt);
+    endif;
+    ninst = cols(instr);
+    if rows(instr)*cols(instr) == 1 and instr == 0;
+        ninst = 0;
+    endif;
+    n1 = n - aCtl.homogenous;
+
+    pOut.ok = 0;
+    pOut.nErrors = 0;
+    pOut.nWarnings = 0;
+    pOut.nobs = nobs;
+    pOut.n = n;
+    pOut.nint = nint;
+    pOut.ninst = ninst;
+    pOut.n1 = n1;
+    pOut.dimensionsOk = 0;
+    pOut.finiteOk = 0;
+    pOut.nonFiniteCount = miss(0, 0);
+    pOut.shareAddOk = 0;
+    pOut.shareSumTol = shareTol;
+    pOut.maxShareSumDev = miss(0, 0);
+    pOut.zeroShareCount = miss(0, 0);
+    pOut.zeroShareFrac = miss(0, 0);
+    pOut.negativeShareCount = miss(0, 0);
+    pOut.negativeShareFrac = miss(0, 0);
+    pOut.priceStd = miss(0, 0);
+    pOut.minPriceStd = miss(0, 0);
+    pOut.lowPriceVariation = miss(0, 0);
+    pOut.totexpStd = miss(0, 0);
+    pOut.lowTotexpVariation = miss(0, 0);
+    pOut.instrStd = miss(0, 0);
+    pOut.minInstrStd = miss(0, 0);
+    pOut.lowInstrVariation = miss(0, 0);
+    pOut.designCols = miss(0, 0);
+    pOut.designDf = miss(0, 0);
+    pOut.designInvOk = 0;
+    pOut.ivDiagnosticsValid = 0;
+    pOut.ivFstat = miss(0, 0);
+    pOut.ivPvf = miss(0, 0);
+    pOut.weakIV = miss(0, 0);
+    pOut.clusterValid = 0;
+    pOut.nClusters = miss(0, 0);
+    pOut.minClusterSize = miss(0, 0);
+    pOut.singletonClusters = miss(0, 0);
+    pOut.clusterWarning = miss(0, 0);
+    pOut.controlValid = 0;
+    pOut.convergenceRisk = miss(0, 0);
+
+    pricesOk = rows(prices) == nobs and cols(prices) == n;
+    totexpOk = rows(totexp) == nobs and cols(totexp) == 1;
+    if scalarIntcptZero;
+        intcptOk = 1;
+    else;
+        intcptOk = rows(intcpt) == nobs;
+    endif;
+    instrOk = rows(instr) == nobs and cols(instr) >= 1;
+    controlOk = (aCtl.homogenous == 0 or aCtl.homogenous == 1) and
+        (aCtl.linear == 0 or aCtl.linear == 1) and aCtl.maxiter >= 1 and
+        n1 >= 1;
+    dimsOk = nobs > 1 and n > 1 and pricesOk and totexpOk and intcptOk and instrOk and controlOk;
+
+    pOut.dimensionsOk = dimsOk;
+    pOut.controlValid = controlOk;
+    if not dimsOk;
+        pOut.nErrors = 1;
+        retp(pOut);
+    endif;
+
+    if scalarIntcptZero;
+        intcptFull = ones(nobs, 1);
+    else;
+        intcptFull = ones(nobs, 1)~intcpt;
+    endif;
+
+    allData = w~intcptFull~prices~totexp~instr;
+    totalCells = rows(allData)*cols(allData);
+    finiteCells = sumc(sumc(allData .== allData));
+    pOut.nonFiniteCount = totalCells - finiteCells;
+    pOut.finiteOk = pOut.nonFiniteCount == 0 and not scalmiss(allData);
+
+    shareSums = sumc(w');
+    pOut.maxShareSumDev = maxc(abs(shareSums - 1));
+    pOut.shareAddOk = pOut.maxShareSumDev <= shareTol;
+    zeroCount = sumc(sumc(w .== 0));
+    negCount = sumc(sumc(w .< 0));
+    pOut.zeroShareCount = zeroCount;
+    pOut.zeroShareFrac = zeroCount/(nobs*n);
+    pOut.negativeShareCount = negCount;
+    pOut.negativeShareFrac = negCount/(nobs*n);
+
+    priceStd = stdc(prices);
+    totexpStd = stdc(totexp);
+    instrStd = stdc(instr);
+    minPriceStd = minc(priceStd);
+    minInstrStd = minc(instrStd);
+    lowPriceVar = minPriceStd < 1e-10;
+    lowTotexpVar = totexpStd < 1e-10;
+    lowInstrVar = minInstrStd < 1e-10;
+    pOut.priceStd = priceStd;
+    pOut.minPriceStd = minPriceStd;
+    pOut.lowPriceVariation = lowPriceVar;
+    pOut.totexpStd = totexpStd;
+    pOut.lowTotexpVariation = lowTotexpVar;
+    pOut.instrStd = instrStd;
+    pOut.minInstrStd = minInstrStd;
+    pOut.lowInstrVariation = lowInstrVar;
+
+    pricesHybrid = prices;
+    pricesHybrid[., 1:n-1] = prices[., 1:n-1] - prices[., n];
+    X = intcptFull~pricesHybrid[., 1:n1]~totexp~instr;
+    designCols = cols(X);
+    designDf = nobs - designCols;
+    pOut.designCols = designCols;
+    pOut.designDf = designDf;
+
+    oldtrp = trapchk(1);
+    trap 1,1;
+    gg = moment(X, 0)/nobs;
+    ggInv = invpd(gg);
+    trap oldtrp,1;
+    designInvOk = not scalmiss(ggInv) and designDf > 0;
+    pOut.designInvOk = designInvOk;
+
+    ivValid = 0;
+    weakIV = miss(0, 0);
+    fstat = miss(0, 0);
+    pvf = miss(0, 0);
+    if designInvOk;
+        oldtrp = trapchk(1);
+        trap 1,1;
+        { pRel, u, zzi, m1, nz, nu, enam, b, se, t, pvt, cor, tv, df,
+            rsq, rbsq, sse, stdest, fstat, pvf } =
+            _quaidsIVFirstStage(intcptFull, prices, instr, totexp, n);
+        trap oldtrp,1;
+        if not scalmiss(fstat) and sumc(sumc(fstat .== fstat)) == rows(fstat)*cols(fstat);
+            ivValid = 1;
+            weakIV = minc(fstat) < 10;
+        endif;
+    endif;
+    pOut.ivDiagnosticsValid = ivValid;
+    pOut.ivFstat = fstat;
+    pOut.ivPvf = pvf;
+    pOut.weakIV = weakIV;
+
+    clusterScalar = rows(clusterId)*cols(clusterId) == 1;
+    if clusterScalar and clusterId == 0;
+        clusterValid = 1;
+        nClusters = nobs;
+        minClusterSize = 1;
+        singletonClusters = nobs;
+        clusterWarning = 0;
+    elseif not clusterScalar and rows(clusterId) == nobs and cols(clusterId) == 1;
+        clusterValid = 1;
+        un = unique(clusterId, 1);
+        D = clusterId .== un';
+        csz = sumc(D);
+        nClusters = rows(un);
+        minClusterSize = minc(csz);
+        singletonClusters = sumc(csz .== 1);
+        clusterWarning = nClusters < 30 or minClusterSize < 2;
+    else;
+        clusterValid = 0;
+        nClusters = miss(0, 0);
+        minClusterSize = miss(0, 0);
+        singletonClusters = miss(0, 0);
+        clusterWarning = 1;
+    endif;
+    pOut.clusterValid = clusterValid;
+    pOut.nClusters = nClusters;
+    pOut.minClusterSize = minClusterSize;
+    pOut.singletonClusters = singletonClusters;
+    pOut.clusterWarning = clusterWarning;
+
+    convergenceRisk = 0;
+    if not designInvOk or not pOut.finiteOk or negCount > 0 or not pOut.shareAddOk;
+        convergenceRisk = 2;
+    elseif weakIV == 1 or lowPriceVar or lowTotexpVar or lowInstrVar;
+        convergenceRisk = 1;
+    elseif aCtl.linear == 0 and aCtl.maxiter > 1 and aCtl.relax >= 1;
+        convergenceRisk = 1;
+    endif;
+    pOut.convergenceRisk = convergenceRisk;
+
+    nErrors = 0;
+    if not pOut.finiteOk;
+        nErrors = nErrors + 1;
+    endif;
+    if not pOut.shareAddOk;
+        nErrors = nErrors + 1;
+    endif;
+    if negCount > 0;
+        nErrors = nErrors + 1;
+    endif;
+    if not designInvOk;
+        nErrors = nErrors + 1;
+    endif;
+    if not clusterValid;
+        nErrors = nErrors + 1;
+    endif;
+
+    nWarnings = 0;
+    if zeroCount > 0;
+        nWarnings = nWarnings + 1;
+    endif;
+    if lowPriceVar;
+        nWarnings = nWarnings + 1;
+    endif;
+    if lowTotexpVar;
+        nWarnings = nWarnings + 1;
+    endif;
+    if lowInstrVar;
+        nWarnings = nWarnings + 1;
+    endif;
+    if weakIV == 1;
+        nWarnings = nWarnings + 1;
+    endif;
+    if clusterWarning == 1;
+        nWarnings = nWarnings + 1;
+    endif;
+    if convergenceRisk > 0;
+        nWarnings = nWarnings + 1;
+    endif;
+
+    pOut.nErrors = nErrors;
+    pOut.nWarnings = nWarnings;
+    pOut.ok = nErrors == 0;
+
+    retp(pOut);
+endp;
+
+/*******************************************************************************
+**
+** PRINTQUAIDSPREFLIGHT
+**
+** Purpose:  print a compact report from quaidsPreflight().
+**
+** Format:   call printQuaidsPreflight(pOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsPreflight(struct quaidsPreflightOut pOut);
+
+    print;
+    "QUAIDS PREFLIGHT DIAGNOSTICS";
+    print "Observations:" pOut.nobs "Goods:" pOut.n "Intercept shifters:" pOut.nint "Instruments:" pOut.ninst;
+    print "OK:" pOut.ok "Errors:" pOut.nErrors "Warnings:" pOut.nWarnings;
+    print;
+    print "Dimensions OK:" pOut.dimensionsOk "Finite data OK:" pOut.finiteOk "Non-finite cells:" pOut.nonFiniteCount;
+    print "Share adding-up OK:" pOut.shareAddOk "Max deviation:" pOut.maxShareSumDev "Tolerance:" pOut.shareSumTol;
+    print "Zero shares:" pOut.zeroShareCount "Negative shares:" pOut.negativeShareCount;
+    print "Min price std:" pOut.minPriceStd "Totexp std:" pOut.totexpStd "Min instrument std:" pOut.minInstrStd;
+    print "Design columns:" pOut.designCols "Design df:" pOut.designDf "Design invertible:" pOut.designInvOk;
+    print "IV diagnostics valid:" pOut.ivDiagnosticsValid "First-stage F:" pOut.ivFstat "Weak IV flag:" pOut.weakIV;
+    print "Cluster valid:" pOut.clusterValid "Clusters:" pOut.nClusters "Min cluster size:" pOut.minClusterSize
+        "Singleton clusters:" pOut.singletonClusters;
+    print "Convergence risk (0 low, 1 elevated, 2 high):" pOut.convergenceRisk;
+    print;
+
+endp;

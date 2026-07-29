@@ -32,6 +32,13 @@ below match `package.json` at the time each milestone landed.
   the refined `b0` contracts.
 
 ### Added
+- `quaidsPreflight()`/`printQuaidsPreflight()` (`src/quaidsdiagnostics.src`)
+  as Milestone 23's first data/design diagnostics layer: dimensions,
+  finite-value checks, share adding-up, zero/negative shares, low variation,
+  first-stage IV strength, basic design invertibility, cluster counts, and
+  a convergence-risk flag.
+- `tests/quaids_preflight_test.e` plus installed-package smoke coverage for
+  the new preflight API.
 - `quaidsRobustCovariance()` expands `quaidsRobustFit()`'s reduced
   robust/cluster covariance into `qOut.bestB`'s full coefficient basis for
   shares, elasticities, and welfare delta-method standard errors.
@@ -68,8 +75,9 @@ below match `package.json` at the time each milestone landed.
 
 ### Documentation
 - README, usage guide, feature matrix, command reference, `CLAUDE.md`, and
-  `GOLD_STANDARD_TODO.md` now describe the post-20 roadmap and Milestone
-  21 Gold Standard to-dos.
+  `GOLD_STANDARD_TODO.md` now describe the post-20 roadmap, Milestone 21
+  workflow work, Milestone 22 robust inference propagation, and Milestone
+  23 preflight diagnostics.
 
 ## 0.15.0 - 2026-07-28
 
