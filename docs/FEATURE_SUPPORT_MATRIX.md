@@ -40,6 +40,7 @@ for the exact switch values.
 | Robust / cluster bootstrap | Yes (`quaidsRobustBootstrapFit`, since Milestone 20) | Yes (same) | Yes (same) |
 | Robust covariance propagation to shares/elasticities/welfare | Yes (`quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance`, since Milestone 22) | Yes (same) | Yes (same) |
 | Applied workflow bundle | Yes (`quaidsWorkflowFit` with compact preflight summary; `quaidsWorkflowScenarioFit` for CV/EV scenarios) | Yes (same) | Yes (same) |
+| Sampling-weighted workflow evaluation point | Yes (`quaidsSurveyWorkflowFit`, post-estimation only -- see Notes) | Yes (same) | Yes (same) |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
 ## Notes
@@ -69,6 +70,13 @@ for the exact switch values.
 - "Always (control-function)" means `instr` is a required argument to
   every estimator entry point -- there is no exogenous-total-expenditure
   estimation mode in this library.
+- Sampling-weighted workflow support (`quaidsSurveyWorkflowFit`, Milestone
+  25) recomputes the workflow's representative evaluation point as the
+  weighted mean of intercept shifters, prices, and total expenditure, then
+  recomputes shares/elasticities and their delta-method SE at that point.
+  It deliberately does **not** change `quaidsFit()`'s estimator moments or
+  covariance formulas. Strata, replicate weights, and full design-based
+  variance remain future survey/microdata work.
 - Welfare measures (`quaidsWelfareFit`, Milestone 11) are exact, not
   approximated, for all three model choices -- unlike curvature
   imposition, computing CV/EV needs no new estimation, only a closed-form

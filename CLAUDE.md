@@ -168,6 +168,12 @@ src/
                     #   one explicit CV/EV price-change scenario. This is
                     #   not a new estimator; it is the first public
                     #   one-call workflow bundle for applied scripts.
+  quaidssurvey.src  # Milestone 25 seed: quaidsSurveyWorkflowFit(), an
+                    #   opt-in survey/microdata workflow wrapper that
+                    #   recomputes the workflow evaluation point as a
+                    #   sampling-weighted mean and then recomputes
+                    #   shares/elasticities there. This is post-estimation
+                    #   support only, not a survey-weighted estimator.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
@@ -2958,6 +2964,28 @@ matching preflight fields. The full nested `quaidsPreflightOut` is
 intentionally not embedded in `quaidsWorkflowOut`; the workflow struct stays
 flat by convention.
 
+## Milestone 25: sampling-weighted workflow evaluation (complete)
+
+Milestone 25 starts the survey/microdata roadmap without altering the core
+estimator. `quaidsSurveyWorkflowFit()` (`src/quaidssurvey.src`) calls the
+existing `quaidsWorkflowFit()`, validates a `Tx1` nonnegative sampling-weight
+vector, replaces the default sample-mean evaluation point with the weighted
+mean of `qOut.intcptFull~prices~totexp`, and recomputes predicted shares,
+elasticities, and robust propagated post-estimation SE at that point.
+
+This is deliberately post-estimation support only. `quaidsFit()` still uses
+its existing unweighted moment conditions and covariance formulas; there is
+no claim of full survey-weighted estimation, replicate-weight variance,
+strata handling, or design-based covariance. Those remain separate roadmap
+items.
+
+Testing: `tests/quaids_survey_workflow_test.e` proves that the weighted
+evaluation point matches a manual weighted mean, the underlying fit is
+unchanged, direct `quaidsSharesFit()`/`quaidsElasFit()` parity holds at the
+weighted point, robust post-estimation SE are recomputed there too, and
+constant weights reproduce the default workflow up to numerical tolerance.
+`tests/package_public_api.e` also exercises the installed public proc.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -3071,7 +3099,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Sixteen routine source-tree tests exist, all run from `tests/` as the working directory:
+Seventeen routine source-tree tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -3090,9 +3118,10 @@ tgauss -b -x quaids_zero_test.e
 tgauss -b -x quaids_robust_test.e
 tgauss -b -x quaids_preflight_test.e
 tgauss -b -x quaids_workflow_test.e
+tgauss -b -x quaids_survey_workflow_test.e
 ```
 
-`quaids_robust_bootstrap_test.e` is a seventeenth, gated the same way
+`quaids_robust_bootstrap_test.e` is an eighteenth, gated the same way
 `quaids_curvature_bootstrap_test.e` is (see `-SkipBootstrap` below) --
 listed with the other bootstrap tests further down, not in the block
 above.
@@ -3231,8 +3260,14 @@ above.
   `quaidsPreflight()` call, and verifies
   `quaidsWorkflowScenarioFit()`'s classical and robust CV/EV fields against
   `quaidsWelfareFit()`.
+- `quaids_survey_workflow_test.e` (Milestone 25, 15 checks): checks that
+  `quaidsSurveyWorkflowFit()` leaves the underlying estimator unchanged,
+  validates and echoes sampling-weight diagnostics, computes the same
+  weighted evaluation point as a manual weighted mean, recomputes shares/
+  elasticities and robust propagated SE at that point, and reproduces the
+  default workflow under constant weights up to numerical tolerance.
 
-All sixteen routine source-tree files print one
+All seventeen routine source-tree files print one
 `PASS`/`FAIL` line per check and a final `...: ALL N CHECKS PASSED` (or a
 failure count) summary line — check that line, since `tgauss`'s exit code
 is not currently a reliable pass/fail signal for this harness. `tests/
@@ -3250,9 +3285,8 @@ Run it manually via `tests/run_convergence_sweep.ps1` whenever you want
 to re-measure the iterated estimator's convergence-failure rate — see
 "Milestone 12: numerical reliability" above.
 
-An eighteenth test (sixteen routine source-tree files plus the two bootstrap-gated
-ones), `tests/package_public_api.e` (Milestone 7), is different
-in kind from the others: it loads `library quaids;` against a real
+`tests/package_public_api.e` (Milestone 7) is different in kind from the
+source-tree files above: it loads `library quaids;` against a real
 *installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
 than `#include`-ing the source tree, so it only runs correctly after
 `scripts/run_release_verification.ps1 -InstallArtifact` (or equivalent)
@@ -3291,7 +3325,7 @@ of the installed package (see "Milestone 6" above).
 `quaidselas.src`, `quaidsshares.src`, `quaidsslutzky.src`, `quaids.src`,
 `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`,
 `quaidswelfare.src`, `quaidsrobust.src`, `quaidsdiagnostics.src`,
-`quaidsworkflow.src`.
+`quaidsworkflow.src`, `quaidssurvey.src`.
 `quaidsshares.src` (Milestone 16) has no load-order dependency on
 anything beyond `quaids.sdf` (its private `_quaidsSharesAt()` helper is
 a fresh, independent implementation, not a call into `quaidselas.src`)
@@ -3334,11 +3368,16 @@ and `tsmt`'s near-identical procs were evaluated and not adopted (see
 `quaidsdiagnostics.src` (Milestone 23) loads after the core public APIs
 because `quaidsPreflight()` reuses `_quaidsIVFirstStage()` for first-stage
 diagnostics and is itself called by `quaidsworkflow.src`.
-`quaidsworkflow.src` (Milestone 21 seed) loads last because it is a
+`quaidsworkflow.src` (Milestone 21 seed) loads after diagnostics because it is a
 composition layer over the existing public APIs: it calls `quaidsFit()`,
 `quaidsSharesFit()`, `quaidsElasFit()`, `quaidsRobustFit()`, and, since
 Milestone 24, `quaidsPreflight()` from `quaidsdiagnostics.src`; it adds no
 new package dependency.
+`quaidssurvey.src` (Milestone 25) loads after `quaidsworkflow.src` because
+`quaidsSurveyWorkflowFit()` calls the base workflow and then recomputes
+post-estimation shares/elasticities at a sampling-weighted evaluation
+point. It adds no dependency and deliberately does not alter the estimator
+moments inside `quaidsFit()`.
 `src/pubtable_quaids.src` (Milestone 6) is deliberately **not** in this
 array — it has a hard dependency on `pubtable.sdf`'s struct types, and
 adding it would make `pubtable` a hard dependency for the whole package to

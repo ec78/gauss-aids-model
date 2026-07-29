@@ -68,7 +68,9 @@ new;
 ** quaidsRobustCovariance()/quaidsRobustBootstrapCovariance(), exercising
 ** robust/cluster covariance propagation from the installed package.
 ** Milestone 23 adds quaidsPreflight()/printQuaidsPreflight(); Milestone 24
-** echoes a compact preflight summary from quaidsWorkflowFit().
+** echoes a compact preflight summary from quaidsWorkflowFit(). Milestone 25
+** adds quaidsSurveyWorkflowFit() for sampling-weighted workflow evaluation
+** points.
 **
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
@@ -585,6 +587,17 @@ pricesWF0 = mWF[1+qOutC.nint+1:1+qOutC.nint+qOutC.n];
 totexpWF0 = mWF[1+qOutC.nint+qOutC.n+1];
 pricesWF1 = pricesWF0;
 pricesWF1[1] = pricesWF1[1] + ln(1.02);
+
+weightWF = seqa(1, 1, tobsC);
+weightWF = weightWF/sumc(weightWF)*tobsC;
+struct quaidsWorkflowOut wfSurvey;
+wfSurvey = quaidsSurveyWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, weightWF);
+call assert_true(wfSurvey.surveyWeighted == 1 and wfSurvey.surveyWeightValid == 1,
+    "quaidsSurveyWorkflowFit: survey weight diagnostics invalid");
+call assert_true(wfSurvey.postValid == 1 and rows(wfSurvey.shares) == Nc and rows(wfSurvey.incomeElas) == Nc,
+    "quaidsSurveyWorkflowFit: weighted post-estimation outputs invalid");
+call assert_true(abs(wfSurvey.surveyWeightSum - tobsC) < 1e-8 and wfSurvey.surveyWeightNPositive == tobsC,
+    "quaidsSurveyWorkflowFit: survey weight summary does not match input");
 
 struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, intcptWF, pricesWF0, pricesWF1, totexpWF0);

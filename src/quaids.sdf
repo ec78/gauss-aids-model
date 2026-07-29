@@ -383,6 +383,12 @@ struct quaidsWorkflowOut {
     matrix preflightNClusters;
     matrix preflightMinClusterSize;
     matrix preflightSingletonClusters;
+    matrix surveyWeighted;
+    matrix surveyWeightValid;
+    matrix surveyWeightSum;
+    matrix surveyWeightNPositive;
+    matrix surveyWeightMin;
+    matrix surveyWeightMax;
     matrix converged;
     matrix iterations;
     matrix finalErr;

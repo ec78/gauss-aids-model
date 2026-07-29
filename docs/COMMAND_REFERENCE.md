@@ -24,6 +24,7 @@ sections.
 - [quaidsFull](command-reference/quaidsFull.md)
 - [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md)
 - [quaidsWorkflowScenarioFit](command-reference/quaidsWorkflowScenarioFit.md)
+- [quaidsSurveyWorkflowFit](command-reference/quaidsSurveyWorkflowFit.md)
 
 ## Hypothesis Tests
 

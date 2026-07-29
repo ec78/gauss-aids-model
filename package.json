@@ -32,7 +32,8 @@
         "quaidswelfare.src",
         "quaidsrobust.src",
         "quaidsdiagnostics.src",
-        "quaidsworkflow.src"
+        "quaidsworkflow.src",
+        "quaidssurvey.src"
     ],
     "version": "0.15.0"
 }

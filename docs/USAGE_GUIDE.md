@@ -102,6 +102,29 @@ if wfScenario.welfareRobustValid;
 endif;
 ```
 
+Use [quaidsSurveyWorkflowFit](command-reference/quaidsSurveyWorkflowFit.md)
+when a household survey or other microdata source has sampling weights and
+you want population-representative post-estimation summaries:
+
+```gauss
+struct quaidsWorkflowOut wfSurvey;
+wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl,
+    householdId, sampwt);
+
+print wfSurvey.surveyWeightSum;
+print wfSurvey.evalTotexp;
+print wfSurvey.shares;
+print wfSurvey.incomeElas;
+```
+
+This helper is intentionally narrower than full survey estimation:
+`quaidsFit()` is still estimated with its existing unweighted moment
+conditions. Sampling weights change the evaluation point used for predicted
+shares and elasticities, and the workflow recomputes their classical and
+robust/cluster-robust delta-method standard errors at that point. Strata,
+replicate weights, design-based covariance formulas, and weighted estimator
+moments remain roadmap items.
+
 There is no formula-string (`"y ~ x1 + x2"`) API -- AIDS/QUAIDS is a
 multi-equation system (N budget shares against N parallel log prices),
 which doesn't fit GAUSS's single-equation formula grammar. Column-name
@@ -509,6 +532,11 @@ runnable example.
   Model" above. `aCtl.relax` (Milestone 12) is an evidence-backed, opt-in
   mitigation, not a fix.
 - IV is mandatory; there is no exogenous-total-expenditure estimation mode.
+- [quaidsSurveyWorkflowFit](command-reference/quaidsSurveyWorkflowFit.md)
+  (Milestone 25) supports sampling-weighted workflow evaluation points for
+  microdata summaries, but does not make `quaidsFit()` a survey-weighted
+  estimator. Strata, replicate weights, and full design-based covariance
+  are not implemented yet.
 - [quaidsZeroFit](command-reference/quaidsZeroFit.md) (Milestone 19) is
   unconstrained only -- it errors if `aCtl.homogenous = 1` -- and reports
   a simplified standard error that does not account for the nonlinear

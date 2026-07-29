@@ -1,0 +1,106 @@
+/*
+** quaidssurvey.src
+**
+** Milestone 25 seed: opt-in survey/microdata workflow helpers. This first
+** slice does not make quaidsFit() a survey-weighted estimator; it composes
+** the existing workflow and recomputes representative post-estimation
+** products at a sampling-weighted evaluation point.
+*/
+
+/*******************************************************************************
+**
+** QUAIDSSURVEYWORKFLOWFIT
+**
+** Purpose:   run the applied workflow, then replace the default sample-mean
+**            evaluation point with the sampling-weighted mean of the same
+**            covariates and recompute shares/elasticities there.
+**
+** Format:    struct quaidsWorkflowOut wfOut =
+**                quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr,
+**                    aCtl, clusterId, weight);
+**
+*******************************************************************************/
+
+proc (struct quaidsWorkflowOut) = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr,
+    struct quaidsControl aCtl, clusterId, weight);
+
+    local nobs, n, nint, wgt, wsum, m_, intcptPt, pricesPt, totexpPt,
+        intcptFull;
+    struct quaidsWorkflowOut wfOut;
+    struct quaidsSharesOut sharesOut;
+    struct quaidsSharesOut sharesRobustOut;
+    struct quaidsElasOut elasOut;
+    struct quaidsElasOut elasRobustOut;
+
+    nobs = rows(w);
+    n = cols(w);
+
+    if rows(weight) /= nobs or cols(weight) /= 1;
+        errorlog "quaidsSurveyWorkflowFit: weight must be a Tx1 vector matching the sample.";
+        end;
+    endif;
+    if scalmiss(weight) or sumc(weight .== weight) /= nobs;
+        errorlog "quaidsSurveyWorkflowFit: weight must contain only finite, non-missing values.";
+        end;
+    endif;
+    if minc(weight) < 0;
+        errorlog "quaidsSurveyWorkflowFit: weight must be nonnegative.";
+        end;
+    endif;
+    wsum = sumc(weight);
+    if wsum <= 0;
+        errorlog "quaidsSurveyWorkflowFit: weight must have positive total weight.";
+        end;
+    endif;
+
+    wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+
+    if rows(intcpt)*cols(intcpt) == 1 and intcpt == 0;
+        intcptFull = ones(nobs, 1);
+    else;
+        intcptFull = ones(nobs, 1)~intcpt;
+    endif;
+
+    nint = cols(intcptFull) - 1;
+    wgt = weight/wsum;
+    m_ = (wgt'(intcptFull~prices~totexp))';
+    intcptPt = m_[1:1+nint];
+    pricesPt = m_[1+nint+1:1+nint+n];
+    totexpPt = m_[1+nint+n+1];
+
+    wfOut.surveyWeighted = 1;
+    wfOut.surveyWeightValid = 1;
+    wfOut.surveyWeightSum = wsum;
+    wfOut.surveyWeightNPositive = sumc(weight .> 0);
+    wfOut.surveyWeightMin = minc(weight);
+    wfOut.surveyWeightMax = maxc(weight);
+    wfOut.evalIntcpt = intcptPt;
+    wfOut.evalPrices = pricesPt;
+    wfOut.evalTotexp = totexpPt;
+
+    if wfOut.postValid == 1;
+        sharesOut = quaidsSharesFit(wfOut.bestB, wfOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
+        elasOut = quaidsElasFit(wfOut.bestB, wfOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
+        wfOut.shares = sharesOut.w;
+        wfOut.sharesSE = sharesOut.se;
+        wfOut.sharesV = sharesOut.v;
+        wfOut.incomeElas = elasOut.er;
+        wfOut.incomeElasSE = elasOut.ser;
+        wfOut.priceElas = elasOut.ep;
+        wfOut.priceElasSE = elasOut.sep;
+        wfOut.compPriceElas = elasOut.epc;
+        wfOut.compPriceElasSE = elasOut.sepc;
+
+        if wfOut.postRobustValid == 1;
+            sharesRobustOut = quaidsSharesFit(wfOut.robustBestB, wfOut.robustBestV, intcptPt, pricesPt, totexpPt, aCtl);
+            elasRobustOut = quaidsElasFit(wfOut.robustBestB, wfOut.robustBestV, intcptPt, pricesPt, totexpPt, aCtl);
+            wfOut.sharesRobustSE = sharesRobustOut.se;
+            wfOut.sharesRobustV = sharesRobustOut.v;
+            wfOut.incomeElasRobustSE = elasRobustOut.ser;
+            wfOut.priceElasRobustSE = elasRobustOut.sep;
+            wfOut.compPriceElasRobustSE = elasRobustOut.sepc;
+        endif;
+    endif;
+
+    retp(wfOut);
+endp;

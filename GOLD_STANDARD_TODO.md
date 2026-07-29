@@ -477,6 +477,29 @@ be treated as a future API design question, not added implicitly to the flat
 workflow output. The next high-value roadmap item is survey/microdata support:
 sampling weights, strata, replicate weights, and population aggregation.
 
+### Milestone 25 -- Sampling-Weighted Workflow Evaluation -- COMPLETE
+
+- [x] Add `quaidsSurveyWorkflowFit()` as an opt-in survey/microdata workflow
+  wrapper that keeps `quaidsFit()`'s estimator unchanged but evaluates
+  predicted shares and elasticities at a sampling-weighted representative
+  point.
+- [x] Add survey metadata fields to `quaidsWorkflowOut`:
+  `surveyWeighted`, `surveyWeightValid`, `surveyWeightSum`,
+  `surveyWeightNPositive`, `surveyWeightMin`, and `surveyWeightMax`.
+- [x] Validate sampling weights with clear fail-fast diagnostics:
+  `Tx1`, finite/non-missing, nonnegative, and positive total weight.
+- [x] Add focused source-tree coverage in
+  `tests/quaids_survey_workflow_test.e` proving weighted evaluation parity
+  with a manual weighted mean and direct `quaidsSharesFit()`/
+  `quaidsElasFit()` calls, plus installed-package smoke coverage.
+- [x] Update command-reference, usage-guide, feature-matrix, README,
+  changelog, roadmap, and CLAUDE orientation notes.
+
+Follow-ups: full survey-design estimation remains deliberately open:
+weighted moment conditions inside `quaidsFit()`, strata, replicate weights,
+design-based covariance, and weighted population aggregation beyond a single
+representative evaluation point should be handled as separate milestones.
+
 Each milestone should exit with source tests, examples, and docs updated
 together — no milestone is "done" with code alone.
 

@@ -32,6 +32,19 @@ below match `package.json` at the time each milestone landed.
   the refined `b0` contracts.
 
 ### Added
+- `quaidsSurveyWorkflowFit()` (`src/quaidssurvey.src`): an opt-in
+  survey/microdata workflow wrapper that keeps `quaidsFit()`'s estimator
+  unchanged but evaluates predicted shares and elasticities at a
+  sampling-weighted representative point.
+- `quaidsWorkflowOut` survey metadata fields:
+  `surveyWeighted`, `surveyWeightValid`, `surveyWeightSum`,
+  `surveyWeightNPositive`, `surveyWeightMin`, and `surveyWeightMax`.
+- `tests/quaids_survey_workflow_test.e` (15 checks): verifies the weighted
+  evaluation point against a manual weighted mean, proves post-estimation
+  parity with direct shares/elasticity calls, and confirms constant weights
+  reproduce the default workflow up to numerical tolerance.
+- Installed-package smoke coverage for `quaidsSurveyWorkflowFit()` in
+  `tests/package_public_api.e`.
 - `quaidsPreflight()`/`printQuaidsPreflight()` (`src/quaidsdiagnostics.src`)
   as Milestone 23's first data/design diagnostics layer: dimensions,
   finite-value checks, share adding-up, zero/negative shares, low variation,
@@ -79,8 +92,9 @@ below match `package.json` at the time each milestone landed.
 ### Documentation
 - README, usage guide, feature matrix, command reference, `CLAUDE.md`, and
   `GOLD_STANDARD_TODO.md` now describe the post-20 roadmap, Milestone 21
-  workflow work, Milestone 22 robust inference propagation, and Milestone
-  23 preflight diagnostics.
+  workflow work, Milestone 22 robust inference propagation, Milestone 23
+  preflight diagnostics, and Milestone 25 sampling-weighted workflow
+  evaluation.
 
 ## 0.15.0 - 2026-07-28
 

@@ -47,6 +47,11 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
   [quaidsQuadraticTest](quaidsQuadraticTest.md)'s own contract.
 - Evaluation point fields: `evalIntcpt`, `evalPrices`, `evalTotexp`, all set
   to the sample mean used for post-estimation.
+- Survey workflow metadata fields: `surveyWeighted`, `surveyWeightValid`,
+  `surveyWeightSum`, `surveyWeightNPositive`, `surveyWeightMin`, and
+  `surveyWeightMax`. In `quaidsWorkflowFit()` these indicate an unweighted
+  workflow (`surveyWeighted = 0`) and otherwise remain missing; use
+  [quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md) to fill them.
 - Mean-point predicted shares: `shares`, `sharesSE`, `sharesV`.
 - Mean-point elasticities: `incomeElas`, `incomeElasSE`, `priceElas`,
   `priceElasSE`, `compPriceElas`, `compPriceElasSE`.
@@ -95,6 +100,12 @@ postRobustValid = 0`.
 For a one-call workflow that also computes CV/EV for a price-change scenario,
 use [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md).
 
+For a one-call workflow that evaluates shares and elasticities at a
+sampling-weighted microdata point, use
+[quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md). That helper changes
+the post-estimation evaluation point only; it does not make `quaidsFit()` a
+survey-weighted estimator.
+
 ## Examples
 
 ```gauss
@@ -125,6 +136,7 @@ endif;
 ## See Also
 
 [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md),
+[quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md),
 [quaidsFit](quaidsFit.md), [quaidsSharesFit](quaidsSharesFit.md),
 [quaidsElasFit](quaidsElasFit.md), [quaidsRobustFit](quaidsRobustFit.md),
 [quaidsRobustCovariance](quaidsRobustCovariance.md),

@@ -128,6 +128,9 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
   robust covariance propagation into shares/elasticities;
   `quaidsWorkflowScenarioFit` adds exact CV/EV and robust welfare SE for
   one explicit price-change scenario.
+- Survey/microdata workflow entry point (`quaidsSurveyWorkflowFit`) that
+  evaluates shares and elasticities at a sampling-weighted representative
+  point while leaving the underlying estimator unchanged.
 - Optional LaTeX/Markdown/CSV/RTF/HTML/XLSX export via the `pubtable`
   package (`src/pubtable_quaids.src`).
 - Cross-implementation validated against an independent R (`micEconAids`)
