@@ -28,8 +28,9 @@ wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
 ## Returns
 
 `wfOut` is the same `quaidsWorkflowOut` structure returned by
-[quaidsWorkflowFit](quaidsWorkflowFit.md), with welfare scenario fields filled
-when the base fit converges:
+[quaidsWorkflowFit](quaidsWorkflowFit.md), including its compact preflight
+diagnostic summary fields. Welfare scenario fields are filled when the base
+fit converges:
 
 - `welfareValid`
 - `cv`, `ev`

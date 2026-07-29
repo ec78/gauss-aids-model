@@ -3,9 +3,10 @@
 **
 ** Milestone 21 seed: validates quaidsWorkflowFit() as a thin composition
 ** layer over quaidsFit(), quaidsSharesFit(), quaidsElasFit(), and
-** quaidsRobustFit(); plus quaidsWorkflowScenarioFit() as the explicit
-** welfare-scenario extension. The point is parity with the explicit manual
-** workflow, not new econometrics.
+** quaidsRobustFit(); Milestone 24 also validates the workflow's compact
+** quaidsPreflight() summary fields. quaidsWorkflowScenarioFit() is the
+** explicit welfare-scenario extension. The point is parity with the
+** explicit manual workflow, not new econometrics.
 **
 ** Run from the tests/ directory:
 **   tgauss -b -x quaids_workflow_test.e
@@ -22,6 +23,7 @@ new;
 #include ../src/quaidstests.src
 #include ../src/quaidswelfare.src
 #include ../src/quaidsrobust.src
+#include ../src/quaidsdiagnostics.src
 #include ../src/quaidsworkflow.src
 #include quaidsfixtures.src;
 
@@ -57,6 +59,9 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
+struct quaidsPreflightOut pOut;
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0);
+
 n = qOut.n;
 nint = qOut.nint;
 m_ = meanc(qOut.intcptFull~prices~totexp);
@@ -82,6 +87,10 @@ call check(wfOut.converged == 1 and wfOut.postValid == 1 and wfOut.robustValid =
     "workflow fit converged and computed post-estimation outputs");
 call check(wfOut.model $== qOut.model and wfOut.n == qOut.n and wfOut.nobs == qOut.nobs,
     "workflow metadata matches quaidsFit");
+call check(wfOut.preflightOk == pOut.ok and wfOut.preflightErrors == pOut.nErrors and wfOut.preflightWarnings == pOut.nWarnings,
+    "workflow preflight status summary matches quaidsPreflight");
+call check(wfOut.preflightDesignInvOk == pOut.designInvOk and wfOut.preflightIVFstat == pOut.ivFstat and wfOut.preflightNClusters == pOut.nClusters,
+    "workflow preflight design/IV/cluster summary matches quaidsPreflight");
 call check(wfOut.symValid == qOut.symValid and wfOut.symStat == qOut.symStat and wfOut.symPval == qOut.symPval and wfOut.symDf == qOut.symDf,
     "workflow symmetry summary matches quaidsFit");
 call check(wfOut.overidValid == 0 and scalmiss(wfOut.overidPvf),

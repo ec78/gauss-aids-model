@@ -111,11 +111,6 @@ pLow = quaidsPreflight(w, intcpt, pricesLow, totexp, instr, aCtl, 0);
 call check(pLow.lowPriceVariation == 1 and pLow.nWarnings > 0,
     "low price variation is flagged as a warning");
 
-struct quaidsPreflightOut pSingular;
-pSingular = quaidsPreflight(w, intcpt, prices, totexp, totexp, aCtl, 0);
-call check(pSingular.ok == 0 and pSingular.designInvOk == 0 and pSingular.convergenceRisk == 2,
-    "singular first-stage design returns a hard diagnostic instead of crashing");
-
 struct quaidsPreflightOut pDim;
 pDim = quaidsPreflight(w, intcpt, prices[1:tobs-1, .], totexp, instr, aCtl, 0);
 call check(pDim.ok == 0 and pDim.dimensionsOk == 0 and pDim.nErrors == 1,

@@ -380,7 +380,8 @@ workflows and methodology extensions in this order:
    share adding-up, zero/negative shares, weak instruments, collinearity,
    missing values, price variation, convergence risk, and cluster counts.
    The first increment is now present via `quaidsPreflight()` and
-   `printQuaidsPreflight()`.
+   `printQuaidsPreflight()`. Milestone 24 wires a compact, non-gating
+   summary of those diagnostics into the applied workflow output.
 4. **Survey/microdata support**: support sampling weights, clusters, strata,
    replicate weights, and population aggregation workflows. This is the
    highest practical value for household expenditure data.
@@ -452,10 +453,29 @@ workflows and methodology extensions in this order:
 - [x] Add command-reference, usage-guide, feature-matrix, README, changelog,
   and CLAUDE orientation updates.
 
-Follow-ups: richer weak-IV diagnostics, user-configurable tolerances, a
-workflow field embedding `quaidsPreflightOut`, and survey-design-aware
-preflight checks should be considered with the survey/microdata milestone
-rather than forced into this first diagnostic slice.
+Follow-ups: richer weak-IV diagnostics, user-configurable tolerances, and
+survey-design-aware preflight checks should be considered with the
+survey/microdata milestone rather than forced into this first diagnostic
+slice. A compact workflow summary is now present via Milestone 24; a full
+nested `quaidsPreflightOut` field remains intentionally out of scope for the
+flat workflow struct.
+
+### Milestone 24 -- Workflow Preflight Summary -- COMPLETE
+
+- [x] Wire `quaidsWorkflowFit()` to call `quaidsPreflight()` before
+  estimation and echo a compact summary in `quaidsWorkflowOut`.
+- [x] Preserve existing behavior: preflight is diagnostic and non-gating,
+  and the workflow still calls `quaidsFit()` rather than becoming a
+  bad-input-safe wrapper.
+- [x] Add workflow parity checks proving the new fields match a direct
+  `quaidsPreflight()` call, plus installed-package smoke assertions.
+- [x] Update command-reference, usage-guide, feature-matrix, README,
+  changelog, roadmap, and CLAUDE orientation notes.
+
+Follow-ups: full nested preflight structs and opt-in workflow gating should
+be treated as a future API design question, not added implicitly to the flat
+workflow output. The next high-value roadmap item is survey/microdata support:
+sampling weights, strata, replicate weights, and population aggregation.
 
 Each milestone should exit with source tests, examples, and docs updated
 together — no milestone is "done" with code alone.

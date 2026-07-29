@@ -3,20 +3,21 @@
 **
 ** Milestone 21 seed: a first high-level applied workflow bundle. This proc
 ** does not introduce new econometrics; it composes existing, individually
-** tested public procs into the default post-estimation path: fit the demand
-** system, evaluate predicted shares and elasticities at the sample mean, and
-** compute robust/cluster-robust standard errors when the base fit converged.
-** A second proc, quaidsWorkflowScenarioFit(), adds exact welfare measures for
-** one explicit price-change scenario without changing quaidsWorkflowFit()'s
-** signature.
+** tested public procs into the default post-estimation path: run the silent
+** preflight diagnostics, fit the demand system, evaluate predicted shares
+** and elasticities at the sample mean, and compute robust/cluster-robust
+** standard errors when the base fit converged. A second proc,
+** quaidsWorkflowScenarioFit(), adds exact welfare measures for one explicit
+** price-change scenario without changing quaidsWorkflowFit()'s signature.
 */
 
 /*******************************************************************************
 **
 ** QUAIDSWORKFLOWFIT
 **
-** Purpose:   fit a QUAIDS/AIDS system and collect the standard mean-point
-**            post-estimation products in one silent struct-returning call.
+** Purpose:   preflight and fit a QUAIDS/AIDS system, then collect the
+**            standard mean-point post-estimation products in one silent
+**            struct-returning call.
 **
 ** Format:    struct quaidsWorkflowOut wfOut =
 **                quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
@@ -33,8 +34,10 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     struct quaidsElasOut elasOut;
     struct quaidsElasOut elasRobustOut;
     struct quaidsRobustOut robustOut;
+    struct quaidsPreflightOut pOut;
     struct quaidsWorkflowOut wfOut;
 
+    pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId);
     qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
     n = qOut.n;
@@ -51,6 +54,22 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     wfOut.nobs = qOut.nobs;
     wfOut.nint = qOut.nint;
     wfOut.wnam = qOut.wnam;
+    wfOut.preflightOk = pOut.ok;
+    wfOut.preflightErrors = pOut.nErrors;
+    wfOut.preflightWarnings = pOut.nWarnings;
+    wfOut.preflightConvergenceRisk = pOut.convergenceRisk;
+    wfOut.preflightShareAddOk = pOut.shareAddOk;
+    wfOut.preflightMaxShareSumDev = pOut.maxShareSumDev;
+    wfOut.preflightZeroShareCount = pOut.zeroShareCount;
+    wfOut.preflightNegativeShareCount = pOut.negativeShareCount;
+    wfOut.preflightDesignInvOk = pOut.designInvOk;
+    wfOut.preflightIVValid = pOut.ivDiagnosticsValid;
+    wfOut.preflightIVFstat = pOut.ivFstat;
+    wfOut.preflightWeakIV = pOut.weakIV;
+    wfOut.preflightClusterValid = pOut.clusterValid;
+    wfOut.preflightNClusters = pOut.nClusters;
+    wfOut.preflightMinClusterSize = pOut.minClusterSize;
+    wfOut.preflightSingletonClusters = pOut.singletonClusters;
     wfOut.converged = qOut.converged;
     wfOut.iterations = qOut.iterations;
     wfOut.finalErr = qOut.finalErr;

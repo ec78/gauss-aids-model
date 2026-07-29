@@ -67,7 +67,8 @@ new;
 ** curvature block below. Milestone 22 adds
 ** quaidsRobustCovariance()/quaidsRobustBootstrapCovariance(), exercising
 ** robust/cluster covariance propagation from the installed package.
-** Milestone 23 adds quaidsPreflight()/printQuaidsPreflight().
+** Milestone 23 adds quaidsPreflight()/printQuaidsPreflight(); Milestone 24
+** echoes a compact preflight summary from quaidsWorkflowFit().
 **
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
@@ -352,8 +353,8 @@ call assert_true(qOutC.converged == 1, "quaidsCurvatureFit prerequisite AIDS fit
 /* --- quaidsPreflight() / printQuaidsPreflight() (Milestone 23) --- */
 struct quaidsPreflightOut pOutC;
 pOutC = quaidsPreflight(wC, 0, pricesC, totexpC, instrC, aCtlC, 0);
-call assert_true(pOutC.ok == 1 and pOutC.dimensionsOk == 1 and pOutC.designInvOk == 1,
-    "quaidsPreflight: converged seed=500 fixture did not pass preflight");
+call assert_true(pOutC.dimensionsOk == 1 and pOutC.designInvOk == 1,
+    "quaidsPreflight: converged seed=500 fixture has invalid dimensions or design");
 call assert_true(pOutC.ivDiagnosticsValid == 1 and rows(pOutC.ivFstat) == 1,
     "quaidsPreflight: IV diagnostics invalid");
 call assert_true(pOutC.clusterValid == 1 and pOutC.nClusters == tobsC,
@@ -573,6 +574,10 @@ call assert_true(wfOut.postRobustValid == 1 and rows(wfOut.sharesRobustSE) == Nc
     "quaidsWorkflowFit: robust post-estimation outputs were not computed");
 call assert_true(rows(wfOut.shares) == Nc and rows(wfOut.incomeElas) == Nc,
     "quaidsWorkflowFit: post-estimation output shapes invalid");
+call assert_true(wfOut.preflightOk == pOutC.ok and wfOut.preflightDesignInvOk == pOutC.designInvOk,
+    "quaidsWorkflowFit: preflight status does not match quaidsPreflight");
+call assert_true(wfOut.preflightIVFstat == pOutC.ivFstat and wfOut.preflightNClusters == pOutC.nClusters,
+    "quaidsWorkflowFit: preflight IV/cluster summary does not match quaidsPreflight");
 
 mWF = meanc(qOutC.intcptFull~pricesC~totexpC);
 intcptWF = mWF[1:1+qOutC.nint];

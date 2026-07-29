@@ -31,6 +31,7 @@ library pubtable;
 #include ../src/quaidstests.src
 #include ../src/quaidswelfare.src
 #include ../src/quaidsrobust.src
+#include ../src/quaidsdiagnostics.src
 #include ../src/quaidsworkflow.src
 #include ../src/pubtable_quaids.src;
 #include quaidsfixtures.src;

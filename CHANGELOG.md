@@ -37,6 +37,9 @@ below match `package.json` at the time each milestone landed.
   finite-value checks, share adding-up, zero/negative shares, low variation,
   first-stage IV strength, basic design invertibility, cluster counts, and
   a convergence-risk flag.
+- `quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()` now echo compact
+  preflight summary fields in `quaidsWorkflowOut` while preserving the
+  workflow's existing non-gating estimation behavior.
 - `tests/quaids_preflight_test.e` plus installed-package smoke coverage for
   the new preflight API.
 - `quaidsRobustCovariance()` expands `quaidsRobustFit()`'s reduced

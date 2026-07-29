@@ -3,9 +3,10 @@
 ## Purpose
 
 Runs the default applied workflow in one silent call: fit the demand system
-with [quaidsFit](quaidsFit.md), evaluate predicted shares and elasticities at
-the sample mean, and compute robust or cluster-robust standard errors when the
-base fit converges.
+with [quaidsFit](quaidsFit.md), echo a compact
+[quaidsPreflight](quaidsPreflight.md) diagnostic summary, evaluate predicted
+shares and elasticities at the sample mean, and compute robust or
+cluster-robust standard errors when the base fit converges.
 
 ## Format
 
@@ -29,6 +30,14 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
 - Core fit metadata and coefficient blocks copied from `quaidsOut`:
   `model`, `converged`, `iterations`, `finalErr`, `b`, `v`, `bS`, `vS`,
   `bestB`, `bestV`, `symValid`, and `overidValid`.
+- Compact preflight diagnostics copied from `quaidsPreflightOut`:
+  `preflightOk`, `preflightErrors`, `preflightWarnings`,
+  `preflightConvergenceRisk`, `preflightShareAddOk`,
+  `preflightMaxShareSumDev`, `preflightZeroShareCount`,
+  `preflightNegativeShareCount`, `preflightDesignInvOk`,
+  `preflightIVValid`, `preflightIVFstat`, `preflightWeakIV`,
+  `preflightClusterValid`, `preflightNClusters`,
+  `preflightMinClusterSize`, and `preflightSingletonClusters`.
 - Restriction/model-choice summaries:
   `symStat`, `symPval`, `symDf`, `symReject05`, `overidFstat`,
   `overidPvf`, `overidDf`, `overidReject05`, `quadraticValid`,
@@ -66,12 +75,18 @@ This is a workflow convenience layer, not a new estimator. It deliberately
 composes existing public procs so the numerical results match the explicit
 manual sequence:
 
-1. `qOut = quaidsFit(...)`
-2. `sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, mean point, aCtl)`
-3. `elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, mean point, aCtl)`
-4. `rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId)`
-5. `{ bR, vR } = quaidsRobustCovariance(qOut, rOut, aCtl)`, followed by
+1. `pOut = quaidsPreflight(...)`
+2. `qOut = quaidsFit(...)`
+3. `sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, mean point, aCtl)`
+4. `elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, mean point, aCtl)`
+5. `rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId)`
+6. `{ bR, vR } = quaidsRobustCovariance(qOut, rOut, aCtl)`, followed by
    robust-covariance calls to `quaidsSharesFit()` and `quaidsElasFit()`
+
+The preflight summary is diagnostic and non-gating. `quaidsWorkflowFit()`
+still calls `quaidsFit()` so existing workflow behavior is unchanged. If
+you want to stop before estimation on bad inputs, call `quaidsPreflight()`
+directly and check `pOut.ok` before calling the workflow.
 
 If `qOut.converged /= 1`, the workflow returns the core fit fields but leaves
 post-estimation fields missing and sets `postValid = robustValid =
@@ -112,4 +127,5 @@ endif;
 [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md),
 [quaidsFit](quaidsFit.md), [quaidsSharesFit](quaidsSharesFit.md),
 [quaidsElasFit](quaidsElasFit.md), [quaidsRobustFit](quaidsRobustFit.md),
-[quaidsRobustCovariance](quaidsRobustCovariance.md)
+[quaidsRobustCovariance](quaidsRobustCovariance.md),
+[quaidsPreflight](quaidsPreflight.md)

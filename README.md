@@ -123,10 +123,11 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
   instruments, low variation, and cluster counts.
 - Dataframe/column-name entry point (`quaidsFull`) alongside the matrix API.
 - Applied workflow entry point (`quaidsWorkflowFit`) that bundles
-  `quaidsFit`, mean-point predicted shares, elasticities, and robust or
-  cluster-robust standard errors, including robust covariance propagation
-  into shares/elasticities; `quaidsWorkflowScenarioFit` adds exact CV/EV
-  and robust welfare SE for one explicit price-change scenario.
+  `quaidsFit`, compact preflight diagnostics, mean-point predicted shares,
+  elasticities, and robust or cluster-robust standard errors, including
+  robust covariance propagation into shares/elasticities;
+  `quaidsWorkflowScenarioFit` adds exact CV/EV and robust welfare SE for
+  one explicit price-change scenario.
 - Optional LaTeX/Markdown/CSV/RTF/HTML/XLSX export via the `pubtable`
   package (`src/pubtable_quaids.src`).
 - Cross-implementation validated against an independent R (`micEconAids`)

@@ -53,9 +53,10 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
 ```
 
 Use [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md) when you
-want the first applied workflow bundle: estimate the system, evaluate
-predicted shares and elasticities at the sample mean, and compute robust
-or cluster-robust standard errors in one silent, struct-returning call:
+want the first applied workflow bundle: run the compact preflight summary,
+estimate the system, evaluate predicted shares and elasticities at the
+sample mean, and compute robust or cluster-robust standard errors in one
+silent, struct-returning call:
 
 ```gauss
 struct quaidsWorkflowOut wfOut;
@@ -74,7 +75,10 @@ fields match direct calls to `quaidsSharesFit()`, `quaidsElasFit()`, and
 robust/cluster-robust standard errors propagated into shares and
 elasticities via `quaidsRobustCovariance()`. It also includes
 model/restriction summary fields such as `symPval`, `overidPvf`, and,
-for unconstrained QUAIDS fits, `quadraticPval`.
+for unconstrained QUAIDS fits, `quadraticPval`. Workflow preflight fields
+such as `preflightOk`, `preflightWarnings`, `preflightIVFstat`, and
+`preflightNClusters` are diagnostic only; call `quaidsPreflight()` first
+and stop on `pOut.ok == 0` when you want a hard pre-estimation guard.
 
 Use [quaidsWorkflowScenarioFit](command-reference/quaidsWorkflowScenarioFit.md)
 when the same workflow should also return exact CV/EV for a price-change

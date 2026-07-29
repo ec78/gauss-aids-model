@@ -159,7 +159,10 @@ src/
                     #   applied workflow layer composing quaidsFit(),
                     #   quaidsSharesFit(), quaidsElasFit(), and
                     #   quaidsRobustFit()/quaidsRobustCovariance() into
-                    #   one silent struct-returning call, plus
+                    #   one silent struct-returning call. Milestone 24
+                    #   also calls quaidsPreflight() first and echoes a
+                    #   compact non-gating diagnostic summary in the flat
+                    #   workflow struct. Plus
                     #   quaidsWorkflowScenarioFit(), which fills the same
                     #   struct's welfare fields and robust welfare SE for
                     #   one explicit CV/EV price-change scenario. This is
@@ -439,17 +442,17 @@ tests/
                     #   run_source_tests.ps1's default invocation -- added
                     #   to the same -SkipBootstrap-gated group as
                     #   quaids_curvature_bootstrap_test.e.
-  quaids_preflight_test.e  # Milestone 23: 14 checks -- clean preflight,
+  quaids_preflight_test.e  # Milestone 23: 13 checks -- clean preflight,
                     #   zero-share warning, negative-share hard failure,
                     #   adding-up failure, cluster summaries, low price
-                    #   variation warning, singular-design hard failure,
-                    #   and dimension-mismatch return.
+                    #   variation warning, and dimension-mismatch return.
   quaids_workflow_test.e  # Milestone 21 seed: parity checks proving
                     #   quaidsWorkflowFit() returns the same fit,
                     #   mean-point shares/elasticities, robust coefficient
                     #   SE, and robust propagated shares/elasticity SE as
                     #   explicit calls to the underlying public APIs; also
-                    #   checks restriction/model-choice summaries and
+                    #   checks restriction/model-choice summaries,
+                    #   Milestone 24's compact preflight summary, and
                     #   quaidsWorkflowScenarioFit() classical/robust
                     #   welfare parity.
   package_public_api.e   # Milestone 7: installed-package release gate --
@@ -459,6 +462,7 @@ tests/
                     #   quaids, quaidsFull, quaidsElasFit/quaidsElas/
                     #   printQuaidsElas, quaidsSlutzky,
                     #   quaidsPreflight/printQuaidsPreflight,
+                    #   quaidsWorkflowFit preflight summary fields,
                     #   quaidsHomogeneityTest/quaidsJointTest. Builds its
                     #   own small inline synthetic dataset rather than
                     #   reusing quaidsfixtures.src (tests/-only, not part
@@ -2931,11 +2935,28 @@ clusters, and elevated convergence risk are warnings.
 Testing: `tests/quaids_preflight_test.e` validates the clean path, zero-share
 warning, negative-share hard failure, adding-up failure, explicit cluster
 summaries, low price variation warning, and dimension-mismatch return. The
-installed package smoke test also calls `quaidsPreflight()` and
-`printQuaidsPreflight()` against the stable seed=500 fixture. Follow-ups
-belong with later workflow/survey milestones: user-configurable tolerances,
-embedding preflight output in `quaidsWorkflowOut`, richer weak-IV checks,
-and survey-design-aware diagnostics.
+installed package smoke test also calls
+`quaidsPreflight()` and `printQuaidsPreflight()` against the stable seed=500
+fixture, asserting diagnostic shapes/design/IV/cluster fields rather than
+requiring `pOut.ok == 1` on that noisy synthetic demand sample.
+
+## Milestone 24: workflow preflight summary (complete)
+
+Milestone 24 wires the preflight layer into the applied workflow path without
+turning the workflow into a guard wrapper. `quaidsWorkflowFit()` now calls
+`quaidsPreflight()` before `quaidsFit()` and echoes compact flat fields such
+as `preflightOk`, `preflightWarnings`, `preflightIVFstat`,
+`preflightDesignInvOk`, and `preflightNClusters` in `quaidsWorkflowOut`.
+The preflight summary is diagnostic and non-gating: callers who want to stop
+before estimation should still call `quaidsPreflight()` directly and branch
+on `pOut.ok`.
+
+Testing: `tests/quaids_workflow_test.e` now compares the workflow preflight
+summary against a direct `quaidsPreflight()` call on the same fixture, and
+`tests/package_public_api.e` asserts the installed-package workflow exposes
+matching preflight fields. The full nested `quaidsPreflightOut` is
+intentionally not embedded in `quaidsWorkflowOut`; the workflow struct stays
+flat by convention.
 
 ## What GAUSS already provides — do not duplicate
 
@@ -3050,7 +3071,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Fifteen routine source-tree tests exist, all run from `tests/` as the working directory:
+Sixteen routine source-tree tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -3067,10 +3088,11 @@ tgauss -b -x quaids_reliability_regression_test.e
 tgauss -b -x quaids_curvature_bootstrap_test.e
 tgauss -b -x quaids_zero_test.e
 tgauss -b -x quaids_robust_test.e
+tgauss -b -x quaids_preflight_test.e
 tgauss -b -x quaids_workflow_test.e
 ```
 
-`quaids_robust_bootstrap_test.e` is a sixteenth, gated the same way
+`quaids_robust_bootstrap_test.e` is a seventeenth, gated the same way
 `quaids_curvature_bootstrap_test.e` is (see `-SkipBootstrap` below) --
 listed with the other bootstrap tests further down, not in the block
 above.
@@ -3194,18 +3216,23 @@ above.
   by `run_source_tests.ps1`'s default invocation — added to the same
   `-SkipBootstrap`-gated group as `quaids_curvature_bootstrap_test.e`
   rather than a new flag.
+- `quaids_preflight_test.e` (Milestone 23, 13 checks): clean preflight,
+  zero-share warning, negative-share hard failure, adding-up failure,
+  explicit cluster summaries, low price variation warning, and
+  dimension-mismatch return.
 - `quaids_workflow_test.e` (Milestone 21 seed): checks that
   `quaidsWorkflowFit()` returns the same core fit, sample-mean evaluation
   point, predicted shares, elasticities, robust coefficient SE, and robust
   propagated shares/elasticity SE as
   explicit calls to `quaidsFit()`/`quaidsSharesFit()`/`quaidsElasFit()`/
   `quaidsRobustFit()`/`quaidsRobustCovariance()` on the same fixture. It
-  also checks symmetry/overidentification/quadratic summary fields and
-  verifies `quaidsWorkflowScenarioFit()`'s classical and robust CV/EV
-  fields against
+  also checks symmetry/overidentification/quadratic summary fields,
+  Milestone 24's compact preflight summary fields against a direct
+  `quaidsPreflight()` call, and verifies
+  `quaidsWorkflowScenarioFit()`'s classical and robust CV/EV fields against
   `quaidsWelfareFit()`.
 
-All fifteen routine source-tree files print one
+All sixteen routine source-tree files print one
 `PASS`/`FAIL` line per check and a final `...: ALL N CHECKS PASSED` (or a
 failure count) summary line — check that line, since `tgauss`'s exit code
 is not currently a reliable pass/fail signal for this harness. `tests/
@@ -3223,7 +3250,7 @@ Run it manually via `tests/run_convergence_sweep.ps1` whenever you want
 to re-measure the iterated estimator's convergence-failure rate — see
 "Milestone 12: numerical reliability" above.
 
-A seventeenth test (fifteen routine source-tree files plus the two bootstrap-gated
+An eighteenth test (sixteen routine source-tree files plus the two bootstrap-gated
 ones), `tests/package_public_api.e` (Milestone 7), is different
 in kind from the others: it loads `library quaids;` against a real
 *installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
@@ -3263,7 +3290,8 @@ of the installed package (see "Milestone 6" above).
 `quaidsutil.src`, `quaidsiv.src`, `quaidszerocorrect.src`,
 `quaidselas.src`, `quaidsshares.src`, `quaidsslutzky.src`, `quaids.src`,
 `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`,
-`quaidswelfare.src`, `quaidsrobust.src`, `quaidsworkflow.src`.
+`quaidswelfare.src`, `quaidsrobust.src`, `quaidsdiagnostics.src`,
+`quaidsworkflow.src`.
 `quaidsshares.src` (Milestone 16) has no load-order dependency on
 anything beyond `quaids.sdf` (its private `_quaidsSharesAt()` helper is
 a fresh, independent implementation, not a call into `quaidselas.src`)
@@ -3303,10 +3331,14 @@ it must load after `quaids.src`, but adds no new `deps` entry —
 not a separate package; `robustSE`/`clusterSE` (base runtime `robust.src`)
 and `tsmt`'s near-identical procs were evaluated and not adopted (see
 "What GAUSS already provides" above).
+`quaidsdiagnostics.src` (Milestone 23) loads after the core public APIs
+because `quaidsPreflight()` reuses `_quaidsIVFirstStage()` for first-stage
+diagnostics and is itself called by `quaidsworkflow.src`.
 `quaidsworkflow.src` (Milestone 21 seed) loads last because it is a
 composition layer over the existing public APIs: it calls `quaidsFit()`,
-`quaidsSharesFit()`, `quaidsElasFit()`, and `quaidsRobustFit()`, and adds
-no new package dependency.
+`quaidsSharesFit()`, `quaidsElasFit()`, `quaidsRobustFit()`, and, since
+Milestone 24, `quaidsPreflight()` from `quaidsdiagnostics.src`; it adds no
+new package dependency.
 `src/pubtable_quaids.src` (Milestone 6) is deliberately **not** in this
 array — it has a hard dependency on `pubtable.sdf`'s struct types, and
 adding it would make `pubtable` a hard dependency for the whole package to
