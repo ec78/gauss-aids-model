@@ -433,13 +433,24 @@ does not share this gap and is typically much closer to `qOut`'s own SE.
 **Scope, deliberately limited** (the same "new sibling, not a
 modification of already-shipped code" choice as curvature/welfare/
 shares/zero-correction): covers only the `n1` independently-estimated
-equations; does not propagate automatically into `qOut.symcV` or into
-elasticities/shares/welfare's own delta-method SEs (a caller passes the
-new `v` in explicitly if wanted); and the cluster bootstrap resamples
-whole clusters and refits `quaidsFit()` only, not
-`quaidsRobustFit()`'s own sandwich, mirroring
-`quaidsCurvatureBootstrapFit()`'s identical "refit the estimator, not its
-SE stage, each replication" pattern.
+equations in its printed coefficient table. Milestone 22 adds an explicit
+linear recovery step,
+[quaidsRobustCovariance](command-reference/quaidsRobustCovariance.md), that
+expands this reduced covariance into `qOut.bestB`'s full basis: equation
+`n` is recovered through adding-up, and under homogeneity the reference-
+price gamma row/column are recovered through the same linear restrictions
+used by the point estimates. The bootstrap analogue,
+[quaidsRobustBootstrapCovariance](command-reference/quaidsRobustBootstrapCovariance.md),
+forms the empirical covariance of `rbOut.bBoot` first, then applies the
+same recovery. These helpers let
+[quaidsSharesFit](command-reference/quaidsSharesFit.md),
+[quaidsElasFit](command-reference/quaidsElasFit.md), and
+[quaidsWelfareFit](command-reference/quaidsWelfareFit.md) consume robust
+or bootstrap covariance directly, without changing point estimates or
+mutating `qOut.symcV`. The cluster bootstrap still resamples whole clusters
+and refits `quaidsFit()` only, not `quaidsRobustFit()`'s own sandwich,
+mirroring `quaidsCurvatureBootstrapFit()`'s identical "refit the estimator,
+not its SE stage, each replication" pattern.
 
 ## References
 

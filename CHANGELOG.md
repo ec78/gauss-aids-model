@@ -32,6 +32,16 @@ below match `package.json` at the time each milestone landed.
   the refined `b0` contracts.
 
 ### Added
+- `quaidsRobustCovariance()` expands `quaidsRobustFit()`'s reduced
+  robust/cluster covariance into `qOut.bestB`'s full coefficient basis for
+  shares, elasticities, and welfare delta-method standard errors.
+- `quaidsRobustBootstrapCovariance()` computes the empirical covariance of
+  `quaidsRobustBootstrapFit()` draws and expands it into the same full
+  post-estimation basis.
+- `quaidsWorkflowFit()` now propagates robust/cluster-robust covariance
+  into mean-point share and elasticity standard errors, and
+  `quaidsWorkflowScenarioFit()` now reports robust CV/EV welfare standard
+  errors.
 - `quaidsWorkflowFit()`/`quaidsWorkflowOut` as the first Milestone 21
   applied workflow bundle, composing `quaidsFit()`, `quaidsSharesFit()`,
   `quaidsElasFit()`, and `quaidsRobustFit()` into one silent,

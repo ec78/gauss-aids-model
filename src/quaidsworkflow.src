@@ -25,10 +25,13 @@
 
 proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId);
 
-    local n, nint, m_, intcptPt, pricesPt, totexpPt, statQ, pvalQ, dfQ;
+    local n, nint, m_, intcptPt, pricesPt, totexpPt, statQ, pvalQ, dfQ,
+        robustBFull, robustVFull;
     struct quaidsOut qOut;
     struct quaidsSharesOut sharesOut;
+    struct quaidsSharesOut sharesRobustOut;
     struct quaidsElasOut elasOut;
+    struct quaidsElasOut elasRobustOut;
     struct quaidsRobustOut robustOut;
     struct quaidsWorkflowOut wfOut;
 
@@ -113,11 +116,22 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     wfOut.robustV = miss(0, 0);
     wfOut.robustSE = miss(0, 0);
     wfOut.robustNClusters = miss(0, 0);
+    wfOut.robustBestB = miss(0, 0);
+    wfOut.robustBestV = miss(0, 0);
+    wfOut.postRobustValid = 0;
+    wfOut.sharesRobustSE = miss(0, 0);
+    wfOut.sharesRobustV = miss(0, 0);
+    wfOut.incomeElasRobustSE = miss(0, 0);
+    wfOut.priceElasRobustSE = miss(0, 0);
+    wfOut.compPriceElasRobustSE = miss(0, 0);
     wfOut.welfareValid = 0;
     wfOut.cv = miss(0, 0);
     wfOut.ev = miss(0, 0);
     wfOut.seCV = miss(0, 0);
     wfOut.seEV = miss(0, 0);
+    wfOut.welfareRobustValid = 0;
+    wfOut.seCVRobust = miss(0, 0);
+    wfOut.seEVRobust = miss(0, 0);
     wfOut.u0 = miss(0, 0);
     wfOut.u1 = miss(0, 0);
     wfOut.scenarioIntcpt = miss(0, 0);
@@ -145,6 +159,19 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
         wfOut.robustV = robustOut.v;
         wfOut.robustSE = robustOut.se;
         wfOut.robustNClusters = robustOut.nClusters;
+
+        { robustBFull, robustVFull } = quaidsRobustCovariance(qOut, robustOut, aCtl);
+        sharesRobustOut = quaidsSharesFit(robustBFull, robustVFull, intcptPt, pricesPt, totexpPt, aCtl);
+        elasRobustOut = quaidsElasFit(robustBFull, robustVFull, intcptPt, pricesPt, totexpPt, aCtl);
+
+        wfOut.postRobustValid = 1;
+        wfOut.robustBestB = robustBFull;
+        wfOut.robustBestV = robustVFull;
+        wfOut.sharesRobustSE = sharesRobustOut.se;
+        wfOut.sharesRobustV = sharesRobustOut.v;
+        wfOut.incomeElasRobustSE = elasRobustOut.ser;
+        wfOut.priceElasRobustSE = elasRobustOut.sep;
+        wfOut.compPriceElasRobustSE = elasRobustOut.sepc;
     endif;
 
     retp(wfOut);
@@ -169,6 +196,7 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowScenarioFit(w, intcpt, prices, t
 
     struct quaidsWorkflowOut wfOut;
     struct quaidsWelfareOut wOut;
+    struct quaidsWelfareOut wRobustOut;
 
     wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
 
@@ -185,6 +213,13 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowScenarioFit(w, intcpt, prices, t
         wfOut.scenarioPrices0 = pricesPt0;
         wfOut.scenarioPrices1 = pricesPt1;
         wfOut.scenarioTotexp0 = totexpPt0;
+
+        if wfOut.postRobustValid == 1;
+            wRobustOut = quaidsWelfareFit(wfOut.robustBestB, wfOut.robustBestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
+            wfOut.welfareRobustValid = 1;
+            wfOut.seCVRobust = wRobustOut.seCV;
+            wfOut.seEVRobust = wRobustOut.seEV;
+        endif;
     endif;
 
     retp(wfOut);

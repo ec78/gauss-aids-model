@@ -64,7 +64,9 @@ new;
 **
 ** Milestone 21 adds quaidsWorkflowFit()/quaidsWorkflowScenarioFit(), both
 ** exercised against the converged seed=500 AIDS fixture used by the
-** curvature block below.
+** curvature block below. Milestone 22 adds
+** quaidsRobustCovariance()/quaidsRobustBootstrapCovariance(), exercising
+** robust/cluster covariance propagation from the installed package.
 **
 ** Run this after building/installing the package (see
 ** scripts/run_release_verification.ps1 -InstallArtifact).
@@ -504,16 +506,13 @@ call printQuaidsZero(zOut);
 
 
 /* --- quaidsRobustFit() / printQuaidsRobust() / quaidsRobustBootstrapFit()
-   / printQuaidsRobustBootstrap() (Milestone 20) --- quaidsRobustFit()
-   itself needs no convergence (same as quaidsSharesFit()/
-   quaidsWelfareFit() above), so it's exercised against the main seed=11
-   qOut/w/prices/totexp/aCtl fixture; but quaidsRobustBootstrapFit()
-   explicitly requires its own internal base quaidsFit() call to
-   converge (mirroring quaidsCurvatureBootstrapFit()'s identical
-   requirement) -- confirmed directly (seed=11 threw "the base
-   (unresampled) quaidsFit() did not converge" here), so it reuses the
-   already-converging seed=500 AIDS fixture (wC/pricesC/totexpC/instrC/
-   aCtlC) from the quaidsCurvatureFit block above instead. clusterId=0
+   / printQuaidsRobustBootstrap() (Milestone 20) plus full-basis robust
+   covariance expansion helpers (Milestone 22) --- both robust paths need
+   a converged base fit: quaidsRobustFit() requires the caller's qOut to
+   have converged, and quaidsRobustBootstrapFit() requires its internal
+   base quaidsFit() call to converge. This block therefore reuses the
+   already-converging seed=500 AIDS fixture (qOutC/wC/pricesC/totexpC/
+   instrC/aCtlC) from the quaidsCurvatureFit block above. clusterId=0
    (heteroskedasticity-robust) is exercised here -- cluster-robust
    behavior itself is already thoroughly validated in
    tests/quaids_robust_test.e/quaids_robust_bootstrap_test.e, this is a
@@ -521,17 +520,29 @@ call printQuaidsZero(zOut);
    quaidsCurvatureBootstrapFit block above. */
 
 struct quaidsRobustOut rOut;
-rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
-call assert_true(rOut.nClusters == qOut.nobs, "quaidsRobustFit: nClusters == nobs when clusterId=0");
+rOut = quaidsRobustFit(qOutC, wC, pricesC, totexpC, aCtlC, 0);
+call assert_true(rOut.nClusters == qOutC.nobs, "quaidsRobustFit: nClusters == nobs when clusterId=0");
 call assert_true(rows(rOut.se) == rows(rOut.b) and cols(rOut.se) == cols(rOut.b), "quaidsRobustFit: se shape does not match b");
+
+{ bRFull, vRFull } = quaidsRobustCovariance(qOutC, rOut, aCtlC);
+call assert_true(rows(bRFull) == rows(qOutC.bestB) and cols(bRFull) == cols(qOutC.bestB),
+    "quaidsRobustCovariance: expanded b shape does not match qOutC.bestB");
+call assert_true(rows(vRFull) == rows(qOutC.bestV) and cols(vRFull) == cols(qOutC.bestV),
+    "quaidsRobustCovariance: expanded v shape does not match qOutC.bestV");
 
 call printQuaidsRobust(rOut);
 
 struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 2, 42);
-call assert_true(rbOut.nCompleted >= 1, "quaidsRobustBootstrapFit: no replications completed");
+call assert_true(rbOut.nCompleted >= 2, "quaidsRobustBootstrapFit: fewer than two replications completed");
 call assert_true(rows(rbOut.seBoot) == rows(rbOut.b) and cols(rbOut.seBoot) == cols(rbOut.b),
     "quaidsRobustBootstrapFit: seBoot shape does not match rbOut.b");
+
+{ bRBFull, vRBFull } = quaidsRobustBootstrapCovariance(qOutC, rbOut, aCtlC);
+call assert_true(rows(bRBFull) == rows(qOutC.bestB) and cols(bRBFull) == cols(qOutC.bestB),
+    "quaidsRobustBootstrapCovariance: expanded b shape does not match qOutC.bestB");
+call assert_true(rows(vRBFull) == rows(qOutC.bestV) and cols(vRBFull) == cols(qOutC.bestV),
+    "quaidsRobustBootstrapCovariance: expanded v shape does not match qOutC.bestV");
 
 call printQuaidsRobustBootstrap(rbOut);
 
@@ -545,6 +556,8 @@ struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0);
 call assert_true(wfOut.postValid == 1 and wfOut.robustValid == 1,
     "quaidsWorkflowFit: post/robust outputs were not computed");
+call assert_true(wfOut.postRobustValid == 1 and rows(wfOut.sharesRobustSE) == Nc,
+    "quaidsWorkflowFit: robust post-estimation outputs were not computed");
 call assert_true(rows(wfOut.shares) == Nc and rows(wfOut.incomeElas) == Nc,
     "quaidsWorkflowFit: post-estimation output shapes invalid");
 
@@ -559,6 +572,8 @@ struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, intcptWF, pricesWF0, pricesWF1, totexpWF0);
 call assert_true(wfScenario.welfareValid == 1 and wfScenario.seCV >= 0 and wfScenario.seEV >= 0,
     "quaidsWorkflowScenarioFit: welfare outputs invalid");
+call assert_true(wfScenario.welfareRobustValid == 1 and wfScenario.seCVRobust >= 0 and wfScenario.seEVRobust >= 0,
+    "quaidsWorkflowScenarioFit: robust welfare outputs invalid");
 
 
 print "package_public_api.e: PASS";

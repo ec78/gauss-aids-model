@@ -53,8 +53,10 @@ sections.
 ## Robust and Cluster-Robust Standard Errors
 
 - [quaidsRobustFit](command-reference/quaidsRobustFit.md)
+- [quaidsRobustCovariance](command-reference/quaidsRobustCovariance.md)
 - [printQuaidsRobust](command-reference/printQuaidsRobust.md)
 - [quaidsRobustBootstrapFit](command-reference/quaidsRobustBootstrapFit.md)
+- [quaidsRobustBootstrapCovariance](command-reference/quaidsRobustBootstrapCovariance.md)
 - [printQuaidsRobustBootstrap](command-reference/printQuaidsRobustBootstrap.md)
 
 ## Curvature Imposition (requires `optmt`)

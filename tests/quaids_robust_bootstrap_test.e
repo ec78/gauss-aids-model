@@ -18,7 +18,9 @@
 ** cell-position regression guard for seBoot (written from day one, the
 ** same class of bug Milestone 18 found and fixed twice already in
 ** quaidsCurvatureFit()/quaidsCurvatureBootstrapFit()); exact echo of the
-** base (unresampled) point estimate and closed-form seRobust; and the
+** base (unresampled) point estimate and closed-form seRobust; expansion of
+** the reduced bootstrap covariance back into qOut.bestB's full coefficient
+** basis for downstream delta-method calls; and the
 ** core plausibility check -- on tests/quaidsfixtures.src's
 ** _quaidsClusterSyntheticDGP fixture, a cluster-aware bootstrap's seBoot
 ** is measurably larger than a plain-row bootstrap's seBoot on the SAME
@@ -95,6 +97,23 @@ struct quaidsRobustOut rOutBase;
 rOutBase = quaidsRobustFit(qOutBase, w, prices, totexp, aCtl, clusterId);
 call check(maxc(maxc(abs(rbOut.b - rOutBase.b))) == 0, "rbOut.b exactly echoes the base (unresampled) reduced-form point estimate");
 call check(maxc(maxc(abs(rbOut.seRobust - rOutBase.se))) == 0, "rbOut.seRobust exactly echoes the base closed-form robust/cluster SE");
+
+{ bRobustBootFull, vRobustBootFull } = quaidsRobustBootstrapCovariance(qOutBase, rbOut, aCtl);
+call check(maxc(maxc(abs(bRobustBootFull - qOutBase.bestB))) == 0,
+    "quaidsRobustBootstrapCovariance returns qOut.bestB as the full-basis point estimate");
+call check(rows(vRobustBootFull) == rows(qOutBase.bestV) and cols(vRobustBootFull) == cols(qOutBase.bestV),
+    "quaidsRobustBootstrapCovariance returns a covariance shaped like qOut.bestV");
+call check(maxc(maxc(abs(vRobustBootFull - vRobustBootFull'))) < 1e-8,
+    "quaidsRobustBootstrapCovariance returns a symmetric full-basis covariance");
+
+m_ = meanc(qOutBase.intcptFull~prices~totexp);
+intcptMean = m_[1:1+qOutBase.nint];
+pricesMean = m_[1+qOutBase.nint+1:1+qOutBase.nint+qOutBase.n];
+totexpMean = m_[1+qOutBase.nint+qOutBase.n+1];
+struct quaidsSharesOut sharesBoot;
+sharesBoot = quaidsSharesFit(bRobustBootFull, vRobustBootFull, intcptMean, pricesMean, totexpMean, aCtl);
+call check(rows(sharesBoot.se) == qOutBase.n,
+    "expanded bootstrap covariance can drive quaidsSharesFit delta-method SE");
 
 call printQuaidsRobustBootstrap(rbOut);
 call check(1, "printQuaidsRobustBootstrap() runs without error");

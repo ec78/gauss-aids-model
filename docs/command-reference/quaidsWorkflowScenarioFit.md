@@ -34,12 +34,14 @@ when the base fit converges:
 - `welfareValid`
 - `cv`, `ev`
 - `seCV`, `seEV`
+- `welfareRobustValid`, `seCVRobust`, `seEVRobust`
 - `u0`, `u1`
 - `scenarioIntcpt`, `scenarioPrices0`, `scenarioPrices1`,
   `scenarioTotexp0`
 
 If the base fit does not converge, the workflow returns the core fit fields but
-leaves `postValid`, `robustValid`, and `welfareValid` equal to `0`.
+leaves `postValid`, `robustValid`, `postRobustValid`, `welfareValid`, and
+`welfareRobustValid` equal to `0`.
 
 ## Remarks
 
@@ -48,6 +50,14 @@ welfare scenario explicit. The welfare fields are exactly the output of:
 
 ```gauss
 wOut = quaidsWelfareFit(wfOut.bestB, wfOut.bestV,
+    intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
+```
+
+When `wfOut.postRobustValid == 1`, robust/cluster-robust welfare standard
+errors are also computed as:
+
+```gauss
+wOutR = quaidsWelfareFit(wfOut.robustBestB, wfOut.robustBestV,
     intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
 ```
 
@@ -66,6 +76,11 @@ if wfScenario.welfareValid;
     print wfScenario.cv wfScenario.seCV;
     print wfScenario.ev wfScenario.seEV;
 endif;
+
+if wfScenario.welfareRobustValid;
+    print wfScenario.cv wfScenario.seCVRobust;
+    print wfScenario.ev wfScenario.seEVRobust;
+endif;
 ```
 
 ## Source
@@ -74,4 +89,6 @@ endif;
 
 ## See Also
 
-[quaidsWorkflowFit](quaidsWorkflowFit.md), [quaidsWelfareFit](quaidsWelfareFit.md)
+[quaidsWorkflowFit](quaidsWorkflowFit.md),
+[quaidsWelfareFit](quaidsWelfareFit.md),
+[quaidsRobustCovariance](quaidsRobustCovariance.md)

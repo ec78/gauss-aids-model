@@ -54,9 +54,11 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, householdId);
 The workflow object is intentionally a composition layer, not a separate
 estimator. Its fit fields come from `quaidsFit()`, and its post-estimation
 fields match direct calls to `quaidsSharesFit()`, `quaidsElasFit()`, and
-`quaidsRobustFit()` on the same sample-mean evaluation point. It also
-includes model/restriction summary fields such as `symPval`,
-`overidPvf`, and, for unconstrained QUAIDS fits, `quadraticPval`.
+`quaidsRobustFit()` on the same sample-mean evaluation point, including
+robust/cluster-robust standard errors propagated into shares and
+elasticities via `quaidsRobustCovariance()`. It also includes
+model/restriction summary fields such as `symPval`, `overidPvf`, and,
+for unconstrained QUAIDS fits, `quadraticPval`.
 
 Use [quaidsWorkflowScenarioFit](command-reference/quaidsWorkflowScenarioFit.md)
 when the same workflow should also return exact CV/EV for a price-change
@@ -72,6 +74,11 @@ wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
 if wfScenario.welfareValid;
     print wfScenario.cv wfScenario.seCV;
     print wfScenario.ev wfScenario.seEV;
+endif;
+
+if wfScenario.welfareRobustValid;
+    print wfScenario.cv wfScenario.seCVRobust;
+    print wfScenario.ev wfScenario.seEVRobust;
 endif;
 ```
 
@@ -384,6 +391,21 @@ rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, househo
 call printQuaidsRobustBootstrap(rbOut);
 ```
 
+For shares, elasticities, or welfare, expand the reduced robust covariance
+back into `qOut.bestB`'s full coefficient basis before calling the
+delta-method post-estimation procs:
+
+```gauss
+{ bR, vR } = quaidsRobustCovariance(qOut, rOutCluster, aCtl);
+
+sharesR = quaidsSharesFit(bR, vR, intcptPt, pricesPt, totexpPt, aCtl);
+elasR = quaidsElasFit(bR, vR, intcptPt, pricesPt, totexpPt, aCtl);
+welfareR = quaidsWelfareFit(bR, vR, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
+
+{ bB, vB } = quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl);
+sharesB = quaidsSharesFit(bB, vB, intcptPt, pricesPt, totexpPt, aCtl);
+```
+
 **A real, important caveat, found empirically**:
 [quaidsRobustFit](command-reference/quaidsRobustFit.md)'s closed-form
 sandwich uses a *simplified* bread (`inv(gg)`-based, not the full
@@ -400,11 +422,11 @@ own SE -- prefer it when this gap matters. See
 [Methodology Notes](METHODOLOGY_NOTES.md#robust-and-cluster-robust-standard-errors)
 for the full derivation.
 
-Only covers the `n1` independently-estimated equations (equation `n` is
-recovered via adding-up, matching every other diagnostic in this
-library), and does not automatically propagate into `qOut.symcV` or into
-elasticities/shares/welfare's own delta-method SEs -- pass the new `v` in
-explicitly if you want those to reflect it.
+The reduced coefficient table only covers the `n1` independently-estimated
+equations (equation `n` is recovered via adding-up, matching every other
+diagnostic in this library). Use `quaidsRobustCovariance()` or
+`quaidsRobustBootstrapCovariance()` for the full-basis covariance needed
+by shares, elasticities, and welfare.
 
 ## Reporting (`pubtable`)
 

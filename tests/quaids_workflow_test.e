@@ -68,9 +68,15 @@ struct quaidsSharesOut sharesOut;
 struct quaidsElasOut elasOut;
 struct quaidsRobustOut robustOut;
 struct quaidsWelfareOut welfareOut;
+struct quaidsWelfareOut welfareRobustOut;
+struct quaidsSharesOut sharesRobustOut;
+struct quaidsElasOut elasRobustOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 robustOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
+{ bRobustFull, vRobustFull } = quaidsRobustCovariance(qOut, robustOut, aCtl);
+sharesRobustOut = quaidsSharesFit(bRobustFull, vRobustFull, intcptMean, pricesMean, totexpMean, aCtl);
+elasRobustOut = quaidsElasFit(bRobustFull, vRobustFull, intcptMean, pricesMean, totexpMean, aCtl);
 
 call check(wfOut.converged == 1 and wfOut.postValid == 1 and wfOut.robustValid == 1,
     "workflow fit converged and computed post-estimation outputs");
@@ -100,6 +106,14 @@ call check(maxc(maxc(abs(wfOut.compPriceElas - elasOut.epc))) == 0,
     "workflow compensated price elasticities match quaidsElasFit exactly");
 call check(maxc(maxc(abs(wfOut.robustSE - robustOut.se))) == 0 and wfOut.robustNClusters == robustOut.nClusters,
     "workflow robust SE match quaidsRobustFit exactly");
+call check(wfOut.postRobustValid == 1 and maxc(maxc(abs(wfOut.robustBestV - vRobustFull))) == 0,
+    "workflow expanded robust covariance matches quaidsRobustCovariance");
+call check(maxc(abs(wfOut.sharesRobustSE - sharesRobustOut.se)) == 0,
+    "workflow robust share SE match manual robust covariance propagation");
+call check(maxc(abs(wfOut.incomeElasRobustSE - elasRobustOut.ser)) == 0,
+    "workflow robust income elasticity SE match manual robust covariance propagation");
+call check(maxc(maxc(abs(wfOut.priceElasRobustSE - elasRobustOut.sep))) == 0,
+    "workflow robust price elasticity SE match manual robust covariance propagation");
 
 pricesPt1 = pricesMean;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
@@ -107,6 +121,7 @@ pricesPt1[1] = pricesPt1[1] + ln(1.05);
 struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl, 0, intcptMean, pricesMean, pricesPt1, totexpMean);
 welfareOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
+welfareRobustOut = quaidsWelfareFit(bRobustFull, vRobustFull, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
 
 call check(wfScenario.welfareValid == 1,
     "workflow scenario computed welfare outputs");
@@ -114,6 +129,8 @@ call check(wfScenario.cv == welfareOut.cv and wfScenario.ev == welfareOut.ev,
     "workflow scenario CV/EV match quaidsWelfareFit exactly");
 call check(wfScenario.seCV == welfareOut.seCV and wfScenario.seEV == welfareOut.seEV,
     "workflow scenario welfare SE match quaidsWelfareFit exactly");
+call check(wfScenario.welfareRobustValid == 1 and wfScenario.seCVRobust == welfareRobustOut.seCV and wfScenario.seEVRobust == welfareRobustOut.seEV,
+    "workflow scenario robust welfare SE match manual robust covariance propagation");
 call check(maxc(abs(wfScenario.scenarioPrices1 - pricesPt1)) == 0 and wfScenario.scenarioTotexp0 == totexpMean,
     "workflow scenario echoes welfare scenario inputs");
 

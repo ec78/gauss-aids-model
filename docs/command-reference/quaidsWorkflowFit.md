@@ -41,15 +41,24 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
 - Mean-point predicted shares: `shares`, `sharesSE`, `sharesV`.
 - Mean-point elasticities: `incomeElas`, `incomeElasSE`, `priceElas`,
   `priceElasSE`, `compPriceElas`, `compPriceElasSE`.
-- Robust/cluster-robust outputs: `robustB`, `robustV`, `robustSE`,
-  `robustNClusters`.
+- Robust/cluster-robust coefficient outputs: `robustB`, `robustV`,
+  `robustSE`, `robustNClusters`, plus `robustBestB`/`robustBestV`, the
+  same robust/cluster-robust covariance expanded into the full
+  `qOut.bestB` basis for post-estimation.
+- Robust/cluster-robust post-estimation standard errors:
+  `sharesRobustSE`, `sharesRobustV`, `incomeElasRobustSE`,
+  `priceElasRobustSE`, and `compPriceElasRobustSE`. Point estimates are
+  the same as the classical `shares`, `incomeElas`, `priceElas`, and
+  `compPriceElas` fields; only the covariance basis changes.
 - Welfare scenario outputs are present in the struct but left missing by
   `quaidsWorkflowFit()`: `welfareValid`, `cv`, `ev`, `seCV`, `seEV`,
   `u0`, `u1`, `scenarioIntcpt`, `scenarioPrices0`, `scenarioPrices1`,
-  `scenarioTotexp0`. Use
+  `scenarioTotexp0`, `welfareRobustValid`, `seCVRobust`, and
+  `seEVRobust`. Use
   [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md) to fill them.
-- Flags: `postValid` and `robustValid`, equal to `1` only when the base
-  `quaidsFit()` converged and the post-estimation products were computed.
+- Flags: `postValid`, `robustValid`, and `postRobustValid`, equal to `1`
+  only when the base `quaidsFit()` converged and the corresponding
+  products were computed.
 
 ## Remarks
 
@@ -61,9 +70,12 @@ manual sequence:
 2. `sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, mean point, aCtl)`
 3. `elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, mean point, aCtl)`
 4. `rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId)`
+5. `{ bR, vR } = quaidsRobustCovariance(qOut, rOut, aCtl)`, followed by
+   robust-covariance calls to `quaidsSharesFit()` and `quaidsElasFit()`
 
 If `qOut.converged /= 1`, the workflow returns the core fit fields but leaves
-post-estimation fields missing and sets `postValid = robustValid = 0`.
+post-estimation fields missing and sets `postValid = robustValid =
+postRobustValid = 0`.
 
 For a one-call workflow that also computes CV/EV for a price-change scenario,
 use [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md).
@@ -84,6 +96,11 @@ if wfOut.postValid;
     print wfOut.shares;
     print wfOut.incomeElas;
 endif;
+
+if wfOut.postRobustValid;
+    print wfOut.sharesRobustSE;
+    print wfOut.priceElasRobustSE;
+endif;
 ```
 
 ## Source
@@ -94,4 +111,5 @@ endif;
 
 [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md),
 [quaidsFit](quaidsFit.md), [quaidsSharesFit](quaidsSharesFit.md),
-[quaidsElasFit](quaidsElasFit.md), [quaidsRobustFit](quaidsRobustFit.md)
+[quaidsElasFit](quaidsElasFit.md), [quaidsRobustFit](quaidsRobustFit.md),
+[quaidsRobustCovariance](quaidsRobustCovariance.md)

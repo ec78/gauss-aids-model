@@ -17,8 +17,8 @@ rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
 
 ## Parameters
 
-- `qOut` (*`quaidsOut` structure*) - from [quaidsFit](quaidsFit.md), any
-  `aCtl.homogenous`.
+- `qOut` (*`quaidsOut` structure*) - converged output from
+  [quaidsFit](quaidsFit.md), any `aCtl.homogenous`.
 - `w` (*TxN matrix*) - budget shares, the same sample used to fit `qOut`.
 - `prices` (*TxN matrix*) - absolute log prices, same sample.
 - `totexp` (*Tx1 vector*) - log total expenditure, same sample.
@@ -81,13 +81,13 @@ estimator, is typically much closer to `qOut`'s own SE than this proc's
 closed-form sandwich is -- prefer the bootstrap when this gap matters for
 your use case.
 
-**Does not automatically propagate**: unlike a change inside
-[quaidsFit](quaidsFit.md) itself, this proc's `v` does **not** flow into
-`qOut.symcV` or into [quaidsElasFit](quaidsElasFit.md)/
-[quaidsSharesFit](quaidsSharesFit.md)/[quaidsWelfareFit](quaidsWelfareFit.md)'s
-own delta-method SEs automatically -- pass `rOut.v` into those explicitly
-if you want robust/cluster-robust elasticity/share/welfare standard
-errors.
+**Post-estimation propagation**: this proc reports covariance in its own
+reduced coefficient basis, so do not pass `rOut.v` directly to
+[quaidsElasFit](quaidsElasFit.md), [quaidsSharesFit](quaidsSharesFit.md),
+or [quaidsWelfareFit](quaidsWelfareFit.md). Use
+[quaidsRobustCovariance](quaidsRobustCovariance.md) to expand the
+covariance into `qOut.bestB`'s full basis first, then pass that returned
+`v` into the post-estimation proc.
 
 **Scope**: only the `n1` independently-estimated equations are covered
 (equation `n` is recovered via adding-up, never separately estimated, and
@@ -113,6 +113,9 @@ call printQuaidsRobust(rOut);
 struct quaidsRobustOut rOutCluster;
 rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, householdId);
 call printQuaidsRobust(rOutCluster);
+
+{ bR, vR } = quaidsRobustCovariance(qOut, rOutCluster, aCtl);
+elasR = quaidsElasFit(bR, vR, intcptPt, pricesPt, totexpPt, aCtl);
 ```
 
 ## Source
@@ -122,5 +125,6 @@ call printQuaidsRobust(rOutCluster);
 ## See Also
 
 [printQuaidsRobust](printQuaidsRobust.md), [quaidsFit](quaidsFit.md),
+[quaidsRobustCovariance](quaidsRobustCovariance.md),
 [quaidsRobustBootstrapFit](quaidsRobustBootstrapFit.md) (a bootstrap
 alternative that does not share this proc's conservative-bread property)

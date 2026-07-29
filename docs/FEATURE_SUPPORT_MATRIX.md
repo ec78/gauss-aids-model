@@ -37,6 +37,7 @@ for the exact switch values.
 | Zero budget share correction | Yes (`quaidsZeroFit`, since Milestone 19, unconstrained only -- see Notes) | Yes (same) | Yes (same) |
 | Robust / cluster-robust standard errors | Yes (`quaidsRobustFit`, since Milestone 20, simplified bread -- see Notes) | Yes (same) | Yes (same) |
 | Robust / cluster bootstrap | Yes (`quaidsRobustBootstrapFit`, since Milestone 20) | Yes (same) | Yes (same) |
+| Robust covariance propagation to shares/elasticities/welfare | Yes (`quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance`, since Milestone 22) | Yes (same) | Yes (same) |
 | Applied workflow bundle | Yes (`quaidsWorkflowFit`; `quaidsWorkflowScenarioFit` for CV/EV scenarios) | Yes (same) | Yes (same) |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
@@ -193,9 +194,11 @@ for the exact switch values.
   split did) offers a cluster-aware nonparametric bootstrap alternative
   that resamples whole clusters and refits `quaidsFit()` itself, typically
   landing much closer to `qOut`'s own SE than the closed-form sandwich
-  does. Covers only the `n1` independently-estimated equations, and does
-  not automatically propagate into `qOut.symcV` or into elasticities/
-  shares/welfare's own delta-method SEs. See
+  does. The reduced robust coefficient table covers only the `n1`
+  independently-estimated equations, but Milestone 22 adds
+  `quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance` to expand the
+  robust or bootstrap covariance into `qOut.bestB`'s full basis for
+  elasticities, shares, and welfare. See
   [Methodology Notes](METHODOLOGY_NOTES.md#robust-and-cluster-robust-standard-errors).
 
 Related documentation:

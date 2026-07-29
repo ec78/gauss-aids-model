@@ -55,6 +55,7 @@ new;
 #include ../src/quaidsshares.src
 #include ../src/quaidsslutzky.src
 #include ../src/quaids.src;
+#include ../src/quaidswelfare.src
 #include ../src/quaidsrobust.src
 #include quaidsfixtures.src;
 
@@ -93,6 +94,14 @@ call check(qOut.converged == 1, "prerequisite quaidsFit() converged");
 
 struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
+
+{ bRobustFull, vRobustFull } = quaidsRobustCovariance(qOut, rOut, aCtl);
+call check(maxc(maxc(abs(bRobustFull - qOut.bestB))) == 0,
+    "quaidsRobustCovariance returns qOut.bestB as the full-basis point estimate");
+call check(rows(vRobustFull) == rows(qOut.bestV) and cols(vRobustFull) == cols(qOut.bestV),
+    "quaidsRobustCovariance returns a covariance shaped like qOut.bestV");
+call check(maxc(maxc(abs(vRobustFull - vRobustFull'))) < 1e-8,
+    "quaidsRobustCovariance returns a symmetric full-basis covariance");
 
 /* Fresh, independent hand-evaluation of the sandwich formula --
    deliberately re-derived here, not calling any src/ helper, matching
@@ -163,6 +172,42 @@ call check(rows(rOut.b) == rows(rOut.se) and cols(rOut.b) == cols(rOut.se), "rOu
 call check(cols(rOut.b) == n1, "rOut.b has n1 columns (equation n excluded, recovered via adding-up)");
 call check(minc(minc(rOut.se)) >= 0, "rOut.se are all non-negative");
 call check(sumc(sumc(rOut.se .== rOut.se)) == rows(rOut.se)*cols(rOut.se), "rOut.se contains no NaN/missing values");
+
+nint = qOut.nint;
+m_ = meanc(qOut.intcptFull~prices~totexp);
+intcptMean = m_[1:1+nint];
+pricesMean = m_[1+nint+1:1+nint+n];
+totexpMean = m_[1+nint+n+1];
+
+struct quaidsSharesOut sharesClassical;
+struct quaidsSharesOut sharesRobust;
+sharesClassical = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
+sharesRobust = quaidsSharesFit(bRobustFull, vRobustFull, intcptMean, pricesMean, totexpMean, aCtl);
+call check(maxc(abs(sharesRobust.w - sharesClassical.w)) == 0,
+    "robust covariance propagation leaves predicted share point estimates unchanged");
+call check(maxc(abs(sharesRobust.se - sharesClassical.se)) > 1e-8,
+    "robust covariance propagation changes predicted share SE");
+
+struct quaidsElasOut elasClassical;
+struct quaidsElasOut elasRobust;
+elasClassical = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
+elasRobust = quaidsElasFit(bRobustFull, vRobustFull, intcptMean, pricesMean, totexpMean, aCtl);
+call check(maxc(abs(elasRobust.er - elasClassical.er)) == 0 and maxc(maxc(abs(elasRobust.ep - elasClassical.ep))) == 0,
+    "robust covariance propagation leaves elasticity point estimates unchanged");
+call check(maxc(abs(elasRobust.ser - elasClassical.ser)) > 1e-8,
+    "robust covariance propagation changes income elasticity SE");
+
+pricesPt1 = pricesMean;
+pricesPt1[1] = pricesPt1[1] + ln(1.05);
+
+struct quaidsWelfareOut welfareClassical;
+struct quaidsWelfareOut welfareRobust;
+welfareClassical = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
+welfareRobust = quaidsWelfareFit(bRobustFull, vRobustFull, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
+call check(welfareRobust.cv == welfareClassical.cv and welfareRobust.ev == welfareClassical.ev,
+    "robust covariance propagation leaves welfare point estimates unchanged");
+call check(abs(welfareRobust.seCV - welfareClassical.seCV) > 1e-8 or abs(welfareRobust.seEV - welfareClassical.seEV) > 1e-8,
+    "robust covariance propagation changes welfare SE");
 
 call printQuaidsRobust(rOut);
 call check(1, "printQuaidsRobust() runs without error");

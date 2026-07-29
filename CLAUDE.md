@@ -143,17 +143,22 @@ src/
                     #   empirically to make its se dramatically more
                     #   conservative than qOut's own classical SE -- an
                     #   expected consequence of the simplification, not a
-                    #   bug. See "Milestone 20: robust and cluster-robust
-                    #   standard errors" below.
+                    #   bug. Milestone 22 adds quaidsRobustCovariance()
+                    #   and quaidsRobustBootstrapCovariance() to expand
+                    #   reduced robust/bootstrap covariance into
+                    #   qOut.bestB's full basis for shares/elasticities/
+                    #   welfare delta-method SE. See "Milestone 20" and
+                    #   "Milestone 22" below.
   quaidsworkflow.src # Milestone 21 seed: quaidsWorkflowFit(), a thin
                     #   applied workflow layer composing quaidsFit(),
                     #   quaidsSharesFit(), quaidsElasFit(), and
-                    #   quaidsRobustFit() into one silent struct-returning
-                    #   call, plus quaidsWorkflowScenarioFit(), which fills
-                    #   the same struct's welfare fields for one explicit
-                    #   CV/EV price-change scenario. This is not a new
-                    #   estimator; it is the first public one-call workflow
-                    #   bundle for applied scripts.
+                    #   quaidsRobustFit()/quaidsRobustCovariance() into
+                    #   one silent struct-returning call, plus
+                    #   quaidsWorkflowScenarioFit(), which fills the same
+                    #   struct's welfare fields and robust welfare SE for
+                    #   one explicit CV/EV price-change scenario. This is
+                    #   not a new estimator; it is the first public
+                    #   one-call workflow bundle for applied scripts.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
@@ -400,7 +405,7 @@ tests/
                     #   max- and mean-absolute-difference basis. See
                     #   "Milestone 19: zero budget share correction
                     #   (Shonkwiler-Yen)" below.
-  quaids_robust_test.e  # Milestone 20: 17 checks -- the point estimate
+  quaids_robust_test.e  # Milestone 20/22: 26 checks -- the point estimate
                     #   matches a fresh, independent hand-evaluation of
                     #   the sandwich formula; an exact-identity regression
                     #   guard (clusterId=0 vs. an explicit
@@ -411,12 +416,17 @@ tests/
                     #   negativity; and the core non-vacuous check --
                     #   cluster-robust se is measurably larger than the
                     #   naive se on _quaidsClusterSyntheticDGP's genuinely
-                    #   clustered data. See "Milestone 20: robust and
-                    #   cluster-robust standard errors" below.
-  quaids_robust_bootstrap_test.e  # Milestone 20: 13 checks -- bootstrap
+                    #   clustered data; and Milestone 22 full-basis
+                    #   covariance expansion drives shares/elasticities/
+                    #   welfare robust delta-method SE without changing
+                    #   point estimates. See "Milestone 20" and
+                    #   "Milestone 22" below.
+  quaids_robust_bootstrap_test.e  # Milestone 20/22: 17 checks -- bootstrap
                     #   run bookkeeping, shape/finiteness, the reshape
                     #   regression guard for seBoot, exact echo of the
-                    #   base point estimate/seRobust, and a plausibility
+                    #   base point estimate/seRobust, full-basis
+                    #   covariance expansion for downstream post-
+                    #   estimation, and a plausibility
                     #   check that a cluster-aware bootstrap's seBoot
                     #   exceeds a plain-row bootstrap's on the same
                     #   genuinely clustered data. Not run by
@@ -425,10 +435,12 @@ tests/
                     #   quaids_curvature_bootstrap_test.e.
   quaids_workflow_test.e  # Milestone 21 seed: parity checks proving
                     #   quaidsWorkflowFit() returns the same fit,
-                    #   mean-point shares/elasticities, and robust SE as
+                    #   mean-point shares/elasticities, robust coefficient
+                    #   SE, and robust propagated shares/elasticity SE as
                     #   explicit calls to the underlying public APIs; also
                     #   checks restriction/model-choice summaries and
-                    #   quaidsWorkflowScenarioFit() welfare parity.
+                    #   quaidsWorkflowScenarioFit() classical/robust
+                    #   welfare parity.
   package_public_api.e   # Milestone 7: installed-package release gate --
                     #   `library quaids;` (not #include) against a real
                     #   install, exercising quaidsControlCreate/
@@ -2754,11 +2766,10 @@ testing** (this project's standing discipline):
 4. **`tests/package_public_api.e` reused the wrong fixture.** The new
    `quaidsRobustBootstrapFit()` block initially reused this file's main
    seed=11 dataset (already documented in this same file as "a known
-   non-converging seed for the iterated estimator" -- fine for
-   `quaidsRobustFit()`, which needs no convergence, same as
-   `quaidsSharesFit()`/`quaidsWelfareFit()`) -- but
-   `quaidsRobustBootstrapFit()` explicitly requires its own internal base
-   `quaidsFit()` call to converge (mirroring
+   non-converging seed for the iterated estimator") -- but the robust APIs
+   require a converged base fit: `quaidsRobustFit()` requires the caller's
+   `qOut` to have converged, and `quaidsRobustBootstrapFit()` explicitly
+   requires its own internal base `quaidsFit()` call to converge (mirroring
    `quaidsCurvatureBootstrapFit()`'s identical requirement), throwing
    `"the base (unresampled) quaidsFit() did not converge"` against the
    real installed package -- caught by the release-verification gate
@@ -2791,7 +2802,7 @@ data. This is documented prominently (this file, `docs/USAGE_GUIDE.md`,
 reference page) as a real, expected property of the simplified-bread
 design choice, not silently left for a user to discover.
 
-**Testing**: `tests/quaids_robust_test.e` (17 checks) -- the point
+**Testing**: `tests/quaids_robust_test.e` (26 checks after Milestone 22) -- the point
 estimate matches a fresh, independent hand-evaluation of the sandwich
 formula; the exact-identity regression guard (`clusterId=0` vs. an
 explicit `seqa(1,1,nobs)` per-row label give byte-identical output); the
@@ -2805,10 +2816,14 @@ because every other fixture in this file has plain i.i.d. noise and
 cannot distinguish a correct cluster-robust SE from an incorrect one that
 ignores clustering) -- cluster-robust `se` is measurably larger than the
 naive `se`, the standard textbook consequence of ignoring real
-clustering. `tests/quaids_robust_bootstrap_test.e` (13 checks, added to
+clustering; and full-basis covariance expansion drives shares,
+elasticities, and welfare robust delta-method SE without changing point
+estimates. `tests/quaids_robust_bootstrap_test.e` (17 checks after
+Milestone 22, added to
 the existing `-SkipBootstrap`-gated group rather than a new flag) --
 bootstrap bookkeeping, shape/finiteness, the reshape regression guard for
-`seBoot`, exact echo of the base point estimate/`seRobust`, and the
+`seBoot`, exact echo of the base point estimate/`seRobust`, full-basis
+bootstrap covariance expansion for downstream shares, and the
 identical cluster-vs-naive non-vacuous check for the bootstrap variant.
 `tests/package_public_api.e` gained calls to all four new procs
 (`clusterId=0` only -- cluster-specific behavior is already thoroughly
@@ -2832,7 +2847,7 @@ robust/cluster standard errors (Milestone 20). One still-unrequested
 follow-up remains, flagged at Milestone 19: homogeneity/symmetry
 imposition on top of the Shonkwiler-Yen zero-share correction.
 
-## Milestone 21: applied workflow driver (in progress)
+## Milestone 21: applied workflow driver (complete)
 
 Post-20 development shifts from isolated post-estimation procs toward
 one-call applied workflows that fit a system and return the most commonly
@@ -2853,6 +2868,36 @@ and robust inference only when the base fit converges, and one explicit
 welfare scenario at a time. Follow-ups tracked in `GOLD_STANDARD_TODO.md`
 include export-ready result bundles/adapters, examples, and broader
 workflow validation.
+
+## Milestone 22: robust inference propagation (complete)
+
+Milestone 20 correctly reported robust/cluster-robust coefficient SE in
+`quaidsRobustFit()`'s reduced basis, but that basis was not directly
+usable by `quaidsSharesFit()`, `quaidsElasFit()`, or `quaidsWelfareFit()`,
+which all expect the full `qOut.bestB` layout. Milestone 22 adds two
+public expansion helpers in `src/quaidsrobust.src`:
+`quaidsRobustCovariance(qOut, rOut, aCtl)` and
+`quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl)`. They return
+`qOut.bestB` plus a robust or bootstrap covariance transformed into the
+full `vec(qOut.bestB)` basis by applying the same linear adding-up and
+homogeneity recoveries used by the coefficient point estimates. The
+helpers do not mutate `qOut`.
+
+`quaidsWorkflowFit()` now uses `quaidsRobustCovariance()` internally and
+fills robust/cluster-robust post-estimation fields:
+`robustBestB`, `robustBestV`, `postRobustValid`, `sharesRobustSE`,
+`sharesRobustV`, `incomeElasRobustSE`, `priceElasRobustSE`, and
+`compPriceElasRobustSE`. `quaidsWorkflowScenarioFit()` propagates the
+same robust covariance into welfare SE as `welfareRobustValid`,
+`seCVRobust`, and `seEVRobust`.
+
+Testing added source-tree parity in `tests/quaids_robust_test.e` and
+`tests/quaids_workflow_test.e`, bootstrap expansion coverage in
+`tests/quaids_robust_bootstrap_test.e`, and installed-package API calls in
+`tests/package_public_api.e`. The important invariant is that robust
+propagation changes standard errors/covariance only; predicted shares,
+elasticities, and CV/EV point estimates stay identical to the classical
+post-estimation calls.
 
 ## What GAUSS already provides — do not duplicate
 
@@ -3089,7 +3134,7 @@ above.
   `quaidsFit()` on the same censored data, on both a max- and mean-
   absolute-difference basis. See "Milestone 19: zero budget share
   correction (Shonkwiler-Yen)" above.
-- `quaids_robust_test.e` (Milestone 20, 17 checks): the point estimate
+- `quaids_robust_test.e` (Milestone 20/22, 26 checks): the point estimate
   matches a fresh, independent hand-evaluation of the sandwich formula;
   an exact-identity regression guard (`clusterId=0` vs. an explicit
   `seqa(1,1,nobs)` per-row label give byte-identical output); the sandwich
@@ -3099,10 +3144,13 @@ above.
   finiteness/non-negativity; and the core non-vacuous check — cluster-
   robust `se` is measurably larger than the naive `se` on
   `_quaidsClusterSyntheticDGP`'s genuinely clustered data. See "Milestone
-  20: robust and cluster-robust standard errors" above.
-- `quaids_robust_bootstrap_test.e` (Milestone 20, 13 checks): bootstrap
+  20: robust and cluster-robust standard errors" above. Milestone 22 adds
+  full-basis covariance expansion checks for robust shares, elasticities,
+  and welfare.
+- `quaids_robust_bootstrap_test.e` (Milestone 20/22, 17 checks): bootstrap
   run bookkeeping, shape/finiteness, the reshape regression guard for
-  `seBoot`, exact echo of the base point estimate/`seRobust`, and a
+  `seBoot`, exact echo of the base point estimate/`seRobust`, full-basis
+  bootstrap covariance expansion for downstream shares, and a
   plausibility check that a cluster-aware bootstrap's `seBoot` exceeds a
   plain-row bootstrap's on the same genuinely clustered data. **Not** run
   by `run_source_tests.ps1`'s default invocation — added to the same
@@ -3110,11 +3158,13 @@ above.
   rather than a new flag.
 - `quaids_workflow_test.e` (Milestone 21 seed): checks that
   `quaidsWorkflowFit()` returns the same core fit, sample-mean evaluation
-  point, predicted shares, elasticities, and robust standard errors as
+  point, predicted shares, elasticities, robust coefficient SE, and robust
+  propagated shares/elasticity SE as
   explicit calls to `quaidsFit()`/`quaidsSharesFit()`/`quaidsElasFit()`/
-  `quaidsRobustFit()` on the same fixture. It also checks symmetry/
-  overidentification/quadratic summary fields and verifies
-  `quaidsWorkflowScenarioFit()`'s CV/EV fields against
+  `quaidsRobustFit()`/`quaidsRobustCovariance()` on the same fixture. It
+  also checks symmetry/overidentification/quadratic summary fields and
+  verifies `quaidsWorkflowScenarioFit()`'s classical and robust CV/EV
+  fields against
   `quaidsWelfareFit()`.
 
 All fifteen routine source-tree files print one

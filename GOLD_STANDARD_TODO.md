@@ -12,7 +12,7 @@ libraries stay consistent to maintain and to use.
 ## Current Status Snapshot
 
 The repository is pre-alpha, package version `0.15.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-20**, as of
+milestone roadmap is complete, plus Milestones 11-22**, as of
 2026-07-28: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
@@ -89,7 +89,9 @@ originally-outlined five-item full-demand-system-workflow).
 The post-20 roadmap now shifts from individual post-estimation procs to
 full applied workflow support. `quaidsWorkflowFit()` is the first seed of
 that layer, bundling `quaidsFit()`, mean-point shares, elasticities, and
-robust/cluster-robust SE in one silent struct-returning call.
+robust/cluster-robust SE in one silent struct-returning call. Milestone
+22 extends that workflow by propagating robust/cluster-robust covariance
+into shares, elasticities, and welfare standard errors.
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -370,7 +372,10 @@ workflows and methodology extensions in this order:
 2. **Inference unification**: centralize bootstrap/robust options, seed
    handling, cluster validation, failure accounting, percentile CIs, and
    reporting across curvature, robust SE, welfare, shares, elasticities, and
-   zero-share correction.
+   zero-share correction. The first increment is now present: robust and
+   robust-bootstrap covariance can be expanded into the full post-estimation
+   basis via `quaidsRobustCovariance()` and
+   `quaidsRobustBootstrapCovariance()`.
 3. **Data validation and diagnostics**: add a preflight diagnostic layer for
    share adding-up, zero/negative shares, weak instruments, collinearity,
    missing values, price variation, convergence risk, and cluster counts.
@@ -409,6 +414,25 @@ workflows and methodology extensions in this order:
   `pubtable` without manual reshaping.
 - [x] Add installed-package public API coverage before closing this milestone.
 - [x] Add examples before closing this milestone.
+
+### Milestone 22 — Robust Inference Propagation — COMPLETE
+
+- [x] Add `quaidsRobustCovariance(qOut, rOut, aCtl)` to expand
+  `quaidsRobustFit()`'s reduced robust/cluster covariance into
+  `qOut.bestB`'s full coefficient basis for downstream delta-method procs.
+- [x] Add `quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl)` to compute
+  the empirical covariance of `quaidsRobustBootstrapFit()` draws and expand
+  it into the same full basis.
+- [x] Wire `quaidsWorkflowFit()` to return robust propagated SE for
+  predicted shares and elasticities, with `postRobustValid`,
+  `robustBestB`, and `robustBestV` fields.
+- [x] Wire `quaidsWorkflowScenarioFit()` to return robust propagated
+  welfare SE (`welfareRobustValid`, `seCVRobust`, `seEVRobust`).
+- [x] Add source-tree parity/regression coverage for closed-form robust
+  propagation, bootstrap covariance expansion, and workflow robust
+  post-estimation fields.
+- [x] Add installed-package public API smoke calls and command-reference
+  documentation for both new helpers.
 
 Each milestone should exit with source tests, examples, and docs updated
 together — no milestone is "done" with code alone.
@@ -2600,8 +2624,9 @@ empirical testing**:
    identically.
 4. **`tests/package_public_api.e` reused the wrong fixture**: the new
    `quaidsRobustBootstrapFit()` block initially reused this file's main
-   seed=11 dataset (documented as "a known non-converging seed" -- fine
-   for `quaidsRobustFit()`, which needs no convergence) -- but
+   seed=11 dataset (documented as "a known non-converging seed") -- but
+   the robust APIs require a converged base fit: `quaidsRobustFit()`
+   requires the caller's `qOut` to have converged, and
    `quaidsRobustBootstrapFit()` explicitly requires its own internal base
    `quaidsFit()` call to converge, throwing `"the base (unresampled)
    quaidsFit() did not converge"` against the real installed package,
@@ -2628,7 +2653,8 @@ Documented prominently in `CLAUDE.md`, `docs/USAGE_GUIDE.md`,
 `docs/METHODOLOGY_NOTES.md`, and `quaidsRobustFit()`'s own command-
 reference page.
 
-**Testing**: `tests/quaids_robust_test.e` (17 checks) -- point-estimate
+**Testing**: `tests/quaids_robust_test.e` (26 checks after Milestone 22)
+-- point-estimate
 cross-check against a fresh, independent hand-evaluation; the exact-
 identity regression guard (`clusterId=0` vs. an explicit
 `seqa(1,1,nobs)` per-row label); the "same order of magnitude as an
@@ -2639,10 +2665,13 @@ core non-vacuous check on a new fixture,
 `_quaidsClusterSyntheticDGP()` (`tests/quaidsfixtures.src`, a genuine
 within-cluster-correlated noise component, needed because every other
 fixture in this file has plain i.i.d. noise) -- cluster-robust `se`
-measurably exceeds the naive `se`. `tests/quaids_robust_bootstrap_test.e`
-(13 checks, added to the existing `-SkipBootstrap`-gated group) mirrors
-this with the bootstrap variant. `tests/package_public_api.e` gained
-calls to all four new procs (`clusterId=0` only, since cluster-specific
+measurably exceeds the naive `se`. Milestone 22 extends this with
+full-basis covariance expansion checks for robust shares, elasticities,
+and welfare. `tests/quaids_robust_bootstrap_test.e` (17 checks after
+Milestone 22, added to the existing `-SkipBootstrap`-gated group) mirrors
+this with the bootstrap variant and full-basis bootstrap covariance
+expansion. `tests/package_public_api.e` gained calls to all four new procs
+(`clusterId=0` only, since cluster-specific
 behavior is already thoroughly validated in the two dedicated test files).
 
 **Version bump to `0.15.0`**: two new required public procs

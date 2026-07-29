@@ -25,9 +25,11 @@
 ** nonlinear-price-index-feedback Jacobian correction (its Ji/J
 ** construction, quaids.src:342-382) -- the same class of honestly-
 ** documented simplification quaidsCurvatureFit()/quaidsZeroFit() already
-** ship. Does NOT automatically propagate into qOut.symcV or into
-** elasticities/shares/welfare's own delta-method SEs; a caller who wants
-** that passes this proc's v into those explicitly.
+** ship. The public quaidsRobustCovariance() helper expands this file's
+** reduced-basis covariance into qOut.bestB's full coefficient basis for
+** elasticities/shares/welfare delta-method SEs; the bootstrap analogue does
+** the same for quaidsRobustBootstrapFit()'s raw draws. qOut itself is not
+** mutated.
 **
 ** Robust and cluster-robust are unified through one clusterId argument:
 ** clusterId = 0 means heteroskedasticity-robust (every observation is its
@@ -38,8 +40,8 @@
 ** tests/quaids_robust_test.e (clusterId=0 vs. an explicit
 ** seqa(1,1,nobs) per-row label give byte-identical output).
 **
-** THE MATH, given an already-fitted qOut (from quaidsFit(), any
-** aCtl.homogenous) and the raw sample:
+** THE MATH, given a converged qOut (from quaidsFit(), any aCtl.homogenous)
+** and the raw sample:
 **
 ** 1. Rebuild per-observation model-implied fitted shares at qOut.bestB
 **    using the SAME share formula already independently duplicated in
@@ -164,6 +166,212 @@ proc (1) = _quaidsRobustReduceB(bestB, nint, n, n1, struct quaidsControl aCtl);
     endif;
 
     retp(bReduced);
+endp;
+
+/*
+** _quaidsRobustExpansionT: transformation matrix from this file's reduced
+** robust covariance basis back to qOut.bestB's full adding-up/homogeneity
+** basis. For unconstrained fits (n1=n) this is identity. For homogeneous
+** fits (n1=n-1), the last equation and reference-price gamma row are
+** recovered as linear sums, so delta-method post-estimation procs can use
+** the robust covariance without learning the reduced basis.
+*/
+proc (1) = _quaidsRobustExpansionT(fullRows, redRows, nint, n, n1, struct quaidsControl aCtl);
+    local nint1, T, fullDim, redDim, i, j, h, fr, rr, fc, rc, fidx, ridx,
+        fullBeta, redBeta, fullLambda, redLambda, fullUStart, redUStart, nuRows;
+
+    fullDim = fullRows*n;
+    redDim = redRows*n1;
+
+    if n1 == n and fullRows == redRows;
+        retp(eye(fullDim));
+    endif;
+
+    nint1 = 1+nint;
+    T = zeros(fullDim, redDim);
+
+    /* Intercept rows, beta/lambda rows, and IV-residual rows all recover
+       equation n by adding-up: b_n = -sum_i<n b_i, up to a constant offset
+       for the leading intercept row. The offset has no variance, so the
+       covariance transformation is the same for every non-gamma row. */
+    rr = 1;
+    do while rr <= nint1;
+        i = 1;
+        do while i <= n1;
+            T[rr + (i-1)*fullRows, rr + (i-1)*redRows] = 1;
+            T[rr + (n-1)*fullRows, rr + (i-1)*redRows] = -1;
+            i = i + 1;
+        endo;
+        rr = rr + 1;
+    endo;
+
+    fullBeta = nint1+n+1;
+    redBeta = nint1+n1+1;
+    i = 1;
+    do while i <= n1;
+        T[fullBeta + (i-1)*fullRows, redBeta + (i-1)*redRows] = 1;
+        T[fullBeta + (n-1)*fullRows, redBeta + (i-1)*redRows] = -1;
+        i = i + 1;
+    endo;
+
+    if not aCtl.linear;
+        fullLambda = nint1+n+2;
+        redLambda = nint1+n1+2;
+        i = 1;
+        do while i <= n1;
+            T[fullLambda + (i-1)*fullRows, redLambda + (i-1)*redRows] = 1;
+            T[fullLambda + (n-1)*fullRows, redLambda + (i-1)*redRows] = -1;
+            i = i + 1;
+        endo;
+        fullUStart = nint1+n+3;
+        redUStart = nint1+n1+3;
+    else;
+        fullUStart = nint1+n+2;
+        redUStart = nint1+n1+2;
+    endif;
+
+    nuRows = fullRows-fullUStart+1;
+    h = 0;
+    do while h < nuRows;
+        fr = fullUStart+h;
+        rr = redUStart+h;
+        i = 1;
+        do while i <= n1;
+            T[fr + (i-1)*fullRows, rr + (i-1)*redRows] = 1;
+            T[fr + (n-1)*fullRows, rr + (i-1)*redRows] = -1;
+            i = i + 1;
+        endo;
+        h = h + 1;
+    endo;
+
+    /* Gamma block: the top-left (n-1)x(n-1) block is independent. The
+       reference price row and equation n column are linear adding-up/
+       homogeneity recoveries from that block. */
+    j = 1;
+    do while j <= n1;
+        i = 1;
+        do while i <= n1;
+            fr = nint1+j;
+            rr = nint1+j;
+            fc = i;
+            rc = i;
+            fidx = fr + (fc-1)*fullRows;
+            ridx = rr + (rc-1)*redRows;
+            T[fidx, ridx] = 1;
+
+            /* Reference price row, same equation column. */
+            fidx = (nint1+n) + (i-1)*fullRows;
+            T[fidx, ridx] = -1;
+
+            /* Same price row, recovered equation n column. */
+            fidx = (nint1+j) + (n-1)*fullRows;
+            T[fidx, ridx] = -1;
+
+            /* Reference price row and recovered equation n column. */
+            fidx = (nint1+n) + (n-1)*fullRows;
+            T[fidx, ridx] = 1;
+
+            i = i + 1;
+        endo;
+        j = j + 1;
+    endo;
+
+    retp(T);
+endp;
+
+proc (2) = _quaidsRobustExpandCovariance(struct quaidsOut qOut, vReduced, struct quaidsControl aCtl);
+    local fullRows, redRows, n, n1, fullDim, redDim, T, vFull;
+
+    fullRows = rows(qOut.bestB);
+    n = qOut.n;
+    n1 = qOut.n1;
+    fullDim = fullRows*n;
+
+    if rows(vReduced) /= cols(vReduced);
+        errorlog "quaidsRobustCovariance: reduced covariance must be square.";
+        end;
+    endif;
+
+    redDim = rows(vReduced);
+    redRows = redDim/n1;
+    if redRows /= round(redRows);
+        errorlog "quaidsRobustCovariance: reduced covariance shape is incompatible with qOut.n1.";
+        end;
+    endif;
+
+    if n1 == n and redDim == fullDim;
+        vFull = vReduced;
+    else;
+        T = _quaidsRobustExpansionT(fullRows, redRows, qOut.nint, n, n1, aCtl);
+        if cols(T) /= redDim;
+            errorlog "quaidsRobustCovariance: reduced covariance shape is incompatible with qOut.bestB.";
+            end;
+        endif;
+        vFull = T*vReduced*T';
+    endif;
+
+    retp(qOut.bestB, vFull);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSROBUSTCOVARIANCE
+**
+** Purpose:  expands quaidsRobustFit()'s reduced covariance into qOut.bestB's
+**           full coefficient basis, so existing delta-method procs such as
+**           quaidsSharesFit(), quaidsElasFit(), and quaidsWelfareFit() can
+**           consume robust/cluster-robust inference directly.
+**
+** Format:     { b, v } = quaidsRobustCovariance(qOut, rOut, aCtl);
+**
+*******************************************************************************/
+
+proc (2) = quaidsRobustCovariance(struct quaidsOut qOut, struct quaidsRobustOut rOut, struct quaidsControl aCtl);
+
+    local bFull, vFull;
+
+    if qOut.n /= rOut.n or qOut.nint /= rOut.nint or qOut.n1 /= rOut.n1;
+        errorlog "quaidsRobustCovariance: qOut and rOut dimensions do not match.";
+        end;
+    endif;
+
+    { bFull, vFull } = _quaidsRobustExpandCovariance(qOut, rOut.v, aCtl);
+
+    retp(bFull, vFull);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSROBUSTBOOTSTRAPCOVARIANCE
+**
+** Purpose:  expands the empirical covariance of quaidsRobustBootstrapFit()'s
+**           reduced bootstrap draws into qOut.bestB's full coefficient basis.
+**
+** Format:     { b, v } = quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl);
+**
+*******************************************************************************/
+
+proc (2) = quaidsRobustBootstrapCovariance(struct quaidsOut qOut, struct quaidsRobustBootOut rbOut, struct quaidsControl aCtl);
+
+    local bBoot, dev, vReduced, bFull, vFull;
+
+    if qOut.n /= rbOut.n or qOut.nint /= rbOut.nint;
+        errorlog "quaidsRobustBootstrapCovariance: qOut and rbOut dimensions do not match.";
+        end;
+    endif;
+
+    if rbOut.nCompleted < 2;
+        errorlog "quaidsRobustBootstrapCovariance: at least two completed bootstrap replications are required.";
+        end;
+    endif;
+
+    bBoot = rbOut.bBoot;
+    dev = bBoot - meanc(bBoot)';
+    vReduced = (dev'dev)/(rows(bBoot)-1);
+
+    { bFull, vFull } = _quaidsRobustExpandCovariance(qOut, vReduced, aCtl);
+
+    retp(bFull, vFull);
 endp;
 
 /*******************************************************************************

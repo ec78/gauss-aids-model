@@ -70,6 +70,13 @@ gap between the two. Prefer `seBoot` when that gap matters for your use
 case; `seRobust` is exposed alongside it for direct comparison, not
 replaced.
 
+**Post-estimation propagation**: `rbOut.bBoot` and `rbOut.seBoot` are in
+the same reduced basis as [quaidsRobustFit](quaidsRobustFit.md)'s output.
+Use [quaidsRobustBootstrapCovariance](quaidsRobustBootstrapCovariance.md)
+to expand the empirical bootstrap covariance into `qOut.bestB`'s full
+basis before passing it to [quaidsSharesFit](quaidsSharesFit.md),
+[quaidsElasFit](quaidsElasFit.md), or [quaidsWelfareFit](quaidsWelfareFit.md).
+
 **A real bug found and fixed while building this**: an early version
 tracked the bootstrap point estimate in `qOut.bestB`'s full (adding-up-
 recovered, `n`-column) shape while `quaidsRobustFit()`'s own `se` is in
@@ -93,6 +100,9 @@ time.
 struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, householdId, 200, 42);
 call printQuaidsRobustBootstrap(rbOut);
+
+{ bB, vB } = quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl);
+sharesB = quaidsSharesFit(bB, vB, intcptPt, pricesPt, totexpPt, aCtl);
 ```
 
 ## Source
@@ -102,6 +112,7 @@ call printQuaidsRobustBootstrap(rbOut);
 ## See Also
 
 [printQuaidsRobustBootstrap](printQuaidsRobustBootstrap.md),
+[quaidsRobustBootstrapCovariance](quaidsRobustBootstrapCovariance.md),
 [quaidsRobustFit](quaidsRobustFit.md), [quaidsFit](quaidsFit.md),
 [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md) (the
 sibling bootstrap this proc's design mirrors)
