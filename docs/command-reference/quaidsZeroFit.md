@@ -27,8 +27,8 @@ zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 - `instr` (*TxH matrix*) - instruments for log total expenditure.
 - `aCtl` (*`quaidsControl` structure*) - same fields as
   [quaidsFit](quaidsFit.md) (`linear`, `maxiter`, `err`, `alpha0`,
-  `relax`). **`aCtl.homogenous` must be `0`** -- errors clearly otherwise
-  (see Remarks).
+  `relax`, `b0`). **`aCtl.homogenous` must be `0`** -- errors clearly
+  otherwise (see Remarks).
 
 ## Returns
 
@@ -107,6 +107,10 @@ scoping precedent):
 - **The probit regressors are not a separate argument**: they reuse
   `intcpt`/`prices`/`totexp`, matching this library's "no separate
   exogenous-mode arguments" philosophy.
+- **Starting values**: scalar `aCtl.b0 = 0` uses the built-in Stone-index
+  starting values. A supplied matrix must match `zOut.b`'s coefficient
+  shape for a compatible zero-corrected fit (including the trailing
+  hazard/`delta` block).
 
 **A known, unresolved limitation**: GAUSS's built-in `glm()` can hard-crash
 on some degenerate inputs (e.g. `error: Intel MKL ERROR ... DGELS`), a

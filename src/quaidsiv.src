@@ -40,7 +40,7 @@ proc 20 = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
 
     /* first-stage diagnostics */
 
-    df = nobs-nz-1;
+    df = nobs-nz;
     ie = seqa(nz+1, 1, nu);
     m_ = m1[., 1]/nobs;
     cov = m1/nobs - m_*m_';

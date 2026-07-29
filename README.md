@@ -13,18 +13,23 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is **pre-alpha** (package version `0.5.0`). The estimation
-core, hypothesis tests, elasticities, diagnostics, dataframe entry point,
-`pubtable` export, and release tooling are complete and tested; full
-documentation (this doc set) and a final integration gate are in progress
--- see `GOLD_STANDARD_TODO.md` for the release roadmap.
+This library is **pre-alpha** (package version `0.15.0`). The original
+roadmap plus Milestones 11-20 are complete, and the post-20 workflow
+roadmap has begun with `quaidsWorkflowFit()`. Completed pieces include the estimation core,
+hypothesis tests, elasticities, diagnostics, dataframe entry point,
+`pubtable` export, zero-budget correction, robust/bootstrap inference,
+release tooling, and the documentation set. Remaining caveats are documented
+validation and convergence limits -- see `GOLD_STANDARD_TODO.md` for the
+release roadmap and next development milestones.
 
 ## Requirements
 
 - GAUSS 26 or later.
-- No external GAUSS packages are required for estimation. The optional
-  `pubtable` package (LaTeX/Markdown/CSV/RTF/HTML/XLSX table export) is
-  needed only if you use `src/pubtable_quaids.src` -- see
+- The `optmt` GAUSS package is required for curvature-constrained estimation
+  (`quaidsCurvatureFit()` and its bootstrap). Core `quaidsFit()` estimation
+  does not require extra GAUSS packages.
+- The optional `pubtable` package (LaTeX/Markdown/CSV/RTF/HTML/XLSX table
+  export) is needed only if you use `src/pubtable_quaids.src` -- see
   [Reporting](#reporting-optional-pubtable) below.
 
 ## Installation
@@ -57,7 +62,7 @@ library quaids;
 // intcpt: TxK extra intercept-shifter variables, or 0 for none.
 struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
-aCtl.linear = 0;          // 0 = QUAIDS, 1 = LA-AIDS
+aCtl.linear = 0;          // 0 = QUAIDS, 1 = AIDS/LA-AIDS
 aCtl.maxiter = 100;       // 1 = one-step Stone-index LA-AIDS
 aCtl.homogenous = 1;      // impose homogeneity (and test/report symmetry)
 
@@ -107,11 +112,15 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
 - Slutzky negativity diagnostic (`quaidsSlutzky`), evaluated
   observation-by-observation.
 - Dataframe/column-name entry point (`quaidsFull`) alongside the matrix API.
+- Applied workflow entry point (`quaidsWorkflowFit`) that bundles
+  `quaidsFit`, mean-point predicted shares, elasticities, and robust or
+  cluster-robust standard errors.
 - Optional LaTeX/Markdown/CSV/RTF/HTML/XLSX export via the `pubtable`
   package (`src/pubtable_quaids.src`).
 - Cross-implementation validated against an independent R (`micEconAids`)
   reference on published data, and against known-true synthetic DGPs across
-  all six (LA-AIDS/AIDS/QUAIDS) x (with/without-IV) combinations.
+  LA-AIDS, iterated AIDS, and QUAIDS under this library's mandatory-IV
+  design.
 
 ## Documentation
 
@@ -119,8 +128,8 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
   procedure, with purpose, format, parameters, returns, remarks, examples,
   source, and related commands.
 - [Usage guide](docs/USAGE_GUIDE.md): choosing an API, model-choice
-  switches, IV requirements, elasticities/diagnostics workflow, `pubtable`
-  export.
+  switches, IV requirements, workflow/post-estimation helpers,
+  elasticities/diagnostics workflow, `pubtable` export.
 - [Methodology notes](docs/METHODOLOGY_NOTES.md): the estimator itself --
   iterated linearized/nonlinear FGLS with cross-equation homogeneity/
   symmetry restrictions via minimum distance, citing Deaton & Muellbauer

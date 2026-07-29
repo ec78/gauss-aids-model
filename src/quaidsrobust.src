@@ -198,7 +198,7 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
 
     local nobs, n, nint, n1, nendog, intcptFull, fittedW, lx, lx2, U,
         pricesHybrid, endog, X, k, Kdof, gg, Infl, i, un, G, D, InflG,
-        Meat, c, bread, v, se, bHatReduced;
+        Meat, c, bread, v, se, bHatReduced, clusterScalar, ggInv, oldtrp;
     struct quaidsRobustOut rOut;
 
     nobs = rows(w);
@@ -206,6 +206,16 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
     nint = qOut.nint;
     n1 = qOut.n1;
     intcptFull = qOut.intcptFull;
+
+    if qOut.converged /= 1;
+        errorlog "quaidsRobustFit: qOut must come from a converged quaidsFit() result.";
+        end;
+    endif;
+
+    if cols(w) /= n or rows(prices) /= nobs or rows(totexp) /= nobs;
+        errorlog "quaidsRobustFit: w, prices, and totexp must match the fitted sample dimensions.";
+        end;
+    endif;
 
     { fittedW, lx, lx2 } = _quaidsRobustFittedW(qOut.bestB, intcptFull, prices, totexp, aCtl);
     U = w[., 1:n1] - fittedW[., 1:n1];
@@ -225,6 +235,11 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
     k = cols(X);
     Kdof = n1*k;
 
+    if nobs <= Kdof;
+        errorlog "quaidsRobustFit: not enough observations for the CR1 small-sample correction.";
+        end;
+    endif;
+
     gg = moment(X, 0)/nobs;
 
     Infl = zeros(nobs, n1*k);
@@ -234,12 +249,25 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
         i = i + 1;
     endo;
 
-    if clusterId == 0;
+    clusterScalar = rows(clusterId)*cols(clusterId) == 1;
+    if clusterScalar;
+        if clusterId /= 0;
+            errorlog "quaidsRobustFit: clusterId must be scalar 0 or a Tx1 vector matching the sample.";
+            end;
+        endif;
         InflG = Infl;
         G = nobs;
     else;
+        if rows(clusterId) /= nobs or cols(clusterId) /= 1;
+            errorlog "quaidsRobustFit: clusterId must be scalar 0 or a Tx1 vector matching the sample.";
+            end;
+        endif;
         un = unique(clusterId, 1);
         G = rows(un);
+        if G <= 1;
+            errorlog "quaidsRobustFit: cluster-robust SE require at least two clusters.";
+            end;
+        endif;
         D = clusterId .== un';
         InflG = D'Infl;
     endif;
@@ -247,7 +275,16 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
     c = (G/(G-1))*((nobs-1)/(nobs-Kdof));
     Meat = c*(InflG'InflG)/nobs;
 
-    bread = eye(n1).*.invpd(gg);
+    oldtrp = trapchk(1);
+    trap 1,1;
+    ggInv = invpd(gg);
+    trap oldtrp,1;
+    if scalmiss(ggInv);
+        errorlog "quaidsRobustFit: model design is singular; robust covariance cannot be computed.";
+        end;
+    endif;
+
+    bread = eye(n1).*.ggInv;
     v = bread*Meat*bread;
     se = reshape(sqrt(diag(v)), n1, k)';
 
@@ -390,7 +427,7 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
     local nobs, n, nint, n1, wnam, bDim1, bDim2, bVecDim, nClusters, un, G,
         completed, failed, attempts, maxAttempts, gDraw, idx,
         wB, intcptB, pricesB, totexpB, instrB, status, bVec, bBoot, seBoot,
-        j, oneCluster;
+        j, oneCluster, clusterScalar;
     struct quaidsOut qOut;
     struct quaidsRobustOut rOut;
     struct quaidsRobustBootOut rbOut;
@@ -401,6 +438,24 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
     endif;
 
     nobs = rows(w);
+
+    clusterScalar = rows(clusterId)*cols(clusterId) == 1;
+    if clusterScalar;
+        if clusterId /= 0;
+            errorlog "quaidsRobustBootstrapFit: clusterId must be scalar 0 or a Tx1 vector matching the sample.";
+            end;
+        endif;
+    else;
+        if rows(clusterId) /= nobs or cols(clusterId) /= 1;
+            errorlog "quaidsRobustBootstrapFit: clusterId must be scalar 0 or a Tx1 vector matching the sample.";
+            end;
+        endif;
+        un = unique(clusterId, 1);
+        if rows(un) <= 1;
+            errorlog "quaidsRobustBootstrapFit: cluster bootstrap requires at least two clusters.";
+            end;
+        endif;
+    endif;
 
     /* Base (unresampled) fit -- supplies the point estimate and the base
        closed-form robust/cluster SE, and fails fast if the base fit
@@ -421,10 +476,9 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
     bDim2 = cols(rOut.b);
     bVecDim = bDim1*bDim2;
 
-    if clusterId == 0;
+    if clusterScalar;
         nClusters = nobs;
     else;
-        un = unique(clusterId, 1);
         nClusters = rows(un);
     endif;
 
@@ -441,7 +495,7 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
     do until completed >= B or attempts >= maxAttempts;
         attempts = attempts + 1;
 
-        if clusterId == 0;
+        if clusterScalar;
             idx = ceil(rndu(nobs, 1) * nobs);
         else;
             G = nClusters;

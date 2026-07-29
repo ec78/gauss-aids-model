@@ -7,17 +7,16 @@ Context file for Claude Code sessions working on this repository.
 Estimates **Almost Ideal Demand System** models: linearized AIDS (Stone price
 index), iterated AIDS (nonlinear translog price index), and **QUAIDS**
 (Banks, Blundell & Lewbel 1997 quadratic-log-expenditure extension), with
-optional instrumental-variables treatment of (endogenous) log total
-expenditure. Estimation imposes homogeneity and/or Slutzky symmetry via
+instrumental-variables treatment of (endogenous) log total expenditure.
+Estimation imposes homogeneity and/or Slutzky symmetry via
 iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.15.0`) and is not yet
-packaged as an installable GAUSS application package (`library quaids;` does
-not work yet). See `GOLD_STANDARD_TODO.md` for the full roadmap — this file
-is the quick-orientation companion to it, and should be kept synchronized
-with it.
+The library is **pre-alpha** (package version `0.15.0`) and is packaged as an
+installable GAUSS application package (`library quaids;`). See
+`GOLD_STANDARD_TODO.md` for the full roadmap — this file is the
+quick-orientation companion to it, and should be kept synchronized with it.
 
 **Naming**: the package and its public procs use a `quaids` prefix (decided
 at Milestone 0), even though the estimator also covers plain linear AIDS —
@@ -146,6 +145,12 @@ src/
                     #   expected consequence of the simplification, not a
                     #   bug. See "Milestone 20: robust and cluster-robust
                     #   standard errors" below.
+  quaidsworkflow.src # Milestone 21 seed: quaidsWorkflowFit(), a thin
+                    #   applied workflow layer composing quaidsFit(),
+                    #   quaidsSharesFit(), quaidsElasFit(), and
+                    #   quaidsRobustFit() into one silent struct-returning
+                    #   call. This is not a new estimator; it is the first
+                    #   public one-call workflow bundle for applied scripts.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
@@ -406,6 +411,10 @@ tests/
                     #   run_source_tests.ps1's default invocation -- added
                     #   to the same -SkipBootstrap-gated group as
                     #   quaids_curvature_bootstrap_test.e.
+  quaids_workflow_test.e  # Milestone 21 seed: parity checks proving
+                    #   quaidsWorkflowFit() returns the same fit,
+                    #   mean-point shares/elasticities, and robust SE as
+                    #   explicit calls to the underlying public APIs.
   package_public_api.e   # Milestone 7: installed-package release gate --
                     #   `library quaids;` (not #include) against a real
                     #   install, exercising quaidsControlCreate/
@@ -503,8 +512,8 @@ docs/
                     #   and Banks, Blundell & Lewbel (1997).
   FEATURE_SUPPORT_MATRIX.md  # Milestone 8: LA-AIDS x iterated-AIDS x
                     #   QUAIDS support for IV, hypothesis tests,
-                    #   elasticities, Slutzky, curvature (not supported,
-                    #   documented not silently absent), dataframe API,
+                    #   elasticities, Slutzky, curvature, zero correction,
+                    #   robust/cluster inference, dataframe API,
                     #   pubtable export, synthetic/published validation.
   command-reference/  # Milestone 8: one *.md page per public proc (18
                     #   pages) -- Purpose/Format/Parameters/Returns/
@@ -530,7 +539,7 @@ docs/
                   #   below for the shell-invocation subtlety this
                   #   required (shell: cmd, not the default
                   #   shell: powershell).
-package.json      # GAUSS package manifest (name: quaids, version: 0.10.0,
+package.json      # GAUSS package manifest (name: quaids, version: 0.15.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
                   #   quaidscurvature.src IS listed (required public API),
@@ -540,15 +549,17 @@ package.json      # GAUSS package manifest (name: quaids, version: 0.10.0,
                   #   adds no new dependency. Milestone 15 (bootstrap
                   #   standard errors) adds new public API inside
                   #   quaidscurvature.src but no new src array entry or
-                  #   new dependency.
+                  #   new dependency. quaidsworkflow.src (Milestone 21
+                  #   seed) is listed last because it composes existing
+                  #   public fit/post-estimation APIs.
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
-CHANGELOG.md      # Milestone 7: version history 0.1.0-0.5.0, reconstructed
-                  #   from this file's own milestone records (Keep a
-                  #   Changelog style). Extended through 0.7.0 at
-                  #   Milestone 11. This repo now has an automated commit/
-                  #   push process (discovered at Milestone 11 via `git
+CHANGELOG.md      # Keep a Changelog style version history, reconstructed
+                  #   from this file's own milestone records and maintained
+                  #   through the current package version. This repo now has
+                  #   an automated commit/push process (discovered at
+                  #   Milestone 11 via `git
                   #   log`, not set up by any tool call in this
                   #   conversation) plus explicit commits at milestone
                   #   breakpoints per the repo owner's request -- "nothing
@@ -1039,7 +1050,7 @@ concrete use case shows up.
 | `alpha0` | `0` | Fixed value of the translog price-index intercept `alpha_0` |
 | `err` | `.0001` | Relative parameter-change convergence tolerance |
 | `othnam` | `""` | Optional alternate variable names for printed output |
-| `b0` | `0` | Optional user-supplied starting values; `0` = use linearized-AIDS starting values |
+| `b0` | `0` | Optional user-supplied starting values; `0` = use built-in starting values. For `quaidsFit()`, a supplied matrix must match the reduced raw coefficient matrix shape used by the homogeneity stage (`qOut.homogB`). For `quaidsZeroFit()`, it must match the zero-corrected coefficient shape (`zOut.b`) |
 | `relax` | `1` | Milestone 12: under-relaxation factor for the iterated fixed-point update, `(0,1]`; `1` = no damping |
 
 The `stone`, `aids`, and `varname` fields flagged as dead at Milestone 0 were
@@ -1417,7 +1428,7 @@ library optmt, quaids;
 
 struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
-aCtl.linear = 1;          // required -- QUAIDS not yet supported
+aCtl.linear = 1;          // Milestone 10 example; QUAIDS support added at Milestone 13
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;      // required -- quaidsCurvatureFit needs a
                           // homogeneity+symmetry-constrained starting fit
@@ -2807,6 +2818,25 @@ robust/cluster standard errors (Milestone 20). One still-unrequested
 follow-up remains, flagged at Milestone 19: homogeneity/symmetry
 imposition on top of the Shonkwiler-Yen zero-share correction.
 
+## Milestone 21: applied workflow driver (in progress)
+
+Post-20 development shifts from isolated post-estimation procs toward
+one-call applied workflows that fit a system and return the most commonly
+needed downstream quantities together. The first seed is
+`quaidsWorkflowFit()` (`src/quaidsworkflow.src`), which deliberately
+composes existing public APIs rather than adding another estimator:
+`quaidsFit()` for the core fit, `quaidsSharesFit()` and `quaidsElasFit()`
+at the sample mean, and `quaidsRobustFit()` for robust/cluster-robust SE.
+Its flat `quaidsWorkflowOut` struct is meant for scripts, notebooks, and
+future export/reporting adapters that need one object with model status,
+the evaluation point, predicted shares, elasticities, and robust inference.
+
+Current scope is intentionally conservative: mean-point post-estimation
+and robust inference only when the base fit converges. Follow-ups tracked
+in `GOLD_STANDARD_TODO.md` include model-choice/restriction summaries,
+optional welfare scenario inputs, export-ready result bundles, installed-
+package public API coverage, and broader workflow validation.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -2920,7 +2950,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Fourteen automated tests exist, all run from `tests/` as the working directory:
+Fifteen routine source-tree tests exist, all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -2937,9 +2967,10 @@ tgauss -b -x quaids_reliability_regression_test.e
 tgauss -b -x quaids_curvature_bootstrap_test.e
 tgauss -b -x quaids_zero_test.e
 tgauss -b -x quaids_robust_test.e
+tgauss -b -x quaids_workflow_test.e
 ```
 
-`quaids_robust_bootstrap_test.e` is a fifteenth, gated the same way
+`quaids_robust_bootstrap_test.e` is a sixteenth, gated the same way
 `quaids_curvature_bootstrap_test.e` is (see `-SkipBootstrap` below) --
 listed with the other bootstrap tests further down, not in the block
 above.
@@ -3060,8 +3091,13 @@ above.
   by `run_source_tests.ps1`'s default invocation — added to the same
   `-SkipBootstrap`-gated group as `quaids_curvature_bootstrap_test.e`
   rather than a new flag.
+- `quaids_workflow_test.e` (Milestone 21 seed): checks that
+  `quaidsWorkflowFit()` returns the same core fit, sample-mean evaluation
+  point, predicted shares, elasticities, and robust standard errors as
+  explicit calls to `quaidsFit()`/`quaidsSharesFit()`/`quaidsElasFit()`/
+  `quaidsRobustFit()` on the same fixture.
 
-All fourteen (source-tree, non-bootstrap-gated) files print one
+All fifteen routine source-tree files print one
 `PASS`/`FAIL` line per check and a final `...: ALL N CHECKS PASSED` (or a
 failure count) summary line — check that line, since `tgauss`'s exit code
 is not currently a reliable pass/fail signal for this harness. `tests/
@@ -3079,7 +3115,7 @@ Run it manually via `tests/run_convergence_sweep.ps1` whenever you want
 to re-measure the iterated estimator's convergence-failure rate — see
 "Milestone 12: numerical reliability" above.
 
-A sixteenth test (fourteen source-tree files plus the two bootstrap-gated
+A seventeenth test (fifteen routine source-tree files plus the two bootstrap-gated
 ones), `tests/package_public_api.e` (Milestone 7), is different
 in kind from the others: it loads `library quaids;` against a real
 *installed* copy of the package (currently `c:\gauss26\pkgs\quaids`) rather
@@ -3119,7 +3155,7 @@ of the installed package (see "Milestone 6" above).
 `quaidsutil.src`, `quaidsiv.src`, `quaidszerocorrect.src`,
 `quaidselas.src`, `quaidsshares.src`, `quaidsslutzky.src`, `quaids.src`,
 `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`,
-`quaidswelfare.src`, `quaidsrobust.src`.
+`quaidswelfare.src`, `quaidsrobust.src`, `quaidsworkflow.src`.
 `quaidsshares.src` (Milestone 16) has no load-order dependency on
 anything beyond `quaids.sdf` (its private `_quaidsSharesAt()` helper is
 a fresh, independent implementation, not a call into `quaidselas.src`)
@@ -3159,6 +3195,10 @@ it must load after `quaids.src`, but adds no new `deps` entry —
 not a separate package; `robustSE`/`clusterSE` (base runtime `robust.src`)
 and `tsmt`'s near-identical procs were evaluated and not adopted (see
 "What GAUSS already provides" above).
+`quaidsworkflow.src` (Milestone 21 seed) loads last because it is a
+composition layer over the existing public APIs: it calls `quaidsFit()`,
+`quaidsSharesFit()`, `quaidsElasFit()`, and `quaidsRobustFit()`, and adds
+no new package dependency.
 `src/pubtable_quaids.src` (Milestone 6) is deliberately **not** in this
 array — it has a hard dependency on `pubtable.sdf`'s struct types, and
 adding it would make `pubtable` a hard dependency for the whole package to

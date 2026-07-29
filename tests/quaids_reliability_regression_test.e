@@ -68,8 +68,10 @@ endp;
 
 struct quaidsControl aCtlDefault;
 struct quaidsControl aCtlRelax1;
+struct quaidsControl aCtlB0;
 struct quaidsOut qOutDefault;
 struct quaidsOut qOutRelax1;
+struct quaidsOut qOutB0;
 
 aCtlDefault = quaidsControlCreate;
 aCtlDefault.linear = 0;
@@ -84,12 +86,23 @@ aCtlRelax1.relax = 1;
 qOutDefault = quaidsFit(w, intcpt, prices, totexp, instr, aCtlDefault);
 qOutRelax1 = quaidsFit(w, intcpt, prices, totexp, instr, aCtlRelax1);
 
+aCtlB0 = aCtlDefault;
+aCtlB0.maxiter = 1;
+aCtlB0.b0 = qOutDefault.homogB;
+qOutB0 = quaidsFit(w, intcpt, prices, totexp, instr, aCtlB0);
+
 call check(qOutDefault.converged == qOutRelax1.converged and qOutDefault.iterations == qOutRelax1.iterations,
     "aCtl.relax=1 matches unset default: converged/iterations identical");
 call check(maxc(maxc(abs(qOutDefault.bS - qOutRelax1.bS))) == 0,
     "aCtl.relax=1 matches unset default: bS byte-identical");
 call check(maxc(maxc(abs(qOutDefault.vS - qOutRelax1.vS))) == 0,
     "aCtl.relax=1 matches unset default: vS byte-identical");
+call check(qOutB0.ng == qOutDefault.ng and qOutB0.nendog == qOutDefault.nendog,
+    "aCtl.b0 supplied: shared model dimensions are initialized");
+call check(rows(qOutB0.homogB) == rows(qOutDefault.homogB) and cols(qOutB0.homogB) == cols(qOutDefault.homogB),
+    "aCtl.b0 supplied: homogeneity-stage coefficients have the expected shape");
+call check(rows(qOutB0.bestB) == rows(qOutDefault.bestB) and cols(qOutB0.bestB) == cols(qOutDefault.bestB),
+    "aCtl.b0 supplied: final recovered coefficients have the expected shape");
 
 
 /* --- (b) the previously-crashing seed (QUAIDS, seed=43) no longer crashes --- */

@@ -179,7 +179,7 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
         probitConverged, shareZeroFrac,
         oldtrp, stone, lx, endog, nendog, m, ngOld, ng, gg, gw,
         b, b0, ok, iter, err, alpha, gama, a_p, _beta, b_p, lx2, firstIter,
-        iterHist, ww, sse, S, bFinal, Vfinal, restrictOk, se;
+        iterHist, ww, sse, S, bFinal, Vfinal, restrictOk, se, b0Scalar;
     struct quaidsZeroOut zOut;
 
     if aCtl.homogenous == 1;
@@ -272,7 +272,17 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
     ng = ngOld + n;
     gg = m[1:ng, 1:ng];
     gw = m[1:ng, ng+1:ng+n];
-    b = solpd(gw, gg);
+
+    b0Scalar = rows(aCtl.b0)*cols(aCtl.b0) == 1;
+    if b0Scalar and aCtl.b0 == 0;
+        b = solpd(gw, gg);
+    else;
+        if rows(aCtl.b0) /= ng or cols(aCtl.b0) /= n;
+            errorlog "quaidsZeroFit: aCtl.b0 must be scalar 0 or an ng x n zero-corrected coefficient matrix matching zOut.b.";
+            end;
+        endif;
+        b = aCtl.b0;
+    endif;
 
     /******************************/
     /* ITERATION (mirrors quaidsFit()'s own translog-price-index loop,

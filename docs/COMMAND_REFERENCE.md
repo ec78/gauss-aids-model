@@ -22,6 +22,7 @@ sections.
 - [printQuaids](command-reference/printQuaids.md)
 - [quaids](command-reference/quaids.md)
 - [quaidsFull](command-reference/quaidsFull.md)
+- [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md)
 
 ## Hypothesis Tests
 

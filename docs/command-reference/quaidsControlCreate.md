@@ -27,7 +27,7 @@ None.
 | `alpha0` | `0` | Fixed value of the translog price-index intercept `alpha_0` |
 | `err` | `.0001` | Relative parameter-change convergence tolerance |
 | `othnam` | `""` | Optional alternate variable names for printed output |
-| `b0` | `0` | Optional user-supplied starting values; `0` = use linearized-AIDS starting values |
+| `b0` | `0` | Optional user-supplied starting values; `0` = use built-in starting values. For `quaidsFit()`, a supplied matrix must match the reduced raw coefficient matrix shape used by the homogeneity stage (`qOut.homogB`). For `quaidsZeroFit()`, it must match the zero-corrected coefficient shape (`zOut.b`) |
 | `relax` | `1` | Under-relaxation factor for the iterated (`aCtl.maxiter>1`) fixed-point update, `(0,1]`; `1` = no damping (byte-identical to every release before Milestone 12). See Remarks |
 
 Structure-inference return typing means callers do not need to pre-declare

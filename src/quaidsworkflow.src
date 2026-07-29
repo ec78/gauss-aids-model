@@ -1,0 +1,101 @@
+/*
+** quaidsworkflow.src
+**
+** Milestone 21 seed: a first high-level applied workflow bundle. This proc
+** does not introduce new econometrics; it composes existing, individually
+** tested public procs into the default post-estimation path: fit the demand
+** system, evaluate predicted shares and elasticities at the sample mean, and
+** compute robust/cluster-robust standard errors when the base fit converged.
+*/
+
+/*******************************************************************************
+**
+** QUAIDSWORKFLOWFIT
+**
+** Purpose:   fit a QUAIDS/AIDS system and collect the standard mean-point
+**            post-estimation products in one silent struct-returning call.
+**
+** Format:    struct quaidsWorkflowOut wfOut =
+**                quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+**
+*******************************************************************************/
+
+proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId);
+
+    local n, nint, m_, intcptPt, pricesPt, totexpPt;
+    struct quaidsOut qOut;
+    struct quaidsSharesOut sharesOut;
+    struct quaidsElasOut elasOut;
+    struct quaidsRobustOut robustOut;
+    struct quaidsWorkflowOut wfOut;
+
+    qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+    n = qOut.n;
+    nint = qOut.nint;
+    m_ = meanc(qOut.intcptFull~prices~totexp);
+    intcptPt = m_[1:1+nint];
+    pricesPt = m_[1+nint+1:1+nint+n];
+    totexpPt = m_[1+nint+n+1];
+
+    wfOut.model = qOut.model;
+    wfOut.linear = qOut.linear;
+    wfOut.homogenous = qOut.homogenous;
+    wfOut.n = qOut.n;
+    wfOut.nobs = qOut.nobs;
+    wfOut.nint = qOut.nint;
+    wfOut.converged = qOut.converged;
+    wfOut.iterations = qOut.iterations;
+    wfOut.finalErr = qOut.finalErr;
+    wfOut.symValid = qOut.symValid;
+    wfOut.overidValid = qOut.overidValid;
+    wfOut.b = qOut.b;
+    wfOut.v = qOut.v;
+    wfOut.bS = qOut.bS;
+    wfOut.vS = qOut.vS;
+    wfOut.bestB = qOut.bestB;
+    wfOut.bestV = qOut.bestV;
+    wfOut.evalIntcpt = intcptPt;
+    wfOut.evalPrices = pricesPt;
+    wfOut.evalTotexp = totexpPt;
+
+    wfOut.postValid = 0;
+    wfOut.shares = miss(0, 0);
+    wfOut.sharesSE = miss(0, 0);
+    wfOut.sharesV = miss(0, 0);
+    wfOut.incomeElas = miss(0, 0);
+    wfOut.incomeElasSE = miss(0, 0);
+    wfOut.priceElas = miss(0, 0);
+    wfOut.priceElasSE = miss(0, 0);
+    wfOut.compPriceElas = miss(0, 0);
+    wfOut.compPriceElasSE = miss(0, 0);
+    wfOut.robustValid = 0;
+    wfOut.robustB = miss(0, 0);
+    wfOut.robustV = miss(0, 0);
+    wfOut.robustSE = miss(0, 0);
+    wfOut.robustNClusters = miss(0, 0);
+
+    if qOut.converged == 1;
+        sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
+        elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
+        robustOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+
+        wfOut.postValid = 1;
+        wfOut.shares = sharesOut.w;
+        wfOut.sharesSE = sharesOut.se;
+        wfOut.sharesV = sharesOut.v;
+        wfOut.incomeElas = elasOut.er;
+        wfOut.incomeElasSE = elasOut.ser;
+        wfOut.priceElas = elasOut.ep;
+        wfOut.priceElasSE = elasOut.sep;
+        wfOut.compPriceElas = elasOut.epc;
+        wfOut.compPriceElasSE = elasOut.sepc;
+        wfOut.robustValid = 1;
+        wfOut.robustB = robustOut.b;
+        wfOut.robustV = robustOut.v;
+        wfOut.robustSE = robustOut.se;
+        wfOut.robustNClusters = robustOut.nClusters;
+    endif;
+
+    retp(wfOut);
+endp;

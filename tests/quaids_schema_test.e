@@ -125,12 +125,14 @@ call check(not ismiss(qOut.finalErr), "finalErr is not missing for an iterated f
 /* --- First-stage IV diagnostics --- */
 
 call check(rows(qOut.ivB) == qOut.nz and cols(qOut.ivB) == qOut.nu, "ivB is nz x nu");
+call check(qOut.ivDf == tobs - qOut.nz, "ivDf == nobs - nz (instrument design already includes the constant)");
 call check(qOut.ivRsq > 0.9, "ivRsq is high (instrument is a strong predictor by construction)");
 
 
 /* --- Homogeneity-constrained stage --- */
 
 call check(rows(qOut.homogB) == qOut.ng and cols(qOut.homogB) == qOut.n, "homogB is ng x n");
+call check(qOut.homogDf == tobs - qOut.ng, "homogDf == nobs - ng (parameter count already includes the constant)");
 call check(not ismiss(qOut.homogCrit), "homogCrit (log det sigma) is not missing");
 
 

@@ -57,7 +57,8 @@ $gaussTests = @(
     "quaids_welfare_test.e",
     "quaids_reliability_regression_test.e",
     "quaids_zero_test.e",
-    "quaids_robust_test.e"
+    "quaids_robust_test.e",
+    "quaids_workflow_test.e"
 )
 
 if (-not $SkipPubtable) {
@@ -137,6 +138,48 @@ function Invoke-GaussBatch {
 }
 
 $failed = @()
+
+$guardTests = @(
+    [pscustomobject]@{
+        Script = "guard_error_cases\robust_nonconverged_qout.e"
+        Expected = "quaidsRobustFit: qOut must come from a converged quaidsFit() result."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\robust_bad_cluster_length.e"
+        Expected = "quaidsRobustFit: clusterId must be scalar 0 or a Tx1 vector matching the sample."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\robust_one_cluster.e"
+        Expected = "quaidsRobustFit: cluster-robust SE require at least two clusters."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\curvature_nonconverged_qout.e"
+        Expected = "quaidsCurvatureFit: qOut must come from a converged quaidsFit() result."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\curvature_invalid_sym.e"
+        Expected = "quaidsCurvatureFit: qOut must have a valid homogeneity+symmetry-constrained estimate (qOut.symValid=1)."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\quaids_bad_b0_shape.e"
+        Expected = "quaidsFit: aCtl.b0 must be scalar 0 or an ng x n reduced raw coefficient matrix matching qOut.homogB."
+    }
+)
+
+foreach ($guard in $guardTests) {
+    Write-Host ""
+    Write-Host "==> $($guard.Script) (expected guard error)"
+    $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-b", "-x", $guard.Script)
+    $output = $result.Output
+    $output
+
+    if ($output -match [regex]::Escape($guard.Expected)) {
+        Write-Host "PASS  expected guard diagnostic observed"
+    } else {
+        Write-Host "FAIL  expected guard diagnostic not observed: $($guard.Expected)"
+        $failed += $guard.Script
+    }
+}
 
 foreach ($test in $gaussTests) {
     Write-Host ""

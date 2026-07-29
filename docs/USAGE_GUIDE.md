@@ -36,6 +36,26 @@ data = loadd("mydata.csv");
 qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl);
 ```
 
+Use [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md) when you
+want the first applied workflow bundle: estimate the system, evaluate
+predicted shares and elasticities at the sample mean, and compute robust
+or cluster-robust standard errors in one silent, struct-returning call:
+
+```gauss
+struct quaidsWorkflowOut wfOut;
+
+// clusterId = 0 gives heteroskedasticity-robust SE.
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
+
+// Or pass a Tx1 group-label vector for cluster-robust SE.
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, householdId);
+```
+
+The workflow object is intentionally a composition layer, not a separate
+estimator. Its fit fields come from `quaidsFit()`, and its post-estimation
+fields match direct calls to `quaidsSharesFit()`, `quaidsElasFit()`, and
+`quaidsRobustFit()` on the same sample-mean evaluation point.
+
 There is no formula-string (`"y ~ x1 + x2"`) API -- AIDS/QUAIDS is a
 multi-equation system (N budget shares against N parallel log prices),
 which doesn't fit GAUSS's single-equation formula grammar. Column-name

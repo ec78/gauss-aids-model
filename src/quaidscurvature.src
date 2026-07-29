@@ -223,6 +223,14 @@ proc (struct quaidsCurvOut) = quaidsCurvatureFit(struct quaidsOut qOut, w, price
         errorlog "quaidsCurvatureFit: qOut must come from a homogeneity+symmetry-constrained fit (aCtl.homogenous=1).";
         end;
     endif;
+    if qOut.converged /= 1;
+        errorlog "quaidsCurvatureFit: qOut must come from a converged quaidsFit() result.";
+        end;
+    endif;
+    if qOut.symValid /= 1;
+        errorlog "quaidsCurvatureFit: qOut must have a valid homogeneity+symmetry-constrained estimate (qOut.symValid=1).";
+        end;
+    endif;
 
     linear = qOut.linear;
 

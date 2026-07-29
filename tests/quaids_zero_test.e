@@ -89,6 +89,7 @@ call check(minc(fracs) > 0.01 and maxc(fracs) < 0.99, "fixture: zero-share fract
 
 
 struct quaidsControl aCtl;
+struct quaidsControl aCtlB0;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;
 aCtl.maxiter = 100;
@@ -96,6 +97,7 @@ aCtl.homogenous = 0;
 aCtl.err = .0001;
 
 struct quaidsZeroOut zOut;
+struct quaidsZeroOut zOutB0;
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(zOut.converged == 1, "quaidsZeroFit converged");
 
@@ -120,6 +122,14 @@ call check(rows(zOut.probitB) == rows(zOut.xnam) + n + 1, "zOut.probitB has one 
 call check(cols(zOut.probitB) == n, "zOut.probitB has one column per good");
 call check(sumc(zOut.probitConverged) == n, "all n first-stage probits converged");
 
+aCtlB0 = aCtl;
+aCtlB0.maxiter = 1;
+aCtlB0.b0 = zOut.b;
+zOutB0 = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtlB0);
+call check(rows(zOutB0.b) == rows(zOut.b) and cols(zOutB0.b) == cols(zOut.b),
+    "quaidsZeroFit supplied aCtl.b0: coefficient shape is preserved");
+call check(rows(zOutB0.se) == rows(zOut.se) and cols(zOutB0.se) == cols(zOut.se),
+    "quaidsZeroFit supplied aCtl.b0: standard-error shape is preserved");
 
 /* --- Core validation: corrected recovery beats naive recovery against
    the true latent DGP, on this specific screened seed. --- */

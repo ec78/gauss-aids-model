@@ -71,6 +71,11 @@ Convergence is not guaranteed for the iterated estimator (`aCtl.maxiter >
 converge cleanly (see `GOLD_STANDARD_TODO.md`'s Milestone 3 findings).
 Check `qOut.converged` and `qOut.iterations` after fitting.
 
+If `aCtl.b0` is supplied, it must be the reduced raw coefficient matrix
+shape used internally before final absolute-price recovery. In practice,
+use a previous compatible fit's `qOut.homogB` as the template. Scalar `0`
+uses the built-in linearized-AIDS starting values.
+
 ## Examples
 
 ```gauss

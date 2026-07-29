@@ -5,6 +5,48 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## Unreleased
+
+### Fixed
+- `quaidsFit()` now correctly honors documented `aCtl.b0` starting values by
+  initializing the shared Stone-index design state regardless of whether
+  the start matrix is caller-supplied or internally estimated. Supplied
+  `b0` matrices are now shape-validated with a clear diagnostic.
+- Corrected first-stage IV and homogeneity-stage diagnostic degrees of
+  freedom, which previously subtracted an extra constant even though the
+  design matrices already included one.
+- `quaidsRobustFit()` and `quaidsRobustBootstrapFit()` now fail fast with
+  explicit diagnostics for non-converged base fits, malformed cluster
+  vectors, one-cluster inputs, insufficient CR1 degrees of freedom, and
+  singular robust-covariance bread matrices.
+- `quaidsCurvatureFit()` now rejects non-converged or invalid
+  symmetry-constrained fits before imposing curvature.
+- `quaidsSharesFit()`, `quaidsElasFit()`, and `quaidsWelfareFit()` now build
+  finite-difference perturbation directions elementwise, avoiding scalar
+  vector-condition behavior when coefficient vectors mix zero and nonzero
+  entries.
+- `quaidsZeroFit()` now accepts and validates compatible `aCtl.b0` starting
+  matrices instead of silently ignoring the shared control field.
+- README, CLAUDE orientation notes, and command-reference pages now reflect
+  package version `0.15.0`, installability, `optmt` dependency scope, and
+  the refined `b0` contracts.
+
+### Added
+- `quaidsWorkflowFit()`/`quaidsWorkflowOut` as the first Milestone 21
+  applied workflow bundle, composing `quaidsFit()`, `quaidsSharesFit()`,
+  `quaidsElasFit()`, and `quaidsRobustFit()` into one silent,
+  struct-returning call.
+- `tests/quaids_workflow_test.e` parity coverage proving workflow output
+  matches explicit calls to the underlying public APIs.
+- Source-test harness coverage for expected guard failures, including
+  invalid robust/cluster inputs, invalid curvature inputs, and malformed
+  `aCtl.b0` matrices.
+
+### Documentation
+- README, usage guide, feature matrix, command reference, `CLAUDE.md`, and
+  `GOLD_STANDARD_TODO.md` now describe the post-20 roadmap and Milestone
+  21 Gold Standard to-dos.
+
 ## 0.15.0 - 2026-07-28
 
 ### Added

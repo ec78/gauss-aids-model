@@ -86,6 +86,11 @@ that the closed-form sandwich's simplified bread makes it dramatically
 more conservative than `qOut`'s own classical SE -- this completes the
 originally-outlined five-item full-demand-system-workflow).
 
+The post-20 roadmap now shifts from individual post-estimation procs to
+full applied workflow support. `quaidsWorkflowFit()` is the first seed of
+that layer, bundling `quaidsFit()`, mean-point shares, elasticities, and
+robust/cluster-robust SE in one silent struct-returning call.
+
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
   `package.json`, `LICENSE`, `CITATION.cff`, `.gitignore`, and `CLAUDE.md`
@@ -349,6 +354,59 @@ packages (`pkgs/`), and against `aptech/gauss-llm-reference`.
   kept as the always-available post hoc check.
 
 ## Roadmap
+
+### Post-20 Development Roadmap
+
+The original gold-standard roadmap and the five-item full-demand-system
+workflow outline are complete. The next phase should prioritize full applied
+workflows and methodology extensions in this order:
+
+1. **Workflow driver**: build `quaidsWorkflowFit()` into the default
+   one-call applied path. The first increment is now present: it fits the
+   system and, when the base fit converges, returns mean-point predicted
+   shares, elasticities, and robust/cluster-robust SE. Follow-up work should
+   add model-choice summaries, restriction-test bundles, optional welfare
+   scenarios, and export-ready result bundles.
+2. **Inference unification**: centralize bootstrap/robust options, seed
+   handling, cluster validation, failure accounting, percentile CIs, and
+   reporting across curvature, robust SE, welfare, shares, elasticities, and
+   zero-share correction.
+3. **Data validation and diagnostics**: add a preflight diagnostic layer for
+   share adding-up, zero/negative shares, weak instruments, collinearity,
+   missing values, price variation, convergence risk, and cluster counts.
+4. **Survey/microdata support**: support sampling weights, clusters, strata,
+   replicate weights, and population aggregation workflows. This is the
+   highest practical value for household expenditure data.
+5. **Zero-share restrictions**: extend `quaidsZeroFit()` to support
+   homogeneity/symmetry, then evaluate whether local curvature imposition is
+   feasible on the corrected system.
+6. **Scenario engine**: add reusable price/tax/subsidy scenario APIs for
+   predicted shares, elasticities, compensating/equivalent variation,
+   household-level aggregation, and export-ready tables.
+7. **Methodology extensions**: evaluate demographic translation/scaling,
+   weak-IV diagnostics or alternative IV/GMM estimators, an explicitly
+   documented no-IV/exogenous-expenditure mode for comparability, and larger
+   model-family extensions such as EASI only after the applied workflow layer
+   is stable.
+
+### Milestone 21 — Applied Workflow Driver — IN PROGRESS
+
+- [x] Add the first workflow-layer proc, `quaidsWorkflowFit()`, as a thin
+  composition wrapper around existing public APIs rather than a new
+  estimator.
+- [x] Return a flat `quaidsWorkflowOut` structure with core fit fields,
+  sample-mean evaluation point, predicted shares, elasticities, and robust/
+  cluster-robust SE when the base fit converges.
+- [x] Add source-tree parity coverage proving the workflow output matches
+  explicit manual calls to `quaidsFit()`, `quaidsSharesFit()`,
+  `quaidsElasFit()`, and `quaidsRobustFit()`.
+- [ ] Add model-choice and restriction-test summaries, including a convenient
+  path for `quaidsQuadraticTest()` on an unconstrained QUAIDS comparison fit.
+- [ ] Add optional welfare scenario inputs and output fields.
+- [ ] Add export-ready result bundles or adapters so workflow output can feed
+  `pubtable` without manual reshaping.
+- [ ] Add installed-package public API coverage and examples before closing
+  this milestone.
 
 Each milestone should exit with source tests, examples, and docs updated
 together — no milestone is "done" with code alone.

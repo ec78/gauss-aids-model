@@ -135,11 +135,7 @@ proc (struct quaidsElasOut) = quaidsElasFit(b, v, intcpt, prices, totexp, struct
 
     b0 = vec(b);
     ab0 = abs(b0);
-    if b0 /= 0;
-        dab0 = b0./ab0;
-    else;
-        dab0 = 1;
-    endif;
+    dab0 = b0./(ab0 + (ab0 .== 0)) + (ab0 .== 0);
     e = (1e-8)*maxc((ab0~(1e-2)*ones(rows(b0), 1))').*dab0;
     be = b0+e;
     e = be-b0;    /* This increases precision slightly */

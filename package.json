@@ -30,7 +30,8 @@
         "quaidstests.src",
         "quaidscurvature.src",
         "quaidswelfare.src",
-        "quaidsrobust.src"
+        "quaidsrobust.src",
+        "quaidsworkflow.src"
     ],
     "version": "0.15.0"
 }

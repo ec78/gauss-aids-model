@@ -303,4 +303,49 @@ struct quaidsRobustBootOut {
     matrix seed;
 };
 
+/*
+** quaidsWorkflowOut -- struct returned by quaidsWorkflowFit(): a first
+** high-level applied workflow bundle around quaidsFit(), collecting the
+** core fit plus the standard mean-point post-estimation products most
+** applied users ask for next. Kept intentionally flat so downstream code can
+** consume it without nested-struct assumptions.
+*/
+struct quaidsWorkflowOut {
+    string model;
+    matrix linear;
+    matrix homogenous;
+    matrix n;
+    matrix nobs;
+    matrix nint;
+    matrix converged;
+    matrix iterations;
+    matrix finalErr;
+    matrix symValid;
+    matrix overidValid;
+    matrix b;
+    matrix v;
+    matrix bS;
+    matrix vS;
+    matrix bestB;
+    matrix bestV;
+    matrix evalIntcpt;
+    matrix evalPrices;
+    matrix evalTotexp;
+    matrix postValid;
+    matrix shares;
+    matrix sharesSE;
+    matrix sharesV;
+    matrix incomeElas;
+    matrix incomeElasSE;
+    matrix priceElas;
+    matrix priceElasSE;
+    matrix compPriceElas;
+    matrix compPriceElasSE;
+    matrix robustValid;
+    matrix robustB;
+    matrix robustV;
+    matrix robustSE;
+    matrix robustNClusters;
+};
+
 #endif

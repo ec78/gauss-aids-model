@@ -37,6 +37,7 @@ for the exact switch values.
 | Zero budget share correction | Yes (`quaidsZeroFit`, since Milestone 19, unconstrained only -- see Notes) | Yes (same) | Yes (same) |
 | Robust / cluster-robust standard errors | Yes (`quaidsRobustFit`, since Milestone 20, simplified bread -- see Notes) | Yes (same) | Yes (same) |
 | Robust / cluster bootstrap | Yes (`quaidsRobustBootstrapFit`, since Milestone 20) | Yes (same) | Yes (same) |
+| Applied workflow bundle | Yes (`quaidsWorkflowFit`, Milestone 21 seed) | Yes (same) | Yes (same) |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
 ## Notes

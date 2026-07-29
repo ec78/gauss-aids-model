@@ -112,7 +112,7 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
         pvf, stdest, stderr, t, pvt, i, ic, ig, R1, enam,
         S, X, v_s, b_s, nz, mss, u1, b0, rsq, k, sym, pfsym,
         z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma,
-        model, iterHist, firstIter, overidFstat, overidPvf, oldtrp, xvix;
+        model, iterHist, firstIter, overidFstat, overidPvf, oldtrp, xvix, b0Scalar;
     struct quaidsOut qOut;
 
     nobs = rows(w);
@@ -213,37 +213,42 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
     /* STARTING VALUE  */
     /***************************/
 
-    if aCtl.b0==0; /* no proposed starting value; default: estimates linear version of aids */
+    /* Stone price index needs ABSOLUTE log prices. At this point
+       prices[.,1:n-1] holds RELATIVE prices (each minus the reference
+       good n, converted in _quaidsIVFirstStage for the homogeneity
+       reparametrization) while prices[.,n] is still absolute --
+       reconstruct the absolute price matrix before weighting by mean
+       shares, or the "index" silently becomes StandardStone -
+       ln(p_n)*(1-meanShare_n), a distortion that varies with the
+       reference good's price rather than a valid deflator. Bug found
+       via Milestone 3 published-data validation (see
+       GOLD_STANDARD_TODO.md); confirmed by closing an order-of-
+       magnitude gap against an independent R/Python cross-check. */
+    stone = (prices[., 1:n-1] + prices[., n])~prices[., n];
+    stone = stone*meanc(w);
+    lx = totexp -stone;
+    clear stone;
+    if not aCtl.linear;
+        endog = lx~lx^2;
+    else;
+        endog = lx;
+    endif;
+    nendog = cols(endog);
+    unam = 0$+"U"$+ftocv(seqa(1, 1, nu), __vpad*(floor(log(nu)+1), 0));
+    m = moment(intcpt~prices[., 1:n1]~endog~u~w, 0);
+    ng = 1+nint+n1+nendog+nu;
+    gg = m[1:ng, 1:ng];
+    gw = m[1:ng, ng+1:ng+n];
 
-        /* Stone price index needs ABSOLUTE log prices. At this point
-           prices[.,1:n-1] holds RELATIVE prices (each minus the reference
-           good n, converted in _quaidsIVFirstStage for the homogeneity
-           reparametrization) while prices[.,n] is still absolute --
-           reconstruct the absolute price matrix before weighting by mean
-           shares, or the "index" silently becomes StandardStone -
-           ln(p_n)*(1-meanShare_n), a distortion that varies with the
-           reference good's price rather than a valid deflator. Bug found
-           via Milestone 3 published-data validation (see
-           GOLD_STANDARD_TODO.md); confirmed by closing an order-of-
-           magnitude gap against an independent R/Python cross-check. */
-        stone = (prices[., 1:n-1] + prices[., n])~prices[., n];
-        stone = stone*meanc(w);
-        lx = totexp -stone;
-        clear stone;
-        if not aCtl.linear;
-            endog = lx~lx^2;
-        else;
-            endog = lx;
-        endif;
-        nendog = cols(endog);
-        unam = 0$+"U"$+ftocv(seqa(1, 1, nu), __vpad*(floor(log(nu)+1), 0));
-        m = moment(intcpt~prices[., 1:n1]~endog~u~w, 0);
-        ng = 1+nint+n1+nendog+nu;
-        gg = m[1:ng, 1:ng];
-        gw = m[1:ng, ng+1:ng+n];
+    b0Scalar = rows(aCtl.b0)*cols(aCtl.b0) == 1;
+    if b0Scalar and aCtl.b0==0; /* no proposed starting value; default: estimates linear version of aids */
         b = solpd(gw, gg);
 
     else;
+        if rows(aCtl.b0) /= ng or cols(aCtl.b0) /= n;
+            errorlog "quaidsFit: aCtl.b0 must be scalar 0 or an ng x n reduced raw coefficient matrix matching qOut.homogB.";
+            end;
+        endif;
         b = aCtl.b0;
     endif;
 
@@ -385,7 +390,7 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
     /* HOMOGENEITY-CONSTRAINED (OR UNCONSTRAINED, IF NOT aCtl.homogenous) STAGE */
 
     crit = -ln(det(S[1:n-1, 1:n-1]));
-    df = nobs-ng-1;
+    df = nobs-ng;
     m_ = m[., 1]/nobs;
     cov = m/nobs - m_*m_';
     clear m_;

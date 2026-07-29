@@ -120,6 +120,7 @@ aCtl.err = .0001;
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(qOut.converged == 1, "starting homogeneity+symmetry fit converged");
+call check(qOut.symValid == 1, "starting homogeneity+symmetry fit has valid symmetry-constrained output");
 
 n = qOut.n;
 n1 = n - 1;
@@ -229,6 +230,7 @@ aCtlQ.err = .0001;
 struct quaidsOut qOutQ;
 qOutQ = quaidsFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ);
 call check(qOutQ.converged == 1, "QUAIDS: starting homogeneity+symmetry fit converged");
+call check(qOutQ.symValid == 1, "QUAIDS: starting homogeneity+symmetry fit has valid symmetry-constrained output");
 
 nQ = qOutQ.n;
 n1Q = nQ - 1;
