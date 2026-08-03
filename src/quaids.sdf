@@ -47,6 +47,18 @@ struct quaidsOut {
     matrix enam;
     matrix intcptFull;          // intcpt with the constant column prepended
     matrix u;                   // first-stage IV residuals
+    matrix weighted;             // Milestone 26: 1 if a sampling-weight
+                                 //   argument was supplied to quaidsFit(), 0
+                                 //   otherwise (the default, byte-identical
+                                 //   to every pre-Milestone-26 release)
+    matrix weightSum;            // Milestone 26: sum of the RAW (as-supplied,
+                                 //   not internally renormalized) weight
+                                 //   vector; == nobs when weighted==0
+    matrix effN;                 // Milestone 26: Kish's effective sample size,
+                                 //   (sum w)^2 / sum(w^2); == nobs when
+                                 //   weighted==0. Informational only -- not
+                                 //   used to override degrees-of-freedom
+                                 //   anywhere in this pass.
 
     // Instrumental-variables first-stage regression (log total expenditure on instruments)
     matrix ivB;
@@ -348,6 +360,13 @@ struct quaidsPreflightOut {
     matrix minClusterSize;
     matrix singletonClusters;
     matrix clusterWarning;
+    matrix weightValid;         // Milestone 26: 1 if weight==0 (unweighted)
+                                // or a valid Tx1 finite/nonnegative/positive-
+                                // sum weight vector was supplied
+    matrix weightSum;           // Milestone 26: sum of the raw weight vector;
+                                // == nobs when unweighted
+    matrix effN;                // Milestone 26: Kish's effective sample size,
+                                // (sum w)^2 / sum(w^2); == nobs when unweighted
     matrix controlValid;
     matrix convergenceRisk;
 };
@@ -367,6 +386,17 @@ struct quaidsWorkflowOut {
     matrix nobs;
     matrix nint;
     matrix wnam;
+    matrix weighted;            // Milestone 26: echoes qOut.weighted -- 1 if
+                                 //   an estimator sampling-weight argument was
+                                 //   supplied to quaidsWorkflowFit(), 0
+                                 //   otherwise. NOT the same concept as
+                                 //   surveyWeighted below (Milestone 25's
+                                 //   weighted-evaluation-point-only feature).
+    matrix weightSum;           // Milestone 26: echoes qOut.weightSum
+    matrix effN;                // Milestone 26: echoes qOut.effN
+    matrix preflightWeightValid;  // Milestone 26: echoes pOut.weightValid
+    matrix preflightWeightSum;    // Milestone 26: echoes pOut.weightSum
+    matrix preflightEffN;         // Milestone 26: echoes pOut.effN
     matrix preflightOk;
     matrix preflightErrors;
     matrix preflightWarnings;

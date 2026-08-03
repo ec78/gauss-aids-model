@@ -15,12 +15,12 @@
 **           system.
 **
 ** Format:   struct quaidsPreflightOut pOut =
-**               quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+**               quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
 **
 *******************************************************************************/
 
 proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, instr,
-    struct quaidsControl aCtl, clusterId);
+    struct quaidsControl aCtl, clusterId, weight);
 
     local nobs, n, nint, ninst, n1, scalarIntcptZero, dimsOk, pricesOk,
         totexpOk, intcptOk, instrOk, controlOk, intcptFull, allData,
@@ -31,7 +31,8 @@ proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, in
         pRel, u, zzi, m1, nz, nu, enam, b, se, t, pvt, cor, tv, df,
         rsq, rbsq, sse, stdest, clusterScalar, un, D, csz, clusterValid,
         nClusters, minClusterSize, singletonClusters, clusterWarning,
-        nErrors, nWarnings, convergenceRisk, shareTol;
+        nErrors, nWarnings, convergenceRisk, shareTol,
+        weightScalar, weightValid, weightForIV, weightSum, effN;
     struct quaidsPreflightOut pOut;
 
     shareTol = 1e-6;
@@ -87,6 +88,9 @@ proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, in
     pOut.minClusterSize = miss(0, 0);
     pOut.singletonClusters = miss(0, 0);
     pOut.clusterWarning = miss(0, 0);
+    pOut.weightValid = 0;
+    pOut.weightSum = miss(0, 0);
+    pOut.effN = miss(0, 0);
     pOut.controlValid = 0;
     pOut.convergenceRisk = miss(0, 0);
 
@@ -165,6 +169,35 @@ proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, in
     designInvOk = not scalmiss(ggInv) and designDf > 0;
     pOut.designInvOk = designInvOk;
 
+    /* Milestone 26: weight validation, mirroring the exact rule
+       quaidsFit()/quaidsSurveyWorkflowFit() already use (Tx1, finite,
+       nonnegative, positive sum) -- weight==0 (scalar sentinel) means
+       unweighted, matching clusterId's own established convention in
+       this proc. An invalid weight is treated as a hard error, same
+       tier as an invalid clusterId. */
+    weightScalar = rows(weight)*cols(weight) == 1;
+    if weightScalar and weight == 0;
+        weightValid = 1;
+        weightForIV = ones(nobs, 1);
+        weightSum = nobs;
+        effN = nobs;
+    elseif not weightScalar and rows(weight) == nobs and cols(weight) == 1
+        and minc(weight) >= 0 and sumc(weight .== weight) == nobs
+        and maxc(weight) < 1e100 and sumc(weight) > 0;
+        weightValid = 1;
+        weightSum = sumc(weight);
+        effN = (weightSum^2)/sumc(weight^2);
+        weightForIV = weight*nobs/weightSum;
+    else;
+        weightValid = 0;
+        weightForIV = ones(nobs, 1);
+        weightSum = miss(0, 0);
+        effN = miss(0, 0);
+    endif;
+    pOut.weightValid = weightValid;
+    pOut.weightSum = weightSum;
+    pOut.effN = effN;
+
     ivValid = 0;
     weakIV = miss(0, 0);
     fstat = miss(0, 0);
@@ -174,7 +207,7 @@ proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, in
         trap 1,1;
         { pRel, u, zzi, m1, nz, nu, enam, b, se, t, pvt, cor, tv, df,
             rsq, rbsq, sse, stdest, fstat, pvf } =
-            _quaidsIVFirstStage(intcptFull, prices, instr, totexp, n);
+            _quaidsIVFirstStage(intcptFull, prices, instr, totexp, n, weightForIV);
         trap oldtrp,1;
         if not scalmiss(fstat) and sumc(sumc(fstat .== fstat)) == rows(fstat)*cols(fstat);
             ivValid = 1;
@@ -241,6 +274,9 @@ proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, in
     if not clusterValid;
         nErrors = nErrors + 1;
     endif;
+    if not weightValid;
+        nErrors = nErrors + 1;
+    endif;
 
     nWarnings = 0;
     if zeroCount > 0;
@@ -297,6 +333,7 @@ proc 0 = printQuaidsPreflight(struct quaidsPreflightOut pOut);
     print "IV diagnostics valid:" pOut.ivDiagnosticsValid "First-stage F:" pOut.ivFstat "Weak IV flag:" pOut.weakIV;
     print "Cluster valid:" pOut.clusterValid "Clusters:" pOut.nClusters "Min cluster size:" pOut.minClusterSize
         "Singleton clusters:" pOut.singletonClusters;
+    print "Weight valid:" pOut.weightValid "Weight sum:" pOut.weightSum "Effective N:" pOut.effN;
     print "Convergence risk (0 low, 1 elevated, 2 high):" pOut.convergenceRisk;
     print;
 

@@ -40,6 +40,21 @@
 ** tests/quaids_robust_test.e (clusterId=0 vs. an explicit
 ** seqa(1,1,nobs) per-row label give byte-identical output).
 **
+** Milestone 26: both quaidsRobustFit() and quaidsRobustBootstrapFit()
+** gain an OPTIONAL trailing `weight` argument (GAUSS dynargs, omitted =
+** unweighted, byte-identical to every pre-Milestone-26 release). This
+** uses a DIFFERENT scaling convention from quaidsFit()'s own sqrt(weight)
+** WLS trick -- deliberately, and documented prominently since this is the
+** single easiest detail in this milestone to get backwards: the standard
+** Horvitz-Thompson pweight-robust sandwich scales each observation's
+** SCORE CONTRIBUTION (Infl, step 4 below) by PLAIN `weight`, not
+** sqrt(weight), before the cluster-sum-then-outer-product step (matching,
+** e.g., Stata's vce(robust) + pweight behavior). The bread (gg, step 3)
+** keeps the sqrt(weight) convention, since it must reflect the same
+** weighted design as quaidsFit()'s own point estimate:
+** gg = moment(sqrt(weight).*X, 0)/nobs. Both conventions collapse to the
+** existing unweighted formulas exactly when weight is all ones.
+**
 ** THE MATH, given a converged qOut (from quaidsFit(), any aCtl.homogenous)
 ** and the raw sample:
 **
@@ -384,7 +399,7 @@ endp;
 **           per-cluster (cluster-robust) score aggregation. Silent, no
 **           printing -- see printQuaidsRobust().
 **
-** Format:     struct quaidsRobustOut rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+** Format:     struct quaidsRobustOut rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId, ...);
 **
 ** Input:    qOut -- struct quaidsOut, from quaidsFit() (any aCtl.homogenous).
 **
@@ -398,15 +413,23 @@ endp;
 **                   observation its own cluster), or a Tx1 vector of
 **                   cluster group labels for cluster-robust.
 **
+**             weight -- OPTIONAL trailing argument (Milestone 26). Omit
+**                   for the pre-Milestone-26 unweighted sandwich, or pass
+**                   a Tx1 nonnegative finite weight vector for a
+**                   Horvitz-Thompson pweight-robust sandwich -- see this
+**                   file's own header for the sqrt(weight)-vs-weight
+**                   convention split between the bread and the meat.
+**
 ** Output:  struct quaidsRobustOut -- see quaids.sdf.
 **
 *******************************************************************************/
 
-proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices, totexp, struct quaidsControl aCtl, clusterId);
+proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices, totexp, struct quaidsControl aCtl, clusterId, ...);
 
     local nobs, n, nint, n1, nendog, intcptFull, fittedW, lx, lx2, U,
         pricesHybrid, endog, X, k, Kdof, gg, Infl, i, un, G, D, InflG,
-        Meat, c, bread, v, se, bHatReduced, clusterScalar, ggInv, oldtrp;
+        Meat, c, bread, v, se, bHatReduced, clusterScalar, ggInv, oldtrp,
+        weight, isWeighted, rootWt;
     struct quaidsRobustOut rOut;
 
     nobs = rows(w);
@@ -424,6 +447,30 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
         errorlog "quaidsRobustFit: w, prices, and totexp must match the fitted sample dimensions.";
         end;
     endif;
+
+    /* Milestone 26: optional trailing sampling-weight argument, same
+       dynargs idiom as quaidsFit()'s own weight argument (verified
+       empirically to work for a plain trailing matrix, not just structs).
+       Normalized so sum(weight)==nobs, matching quaidsFit()'s own
+       convention -- the point estimate/sandwich are both invariant to an
+       overall rescaling of weight, so this keeps every nobs-denominated
+       formula below unchanged when weight is supplied. */
+    weight = dynargsGet(1, 0);
+    isWeighted = rows(weight)*cols(weight) > 1;
+    if isWeighted;
+        if rows(weight) /= nobs or cols(weight) /= 1;
+            errorlog "quaidsRobustFit: weight must be a Tx1 vector matching the number of observations.";
+            end;
+        endif;
+        if minc(weight) < 0 or sumc(weight .== weight) /= nobs or maxc(weight) >= 1e100 or sumc(weight) <= 0;
+            errorlog "quaidsRobustFit: weight must be finite, nonnegative, and sum to a positive value.";
+            end;
+        endif;
+        weight = weight*nobs/sumc(weight);
+    else;
+        weight = ones(nobs, 1);
+    endif;
+    rootWt = sqrt(weight);
 
     { fittedW, lx, lx2 } = _quaidsRobustFittedW(qOut.bestB, intcptFull, prices, totexp, aCtl);
     U = w[., 1:n1] - fittedW[., 1:n1];
@@ -448,12 +495,17 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
         end;
     endif;
 
-    gg = moment(X, 0)/nobs;
+    /* Bread: sqrt(weight)-scaled, matching quaidsFit()'s own WLS design
+       (a no-op when weight is all ones). Meat: PLAIN weight-scaled score
+       contribution, the Horvitz-Thompson pweight-robust convention -- see
+       this file's header for why this is a deliberately different
+       scaling than the bread. */
+    gg = moment(rootWt.*X, 0)/nobs;
 
     Infl = zeros(nobs, n1*k);
     i = 1;
     do while i <= n1;
-        Infl[., (i-1)*k+1:i*k] = X.*U[., i];
+        Infl[., (i-1)*k+1:i*k] = weight.*(X.*U[., i]);
         i = i + 1;
     endo;
 
@@ -557,8 +609,14 @@ endp;
 ** the closed-form sandwich reports the k-row reduced form) was caught by
 ** running printQuaidsRobustBootstrap() against real data before this fix,
 ** not by re-reading the code.
+**
+** Milestone 26: isWeighted/weightB let each resample refit with the same
+** weighted design as the base fit -- weightB is the resampled row's own
+** weight subvector (weight[idx]), so a resampled row keeps its original
+** sampling weight, matching how wB/intcptB/etc. are all resampled by the
+** same idx.
 */
-proc (2) = _quaidsRobustBootOneRep(wB, intcptB, pricesB, totexpB, instrB, struct quaidsControl aCtl, nint, n, n1);
+proc (2) = _quaidsRobustBootOneRep(wB, intcptB, pricesB, totexpB, instrB, struct quaidsControl aCtl, nint, n, n1, isWeighted, weightB);
     local oldtrp, status, bVec, hasNonFinite, bReduced;
     struct quaidsOut qOutB;
 
@@ -567,7 +625,11 @@ proc (2) = _quaidsRobustBootOneRep(wB, intcptB, pricesB, totexpB, instrB, struct
 
     oldtrp = trapchk(1);
     trap 1,1;
-    qOutB = quaidsFit(wB, intcptB, pricesB, totexpB, instrB, aCtl);
+    if isWeighted;
+        qOutB = quaidsFit(wB, intcptB, pricesB, totexpB, instrB, aCtl, weightB);
+    else;
+        qOutB = quaidsFit(wB, intcptB, pricesB, totexpB, instrB, aCtl);
+    endif;
     trap oldtrp,1;
 
     if not scalmiss(qOutB.converged) and qOutB.converged == 1;
@@ -601,7 +663,7 @@ endp;
 **           printQuaidsRobustBootstrap().
 **
 ** Format:     struct quaidsRobustBootOut rbOut =
-**                 quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed);
+**                 quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed, ...);
 **
 ** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
 **                   quaidsFit().
@@ -623,6 +685,14 @@ endp;
 **                   any resamples (reproducible runs); seed = 0 leaves
 **                   GAUSS's current random state unchanged.
 **
+**             weight -- OPTIONAL trailing argument (Milestone 26). Omit
+**                   for the pre-Milestone-26 unweighted bootstrap, or
+**                   pass a Tx1 nonnegative finite weight vector -- each
+**                   resample carries its own rows' weight[idx] subvector
+**                   into that replication's quaidsFit()/quaidsRobustFit()
+**                   calls, and the base (unresampled) fit/sandwich use
+**                   the same weight quaidsRobustFit() itself would.
+**
 ** Output:  struct quaidsRobustBootOut -- see quaids.sdf. Up to 5*B total
 **           resamples are attempted before giving up on reaching B
 **           completed replications (matching the established attempt-cap
@@ -630,12 +700,12 @@ endp;
 **
 *******************************************************************************/
 
-proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId, B, seed);
+proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId, B, seed, ...);
 
     local nobs, n, nint, n1, wnam, bDim1, bDim2, bVecDim, nClusters, un, G,
         completed, failed, attempts, maxAttempts, gDraw, idx,
-        wB, intcptB, pricesB, totexpB, instrB, status, bVec, bBoot, seBoot,
-        j, oneCluster, clusterScalar;
+        wB, intcptB, pricesB, totexpB, instrB, weightB, status, bVec, bBoot, seBoot,
+        j, oneCluster, clusterScalar, weight, isWeighted;
     struct quaidsOut qOut;
     struct quaidsRobustOut rOut;
     struct quaidsRobustBootOut rbOut;
@@ -646,6 +716,22 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
     endif;
 
     nobs = rows(w);
+
+    /* Milestone 26: optional trailing sampling-weight argument -- same
+       validation/normalization as quaidsRobustFit()'s own weight. */
+    weight = dynargsGet(1, 0);
+    isWeighted = rows(weight)*cols(weight) > 1;
+    if isWeighted;
+        if rows(weight) /= nobs or cols(weight) /= 1;
+            errorlog "quaidsRobustBootstrapFit: weight must be a Tx1 vector matching the number of observations.";
+            end;
+        endif;
+        if minc(weight) < 0 or sumc(weight .== weight) /= nobs or maxc(weight) >= 1e100 or sumc(weight) <= 0;
+            errorlog "quaidsRobustBootstrapFit: weight must be finite, nonnegative, and sum to a positive value.";
+            end;
+        endif;
+        weight = weight*nobs/sumc(weight);
+    endif;
 
     clusterScalar = rows(clusterId)*cols(clusterId) == 1;
     if clusterScalar;
@@ -668,13 +754,21 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
     /* Base (unresampled) fit -- supplies the point estimate and the base
        closed-form robust/cluster SE, and fails fast if the base fit
        itself doesn't converge, before any resampling is attempted. */
-    qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+    if isWeighted;
+        qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);
+    else;
+        qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+    endif;
     if qOut.converged /= 1;
         errorlog "quaidsRobustBootstrapFit: the base (unresampled) quaidsFit() did not converge.";
         end;
     endif;
 
-    rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+    if isWeighted;
+        rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId, weight);
+    else;
+        rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+    endif;
 
     n = qOut.n;
     nint = qOut.nint;
@@ -730,8 +824,13 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
         pricesB = prices[idx, .];
         totexpB = totexp[idx, .];
         instrB  = instr[idx, .];
+        if isWeighted;
+            weightB = weight[idx];
+        else;
+            weightB = 0;
+        endif;
 
-        { status, bVec } = _quaidsRobustBootOneRep(wB, intcptB, pricesB, totexpB, instrB, aCtl, nint, n, n1);
+        { status, bVec } = _quaidsRobustBootOneRep(wB, intcptB, pricesB, totexpB, instrB, aCtl, nint, n, n1, isWeighted, weightB);
 
         if status == 1;
             completed = completed + 1;

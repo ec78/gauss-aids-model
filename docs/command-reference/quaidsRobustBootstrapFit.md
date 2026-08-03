@@ -14,6 +14,7 @@ sharing the same resampling code path). Silent, no printing -- see
 ```gauss
 struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed);
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed, weight);   // Milestone 26
 ```
 
 ## Parameters
@@ -32,6 +33,13 @@ rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, cluster
 - `seed` (*scalar*) - if `seed > 0`, `rndseed` is set before drawing any
   resamples (reproducible runs); `seed = 0` leaves GAUSS's current random
   state unchanged.
+- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: a sampling weight,
+  same semantics as [quaidsFit](quaidsFit.md)'s own `weight`. Omit for the
+  pre-Milestone-26 unweighted bootstrap. Each resample carries its own
+  rows' `weight[idx]` subvector into that replication's
+  [quaidsFit](quaidsFit.md) call; the base (unresampled) fit and sandwich
+  use the full `weight` the same way
+  [quaidsRobustFit](quaidsRobustFit.md) would.
 
 ## Returns
 

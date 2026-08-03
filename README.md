@@ -13,11 +13,13 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is **pre-alpha** (package version `0.20.0`). The original
-roadmap plus Milestones 11-25 are complete, including the post-20 applied
+This library is **pre-alpha** (package version `0.21.0`). The original
+roadmap plus Milestones 11-26 are complete, including the post-20 applied
 workflow layer (`quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()`,
-robust-covariance propagation, preflight diagnostics, and a sampling-
-weighted workflow evaluation point). Completed pieces include the estimation core,
+robust-covariance propagation, preflight diagnostics) and sampling-weighted
+estimation (`quaidsFit()`'s optional `weight` argument, with a matching
+weighted/clustered SE via `quaidsRobustFit()`, and a sampling-weighted
+workflow via `quaidsSurveyWorkflowFit()`). Completed pieces include the estimation core,
 hypothesis tests, elasticities, preflight diagnostics, dataframe entry point,
 `pubtable` export, zero-budget correction, robust/bootstrap inference,
 release tooling, and the documentation set. Remaining caveats are documented
@@ -69,7 +71,7 @@ aCtl.maxiter = 100;       // 1 = one-step Stone-index LA-AIDS
 aCtl.homogenous = 1;      // impose homogeneity (and test/report symmetry)
 
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 0);
 if not pOut.ok;
     call printQuaidsPreflight(pOut);
     end;
@@ -130,9 +132,13 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
   robust covariance propagation into shares/elasticities;
   `quaidsWorkflowScenarioFit` adds exact CV/EV and robust welfare SE for
   one explicit price-change scenario.
+- Sampling-weighted estimation: `quaidsFit` accepts an optional `weight`
+  argument for a genuine weighted point estimate, with a matching
+  weighted/clustered sandwich SE via `quaidsRobustFit`/
+  `quaidsRobustBootstrapFit`.
 - Survey/microdata workflow entry point (`quaidsSurveyWorkflowFit`) that
-  evaluates shares and elasticities at a sampling-weighted representative
-  point while leaving the underlying estimator unchanged.
+  fits the weighted estimator and evaluates shares and elasticities at a
+  sampling-weighted representative point in one call.
 - Optional LaTeX/Markdown/CSV/RTF/HTML/XLSX export via the `pubtable`
   package (`src/pubtable_quaids.src`).
 - Cross-implementation validated against an independent R (`micEconAids`)

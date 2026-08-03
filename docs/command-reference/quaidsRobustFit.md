@@ -13,6 +13,7 @@ see [printQuaidsRobust](printQuaidsRobust.md).
 ```gauss
 struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId, weight);   // Milestone 26
 ```
 
 ## Parameters
@@ -28,6 +29,11 @@ rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
 - `clusterId` (*scalar `0`, or Tx1 vector*) - `0` for heteroskedasticity-
   robust (every observation is its own cluster); a vector of cluster
   group labels for cluster-robust.
+- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: the same sampling
+  weight passed to [quaidsFit](quaidsFit.md) to produce `qOut` (if any).
+  Omit for the pre-Milestone-26 unweighted sandwich. **Uses a DIFFERENT
+  scaling convention from `quaidsFit()`'s own `sqrt(weight)` WLS trick** --
+  see Remarks.
 
 ## Returns
 
@@ -93,6 +99,19 @@ covariance into `qOut.bestB`'s full basis first, then pass that returned
 (equation `n` is recovered via adding-up, never separately estimated, and
 gets no independent SE here either, matching every other diagnostic in
 this library).
+
+**The optional `weight` argument (Milestone 26) uses a DIFFERENT scaling
+convention from `quaidsFit()`'s own `sqrt(weight)` WLS trick -- documented
+prominently since this is the single easiest detail in this milestone to
+get backwards**: the bread (`gg`) keeps the `sqrt(weight)` convention
+(`gg = moment(sqrt(weight).*X, 0)/nobs`, matching the weighted design
+`qOut` was fit under), but the per-observation score contribution (`Infl`)
+is scaled by **plain** `weight`, not `sqrt(weight)` -- the standard
+Horvitz-Thompson pweight-robust-sandwich convention (matching, e.g.,
+Stata's `vce(robust)` combined with `pweight`). Both conventions collapse
+to the existing unweighted formulas exactly when `weight` is uniform.
+`weight` is renormalized internally to sum to `nobs`, the same convention
+[quaidsFit](quaidsFit.md) uses.
 
 ## Examples
 

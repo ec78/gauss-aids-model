@@ -60,7 +60,7 @@ struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 0);
 
 n = qOut.n;
 nint = qOut.nint;
@@ -160,6 +160,39 @@ call check(wfQ.quadraticValid == 1,
     "workflow quadratic summary is valid for unconstrained QUAIDS");
 call check(wfQ.quadraticStat == statQ and wfQ.quadraticPval == pvalQ and wfQ.quadraticDf == dfQ,
     "workflow quadratic summary matches quaidsQuadraticTest exactly");
+
+/* Milestone 26: quaidsWorkflowFit()'s own optional estimator-level weight
+   argument -- distinct from surveyWeighted (Milestone 25's evaluation-
+   point-only weighting, already covered by quaids_survey_workflow_test.e).
+   Checks parity against explicit quaidsFit()/quaidsPreflight()/
+   quaidsRobustFit() calls, the same standard every other field in this
+   file is held to. */
+rndseed 55;
+wgtWf = 1 + rndu(tobs, 1)*3;
+
+struct quaidsWorkflowOut wfWeighted;
+wfWeighted = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, wgtWf);
+
+struct quaidsOut qOutWfWeighted;
+qOutWfWeighted = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, wgtWf);
+
+struct quaidsPreflightOut pOutWfWeighted;
+pOutWfWeighted = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, wgtWf);
+
+struct quaidsRobustOut robustWfWeighted;
+robustWfWeighted = quaidsRobustFit(qOutWfWeighted, w, prices, totexp, aCtl, 0, wgtWf);
+
+call check(wfWeighted.weighted == 1 and wfWeighted.weightSum == qOutWfWeighted.weightSum and wfWeighted.effN == qOutWfWeighted.effN,
+    "workflow with an estimator weight echoes quaidsFit's own weight diagnostics");
+call check(wfWeighted.preflightWeightValid == pOutWfWeighted.weightValid and wfWeighted.preflightWeightSum == pOutWfWeighted.weightSum
+    and wfWeighted.preflightEffN == pOutWfWeighted.effN,
+    "workflow preflight weight summary matches a direct quaidsPreflight call with the same weight");
+call check(maxc(maxc(abs(wfWeighted.bestB - qOutWfWeighted.bestB))) == 0,
+    "workflow with an estimator weight matches a direct weighted quaidsFit call exactly");
+call check(maxc(maxc(abs(wfWeighted.robustSE - robustWfWeighted.se))) == 0,
+    "workflow with an estimator weight matches a direct weighted quaidsRobustFit call exactly");
+call check(maxc(maxc(abs(wfWeighted.bestB - wfOut.bestB))) > 1e-6,
+    "a genuinely unequal estimator weight changes the workflow's point estimate (non-vacuous)");
 
 print;
 print "-----------------------------------------------------------";

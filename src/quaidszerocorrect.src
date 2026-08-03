@@ -204,10 +204,14 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
     wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
 
     /* --- IV first stage -- reuse the existing, cleanly-separable helper --- */
+    /* Milestone 26 gave _quaidsIVFirstStage() a required weight argument;
+       quaidsZeroFit() itself is not in scope for sampling-weighted
+       estimation this milestone, so it passes ones(nobs,1) -- the exact
+       no-op weight that reproduces its own pre-Milestone-26 behavior. */
     { prices, u, zzi, m1, nz, nu, enam,
         ivBtmp, ivSEtmp, ivTtmp, ivPvttmp, ivCortmp, ivTvtmp, ivDftmp,
         ivRsqtmp, ivRbsqtmp, ivSsetmp, ivStdesttmp, ivFstattmp, ivPvftmp }
-        = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
+        = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n, ones(nobs, 1));
 
     unam = 0$+"U"$+ftocv(seqa(1, 1, nu), __vpad*(floor(log(nu)+1), 0));
 

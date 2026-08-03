@@ -13,6 +13,7 @@ cluster-robust standard errors when the base fit converges.
 ```gauss
 struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);   // Milestone 26
 ```
 
 ## Parameters
@@ -22,6 +23,15 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
 - `clusterId` - same as [quaidsRobustFit](quaidsRobustFit.md): scalar `0`
   for heteroskedasticity-robust standard errors, or a `Tx1` cluster-label
   vector.
+- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: an estimator-level
+  sampling weight, forwarded unchanged into this proc's own
+  [quaidsFit](quaidsFit.md), [quaidsPreflight](quaidsPreflight.md), and
+  [quaidsRobustFit](quaidsRobustFit.md)/
+  [quaidsRobustCovariance](quaidsRobustCovariance.md) calls. Omit for the
+  pre-Milestone-26 unweighted workflow. **Distinct from**
+  [quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md)'s own `weight`
+  argument, which additionally recomputes the post-estimation evaluation
+  point -- see that page and the field note on `surveyWeighted` below.
 
 ## Returns
 
@@ -30,6 +40,10 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
 - Core fit metadata and coefficient blocks copied from `quaidsOut`:
   `model`, `converged`, `iterations`, `finalErr`, `b`, `v`, `bS`, `vS`,
   `bestB`, `bestV`, `symValid`, and `overidValid`.
+- Estimator weight diagnostics (Milestone 26), echoed from `quaidsOut`:
+  `weighted`, `weightSum`, `effN`. **Not the same as `surveyWeighted`
+  below** -- these reflect the `weight` argument passed to this proc
+  itself (or omitted).
 - Compact preflight diagnostics copied from `quaidsPreflightOut`:
   `preflightOk`, `preflightErrors`, `preflightWarnings`,
   `preflightConvergenceRisk`, `preflightShareAddOk`,
@@ -37,7 +51,9 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
   `preflightNegativeShareCount`, `preflightDesignInvOk`,
   `preflightIVValid`, `preflightIVFstat`, `preflightWeakIV`,
   `preflightClusterValid`, `preflightNClusters`,
-  `preflightMinClusterSize`, and `preflightSingletonClusters`.
+  `preflightMinClusterSize`, `preflightSingletonClusters`, and
+  (Milestone 26) `preflightWeightValid`, `preflightWeightSum`,
+  `preflightEffN`.
 - Restriction/model-choice summaries:
   `symStat`, `symPval`, `symDf`, `symReject05`, `overidFstat`,
   `overidPvf`, `overidDf`, `overidReject05`, `quadraticValid`,
@@ -100,11 +116,13 @@ postRobustValid = 0`.
 For a one-call workflow that also computes CV/EV for a price-change scenario,
 use [quaidsWorkflowScenarioFit](quaidsWorkflowScenarioFit.md).
 
-For a one-call workflow that evaluates shares and elasticities at a
-sampling-weighted microdata point, use
-[quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md). That helper changes
-the post-estimation evaluation point only; it does not make `quaidsFit()` a
-survey-weighted estimator.
+For a one-call workflow that both fits a genuinely sampling-weighted
+estimator and evaluates shares/elasticities at a sampling-weighted
+microdata point, use
+[quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md). Since Milestone 26,
+that helper's `weight` argument does double duty: it is forwarded into
+this proc's own new `weight` argument (fitting the estimator) *and* used
+to recompute the representative evaluation point, as it always has.
 
 ## Examples
 
@@ -127,6 +145,14 @@ if wfOut.postRobustValid;
     print wfOut.sharesRobustSE;
     print wfOut.priceElasRobustSE;
 endif;
+```
+
+With an estimator-level sampling weight (Milestone 26):
+
+```gauss
+struct quaidsWorkflowOut wfWeighted;
+wfWeighted = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, weight);
+print wfWeighted.weighted wfWeighted.weightSum wfWeighted.effN;
 ```
 
 ## Source

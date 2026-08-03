@@ -5,6 +5,58 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.21.0 - 2026-08-03
+
+Milestone 26: sampling-weighted estimation and a matching weighted/clustered
+standard error -- the item Milestone 25's own "Follow-ups" note flagged as
+the next high-value roadmap item.
+
+### Added
+- `quaidsFit()` gains an optional trailing `weight` argument (GAUSS
+  dynargs; omit for the pre-Milestone-26 unweighted estimator, byte-
+  identical when omitted or passed a uniform weight). Applies the standard
+  survey-WLS `sqrt(weight)` cross-product scaling at every moment/
+  cross-product site in the starting value, iteration loop, Jacobian-
+  corrected variance, and overidentification test; the symmetry-
+  restriction stage needed no change (a pure function of already-computed
+  `b`/`v`). `weight` is renormalized internally to sum to `nobs`. New
+  `quaidsOut` fields `weighted`, `weightSum`, `effN` (Kish's effective
+  sample size) report the weighting.
+- `_quaidsIVFirstStage()` gains a required `weight` argument (private
+  helper; all three of its callers -- `quaidsFit()`, `quaidsPreflight()`,
+  `quaidsZeroFit()` -- updated).
+- `quaidsRobustFit()`/`quaidsRobustBootstrapFit()` gain the same optional
+  `weight` argument, using a DIFFERENT scaling convention from the point
+  estimate: the sandwich's bread keeps `sqrt(weight)` (matching the
+  weighted design), but the per-observation score contribution uses
+  PLAIN `weight` -- the standard Horvitz-Thompson pweight-robust-sandwich
+  convention. Checked directly in `tests/quaids_survey_test.e` against a
+  deliberately-wrong alternative, not just derived on paper.
+- `quaidsPreflight()` gains a required `weight` argument (mirroring
+  `clusterId`'s own required-positional convention in this proc) with the
+  same validation and `weightValid`/`weightSum`/`effN` fields.
+- `quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()` gain an optional
+  `weight` argument, threaded into their own `quaidsFit()`/
+  `quaidsPreflight()`/`quaidsRobustFit()` calls. New `quaidsWorkflowOut`
+  fields: `weighted`, `weightSum`, `effN`, `preflightWeightValid`,
+  `preflightWeightSum`, `preflightEffN`.
+- `tests/quaidsfixtures.src` gains `_quaidsSurveyWeightedDGP()`, an
+  informatively-sampled fixture (selection on an unobserved error term,
+  not an included covariate -- selection on an included regressor does
+  not bias regression coefficients, a real finding from this milestone's
+  own fixture design work) with known true population parameters, used by
+  the new `tests/quaids_survey_test.e` (19 checks) to confirm weighted
+  recovery measurably beats naive on the same biased sample.
+
+### Changed
+- `quaidsSurveyWorkflowFit()`'s `weight` argument now does double duty: it
+  both fits the weighted estimator (forwarded into `quaidsWorkflowFit()`'s
+  new argument) and, as before, recomputes the representative post-
+  estimation evaluation point. This is a deliberate, documented behavior
+  change from the original Milestone 25 release, which left the estimator
+  unweighted -- `tests/quaids_survey_workflow_test.e` updated accordingly
+  (15 -> 17 checks).
+
 ## 0.20.0 - 2026-07-31
 
 Bundles Milestones 21-25 (applied workflow driver, robust inference

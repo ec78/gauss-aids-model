@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-07-31
+Status date: 2026-08-03
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,9 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.20.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-25**, as of
-2026-07-31: 0
+The repository is pre-alpha, package version `0.21.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-26**, as of
+2026-08-03: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -91,10 +91,20 @@ call), 22 (robust inference propagation, `quaidsRobustCovariance`/
 `quaidsRobustBootstrapCovariance`, closing Milestone 20's own "does not
 propagate automatically" gap on request), 23 (preflight data/design
 diagnostics, `quaidsPreflight`, a non-gating pre-estimation check layer),
-24 (a compact preflight summary echoed into the workflow output), and 25
+24 (a compact preflight summary echoed into the workflow output), 25
 (an opt-in sampling-weighted workflow evaluation point,
 `quaidsSurveyWorkflowFit`, explicitly scoped short of full survey-design
-estimation).
+estimation), and 26 (sampling-weighted estimation itself -- an optional
+`weight` argument on `quaidsFit()`, with a matching weighted/clustered
+sandwich SE on `quaidsRobustFit()`/`quaidsRobustBootstrapFit()` using a
+deliberately different sqrt(weight)-bread/plain-weight-meat convention,
+closing Milestone 25's own biggest deferred item and this project's
+biggest departure yet from the "new sibling proc, don't touch shipped
+code" convention; see that section below for the real fixture-design
+finding that selecting a biased sample on an included covariate does not
+bias naive estimation, the standard Heckman result, and why
+`quaidsSurveyWorkflowFit()`'s own existing test needed a behavior-change
+fix as a result).
 
 The post-20 roadmap shifted from individual post-estimation procs to full
 applied workflow support. `quaidsWorkflowFit()` is the first seed of that
@@ -103,13 +113,15 @@ robust/cluster-robust SE in one silent struct-returning call. Milestone
 22 extends that workflow by propagating robust/cluster-robust covariance
 into shares, elasticities, and welfare standard errors. Milestones 21-25
 were built and pushed across several sessions without an incremental
-version bump each time (a process gap during a session handoff); this
+version bump each time (a process gap during a session handoff); that
 status snapshot and `package.json`'s `0.20.0` were reconciled together
-after the fact rather than rewriting already-pushed commit history. Full
-survey-design estimation (weighted moment conditions inside
-`quaidsFit()`, strata, replicate weights, design-based covariance) is the
-next explicitly-flagged, unstarted item -- see Milestone 25's own
-"Follow-ups" note below.
+after the fact rather than rewriting already-pushed commit history.
+Milestone 26 then closed the biggest piece of the remaining survey-design
+gap: `quaidsFit()`'s own estimator moments are now genuinely weighted, not
+just the post-estimation evaluation point. Formal strata as a concept
+distinct from clustering, replicate weights (BRR/jackknife), and design-
+based finite-population correction remain the next explicitly-flagged,
+unstarted items -- see Milestone 26's own "Follow-ups" note below.
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -402,7 +414,13 @@ workflows and methodology extensions in this order:
    summary of those diagnostics into the applied workflow output.
 4. **Survey/microdata support**: support sampling weights, clusters, strata,
    replicate weights, and population aggregation workflows. This is the
-   highest practical value for household expenditure data.
+   highest practical value for household expenditure data. Milestone 25
+   added a sampling-weighted workflow evaluation point; Milestone 26 added
+   genuine sampling-weighted estimation (`quaidsFit()`'s optional `weight`
+   argument, plus a matching weighted/clustered sandwich SE via
+   `quaidsRobustFit()`/`quaidsRobustBootstrapFit()`). Formal strata as a
+   concept distinct from clustering, replicate weights (BRR/jackknife),
+   and finite-population correction remain open.
 5. **Zero-share restrictions**: extend `quaidsZeroFit()` to support
    homogeneity/symmetry, then evaluate whether local curvature imposition is
    feasible on the corrected system.
@@ -416,7 +434,7 @@ workflows and methodology extensions in this order:
    is stable.
 
 Each milestone should exit with source tests, examples, and docs updated
-together — no milestone is "done" with code alone. (Milestones 21-25
+together — no milestone is "done" with code alone. (Milestones 21-26
 themselves are documented in chronological order in the milestone archive
 below, alongside Milestones 0-20, rather than here in the living roadmap
 section -- moved during the 2026-07-31 documentation cleanup handoff so
@@ -2776,7 +2794,72 @@ weighted moment conditions inside `quaidsFit()`, strata, replicate weights,
 design-based covariance, and weighted population aggregation beyond a single
 representative evaluation point should be handled as separate milestones.
 This is the next high-value roadmap item (see the "Post-20 Development
-Roadmap" section above, item 4).
+Roadmap" section above, item 4). **Update, Milestone 26**: the "weighted
+moment conditions inside `quaidsFit()`" item is resolved -- see below.
+
+### Milestone 26 -- Sampling-Weighted Estimation and Design-Based SE -- COMPLETE
+
+Closes Milestone 25's own biggest deferred item: the estimator itself is
+now genuinely sampling-weighted, not just the post-estimation evaluation
+point.
+
+- [x] Add an optional `weight` argument to `quaidsFit()` (GAUSS dynargs;
+  byte-identical when omitted or uniform), applying the standard
+  survey-WLS `sqrt(weight)`-scaled cross-product at every moment/
+  cross-product site in the starting value, iteration loop, Jacobian-
+  corrected variance, and overidentification test. Confirmed the
+  symmetry-restriction stage needs no change (a pure function of already-
+  computed `b`/`v`).
+- [x] Add a required `weight` argument to the private
+  `_quaidsIVFirstStage()` helper (all three callers updated: `quaidsFit()`,
+  `quaidsPreflight()`, `quaidsZeroFit()`).
+- [x] Add `weighted`/`weightSum`/`effN` (Kish's effective sample size) to
+  `quaidsOut`.
+- [x] Add a required `weight` argument (mirroring `clusterId`'s own
+  convention in this proc) plus `weightValid`/`weightSum`/`effN` to
+  `quaidsPreflight()`/`quaidsPreflightOut`.
+- [x] Add an optional `weight` argument to `quaidsRobustFit()`/
+  `quaidsRobustBootstrapFit()`, using the Horvitz-Thompson pweight-robust
+  convention (bread scaled by `sqrt(weight)`, score contribution scaled by
+  PLAIN `weight` -- a deliberately different convention from the point
+  estimate's own, checked directly against a wrong alternative in the new
+  test file, not just derived on paper).
+- [x] Thread an optional `weight` argument through `quaidsWorkflowFit()`/
+  `quaidsWorkflowScenarioFit()` into their own `quaidsFit()`/
+  `quaidsPreflight()`/`quaidsRobustFit()` calls; add matching
+  `weighted`/`weightSum`/`effN`/`preflightWeightValid`/
+  `preflightWeightSum`/`preflightEffN` fields to `quaidsWorkflowOut`.
+- [x] Update `quaidsSurveyWorkflowFit()` so its own `weight` argument also
+  fits the estimator (forwarded into `quaidsWorkflowFit()`'s new argument),
+  not just the evaluation point -- a deliberate, documented behavior
+  change from the Milestone 25 release.
+- [x] Add `_quaidsSurveyWeightedDGP()` to `tests/quaidsfixtures.src`: an
+  informatively-sampled fixture (selection on an unobserved error term,
+  not an included covariate) with known true population parameters, for a
+  genuine "weighted beats naive" recovery check.
+- [x] Add `tests/quaids_survey_test.e` (19 checks): exact-identity
+  regression guard, invalid-weight preflight error, the sqrt-vs-plain
+  sandwich convention checked directly, and the core non-vacuous
+  weighted-beats-naive check.
+- [x] Update `tests/quaids_workflow_test.e` (27 -> 32 checks),
+  `tests/quaids_preflight_test.e` (13 -> 16 checks), and
+  `tests/quaids_survey_workflow_test.e` (15 -> 17 checks, replacing its
+  now-incorrect "leaves the estimator unchanged" assertion).
+- [x] Update `tests/package_public_api.e` with real weight exercises
+  against the installed package.
+- [x] Run the full existing test suite (18 files, no `-SkipBootstrap`)
+  immediately after the core estimator changes, before writing any new
+  weighted-specific tests, to confirm byte-identical unweighted behavior
+  -- confirmed only `quaids_survey_workflow_test.e` needed updating,
+  everything else stayed byte-identical.
+- [x] Update command-reference, usage-guide, methodology-notes (the
+  sqrt-vs-plain-weight derivation), feature-matrix, README, changelog,
+  roadmap, and CLAUDE orientation notes.
+
+Follow-ups: formal strata as a concept distinct from clustering,
+replicate-weight (BRR/jackknife/Fay's BRR) variance, finite-population
+correction, and weighted population-total aggregation beyond a single
+representative evaluation point all remain open.
 
 ## Definition of Done for a Gold Standard Release
 
@@ -2874,8 +2957,8 @@ Roadmap" section above, item 4).
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-25 extend it beyond the original scope, as of 2026-07-31
-(package version `0.20.0`). Commits are now being made (and pushed to
+Milestones 11-26 extend it beyond the original scope, as of 2026-08-03
+(package version `0.21.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -2948,6 +3031,20 @@ degrees-of-freedom, missing fail-fast validation in `quaidsRobustFit()`/
 finite-difference-direction bug across `quaidsSharesFit()`/
 `quaidsElasFit()`/`quaidsWelfareFit()` -- with a new
 `tests/guard_error_cases/` suite added specifically to exercise the new
-guards directly. Full survey-design estimation (weighted moment
-conditions inside `quaidsFit()`, strata, replicate weights, design-based
-covariance) remains the next explicitly-flagged, unstarted item.
+guards directly.
+
+Milestone 26 then closed the biggest piece of the remaining survey-design
+gap: `quaidsFit()` gained a genuine optional sampling `weight` argument
+(standard survey-WLS `sqrt(weight)`-scaled cross-products, byte-identical
+when omitted or uniform), with `quaidsRobustFit()`/
+`quaidsRobustBootstrapFit()` gaining a matching weighted/clustered
+sandwich SE under a deliberately different convention (plain-weight
+score contribution, Horvitz-Thompson pweight-robust style) -- the
+biggest departure yet from this project's "new sibling proc, don't touch
+shipped code" convention, since weighting genuinely touches the whole
+estimation core rather than one separable phase. `quaidsSurveyWorkflowFit()`
+(Milestone 25) now fits this weighted estimator too, not just the
+evaluation point -- a deliberate, documented behavior change from its
+original release. Formal strata as a concept distinct from clustering,
+replicate weights (BRR/jackknife), and design-based finite-population
+correction remain the next explicitly-flagged, unstarted items.

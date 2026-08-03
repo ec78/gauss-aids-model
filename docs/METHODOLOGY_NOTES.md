@@ -452,6 +452,79 @@ and refits `quaidsFit()` only, not `quaidsRobustFit()`'s own sandwich,
 mirroring `quaidsCurvatureBootstrapFit()`'s identical "refit the estimator,
 not its SE stage, each replication" pattern.
 
+## Sampling-Weighted Estimation (Milestone 26)
+
+[quaidsFit](command-reference/quaidsFit.md) accepts an optional trailing
+`weight` argument -- a survey/sampling weight applied to the point
+estimate, with a matching weighted sandwich SE available through
+[quaidsRobustFit](command-reference/quaidsRobustFit.md)/
+[quaidsRobustBootstrapFit](command-reference/quaidsRobustBootstrapFit.md).
+
+**The point-estimate math**: standard survey-weighted least squares
+pre-multiplies both sides of every cross-product by `sqrt(weight)` before
+the product, exact via the identity
+
+```
+(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B
+```
+
+`quaidsFit()` applies this at every site in the estimator where raw
+sample rows enter a `moment()` call or cross-product: the IV first stage's
+`m1`/`sse` moments (`_quaidsIVFirstStage()`), the starting-value moment,
+the in-loop coefficient re-estimation, the Jacobian-corrected variance's
+chunked products, and the overidentification test's `instr'w`/`endog'instr`
+terms. The symmetry-restriction minimum-distance stage needs no changes --
+it is a pure function of the already-computed `b`/`v`, so it inherits
+correct weighting automatically. `weight` is internally renormalized so
+it sums to `nobs` before use (the point estimate is invariant to any
+overall rescaling of `weight`, so this keeps every existing
+`nobs`-denominated formula in the estimator unaffected). Kish's effective
+sample size, `effN = (sum w)^2 / sum(w^2)`, is reported alongside the raw
+`weightSum` as a standard diagnostic for how much unequal weighting has
+degraded precision.
+
+**The sandwich math is a DIFFERENT convention, deliberately** --
+[quaidsRobustFit](command-reference/quaidsRobustFit.md)'s bread keeps the
+`sqrt(weight)` convention above (`gg = moment(sqrt(weight).*X, 0)/nobs`,
+matching the weighted design the point estimate was fit under), but its
+per-observation score contribution (`Infl`) is scaled by **plain**
+`weight`, not `sqrt(weight)` -- the standard Horvitz-Thompson
+pweight-robust-sandwich convention used by, e.g., Stata's `vce(robust)`
+combined with `pweight`. Getting this backwards (scaling the score
+contribution by `sqrt(weight)` too) is numerically distinguishable from
+the correct formula whenever `weight` is non-uniform, and is exactly the
+kind of subtle error this project's own testing discipline exists to
+catch: `tests/quaids_survey_test.e` checks `quaidsRobustFit()`'s output
+against two independent hand-evaluations -- one using the documented
+(correct) convention, one deliberately using the wrong one -- and confirms
+the implementation matches only the correct one.
+
+**Scope, deliberately limited** (the same phased-scope precedent as
+curvature imposition's AIDS-then-QUAIDS split, or zero-share correction's
+unconstrained-only first pass): this is a weighted point estimate plus a
+matching weighted/clustered sandwich SE only. It is **not** a full
+survey-design estimator -- formal strata as a concept distinct from
+clustering, replicate-weight (BRR/jackknife/Fay's BRR) variance, and
+finite-population correction are not implemented. `weight` and
+`clusterId` are independent arguments: a stratified-and-clustered survey
+design can supply both a `weight` (for the point estimate) and a
+`clusterId` (for the sandwich's cluster dimension), but there is no
+separate strata argument beyond that.
+
+[quaidsPreflight](command-reference/quaidsPreflight.md) gained the same
+weight validation (a required positional argument, mirroring `clusterId`'s
+own convention in that proc, since it is a diagnostic pass rather than an
+opt-in estimator extension) so bad weights are caught before fitting.
+[quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md) threads an
+optional `weight` through its own `quaidsFit()`/`quaidsPreflight()`/
+`quaidsRobustFit()` calls. Since this milestone,
+[quaidsSurveyWorkflowFit](command-reference/quaidsSurveyWorkflowFit.md)'s
+own `weight` argument does double duty: it both fits the weighted
+estimator (via `quaidsWorkflowFit()`'s new argument) and, as it always
+has, recomputes the representative post-estimation evaluation point --
+this is a deliberate, documented behavior change from that proc's original
+(Milestone 25) release, which left the estimator unweighted.
+
 ## References
 
 - Deaton, A., Muellbauer, J. (1980). "An Almost Ideal Demand System."

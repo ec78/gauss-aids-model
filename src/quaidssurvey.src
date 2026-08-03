@@ -2,16 +2,26 @@
 ** quaidssurvey.src
 **
 ** Milestone 25 seed: opt-in survey/microdata workflow helpers. This first
-** slice does not make quaidsFit() a survey-weighted estimator; it composes
-** the existing workflow and recomputes representative post-estimation
-** products at a sampling-weighted evaluation point.
+** slice composed the existing workflow and recomputed representative
+** post-estimation products at a sampling-weighted evaluation point,
+** without making quaidsFit() itself a survey-weighted estimator.
+**
+** Milestone 26 closes that gap: quaidsFit() (and quaidsWorkflowFit(),
+** quaidsRobustFit()) now accept a genuine estimator-level sampling weight.
+** quaidsSurveyWorkflowFit()'s own `weight` argument -- already required,
+** already validated here -- now does DOUBLE duty: the same weight both
+** fits the weighted estimator (forwarded into quaidsWorkflowFit()'s new
+** optional weight argument) AND still computes the weighted evaluation
+** point, exactly as before. This is a strict superset of the Milestone 25
+** behavior, not a behavior change to the evaluation-point logic itself.
 */
 
 /*******************************************************************************
 **
 ** QUAIDSSURVEYWORKFLOWFIT
 **
-** Purpose:   run the applied workflow, then replace the default sample-mean
+** Purpose:   run the applied workflow with `weight` fitting the estimator
+**            itself (Milestone 26), then replace the default sample-mean
 **            evaluation point with the sampling-weighted mean of the same
 **            covariates and recompute shares/elasticities there.
 **
@@ -53,7 +63,9 @@ proc (struct quaidsWorkflowOut) = quaidsSurveyWorkflowFit(w, intcpt, prices, tot
         end;
     endif;
 
-    wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+    /* Milestone 26: the same validated sampling weight now also fits the
+       estimator itself, not just the evaluation point below. */
+    wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
 
     if rows(intcpt)*cols(intcpt) == 1 and intcpt == 0;
         intcptFull = ones(nobs, 1);

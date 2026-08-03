@@ -11,6 +11,7 @@ console output), returning a `quaidsOut` structure.
 ```gauss
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);   // Milestone 26
 ```
 
 ## Parameters
@@ -24,6 +25,16 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 - `instr` (*TxH matrix*) - instruments for log total expenditure.
 - `aCtl` (*`quaidsControl` structure*) - see
   [quaidsControlCreate](quaidsControlCreate.md) for fields and defaults.
+- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: a sampling/survey
+  weight. Omit entirely for the pre-Milestone-26 unweighted estimator
+  (the default). When supplied, must be finite, nonnegative, and sum to a
+  positive value; it is internally renormalized so it sums to `nobs`
+  (the point estimate is invariant to any overall rescaling of the
+  weight, so every existing `nobs`-denominated formula in this proc is
+  unaffected). Applies the standard survey WLS trick
+  (`(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B`) at every cross-product site
+  in the starting value, iteration loop, Jacobian-corrected variance, and
+  overidentification test -- an exact no-op when `weight` is uniform.
 
 ## Returns
 
@@ -50,6 +61,13 @@ grouped by phase:
   fit) -- what elasticities ([quaidsElasFit](quaidsElasFit.md)) and the
   Slutzky diagnostic ([quaidsSlutzky](quaidsSlutzky.md)) should be
   evaluated against.
+- `weighted`/`weightSum`/`effN` (Milestone 26): `weighted` is `1` if a
+  `weight` argument was supplied, `0` otherwise. `weightSum` is the sum of
+  the raw (as-supplied) weight vector; equals `nobs` when unweighted.
+  `effN` is Kish's effective sample size, `(sum w)^2 / sum(w^2)` -- a
+  standard survey diagnostic for how much unequal weighting has degraded
+  precision; also equals `nobs` when unweighted. Informational only, not
+  used to override degrees of freedom anywhere in this proc.
 
 ## Remarks
 
@@ -75,6 +93,16 @@ If `aCtl.b0` is supplied, it must be the reduced raw coefficient matrix
 shape used internally before final absolute-price recovery. In practice,
 use a previous compatible fit's `qOut.homogB` as the template. Scalar `0`
 uses the built-in linearized-AIDS starting values.
+
+The optional `weight` argument (Milestone 26) is a weighted point-estimate
+extension only -- it does not implement formal strata or replicate-weight
+(BRR/jackknife) design-based variance. For a matching robust/cluster-robust
+SE under the same weight, pass the same `weight` to
+[quaidsRobustFit](quaidsRobustFit.md) (which uses a different, Horvitz-
+Thompson-style scaling convention for its sandwich -- see that page).
+[quaidsWorkflowFit](quaidsWorkflowFit.md) and
+[quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md) thread the same
+argument through the applied workflow layer.
 
 ## Examples
 

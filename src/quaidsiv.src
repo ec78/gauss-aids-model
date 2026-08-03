@@ -12,11 +12,20 @@
 **
 ** This is a private helper (leading underscore), not part of the public
 ** API -- called only from quaidsFit() in quaids.src.
+**
+** Milestone 26: gained a required `weight` argument (Tx1, already
+** normalized by the caller so sum(weight)==nobs -- see quaids.src's own
+** header for why normalization happens once, in quaidsFit(), not here).
+** `weight = ones(nobs,1)` reproduces the pre-Milestone-26 unweighted
+** behavior exactly: every moment()/cross-product call below is
+** pre-scaled by `sqrt(weight)` before the product, the standard WLS
+** trick (`(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B`), which is an exact
+** no-op when `weight` is all ones.
 */
 
-proc 20 = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
+proc 20 = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n, weight);
 
-    local nobs, endog, enam, nu, z, nz, m1, zz, zzi, ze, b, u,
+    local nobs, endog, enam, nu, z, nz, m1, zz, zzi, ze, b, u, rootWt,
         df, ie, m_, cov, std, cor, tv, sse, S, rsq, rbsq, fstat, pvf,
         stdest, v, stderr, t, pvt;
 
@@ -30,7 +39,8 @@ proc 20 = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
     z = intcpt~prices~instr;
     nz = cols(z);
 
-    m1 = moment(z~endog, 0);
+    rootWt = sqrt(weight);
+    m1 = moment(rootWt.*(z~endog), 0);
     zz = m1[1:nz, 1:nz];
     zzi = invpd(zz);
     ze = m1[1:nz, nz+1:nz+nu];
@@ -49,7 +59,7 @@ proc 20 = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n);
     tv = nobs*diag(cov[ie, ie]);
     clear m_, std, cov, ie;
 
-    sse = moment(u, 0);
+    sse = moment(rootWt.*u, 0);
     S=sse/nobs;
     sse = diag(sse);
     rsq = (tv - sse)./tv;

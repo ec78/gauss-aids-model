@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.20.0`) and is packaged as an
+The library is **pre-alpha** (package version `0.21.0`) and is packaged as an
 installable GAUSS application package (`library quaids;`). See
 `GOLD_STANDARD_TODO.md` for the full roadmap — this file is the
 quick-orientation companion to it, and should be kept synchronized with it.
@@ -25,7 +25,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-25)
+## Repository layout (post-Milestone-26)
 
 ```
 src/
@@ -41,7 +41,9 @@ src/
                     #   Milestone 2 scoping note below for why the rest of
                     #   quaidsFit() (starting values, iteration, variance,
                     #   overidentification test, symmetry test) was not
-                    #   further split.
+                    #   further split. Milestone 26 adds a required `weight`
+                    #   argument (all three callers -- quaidsFit(),
+                    #   quaidsPreflight(), quaidsZeroFit() -- updated).
   quaidszerocorrect.src # Milestone 19: quaidsZeroFit()/printQuaidsZero()
                     #   -- AIDS/QUAIDS estimation corrected for zero
                     #   budget shares via the Shonkwiler-Yen (1999)
@@ -80,6 +82,11 @@ src/
                     #   reproduces the legacy elasticities/descriptive
                     #   stats/Slutzky report via quaidsElas()/
                     #   quaidsSlutzky(), returns the 4 legacy matrices).
+                    #   Milestone 26 adds an OPTIONAL trailing `weight`
+                    #   argument (GAUSS dynargs) -- a genuine sampling-
+                    #   weighted point estimate via the standard
+                    #   sqrt(weight)-scaled cross-product WLS trick, an
+                    #   exact no-op when omitted or uniform.
   quaidsformula.src # quaidsFull() -- dataframe/column-name entry point;
                     #   selects w/intcpt/prices/totexp/instr from a
                     #   dataframe by column name and calls quaidsFit().
@@ -148,13 +155,23 @@ src/
                     #   reduced robust/bootstrap covariance into
                     #   qOut.bestB's full basis for shares/elasticities/
                     #   welfare delta-method SE. See "Milestone 20" and
-                    #   "Milestone 22" below.
+                    #   "Milestone 22" below. Milestone 26 adds the same
+                    #   OPTIONAL trailing `weight` argument to both procs
+                    #   -- a DIFFERENT scaling convention from quaidsFit()'s
+                    #   own sqrt(weight): the bread keeps sqrt(weight), but
+                    #   the per-observation score contribution uses PLAIN
+                    #   weight (Horvitz-Thompson pweight-robust
+                    #   convention). See "Milestone 26" below.
   quaidsdiagnostics.src # Milestone 23: quaidsPreflight()/
                     #   printQuaidsPreflight() -- silent, estimator-free
                     #   preflight diagnostics for dimensions, finite data,
                     #   share adding-up, zero/negative shares, variation,
                     #   first-stage IV strength, design invertibility,
                     #   cluster counts, and convergence-risk screening.
+                    #   Milestone 26 adds a required `weight` argument
+                    #   (mirroring clusterId's own required-positional
+                    #   convention here) plus weightValid/weightSum/effN
+                    #   fields.
   quaidsworkflow.src # Milestone 21 seed: quaidsWorkflowFit(), a thin
                     #   applied workflow layer composing quaidsFit(),
                     #   quaidsSharesFit(), quaidsElasFit(), and
@@ -168,12 +185,20 @@ src/
                     #   one explicit CV/EV price-change scenario. This is
                     #   not a new estimator; it is the first public
                     #   one-call workflow bundle for applied scripts.
+                    #   Milestone 26 adds an OPTIONAL trailing `weight`
+                    #   argument to both procs, threaded into their own
+                    #   quaidsFit()/quaidsPreflight()/quaidsRobustFit()
+                    #   calls.
   quaidssurvey.src  # Milestone 25 seed: quaidsSurveyWorkflowFit(), an
                     #   opt-in survey/microdata workflow wrapper that
                     #   recomputes the workflow evaluation point as a
                     #   sampling-weighted mean and then recomputes
-                    #   shares/elasticities there. This is post-estimation
-                    #   support only, not a survey-weighted estimator.
+                    #   shares/elasticities there. Milestone 26: its own
+                    #   `weight` argument now ALSO fits the estimator
+                    #   (forwarded into quaidsWorkflowFit()'s new
+                    #   argument) -- a deliberate behavior change from the
+                    #   Milestone 25 release, which left the estimator
+                    #   unweighted. See "Milestone 26" below.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
@@ -268,7 +293,16 @@ tests/
                     #   because every other fixture in this file has
                     #   plain i.i.d. noise, which cannot distinguish a
                     #   correct cluster-robust SE from an incorrect one
-                    #   that ignores clustering entirely.
+                    #   that ignores clustering entirely. Milestone 26
+                    #   adds _quaidsSurveyWeightedDGP(): a 5-good AIDS
+                    #   population subjected to informative two-stratum
+                    #   sampling on an UNOBSERVED error term (not an
+                    #   included covariate -- selecting on an included
+                    #   regressor was tried first and found not to bias
+                    #   naive estimation, the standard Heckman result),
+                    #   returning the sampled data, each row's Horvitz-
+                    #   Thompson weight, and the population's true
+                    #   parameters -- see "Milestone 26" below.
   quaids_synthetic_validation_test.e # Milestone 3: 22 checks recovering
                     #   true DGP parameters within a documented tolerance
                     #   across all 6 (LA-AIDS/AIDS/QUAIDS) x (with/without
@@ -448,19 +482,40 @@ tests/
                     #   run_source_tests.ps1's default invocation -- added
                     #   to the same -SkipBootstrap-gated group as
                     #   quaids_curvature_bootstrap_test.e.
-  quaids_preflight_test.e  # Milestone 23: 13 checks -- clean preflight,
-                    #   zero-share warning, negative-share hard failure,
-                    #   adding-up failure, cluster summaries, low price
-                    #   variation warning, and dimension-mismatch return.
-  quaids_workflow_test.e  # Milestone 21 seed: parity checks proving
+  quaids_preflight_test.e  # Milestone 23: 16 checks (13 + 3 at Milestone
+                    #   26) -- clean preflight, zero-share warning,
+                    #   negative-share hard failure, adding-up failure,
+                    #   cluster summaries, low price variation warning,
+                    #   dimension-mismatch return, and (Milestone 26) a
+                    #   genuinely unequal valid weight's effN/weightSum and
+                    #   a non-finite weight's hard-error flag.
+  quaids_workflow_test.e  # Milestone 21 seed: 32 checks (27 + 5 at
+                    #   Milestone 26) -- parity checks proving
                     #   quaidsWorkflowFit() returns the same fit,
                     #   mean-point shares/elasticities, robust coefficient
                     #   SE, and robust propagated shares/elasticity SE as
                     #   explicit calls to the underlying public APIs; also
                     #   checks restriction/model-choice summaries,
-                    #   Milestone 24's compact preflight summary, and
+                    #   Milestone 24's compact preflight summary,
                     #   quaidsWorkflowScenarioFit() classical/robust
-                    #   welfare parity.
+                    #   welfare parity, and (Milestone 26)
+                    #   quaidsWorkflowFit()'s own optional estimator
+                    #   `weight` argument against direct quaidsFit()/
+                    #   quaidsPreflight()/quaidsRobustFit() calls.
+  quaids_survey_test.e  # Milestone 26: 19 checks -- exact-identity
+                    #   regression guard (weight omitted / an explicit
+                    #   uniform weight reproduce the pre-Milestone-26
+                    #   unweighted behavior byte-for-byte, across
+                    #   quaidsFit()/quaidsPreflight()/quaidsRobustFit()/
+                    #   quaidsRobustBootstrapFit()); invalid-weight
+                    #   preflight error; the sqrt(weight)-bread vs.
+                    #   plain-weight-meat sandwich convention, checked
+                    #   directly against a deliberately-wrong alternative
+                    #   (this milestone's single easiest detail to get
+                    #   backwards); and the core non-vacuous check --
+                    #   weighted recovery beats naive on
+                    #   _quaidsSurveyWeightedDGP's informatively-sampled
+                    #   fixture.
   package_public_api.e   # Milestone 7: installed-package release gate --
                     #   `library quaids;` (not #include) against a real
                     #   install, exercising quaidsControlCreate/
@@ -587,7 +642,7 @@ docs/
                   #   below for the shell-invocation subtlety this
                   #   required (shell: cmd, not the default
                   #   shell: powershell).
-package.json      # GAUSS package manifest (name: quaids, version: 0.15.0,
+package.json      # GAUSS package manifest (name: quaids, version: 0.21.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
                   #   quaidscurvature.src IS listed (required public API),
@@ -599,7 +654,10 @@ package.json      # GAUSS package manifest (name: quaids, version: 0.15.0,
                   #   quaidscurvature.src but no new src array entry or
                   #   new dependency. quaidsworkflow.src (Milestone 21
                   #   seed) is listed last because it composes existing
-                  #   public fit/post-estimation APIs.
+                  #   public fit/post-estimation APIs. Milestone 26
+                  #   (sampling-weighted estimation) likewise adds no new
+                  #   src array entry or dependency -- every change is an
+                  #   in-place edit to six already-listed files.
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
@@ -627,7 +685,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-25:
+The original ten-milestone roadmap is complete, plus Milestones 11-26:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -672,11 +730,17 @@ support), 22 (robust inference propagation, `quaidsRobustCovariance`/
 `quaidsRobustBootstrapCovariance`, closing Milestone 20's own "does not
 propagate automatically" gap on request), 23 (preflight data/design
 diagnostics, `quaidsPreflight`, a non-gating pre-estimation check layer),
-24 (a compact preflight summary echoed into the workflow output), and 25
+24 (a compact preflight summary echoed into the workflow output), 25
 (an opt-in sampling-weighted workflow evaluation point,
 `quaidsSurveyWorkflowFit`, explicitly scoped short of full survey-design
-estimation -- see each milestone's own section below for the real bugs
-found and fixed along the way, including several in already-shipped
+estimation), and 26 (sampling-weighted estimation itself,
+`quaidsFit`'s optional `weight` argument with a matching weighted/
+clustered sandwich SE via `quaidsRobustFit`/`quaidsRobustBootstrapFit` --
+closing Milestone 25's own biggest deferred item, and this project's
+biggest departure yet from the "new sibling proc, don't touch shipped
+code" convention, since weighting touches essentially the whole
+estimation core -- see each milestone's own section below for the real
+bugs found and fixed along the way, including several in already-shipped
 Milestone 20 code).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
@@ -2990,14 +3054,157 @@ This is deliberately post-estimation support only. `quaidsFit()` still uses
 its existing unweighted moment conditions and covariance formulas; there is
 no claim of full survey-weighted estimation, replicate-weight variance,
 strata handling, or design-based covariance. Those remain separate roadmap
-items.
+items. **Update, Milestone 26**: the "estimator itself stays unweighted"
+part of this scoping is resolved -- see "Milestone 26" below, which also
+changes `quaidsSurveyWorkflowFit()`'s own behavior (its `weight` argument
+now fits the estimator too, not just the evaluation point).
 
-Testing: `tests/quaids_survey_workflow_test.e` proves that the weighted
-evaluation point matches a manual weighted mean, the underlying fit is
-unchanged, direct `quaidsSharesFit()`/`quaidsElasFit()` parity holds at the
-weighted point, robust post-estimation SE are recomputed there too, and
-constant weights reproduce the default workflow up to numerical tolerance.
-`tests/package_public_api.e` also exercises the installed public proc.
+Testing (as of Milestone 25): `tests/quaids_survey_workflow_test.e` proved
+that the weighted evaluation point matches a manual weighted mean, the
+underlying fit was unchanged, direct `quaidsSharesFit()`/`quaidsElasFit()`
+parity held at the weighted point, robust post-estimation SE were
+recomputed there too, and constant weights reproduced the default workflow
+up to numerical tolerance. `tests/package_public_api.e` also exercised the
+installed public proc. See "Milestone 26" below for how this test file's
+own assertions changed to match the new estimator-weighting behavior.
+
+## Milestone 26: sampling-weighted estimation and design-based SE (complete)
+
+Milestone 26 closes the biggest, most consequential piece of Milestone 25's
+own "Follow-ups" note: making the *estimator itself* genuinely sampling-
+weighted, with a matching weighted/clustered SE, not just a weighted
+post-estimation evaluation point.
+
+**Scope, confirmed with the repo owner via `AskUserQuestion` before
+implementation**: (1) weighted point estimates plus a weighted/clustered
+(Horvitz-Thompson-style linearized) sandwich SE only -- formal strata as a
+concept distinct from clustering, and replicate-weight (BRR/jackknife)
+variance, are explicitly deferred, matching this project's established
+phased-scope precedent (Milestone 10's AIDS-only curvature before
+Milestone 13's QUAIDS extension; Milestone 19's unconstrained-only zero-
+correction). (2) Architecture: extend `quaidsFit()`/`_quaidsIVFirstStage()`
+**in place** with a new optional `weight` argument, rather than
+duplicating the ~700-line estimation core into a new sibling file --
+the biggest deviation yet from the "new sibling proc, don't touch shipped
+code" convention every milestone since 16 has followed, justified here
+because weighting touches essentially the whole estimation core (starting
+value, iteration loop, variance, overID test), not one separable phase.
+Mirrors the one existing precedent for touching shipped code (Milestone
+12's `aCtl.relax`): opt-in, default = current unweighted behavior, verified
+byte-identical when omitted.
+
+**The math**: standard survey-weighted least squares pre-multiplies both
+sides of every cross-product by `sqrt(weight)` before the product, exact
+via `(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B`. Applied at every site in
+`src/quaids.src`/`src/quaidsiv.src` where raw sample rows enter a
+`moment()` call or cross-product: `_quaidsIVFirstStage()`'s `m1`/`sse`
+moments, `quaidsFit()`'s STARTING VALUE moment, the in-loop coefficient
+re-estimation, the chunked Jacobian-correction products, the `D` term, and
+the overidentification block's `instr'w`/`endog'instr` terms. The
+symmetry-restriction stage needed **no changes** -- confirmed a pure
+function of already-computed `b`/`v`, so it inherits correct weighting
+automatically. `weight` is renormalized internally so it sums to `nobs`
+(the point estimate is invariant to any overall rescaling of `weight`),
+keeping every existing `nobs`-denominated formula unaffected. New
+`quaidsOut` fields `weighted`/`weightSum`/`effN` (Kish's effective sample
+size, `(sum w)^2 / sum(w^2)`) report the weighting.
+
+**A different, easy-to-conflate convention for the robust/cluster
+sandwich, flagged prominently in code comments and given its own dedicated
+test**: `quaidsRobustFit()`/`quaidsRobustBootstrapFit()` get the same
+optional `weight`, but the standard pweight-robust-sandwich convention
+scales the per-observation score contribution (`Infl`) by PLAIN `weight`,
+not `sqrt(weight)` -- the Horvitz-Thompson convention (matching, e.g.,
+Stata's `vce(robust)` + `pweight`). The bread (`gg`) keeps the
+`sqrt(weight)` convention, matching the weighted design the point estimate
+was fit under. `tests/quaids_survey_test.e` checks `quaidsRobustFit()`'s
+output against two independent hand-evaluations -- one using the correct
+convention, one deliberately using the wrong one -- and confirms the
+implementation matches only the correct one, not just derives the formula
+on paper.
+
+**Real findings from building this, all confirmed empirically, not
+assumed**:
+
+1. GAUSS's dynargs/variadic mechanism (`proc (...) = name(fixedArgs, ...);`
+   + `dynargsGet(n, default)`) works cleanly for a plain optional trailing
+   matrix argument, not just structs -- confirmed via a scratch smoke test
+   against `c:\gauss26\src\between.src`'s identical pattern before touching
+   any real source file, giving `quaidsFit()`/`quaidsRobustFit()`/
+   `quaidsRobustBootstrapFit()`/`quaidsWorkflowFit()`/
+   `quaidsWorkflowScenarioFit()` the desired "zero blast radius when
+   omitted" property with no fallback needed. `quaidsPreflight()` uses a
+   REQUIRED positional `weight` instead, mirroring that proc's own
+   established `clusterId` convention (a diagnostic pass, not an opt-in
+   estimator extension) -- and because `_quaidsIVFirstStage()`, which
+   `quaidsPreflight()` also calls directly, needed a required `weight` too
+   (a private helper with few callers, all now updated:
+   `quaidsFit()`, `quaidsPreflight()`, `quaidsZeroFit()`).
+2. **Designing a genuinely non-vacuous "weighted beats naive" fixture took
+   real iteration, not a first-try success.** The first design selected a
+   biased sample based on an INCLUDED covariate (the demographic shifter
+   `intcptPop`) -- and found, by actually fitting both naive and weighted
+   `quaidsFit()` on the resulting sample, that naive estimation was barely
+   biased at all, with no consistent max/mean-abs-diff improvement from
+   weighting. This is the standard Heckman selection-bias result: selecting
+   on a variable already included as a regressor does not bias OLS/GLS
+   coefficients, since the model already conditions on it. The fix:
+   `_quaidsSurveyWeightedDGP()` (`tests/quaidsfixtures.src`) selects on the
+   idiosyncratic ERROR of good 1 instead (an unobserved-in-practice
+   quantity, though known to this fixture generator, which is exactly what
+   Horvitz-Thompson weighting needs to be given the true inclusion
+   probability) -- a real self-selection story (e.g., households with
+   unusually high, unmodeled good-1 consumption are more likely to respond
+   to a survey). A second finding: a continuously-varying (logistic)
+   inclusion probability produced a few very large individual weights
+   (rare-selected rows), which inflated the weighted GLS solve's own
+   variance enough to make the naive-vs-weighted comparison noisy and
+   inconsistent; switching to a fixed TWO-STRATUM sampling rate (weights
+   take only two values) fixed this. Seed screening (the same discipline
+   as Milestone 3/10's own seed sensitivity work) found `seed=11` gives a
+   dramatic, unambiguous example: excluding the IV-residual row (this
+   project's own well-documented noisiest row), naive max/mean abs diff
+   against the true population parameters is 1.58/0.23, vs. 0.21/0.03
+   weighted -- roughly a 7x improvement on both metrics.
+3. **`quaidsSurveyWorkflowFit()`'s own existing test asserted the opposite
+   of what this milestone requires.** `tests/quaids_survey_workflow_test.e`
+   (Milestone 25) explicitly checked `wfSurvey.bestB == wfBase.bestB`
+   ("survey workflow leaves the underlying estimator unchanged") --
+   correct under Milestone 25's scoping, now WRONG under Milestone 26's,
+   since `quaidsSurveyWorkflowFit()`'s `weight` argument now also fits the
+   estimator. Running the **full** existing test suite (18 files, no
+   `-SkipBootstrap`) immediately after the core `quaids.src`/
+   `quaidsiv.src`/`quaidsdiagnostics.src` changes -- the plan's explicit
+   regression gate, before writing any new weighted-specific tests --
+   confirmed this was the *only* file that failed; every other file's
+   unweighted behavior stayed byte-identical. Fixed by replacing that
+   check with its logical opposite (`wfSurvey.bestB` now matches a direct
+   weighted `quaidsWorkflowFit()`/`quaidsFit()` call exactly, and a
+   genuinely unequal weight measurably changes it relative to the
+   unweighted baseline) -- a deliberate, documented behavior change to an
+   already-shipped proc, not a bug, consistent with this milestone's own
+   "biggest deviation yet from the don't-touch-shipped-code convention"
+   framing.
+
+**Version bump to `0.21.0`**: no new `.src` file and no new package
+dependency, but real new required public API surface on six already-shipped
+procs (`quaidsFit`, `_quaidsIVFirstStage`, `quaidsRobustFit`,
+`quaidsRobustBootstrapFit`, `quaidsPreflight`, `quaidsWorkflowFit`,
+`quaidsWorkflowScenarioFit`) plus three new `quaidsOut` fields and six new
+`quaidsWorkflowOut`/`quaidsPreflightOut` fields, matching this project's
+established policy of bumping on real new public API surface regardless of
+whether a new file was added.
+
+**Testing**: `tests/quaids_survey_test.e` (new, 19 checks -- see "Testing
+status" below); `tests/quaids_workflow_test.e` (27 -> 32 checks);
+`tests/quaids_preflight_test.e` (13 -> 16 checks);
+`tests/quaids_survey_workflow_test.e` (15 -> 17 checks, with the behavior-
+change fix above); `tests/package_public_api.e` gained real weight
+exercises (an explicit uniform weight, reproducing the unweighted fit
+exactly) for `quaidsFit`/`quaidsPreflight`/`quaidsRobustFit`/
+`quaidsRobustBootstrapFit`/`quaidsWorkflowFit` against the real installed
+package. Full local suite (18 files, no skips) re-ran clean after every
+change.
 
 ## What GAUSS already provides — do not duplicate
 
@@ -3112,7 +3319,7 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Sixteen non-bootstrap-gated routine source-tree tests exist (plus a
+Seventeen non-bootstrap-gated routine source-tree tests exist (plus a
 `tests/guard_error_cases/` directory of six standalone expected-error
 scripts, see below), all run from `tests/` as the working directory:
 
@@ -3133,6 +3340,7 @@ tgauss -b -x quaids_robust_test.e
 tgauss -b -x quaids_preflight_test.e
 tgauss -b -x quaids_workflow_test.e
 tgauss -b -x quaids_survey_workflow_test.e
+tgauss -b -x quaids_survey_test.e
 ```
 
 `quaids_curvature_bootstrap_test.e` and `quaids_robust_bootstrap_test.e`
@@ -3144,8 +3352,8 @@ above. `tests/guard_error_cases/` (six scripts: `robust_nonconverged_qout.e`,
 `quaids_bad_b0_shape.e`) each confirm one specific validation guard fails
 loudly and clearly on bad input, added alongside the "Unreleased"
 fail-fast fixes to `quaidsRobustFit()`/`quaidsRobustBootstrapFit()`/
-`quaidsCurvatureFit()`/`quaidsFit()`'s `aCtl.b0` handling. Twenty-four
-files run in total with no flags skipped (16 + 6 + 2 bootstrap-gated).
+`quaidsCurvatureFit()`/`quaidsFit()`'s `aCtl.b0` handling. Twenty-five
+files run in total with no flags skipped (17 + 6 + 2 bootstrap-gated).
 
 - `quaids_schema_test.e` (Milestone 1, 36 checks): asserts `quaidsOut` field
   values/shapes, that `quaidsFit()` prints nothing between call and return,
@@ -3270,11 +3478,13 @@ files run in total with no flags skipped (16 + 6 + 2 bootstrap-gated).
   by `run_source_tests.ps1`'s default invocation — added to the same
   `-SkipBootstrap`-gated group as `quaids_curvature_bootstrap_test.e`
   rather than a new flag.
-- `quaids_preflight_test.e` (Milestone 23, 13 checks): clean preflight,
+- `quaids_preflight_test.e` (Milestone 23, 16 checks): clean preflight,
   zero-share warning, negative-share hard failure, adding-up failure,
   explicit cluster summaries, low price variation warning, and
-  dimension-mismatch return.
-- `quaids_workflow_test.e` (Milestone 21 seed, 27 checks): checks that
+  dimension-mismatch return. Milestone 26 added 3 checks: a genuinely
+  unequal valid weight's `weightValid`/`weightSum`/reduced `effN`, and a
+  non-finite weight entry's hard preflight error.
+- `quaids_workflow_test.e` (Milestone 21 seed, 32 checks): checks that
   `quaidsWorkflowFit()` returns the same core fit, sample-mean evaluation
   point, predicted shares, elasticities, robust coefficient SE, and robust
   propagated shares/elasticity SE as
@@ -3284,15 +3494,43 @@ files run in total with no flags skipped (16 + 6 + 2 bootstrap-gated).
   Milestone 24's compact preflight summary fields against a direct
   `quaidsPreflight()` call, and verifies
   `quaidsWorkflowScenarioFit()`'s classical and robust CV/EV fields against
-  `quaidsWelfareFit()`.
-- `quaids_survey_workflow_test.e` (Milestone 25, 15 checks): checks that
-  `quaidsSurveyWorkflowFit()` leaves the underlying estimator unchanged,
-  validates and echoes sampling-weight diagnostics, computes the same
-  weighted evaluation point as a manual weighted mean, recomputes shares/
-  elasticities and robust propagated SE at that point, and reproduces the
-  default workflow under constant weights up to numerical tolerance.
+  `quaidsWelfareFit()`. Milestone 26 added 5 checks: `quaidsWorkflowFit()`'s
+  own optional estimator `weight` argument matches direct
+  `quaidsFit()`/`quaidsPreflight()`/`quaidsRobustFit()` calls with the same
+  weight, and a genuinely unequal weight changes the workflow's point
+  estimate (non-vacuous).
+- `quaids_survey_workflow_test.e` (Milestone 25, 17 checks): checks that
+  `quaidsSurveyWorkflowFit()` validates and echoes sampling-weight
+  diagnostics, computes the same weighted evaluation point as a manual
+  weighted mean, recomputes shares/elasticities and robust propagated SE
+  at that point, and reproduces the default workflow under constant
+  weights up to numerical tolerance. **Milestone 26 behavior change**: this
+  file's own "leaves the underlying estimator unchanged" check (a
+  Milestone 25 assertion) was replaced with the opposite claim, matching
+  `quaidsSurveyWorkflowFit()`'s own new behavior -- `wfSurvey.bestB` now
+  matches a direct weighted `quaidsFit()` call exactly, and a genuinely
+  unequal weight measurably changes it relative to the unweighted
+  baseline. Full-suite regression testing (`tests/run_source_tests.ps1`
+  with no flags skipped, run immediately after the core `quaids.src`/
+  `quaidsiv.src`/`quaidsdiagnostics.src` changes, before writing any new
+  weighted-specific tests) confirmed this was the *only* existing test
+  file whose assertions needed updating -- every other file's unweighted
+  behavior stayed byte-identical.
+- `quaids_survey_test.e` (Milestone 26, 19 checks): the exact-identity
+  regression guard (weight omitted / an explicit uniform weight reproduce
+  the pre-Milestone-26 unweighted behavior byte-for-byte across
+  `quaidsFit()`/`quaidsPreflight()`/`quaidsRobustFit()`/
+  `quaidsRobustBootstrapFit()`); an invalid weight's hard preflight error;
+  the sqrt(weight)-bread vs. plain-weight-meat sandwich convention split,
+  checked directly against two fresh hand-evaluations (one matching the
+  documented convention, one deliberately using the wrong one -- see
+  "Milestone 26" below for why this is the single easiest detail here to
+  get backwards); and the core non-vacuous check -- weighted estimation
+  recovers `_quaidsSurveyWeightedDGP`'s true population parameters
+  measurably better (both max- and mean-abs-diff) than naive estimation on
+  the same informatively-sampled data.
 
-All seventeen routine source-tree files print one
+All eighteen routine source-tree files print one
 `PASS`/`FAIL` line per check and a final `...: ALL N CHECKS PASSED` (or a
 failure count) summary line — check that line, since `tgauss`'s exit code
 is not currently a reliable pass/fail signal for this harness. `tests/
@@ -3401,8 +3639,22 @@ new package dependency.
 `quaidssurvey.src` (Milestone 25) loads after `quaidsworkflow.src` because
 `quaidsSurveyWorkflowFit()` calls the base workflow and then recomputes
 post-estimation shares/elasticities at a sampling-weighted evaluation
-point. It adds no dependency and deliberately does not alter the estimator
-moments inside `quaidsFit()`.
+point. **Update, Milestone 26**: it no longer leaves the estimator
+moments inside `quaidsFit()` unweighted -- its own `weight` argument is
+now also forwarded into `quaidsWorkflowFit()`'s new optional `weight`
+argument, fitting a genuine weighted estimator. Milestone 26 itself added
+no new `src` file -- `quaids.sdf`/`quaidsiv.src`/`quaids.src`/
+`quaidsrobust.src`/`quaidsdiagnostics.src`/`quaidsworkflow.src`/
+`quaidssurvey.src` were all modified in place (a new optional `weight`
+argument on `quaidsFit()`/`quaidsRobustFit()`/
+`quaidsRobustBootstrapFit()`/`quaidsWorkflowFit()`/
+`quaidsWorkflowScenarioFit()`, a required `weight` argument on
+`quaidsPreflight()`/`_quaidsIVFirstStage()`, and new `quaidsOut`/
+`quaidsPreflightOut`/`quaidsWorkflowOut` fields) — but still bumped the
+version to `0.21.0`, matching the Milestone 12/13 precedent of bumping on
+real new public API surface regardless of whether a new file was added.
+No new `deps` entry — pure GAUSS built-ins, the same primitives every
+other covariance/moment computation in this library already uses.
 `src/pubtable_quaids.src` (Milestone 6) is deliberately **not** in this
 array — it has a hard dependency on `pubtable.sdf`'s struct types, and
 adding it would make `pubtable` a hard dependency for the whole package to

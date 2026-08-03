@@ -20,14 +20,24 @@
 **            struct-returning call.
 **
 ** Format:    struct quaidsWorkflowOut wfOut =
-**                quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+**                quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, ...);
+**
+** Milestone 26: gained an OPTIONAL trailing `weight` argument, threaded
+** into this proc's own quaidsPreflight()/quaidsFit()/quaidsRobustFit()/
+** quaidsRobustCovariance() calls. Omit for the pre-Milestone-26 unweighted
+** workflow. This is a DIFFERENT concept from quaidsSurveyWorkflowFit()'s
+** own `weight` argument (which only ever reweights the post-estimation
+** evaluation point, never the estimator itself, per that proc's own
+** header) -- see wfOut.weighted/weightSum/effN (this milestone's real
+** estimator weighting) vs. wfOut.surveyWeighted/surveyWeightSum (Milestone
+** 25's evaluation-point-only weighting).
 **
 *******************************************************************************/
 
-proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId);
+proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId, ...);
 
     local n, nint, m_, intcptPt, pricesPt, totexpPt, statQ, pvalQ, dfQ,
-        robustBFull, robustVFull;
+        robustBFull, robustVFull, weight, isWeighted;
     struct quaidsOut qOut;
     struct quaidsSharesOut sharesOut;
     struct quaidsSharesOut sharesRobustOut;
@@ -37,8 +47,21 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     struct quaidsPreflightOut pOut;
     struct quaidsWorkflowOut wfOut;
 
-    pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId);
-    qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+    /* Milestone 26: optional trailing sampling-weight argument, same
+       dynargs idiom as quaidsFit()'s own weight argument. quaidsPreflight()
+       requires a positional weight (0 sentinel for "not supplied"), so
+       isWeighted decides which literal is passed there and whether weight
+       is forwarded to quaidsFit()/quaidsRobustFit() at all. */
+    weight = dynargsGet(1, 0);
+    isWeighted = rows(weight)*cols(weight) > 1;
+
+    if isWeighted;
+        pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
+        qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);
+    else;
+        pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, 0);
+        qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+    endif;
 
     n = qOut.n;
     nint = qOut.nint;
@@ -54,6 +77,12 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     wfOut.nobs = qOut.nobs;
     wfOut.nint = qOut.nint;
     wfOut.wnam = qOut.wnam;
+    wfOut.weighted = qOut.weighted;
+    wfOut.weightSum = qOut.weightSum;
+    wfOut.effN = qOut.effN;
+    wfOut.preflightWeightValid = pOut.weightValid;
+    wfOut.preflightWeightSum = pOut.weightSum;
+    wfOut.preflightEffN = pOut.effN;
     wfOut.preflightOk = pOut.ok;
     wfOut.preflightErrors = pOut.nErrors;
     wfOut.preflightWarnings = pOut.nWarnings;
@@ -167,7 +196,11 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     if qOut.converged == 1;
         sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
         elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
-        robustOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+        if isWeighted;
+            robustOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId, weight);
+        else;
+            robustOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
+        endif;
 
         wfOut.postValid = 1;
         wfOut.shares = sharesOut.w;
@@ -212,18 +245,29 @@ endp;
 **
 ** Format:    struct quaidsWorkflowOut wfOut =
 **                quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr,
-**                    aCtl, clusterId, intcptPt, pricesPt0, pricesPt1, totexpPt0);
+**                    aCtl, clusterId, intcptPt, pricesPt0, pricesPt1, totexpPt0, ...);
+**
+** Milestone 26: gained the same OPTIONAL trailing `weight` argument as
+** quaidsWorkflowFit(), forwarded to it unchanged.
 **
 *******************************************************************************/
 
 proc (struct quaidsWorkflowOut) = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId,
-    intcptPt, pricesPt0, pricesPt1, totexpPt0);
+    intcptPt, pricesPt0, pricesPt1, totexpPt0, ...);
 
+    local weight, isWeighted;
     struct quaidsWorkflowOut wfOut;
     struct quaidsWelfareOut wOut;
     struct quaidsWelfareOut wRobustOut;
 
-    wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+    weight = dynargsGet(1, 0);
+    isWeighted = rows(weight)*cols(weight) > 1;
+
+    if isWeighted;
+        wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
+    else;
+        wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+    endif;
 
     if wfOut.postValid == 1;
         wOut = quaidsWelfareFit(wfOut.bestB, wfOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);

@@ -352,15 +352,36 @@ struct quaidsOut qOutC;
 qOutC = quaidsFit(wC, 0, pricesC, totexpC, instrC, aCtlC);
 call assert_true(qOutC.converged == 1, "quaidsCurvatureFit prerequisite AIDS fit did not converge");
 
+/* --- Milestone 26: quaidsFit()'s own optional estimator-level sampling
+   weight argument, against the real installed package. An explicit
+   uniform weight is used (not a fresh non-uniform draw) so this stays a
+   release gate exercising the new argument end-to-end, not a second
+   convergence/recovery validation -- that already lives in
+   tests/quaids_survey_test.e. */
+weightC = ones(tobsC, 1);
+struct quaidsOut qOutCWeighted;
+qOutCWeighted = quaidsFit(wC, 0, pricesC, totexpC, instrC, aCtlC, weightC);
+call assert_true(qOutCWeighted.weighted == 1 and qOutCWeighted.weightSum == tobsC and qOutCWeighted.effN == tobsC,
+    "quaidsFit: weight diagnostics invalid for an explicit uniform weight");
+call assert_true(maxc(maxc(abs(qOutCWeighted.bestB - qOutC.bestB))) == 0,
+    "quaidsFit: an explicit uniform weight did not reproduce the unweighted fit exactly");
+
 /* --- quaidsPreflight() / printQuaidsPreflight() (Milestone 23) --- */
 struct quaidsPreflightOut pOutC;
-pOutC = quaidsPreflight(wC, 0, pricesC, totexpC, instrC, aCtlC, 0);
+pOutC = quaidsPreflight(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 0);
 call assert_true(pOutC.dimensionsOk == 1 and pOutC.designInvOk == 1,
     "quaidsPreflight: converged seed=500 fixture has invalid dimensions or design");
 call assert_true(pOutC.ivDiagnosticsValid == 1 and rows(pOutC.ivFstat) == 1,
     "quaidsPreflight: IV diagnostics invalid");
 call assert_true(pOutC.clusterValid == 1 and pOutC.nClusters == tobsC,
     "quaidsPreflight: clusterId=0 robust cluster summary invalid");
+call assert_true(pOutC.weightValid == 1 and pOutC.weightSum == tobsC and pOutC.effN == tobsC,
+    "quaidsPreflight: weight=0 (unweighted) diagnostics invalid");
+
+struct quaidsPreflightOut pOutCWeighted;
+pOutCWeighted = quaidsPreflight(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, weightC);
+call assert_true(pOutCWeighted.weightValid == 1 and pOutCWeighted.weightSum == tobsC and pOutCWeighted.effN == tobsC,
+    "quaidsPreflight: weight diagnostics invalid for an explicit uniform weight");
 
 call printQuaidsPreflight(pOutC);
 
@@ -548,11 +569,24 @@ call assert_true(rows(vRFull) == rows(qOutC.bestV) and cols(vRFull) == cols(qOut
 
 call printQuaidsRobust(rOut);
 
+/* Milestone 26: quaidsRobustFit()'s own optional weight argument -- an
+   explicit uniform weight must reproduce the unweighted sandwich exactly. */
+struct quaidsRobustOut rOutWeighted;
+rOutWeighted = quaidsRobustFit(qOutC, wC, pricesC, totexpC, aCtlC, 0, weightC);
+call assert_true(maxc(maxc(abs(rOutWeighted.se - rOut.se))) == 0,
+    "quaidsRobustFit: an explicit uniform weight did not reproduce the unweighted sandwich exactly");
+
 struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 2, 42);
 call assert_true(rbOut.nCompleted >= 2, "quaidsRobustBootstrapFit: fewer than two replications completed");
 call assert_true(rows(rbOut.seBoot) == rows(rbOut.b) and cols(rbOut.seBoot) == cols(rbOut.b),
     "quaidsRobustBootstrapFit: seBoot shape does not match rbOut.b");
+
+/* Milestone 26: same optional weight argument on the bootstrap variant. */
+struct quaidsRobustBootOut rbOutWeighted;
+rbOutWeighted = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 2, 42, weightC);
+call assert_true(maxc(maxc(abs(rbOutWeighted.b - rbOut.b))) == 0 and maxc(maxc(abs(rbOutWeighted.seRobust - rbOut.seRobust))) == 0,
+    "quaidsRobustBootstrapFit: an explicit uniform weight did not reproduce the unweighted base fit/sandwich exactly");
 
 { bRBFull, vRBFull } = quaidsRobustBootstrapCovariance(qOutC, rbOut, aCtlC);
 call assert_true(rows(bRBFull) == rows(qOutC.bestB) and cols(bRBFull) == cols(qOutC.bestB),
@@ -580,6 +614,16 @@ call assert_true(wfOut.preflightOk == pOutC.ok and wfOut.preflightDesignInvOk ==
     "quaidsWorkflowFit: preflight status does not match quaidsPreflight");
 call assert_true(wfOut.preflightIVFstat == pOutC.ivFstat and wfOut.preflightNClusters == pOutC.nClusters,
     "quaidsWorkflowFit: preflight IV/cluster summary does not match quaidsPreflight");
+
+/* Milestone 26: quaidsWorkflowFit()'s own optional estimator-level weight
+   argument -- an explicit uniform weight must reproduce the unweighted
+   workflow fit exactly. */
+struct quaidsWorkflowOut wfOutWeighted;
+wfOutWeighted = quaidsWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, weightC);
+call assert_true(wfOutWeighted.weighted == 1 and wfOutWeighted.weightSum == tobsC,
+    "quaidsWorkflowFit: weight diagnostics invalid for an explicit uniform weight");
+call assert_true(maxc(maxc(abs(wfOutWeighted.bestB - wfOut.bestB))) == 0,
+    "quaidsWorkflowFit: an explicit uniform weight did not reproduce the unweighted workflow fit exactly");
 
 mWF = meanc(qOutC.intcptFull~pricesC~totexpC);
 intcptWF = mWF[1:1+qOutC.nint];

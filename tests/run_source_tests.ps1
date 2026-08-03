@@ -60,7 +60,8 @@ $gaussTests = @(
     "quaids_robust_test.e",
     "quaids_preflight_test.e",
     "quaids_workflow_test.e",
-    "quaids_survey_workflow_test.e"
+    "quaids_survey_workflow_test.e",
+    "quaids_survey_test.e"
 )
 
 if (-not $SkipPubtable) {

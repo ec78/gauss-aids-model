@@ -29,7 +29,7 @@ be used silently in scripts, tests, and higher-level workflows.
 ## Examples
 
 ```gauss
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 0);
 
 if not pOut.ok;
     call printQuaidsPreflight(pOut);

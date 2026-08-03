@@ -12,7 +12,7 @@ flag.
 
 ```gauss
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
 ```
 
 ## Parameters
@@ -21,6 +21,14 @@ pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId);
   meaning as [quaidsFit](quaidsFit.md).
 - `clusterId` - scalar `0` for the heteroskedasticity-robust case, or a
   `Tx1` cluster-label vector.
+- `weight` (*scalar `0`, or Tx1 vector*) - Milestone 26: **required**
+  (unlike [quaidsFit](quaidsFit.md)'s optional `weight`, this argument
+  follows `clusterId`'s own established required-positional convention in
+  this proc). Scalar `0` means unweighted; a `Tx1` vector is validated the
+  same way [quaidsFit](quaidsFit.md) validates its own `weight` (finite,
+  nonnegative, positive sum) and surfaced via `weightValid`/`weightSum`/
+  `effN` below. An invalid weight is a hard preflight error, the same tier
+  as an invalid `clusterId`.
 
 ## Returns
 
@@ -37,6 +45,10 @@ pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId);
   `ivDiagnosticsValid`, `ivFstat`, `ivPvf`, `weakIV`.
 - Cluster diagnostics: `clusterValid`, `nClusters`, `minClusterSize`,
   `singletonClusters`, `clusterWarning`.
+- Weight diagnostics (Milestone 26): `weightValid`, `weightSum` (sum of
+  the raw weight vector, or `nobs` when unweighted), `effN` (Kish's
+  effective sample size, `(sum w)^2 / sum(w^2)`; also `nobs` when
+  unweighted).
 - `convergenceRisk`: `0` low, `1` elevated, `2` high.
 
 ## Remarks
@@ -64,7 +76,7 @@ struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, householdId);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, householdId, 0);
 
 if not pOut.ok;
     call printQuaidsPreflight(pOut);

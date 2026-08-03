@@ -2,9 +2,12 @@
 ** quaids_survey_workflow_test.e
 **
 ** Milestone 25 seed: validates quaidsSurveyWorkflowFit() as an opt-in
-** survey/microdata workflow layer. Sampling weights affect the
-** representative evaluation point and post-estimation summaries; the
-** underlying quaidsFit() estimator remains the same as quaidsWorkflowFit().
+** survey/microdata workflow layer. Milestone 26 closes the gap this file's
+** own header used to flag: the same sampling weight now ALSO fits the
+** estimator itself (forwarded into quaidsWorkflowFit()'s new optional
+** weight argument), not just the representative evaluation point --
+** see quaidssurvey.src's own updated header for why this is a deliberate,
+** documented behavior change to an already-shipped proc, not a bug.
 **
 ** Run from the tests/ directory:
 **   tgauss -b -x quaids_survey_workflow_test.e
@@ -60,13 +63,15 @@ struct quaidsWorkflowOut wfSurvey;
 wfBase = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
 wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, weight);
 
-struct quaidsOut qOut;
-qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+/* Milestone 26: the underlying estimator IS now weighted -- qOutW is the
+   direct quaidsFit() call this weight should reproduce exactly. */
+struct quaidsOut qOutW;
+qOutW = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);
 
-n = qOut.n;
-nint = qOut.nint;
+n = qOutW.n;
+nint = qOutW.nint;
 wgt = weight/sumc(weight);
-mW = (wgt'(qOut.intcptFull~prices~totexp))';
+mW = (wgt'(qOutW.intcptFull~prices~totexp))';
 intcptW = mW[1:1+nint];
 pricesW = mW[1+nint+1:1+nint+n];
 totexpW = mW[1+nint+n+1];
@@ -75,13 +80,17 @@ struct quaidsSharesOut sharesOut;
 struct quaidsElasOut elasOut;
 struct quaidsSharesOut sharesRobustOut;
 struct quaidsElasOut elasRobustOut;
-sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptW, pricesW, totexpW, aCtl);
-elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptW, pricesW, totexpW, aCtl);
+sharesOut = quaidsSharesFit(qOutW.bestB, qOutW.bestV, intcptW, pricesW, totexpW, aCtl);
+elasOut = quaidsElasFit(qOutW.bestB, qOutW.bestV, intcptW, pricesW, totexpW, aCtl);
 sharesRobustOut = quaidsSharesFit(wfSurvey.robustBestB, wfSurvey.robustBestV, intcptW, pricesW, totexpW, aCtl);
 elasRobustOut = quaidsElasFit(wfSurvey.robustBestB, wfSurvey.robustBestV, intcptW, pricesW, totexpW, aCtl);
 
-call check(wfSurvey.converged == wfBase.converged and maxc(maxc(abs(wfSurvey.bestB - wfBase.bestB))) == 0,
-    "survey workflow leaves the underlying estimator unchanged");
+call check(maxc(maxc(abs(wfSurvey.bestB - qOutW.bestB))) == 0,
+    "survey workflow fits the weighted estimator, matching a direct weighted quaidsFit() call");
+call check(maxc(maxc(abs(wfSurvey.bestB - wfBase.bestB))) > 1e-6,
+    "nonconstant weights change the underlying point estimate (non-vacuous)");
+call check(wfSurvey.weighted == 1 and wfSurvey.weightSum == qOutW.weightSum and wfSurvey.effN == qOutW.effN,
+    "survey workflow echoes the estimator weight diagnostics from quaidsFit");
 call check(wfSurvey.surveyWeighted == 1 and wfSurvey.surveyWeightValid == 1,
     "survey workflow marks valid weighted evaluation");
 call check(wfSurvey.surveyWeightSum == sumc(weight) and wfSurvey.surveyWeightNPositive == tobs,

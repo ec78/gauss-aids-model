@@ -315,3 +315,130 @@ proc (6) = _quaidsClusterSyntheticDGP(tobs, seed, nClusters);
 
     retp(w, intcpt, prices, totexp, instr, clusterId);
 endp;
+
+/*
+** _quaidsSurveyWeightedDGP: Milestone 26. A 5-good AIDS population (same
+** base construction as _quaidsSyntheticDGP, quadratic=0, endogenous=1)
+** subjected to INFORMATIVE (biased) two-stratum sampling on the
+** IDIOSYNCRATIC ERROR of good 1 (ePop[.,1], not an included regressor):
+** rows with above-median e1 are systematically oversampled relative to
+** below-median rows, via two different FIXED sampling rates.
+**
+** This is deliberately selection on the ERROR TERM, not on an included
+** covariate -- confirmed necessary by direct testing, not assumed:
+** an earlier draft selected on the included demographic shifter intcptPop
+** instead, and found (by actually fitting both naive and weighted on the
+** resulting sample) that naive quaidsFit() was barely biased at all, with
+** no consistent max/mean-abs-diff improvement from weighting. This matches
+** the standard textbook selection-bias result (Heckman): selecting on a
+** variable already included as a regressor does not bias OLS/GLS
+** coefficients, since the model already conditions on it. Selecting on the
+** unobserved error term instead is the standard case where naive
+** estimation IS biased (a real self-selection story -- e.g., households
+** with unusually high, unmodeled good-1 consumption are more likely to
+** respond to a survey) and where a KNOWN true inclusion probability (known
+** here because this fixture constructs it, even though an analyst could
+** never observe e1 in real data) lets Horvitz-Thompson weighting recover
+** the population parameters IPW-consistently. Confirmed empirically below
+** to give a clean, consistent improvement on both max- and mean-abs-diff.
+**
+** A fixed TWO-VALUE stratum weight (1/sampling rate per stratum) is used
+** rather than a continuously-varying per-row inclusion probability --
+** screened directly and found to matter: a continuous logistic design
+** produces a few very large individual weights (rare-selected rows),
+** which inflate the weighted GLS solve's own variance enough to make the
+** max/mean-abs-diff comparison noisy and inconsistent.
+**
+** Returns the SAMPLED (post-selection) data plus each sampled row's
+** Horvitz-Thompson weight (1/its own stratum's sampling rate) and the
+** population's TRUE generating parameters (same row order as
+** _quaidsSyntheticDGP()'s trueParams), so a test can confirm that
+** weighting the estimator by this IPW weight recovers the true population
+** parameters measurably better than ignoring the weight entirely on the
+** same biased sample -- mirroring Milestone 19's own "corrected-beats-
+** naive" validation pattern.
+**
+** nPop is the population size drawn BEFORE selection; the returned
+** sample size is random (independent Bernoulli draws within each
+** stratum), close to 0.35*nPop for the stratum rates used below.
+**
+** Seed sensitivity, screened directly (not assumed) exactly like every
+** other synthetic fixture in this file: fitting both naive and weighted
+** quaidsFit() (aCtl.linear=1, aCtl.maxiter=100, aCtl.err=.0001, nPop=6000)
+** across seeds 1-20 and comparing gamma-block recovery against trueParams
+** found the SAME iteration-instability pattern already documented for the
+** main estimator (see "Seed sensitivity" in CLAUDE.md) -- roughly half of
+** seeds fail to converge for one or both of naive/weighted, and even
+** among converged seeds a one-shot LA-AIDS (aCtl.maxiter=1) fit is too
+** approximation-biased on this DGP for a clean comparison. Restricting to
+** seeds where BOTH the naive and weighted ITERATED (maxiter=100) fits
+** converge gives a clean, large, and consistent improvement from
+** weighting on every seed checked. tests/quaids_survey_test.e uses
+** seed=11, screened to give a dramatic, unambiguous example: excluding
+** the IV-residual row (the noisiest row in every fixture in this file,
+** by convention given a much wider tolerance elsewhere in this project),
+** naive max/mean abs diff against the true population gamma/beta/alpha
+** is 1.58/0.23, vs. 0.21/0.03 weighted -- roughly a 7x improvement on
+** both metrics, not a marginal one.
+*/
+proc (7) = _quaidsSurveyWeightedDGP(nPop, seed);
+
+    local N, al, al1, ga, be, ro, pricesPop, instrPop, intcptPop, uPop,
+        totexpPop, ePop, a_p, lx, wPop, trueParams, medE1, highGroup,
+        rateHigh, rateLow, rate, incl, idx, w, intcpt, prices, totexp,
+        instr, weight;
+
+    N = 5;
+    rateHigh = 0.6;
+    rateLow = 0.15;
+
+    al = round(rndns(1,N-1,seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1,N-1,seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1,N-1,seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1,N-1,seed)*10)/10;
+    be = be~(-sumc(be'));
+    ro = round(rndns(1,N-1,seed)*10)/10;
+
+    pricesPop = 1+rndns(nPop,N,seed);
+    instrPop = 5+5*rndns(nPop,1,seed);
+    intcptPop = 2+2*rndns(nPop,1,seed);
+    uPop = .1*rndns(nPop,1,seed);
+    totexpPop = .85*instrPop + uPop;
+    ePop = 2*rndns(nPop,N-1,seed) + uPop*ro;
+    ePop = ePop~(-sumc(ePop'));
+
+    a_p = sumc((pricesPop.*(al+intcptPop*al1))') + .5*sumc(((pricesPop*ga).*pricesPop)');
+    lx = totexpPop - a_p;
+    wPop = al + pricesPop*ga + lx*be + ePop + intcptPop*al1;
+
+    trueParams = al|al1|ga|be|(ro~-sumc(ro'));
+
+    /* Informative (biased) two-stratum inclusion on the UNOBSERVED error
+       of good 1 -- see header for why this (not an included covariate)
+       is what actually biases naive estimation. rndseed here is required
+       for the same reason _quaidsClusterSyntheticDGP() needs one --
+       rndu() has no seeded-call form, so without this the selected
+       sample (and hence every downstream number) would differ from run
+       to run. */
+    medE1 = median(ePop[.,1]);
+    highGroup = ePop[.,1] .> medE1;
+    rate = highGroup*rateHigh + (1-highGroup)*rateLow;
+
+    rndseed seed+1;
+    incl = rndu(nPop,1) .< rate;
+    idx = selif(seqa(1,1,nPop), incl);
+
+    w = wPop[idx,.];
+    intcpt = intcptPop[idx,.];
+    prices = pricesPop[idx,.];
+    totexp = totexpPop[idx,.];
+    instr = instrPop[idx,.];
+    weight = 1/rate[idx,.];
+
+    retp(w, intcpt, prices, totexp, instr, weight, trueParams);
+endp;
