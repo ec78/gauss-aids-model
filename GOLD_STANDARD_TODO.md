@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-07-28
+Status date: 2026-07-31
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,9 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.15.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-22**, as of
-2026-07-28: 0
+The repository is pre-alpha, package version `0.20.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-25**, as of
+2026-07-31: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -84,14 +84,32 @@ one `clusterId` argument, with a cluster-aware bootstrap shipped in the
 same pass; see that section below for the empirically-confirmed finding
 that the closed-form sandwich's simplified bread makes it dramatically
 more conservative than `qOut`'s own classical SE -- this completes the
-originally-outlined five-item full-demand-system-workflow).
+originally-outlined five-item full-demand-system-workflow), 21 (the
+applied workflow driver, `quaidsWorkflowFit`/`quaidsWorkflowScenarioFit`,
+bundling the fit and its most common post-estimation outputs into one
+call), 22 (robust inference propagation, `quaidsRobustCovariance`/
+`quaidsRobustBootstrapCovariance`, closing Milestone 20's own "does not
+propagate automatically" gap on request), 23 (preflight data/design
+diagnostics, `quaidsPreflight`, a non-gating pre-estimation check layer),
+24 (a compact preflight summary echoed into the workflow output), and 25
+(an opt-in sampling-weighted workflow evaluation point,
+`quaidsSurveyWorkflowFit`, explicitly scoped short of full survey-design
+estimation).
 
-The post-20 roadmap now shifts from individual post-estimation procs to
-full applied workflow support. `quaidsWorkflowFit()` is the first seed of
-that layer, bundling `quaidsFit()`, mean-point shares, elasticities, and
+The post-20 roadmap shifted from individual post-estimation procs to full
+applied workflow support. `quaidsWorkflowFit()` is the first seed of that
+layer, bundling `quaidsFit()`, mean-point shares, elasticities, and
 robust/cluster-robust SE in one silent struct-returning call. Milestone
 22 extends that workflow by propagating robust/cluster-robust covariance
-into shares, elasticities, and welfare standard errors.
+into shares, elasticities, and welfare standard errors. Milestones 21-25
+were built and pushed across several sessions without an incremental
+version bump each time (a process gap during a session handoff); this
+status snapshot and `package.json`'s `0.20.0` were reconciled together
+after the fact rather than rewriting already-pushed commit history. Full
+survey-design estimation (weighted moment conditions inside
+`quaidsFit()`, strata, replicate weights, design-based covariance) is the
+next explicitly-flagged, unstarted item -- see Milestone 25's own
+"Follow-ups" note below.
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -397,111 +415,12 @@ workflows and methodology extensions in this order:
    model-family extensions such as EASI only after the applied workflow layer
    is stable.
 
-### Milestone 21 — Applied Workflow Driver — COMPLETE
-
-- [x] Add the first workflow-layer proc, `quaidsWorkflowFit()`, as a thin
-  composition wrapper around existing public APIs rather than a new
-  estimator.
-- [x] Return a flat `quaidsWorkflowOut` structure with core fit fields,
-  sample-mean evaluation point, predicted shares, elasticities, and robust/
-  cluster-robust SE when the base fit converges.
-- [x] Add source-tree parity coverage proving the workflow output matches
-  explicit manual calls to `quaidsFit()`, `quaidsSharesFit()`,
-  `quaidsElasFit()`, and `quaidsRobustFit()`.
-- [x] Add model-choice and restriction-test summaries, including a convenient
-  path for `quaidsQuadraticTest()` on an unconstrained QUAIDS comparison fit.
-- [x] Add optional welfare scenario inputs and output fields via
-  `quaidsWorkflowScenarioFit()`, preserving `quaidsWorkflowFit()`'s shorter
-  signature.
-- [x] Add export-ready result bundles or adapters so workflow output can feed
-  `pubtable` without manual reshaping.
-- [x] Add installed-package public API coverage before closing this milestone.
-- [x] Add examples before closing this milestone.
-
-### Milestone 22 — Robust Inference Propagation — COMPLETE
-
-- [x] Add `quaidsRobustCovariance(qOut, rOut, aCtl)` to expand
-  `quaidsRobustFit()`'s reduced robust/cluster covariance into
-  `qOut.bestB`'s full coefficient basis for downstream delta-method procs.
-- [x] Add `quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl)` to compute
-  the empirical covariance of `quaidsRobustBootstrapFit()` draws and expand
-  it into the same full basis.
-- [x] Wire `quaidsWorkflowFit()` to return robust propagated SE for
-  predicted shares and elasticities, with `postRobustValid`,
-  `robustBestB`, and `robustBestV` fields.
-- [x] Wire `quaidsWorkflowScenarioFit()` to return robust propagated
-  welfare SE (`welfareRobustValid`, `seCVRobust`, `seEVRobust`).
-- [x] Add source-tree parity/regression coverage for closed-form robust
-  propagation, bootstrap covariance expansion, and workflow robust
-  post-estimation fields.
-- [x] Add installed-package public API smoke calls and command-reference
-  documentation for both new helpers.
-
-### Milestone 23 -- Preflight Data/Design Diagnostics -- COMPLETE
-
-- [x] Add `quaidsPreflight()` as a silent, struct-returning diagnostic pass
-  that runs before estimation and does not mutate inputs or call
-  `quaidsFit()`.
-- [x] Add `quaidsPreflightOut` fields for dimensions, finite-value checks,
-  share adding-up, zero/negative shares, price/expenditure/instrument
-  variation, first-stage IV F statistics, design invertibility, cluster
-  counts, and convergence-risk screening.
-- [x] Add `printQuaidsPreflight()` as the separated console printer,
-  preserving the package's Fit/print split.
-- [x] Add focused source-tree coverage in `tests/quaids_preflight_test.e`
-  and installed-package smoke coverage in `tests/package_public_api.e`.
-- [x] Add command-reference, usage-guide, feature-matrix, README, changelog,
-  and CLAUDE orientation updates.
-
-Follow-ups: richer weak-IV diagnostics, user-configurable tolerances, and
-survey-design-aware preflight checks should be considered with the
-survey/microdata milestone rather than forced into this first diagnostic
-slice. A compact workflow summary is now present via Milestone 24; a full
-nested `quaidsPreflightOut` field remains intentionally out of scope for the
-flat workflow struct.
-
-### Milestone 24 -- Workflow Preflight Summary -- COMPLETE
-
-- [x] Wire `quaidsWorkflowFit()` to call `quaidsPreflight()` before
-  estimation and echo a compact summary in `quaidsWorkflowOut`.
-- [x] Preserve existing behavior: preflight is diagnostic and non-gating,
-  and the workflow still calls `quaidsFit()` rather than becoming a
-  bad-input-safe wrapper.
-- [x] Add workflow parity checks proving the new fields match a direct
-  `quaidsPreflight()` call, plus installed-package smoke assertions.
-- [x] Update command-reference, usage-guide, feature-matrix, README,
-  changelog, roadmap, and CLAUDE orientation notes.
-
-Follow-ups: full nested preflight structs and opt-in workflow gating should
-be treated as a future API design question, not added implicitly to the flat
-workflow output. The next high-value roadmap item is survey/microdata support:
-sampling weights, strata, replicate weights, and population aggregation.
-
-### Milestone 25 -- Sampling-Weighted Workflow Evaluation -- COMPLETE
-
-- [x] Add `quaidsSurveyWorkflowFit()` as an opt-in survey/microdata workflow
-  wrapper that keeps `quaidsFit()`'s estimator unchanged but evaluates
-  predicted shares and elasticities at a sampling-weighted representative
-  point.
-- [x] Add survey metadata fields to `quaidsWorkflowOut`:
-  `surveyWeighted`, `surveyWeightValid`, `surveyWeightSum`,
-  `surveyWeightNPositive`, `surveyWeightMin`, and `surveyWeightMax`.
-- [x] Validate sampling weights with clear fail-fast diagnostics:
-  `Tx1`, finite/non-missing, nonnegative, and positive total weight.
-- [x] Add focused source-tree coverage in
-  `tests/quaids_survey_workflow_test.e` proving weighted evaluation parity
-  with a manual weighted mean and direct `quaidsSharesFit()`/
-  `quaidsElasFit()` calls, plus installed-package smoke coverage.
-- [x] Update command-reference, usage-guide, feature-matrix, README,
-  changelog, roadmap, and CLAUDE orientation notes.
-
-Follow-ups: full survey-design estimation remains deliberately open:
-weighted moment conditions inside `quaidsFit()`, strata, replicate weights,
-design-based covariance, and weighted population aggregation beyond a single
-representative evaluation point should be handled as separate milestones.
-
 Each milestone should exit with source tests, examples, and docs updated
-together — no milestone is "done" with code alone.
+together — no milestone is "done" with code alone. (Milestones 21-25
+themselves are documented in chronological order in the milestone archive
+below, alongside Milestones 0-20, rather than here in the living roadmap
+section -- moved during the 2026-07-31 documentation cleanup handoff so
+the archive reads consistently oldest-to-newest in one place.)
 
 ### Milestone 0 — Repository Hygiene — COMPLETE (2026-07-19)
 
@@ -2754,6 +2673,111 @@ robust/cluster standard errors (Milestone 20). One still-unrequested
 follow-up remains, flagged at Milestone 19: homogeneity/symmetry
 imposition on top of the Shonkwiler-Yen zero-share correction.
 
+### Milestone 21 — Applied Workflow Driver — COMPLETE
+
+- [x] Add the first workflow-layer proc, `quaidsWorkflowFit()`, as a thin
+  composition wrapper around existing public APIs rather than a new
+  estimator.
+- [x] Return a flat `quaidsWorkflowOut` structure with core fit fields,
+  sample-mean evaluation point, predicted shares, elasticities, and robust/
+  cluster-robust SE when the base fit converges.
+- [x] Add source-tree parity coverage proving the workflow output matches
+  explicit manual calls to `quaidsFit()`, `quaidsSharesFit()`,
+  `quaidsElasFit()`, and `quaidsRobustFit()`.
+- [x] Add model-choice and restriction-test summaries, including a convenient
+  path for `quaidsQuadraticTest()` on an unconstrained QUAIDS comparison fit.
+- [x] Add optional welfare scenario inputs and output fields via
+  `quaidsWorkflowScenarioFit()`, preserving `quaidsWorkflowFit()`'s shorter
+  signature.
+- [x] Add export-ready result bundles or adapters so workflow output can feed
+  `pubtable` without manual reshaping.
+- [x] Add installed-package public API coverage before closing this milestone.
+- [x] Add examples before closing this milestone.
+
+### Milestone 22 — Robust Inference Propagation — COMPLETE
+
+- [x] Add `quaidsRobustCovariance(qOut, rOut, aCtl)` to expand
+  `quaidsRobustFit()`'s reduced robust/cluster covariance into
+  `qOut.bestB`'s full coefficient basis for downstream delta-method procs.
+- [x] Add `quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl)` to compute
+  the empirical covariance of `quaidsRobustBootstrapFit()` draws and expand
+  it into the same full basis.
+- [x] Wire `quaidsWorkflowFit()` to return robust propagated SE for
+  predicted shares and elasticities, with `postRobustValid`,
+  `robustBestB`, and `robustBestV` fields.
+- [x] Wire `quaidsWorkflowScenarioFit()` to return robust propagated
+  welfare SE (`welfareRobustValid`, `seCVRobust`, `seEVRobust`).
+- [x] Add source-tree parity/regression coverage for closed-form robust
+  propagation, bootstrap covariance expansion, and workflow robust
+  post-estimation fields.
+- [x] Add installed-package public API smoke calls and command-reference
+  documentation for both new helpers.
+
+### Milestone 23 -- Preflight Data/Design Diagnostics -- COMPLETE
+
+- [x] Add `quaidsPreflight()` as a silent, struct-returning diagnostic pass
+  that runs before estimation and does not mutate inputs or call
+  `quaidsFit()`.
+- [x] Add `quaidsPreflightOut` fields for dimensions, finite-value checks,
+  share adding-up, zero/negative shares, price/expenditure/instrument
+  variation, first-stage IV F statistics, design invertibility, cluster
+  counts, and convergence-risk screening.
+- [x] Add `printQuaidsPreflight()` as the separated console printer,
+  preserving the package's Fit/print split.
+- [x] Add focused source-tree coverage in `tests/quaids_preflight_test.e`
+  and installed-package smoke coverage in `tests/package_public_api.e`.
+- [x] Add command-reference, usage-guide, feature-matrix, README, changelog,
+  and CLAUDE orientation updates.
+
+Follow-ups: richer weak-IV diagnostics, user-configurable tolerances, and
+survey-design-aware preflight checks should be considered with the
+survey/microdata milestone rather than forced into this first diagnostic
+slice. A compact workflow summary is now present via Milestone 24; a full
+nested `quaidsPreflightOut` field remains intentionally out of scope for the
+flat workflow struct.
+
+### Milestone 24 -- Workflow Preflight Summary -- COMPLETE
+
+- [x] Wire `quaidsWorkflowFit()` to call `quaidsPreflight()` before
+  estimation and echo a compact summary in `quaidsWorkflowOut`.
+- [x] Preserve existing behavior: preflight is diagnostic and non-gating,
+  and the workflow still calls `quaidsFit()` rather than becoming a
+  bad-input-safe wrapper.
+- [x] Add workflow parity checks proving the new fields match a direct
+  `quaidsPreflight()` call, plus installed-package smoke assertions.
+- [x] Update command-reference, usage-guide, feature-matrix, README,
+  changelog, roadmap, and CLAUDE orientation notes.
+
+Follow-ups: full nested preflight structs and opt-in workflow gating should
+be treated as a future API design question, not added implicitly to the flat
+workflow output. The next high-value roadmap item is survey/microdata support:
+sampling weights, strata, replicate weights, and population aggregation.
+
+### Milestone 25 -- Sampling-Weighted Workflow Evaluation -- COMPLETE
+
+- [x] Add `quaidsSurveyWorkflowFit()` as an opt-in survey/microdata workflow
+  wrapper that keeps `quaidsFit()`'s estimator unchanged but evaluates
+  predicted shares and elasticities at a sampling-weighted representative
+  point.
+- [x] Add survey metadata fields to `quaidsWorkflowOut`:
+  `surveyWeighted`, `surveyWeightValid`, `surveyWeightSum`,
+  `surveyWeightNPositive`, `surveyWeightMin`, and `surveyWeightMax`.
+- [x] Validate sampling weights with clear fail-fast diagnostics:
+  `Tx1`, finite/non-missing, nonnegative, and positive total weight.
+- [x] Add focused source-tree coverage in
+  `tests/quaids_survey_workflow_test.e` proving weighted evaluation parity
+  with a manual weighted mean and direct `quaidsSharesFit()`/
+  `quaidsElasFit()` calls, plus installed-package smoke coverage.
+- [x] Update command-reference, usage-guide, feature-matrix, README,
+  changelog, roadmap, and CLAUDE orientation notes.
+
+Follow-ups: full survey-design estimation remains deliberately open:
+weighted moment conditions inside `quaidsFit()`, strata, replicate weights,
+design-based covariance, and weighted population aggregation beyond a single
+representative evaluation point should be handled as separate milestones.
+This is the next high-value roadmap item (see the "Post-20 Development
+Roadmap" section above, item 4).
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -2815,7 +2839,32 @@ imposition on top of the Shonkwiler-Yen zero-share correction.
   bread makes the closed-form SE dramatically more conservative than
   `qOut`'s own classical SE (an empirically-confirmed, expected property,
   not a bug); does not propagate automatically into `qOut.symcV` or into
-  elasticities/shares/welfare's own delta-method SEs.
+  elasticities/shares/welfare's own delta-method SEs -- Milestone 22
+  (below) adds an explicit, opt-in path for that propagation.
+- [x] A one-call applied workflow (`quaidsWorkflowFit`/
+  `quaidsWorkflowScenarioFit`, Milestone 21) bundles the fit, mean-point
+  shares/elasticities, robust/cluster-robust SE, model-choice/restriction
+  summaries, and an optional welfare scenario into one silent,
+  struct-returning call, with a `pubtable` export adapter
+  (`ptTablesFromQuaidsWorkflow`).
+- [x] Robust/cluster-robust covariance can be expanded into `qOut.bestB`'s
+  full coefficient basis (`quaidsRobustCovariance`/
+  `quaidsRobustBootstrapCovariance`, Milestone 22) for use by
+  `quaidsSharesFit`/`quaidsElasFit`/`quaidsWelfareFit`, and
+  `quaidsWorkflowFit`/`quaidsWorkflowScenarioFit` propagate it
+  automatically into their own mean-point/welfare standard errors.
+- [x] A preflight diagnostic layer (`quaidsPreflight`/
+  `printQuaidsPreflight`, Milestone 23) checks dimensions, finite values,
+  share adding-up, zero/negative shares, variation, first-stage IV
+  strength, design invertibility, cluster counts, and convergence risk
+  before estimation; `quaidsWorkflowFit` echoes a compact, non-gating
+  summary of it (Milestone 24).
+- [x] An opt-in sampling-weighted workflow evaluation point
+  (`quaidsSurveyWorkflowFit`, Milestone 25) recomputes mean-point shares/
+  elasticities at a weighted representative point. **Deliberately
+  scoped**: `quaidsFit()`'s own moment conditions remain unweighted; full
+  survey-design estimation (weighted moments, strata, replicate weights,
+  design-based covariance) is explicitly left for a follow-up milestone.
 - [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
 - [x] Full doc set (`README`, command reference, usage guide, methodology
@@ -2825,8 +2874,8 @@ imposition on top of the Shonkwiler-Yen zero-share correction.
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-20 extend it beyond the original scope, as of 2026-07-28
-(package version `0.15.0`). Commits are now being made (and pushed to
+Milestones 11-25 extend it beyond the original scope, as of 2026-07-31
+(package version `0.20.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -2876,3 +2925,29 @@ Building it found that the closed-form sandwich's simplified bread makes
 its SE dramatically more conservative than `qOut`'s own classical SE, an
 empirically-confirmed, expected property, not a bug. **This completes the
 originally-outlined five-item full-demand-system-workflow.**
+
+With that outline complete, Milestones 21-25 opened a second phase --
+applied workflow support -- handed off between sessions and consolidated
+into this single `0.20.0` release rather than five separate version
+bumps (a process gap during the handoff, resolved retroactively rather
+than rewriting already-pushed history). `quaidsWorkflowFit()`/
+`quaidsWorkflowScenarioFit()` (Milestone 21) bundle the fit and its most
+common post-estimation outputs into one call; `quaidsRobustCovariance()`/
+`quaidsRobustBootstrapCovariance()` (Milestone 22) close Milestone 20's
+own "does not propagate automatically" gap by expanding robust/cluster
+covariance into the full coefficient basis on request; `quaidsPreflight()`
+(Milestone 23), echoed compactly in the workflow output (Milestone 24),
+adds a non-gating pre-estimation diagnostic layer; and
+`quaidsSurveyWorkflowFit()` (Milestone 25) adds an opt-in sampling-
+weighted evaluation point, explicitly scoped short of full survey-design
+estimation. Building Milestones 21-25 also surfaced and fixed real
+correctness issues in already-shipped code -- `aCtl.b0` starting-value
+handling in `quaidsFit()`/`quaidsZeroFit()`, IV/homogeneity-stage
+degrees-of-freedom, missing fail-fast validation in `quaidsRobustFit()`/
+`quaidsRobustBootstrapFit()`/`quaidsCurvatureFit()`, and a shared
+finite-difference-direction bug across `quaidsSharesFit()`/
+`quaidsElasFit()`/`quaidsWelfareFit()` -- with a new
+`tests/guard_error_cases/` suite added specifically to exercise the new
+guards directly. Full survey-design estimation (weighted moment
+conditions inside `quaidsFit()`, strata, replicate weights, design-based
+covariance) remains the next explicitly-flagged, unstarted item.

@@ -13,9 +13,11 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is **pre-alpha** (package version `0.15.0`). The original
-roadmap plus Milestones 11-20 are complete, and the post-20 workflow
-roadmap has begun with `quaidsWorkflowFit()`. Completed pieces include the estimation core,
+This library is **pre-alpha** (package version `0.20.0`). The original
+roadmap plus Milestones 11-25 are complete, including the post-20 applied
+workflow layer (`quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()`,
+robust-covariance propagation, preflight diagnostics, and a sampling-
+weighted workflow evaluation point). Completed pieces include the estimation core,
 hypothesis tests, elasticities, preflight diagnostics, dataframe entry point,
 `pubtable` export, zero-budget correction, robust/bootstrap inference,
 release tooling, and the documentation set. Remaining caveats are documented

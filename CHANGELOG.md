@@ -5,7 +5,15 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
-## Unreleased
+## 0.20.0 - 2026-07-31
+
+Bundles Milestones 21-25 (applied workflow driver, robust inference
+propagation, preflight diagnostics, workflow preflight summary, and
+sampling-weighted workflow evaluation) plus a round of correctness fixes
+to already-shipped code, all previously accumulated under an
+`## Unreleased` heading across several sessions without an incremental
+version bump each time. Reconciled into a single dated release here
+rather than split retroactively across five version numbers.
 
 ### Fixed
 - `quaidsFit()` now correctly honors documented `aCtl.b0` starting values by

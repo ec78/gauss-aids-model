@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.15.0`) and is packaged as an
+The library is **pre-alpha** (package version `0.20.0`) and is packaged as an
 installable GAUSS application package (`library quaids;`). See
 `GOLD_STANDARD_TODO.md` for the full roadmap — this file is the
 quick-orientation companion to it, and should be kept synchronized with it.
@@ -25,7 +25,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-20)
+## Repository layout (post-Milestone-25)
 
 ```
 src/
@@ -627,7 +627,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-20:
+The original ten-milestone roadmap is complete, plus Milestones 11-25:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -659,12 +659,25 @@ checks), 19 (zero-budget-share correction via Shonkwiler-Yen,
 `quaidsZeroFit`, the fourth and largest item of that outline -- required
 a real reformulation of the textbook method to fit onto this codebase's
 shared-design-matrix Kronecker-product estimation core, and is
-deliberately unconstrained-only in this first pass), and 20 (robust and
+deliberately unconstrained-only in this first pass), 20 (robust and
 cluster-robust standard errors, `quaidsRobustFit`/
 `quaidsRobustBootstrapFit`, the fifth and final item of that outline --
 genuinely new math generalizing every other covariance in this library's
 pooled, homoskedastic sandwich to a per-observation or per-cluster score
-aggregation, unified through one `clusterId` argument).
+aggregation, unified through one `clusterId` argument), 21 (the applied
+workflow driver, `quaidsWorkflowFit`/`quaidsWorkflowScenarioFit`,
+bundling the fit and its most common post-estimation outputs into one
+call -- opening a second, post-outline phase focused on applied workflow
+support), 22 (robust inference propagation, `quaidsRobustCovariance`/
+`quaidsRobustBootstrapCovariance`, closing Milestone 20's own "does not
+propagate automatically" gap on request), 23 (preflight data/design
+diagnostics, `quaidsPreflight`, a non-gating pre-estimation check layer),
+24 (a compact preflight summary echoed into the workflow output), and 25
+(an opt-in sampling-weighted workflow evaluation point,
+`quaidsSurveyWorkflowFit`, explicitly scoped short of full survey-design
+estimation -- see each milestone's own section below for the real bugs
+found and fixed along the way, including several in already-shipped
+Milestone 20 code).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -3099,7 +3112,9 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Seventeen routine source-tree tests exist, all run from `tests/` as the working directory:
+Sixteen non-bootstrap-gated routine source-tree tests exist (plus a
+`tests/guard_error_cases/` directory of six standalone expected-error
+scripts, see below), all run from `tests/` as the working directory:
 
 ```
 tgauss -b -x quaids_schema_test.e
@@ -3113,7 +3128,6 @@ tgauss -b -x quaids_pubtable_test.e
 tgauss -b -x quaids_curvature_test.e
 tgauss -b -x quaids_welfare_test.e
 tgauss -b -x quaids_reliability_regression_test.e
-tgauss -b -x quaids_curvature_bootstrap_test.e
 tgauss -b -x quaids_zero_test.e
 tgauss -b -x quaids_robust_test.e
 tgauss -b -x quaids_preflight_test.e
@@ -3121,16 +3135,25 @@ tgauss -b -x quaids_workflow_test.e
 tgauss -b -x quaids_survey_workflow_test.e
 ```
 
-`quaids_robust_bootstrap_test.e` is an eighteenth, gated the same way
-`quaids_curvature_bootstrap_test.e` is (see `-SkipBootstrap` below) --
-listed with the other bootstrap tests further down, not in the block
-above.
+`quaids_curvature_bootstrap_test.e` and `quaids_robust_bootstrap_test.e`
+are two more, both gated behind `-SkipBootstrap` (see below) -- listed
+with the other bootstrap-cost caveats further down, not in the block
+above. `tests/guard_error_cases/` (six scripts: `robust_nonconverged_qout.e`,
+`robust_bad_cluster_length.e`, `robust_one_cluster.e`,
+`curvature_nonconverged_qout.e`, `curvature_invalid_sym.e`,
+`quaids_bad_b0_shape.e`) each confirm one specific validation guard fails
+loudly and clearly on bad input, added alongside the "Unreleased"
+fail-fast fixes to `quaidsRobustFit()`/`quaidsRobustBootstrapFit()`/
+`quaidsCurvatureFit()`/`quaidsFit()`'s `aCtl.b0` handling. Twenty-four
+files run in total with no flags skipped (16 + 6 + 2 bootstrap-gated).
 
-- `quaids_schema_test.e` (Milestone 1, 34 checks): asserts `quaidsOut` field
+- `quaids_schema_test.e` (Milestone 1, 36 checks): asserts `quaidsOut` field
   values/shapes, that `quaidsFit()` prints nothing between call and return,
   and that the legacy `quaids()` wrapper's four returned matrices are
   exactly (not approximately) equal to the `quaidsOut` fields they're drawn
-  from.
+  from. Grew by 2 checks as part of the Milestone 21-25 handoff's `aCtl.b0`
+  and degrees-of-freedom fixes (see the `## Unreleased`-turned-`0.20.0`
+  entry in `CHANGELOG.md`).
 - `quaids_formula_parity_test.e` (Milestone 2, 17 checks): asserts
   `quaidsFull(dataframe, ...)` produces numerically identical output to
   `quaidsFit(matrices...)` on the same underlying data, including the
@@ -3165,14 +3188,14 @@ above.
   (`sum(w)==1`); shape/finiteness/non-negativity of `se`/`v` and
   `se==sqrt(diag(v))`; non-vacuousness at a shifted point. See "Milestone
   16: predicted budget shares" above.
-- `quaids_pubtable_test.e` (Milestone 6, 30 checks; requires the `pubtable`
+- `quaids_pubtable_test.e` (Milestone 6, 37 checks; requires the `pubtable`
   package installed): exact numeric parity between `pubtable`
   `ptModel.estimates`/`stdErrors` and the `qOut`/`elasOut` values they're
   built from, shape/title checks, the `ptFromQuaidsFamily` dispatcher, and
   an end-to-end export smoke test that writes real `.tex`/`.md`/`.csv`
   files and reads them back. See "Milestone 6: reporting via pubtable"
-  above.
-- `quaids_curvature_test.e` (Milestone 10, 33 checks total; requires the
+  above. Milestone 21 added checks for `ptTablesFromQuaidsWorkflow()`.
+- `quaids_curvature_test.e` (Milestone 10, 35 checks total; requires the
   `optmt` package installed): AIDS block (19 checks) -- recovery against
   a known-curvature-consistent true gamma, exact adding-up/homogeneity/
   symmetry, near-exact negative-semidefiniteness at the reference point,
@@ -3191,7 +3214,7 @@ above.
   case numerical check, SE finiteness/non-negativity, and a CV/EV sign-
   agreement check — run once against a QUAIDS fit and once against an
   AIDS fit. See "Milestone 11: welfare measures" above.
-- `quaids_reliability_regression_test.e` (Milestone 12, 8 checks):
+- `quaids_reliability_regression_test.e` (Milestone 12, 11 checks):
   `aCtl.relax=1` reproduces byte-identical output to leaving `aCtl.relax`
   unset (the new field is a true no-op at its default); a previously-
   crashing seed (QUAIDS, seed 43 — an unguarded `invpd()` in the
@@ -3199,7 +3222,8 @@ above.
   `qOut.symValid==0`) instead of aborting the call; a concrete example
   (QUAIDS, seed 2) confirms `aCtl.relax=.75` measurably changes a
   never-converged fit into a correctly-converged one. See "Milestone 12:
-  numerical reliability" above.
+  numerical reliability" above. Grew by 3 checks as part of the Milestone
+  21-25 handoff's `aCtl.b0`/degrees-of-freedom fixes.
 
 - `quaids_curvature_bootstrap_test.e` (Milestone 15, 37 checks; requires
   the `optmt` package installed): bootstrap run bookkeeping (requested/
@@ -3213,7 +3237,7 @@ above.
   Milestone 18 added `quaidsCurvatureBootstrapCI()` checks and a
   `seBoot` cell-position regression guard (11 checks) — see "Milestone
   18: percentile bootstrap confidence intervals" above.
-- `quaids_zero_test.e` (Milestone 19, 17 checks): the fixture's own
+- `quaids_zero_test.e` (Milestone 19, 19 checks): the fixture's own
   adding-up identity (exact, by construction); the diagonal-delta
   restriction holds exactly (off-diagonal hazard-coefficient entries
   exactly `0`, on-diagonal entries genuinely estimated); shape/finiteness
@@ -3222,7 +3246,8 @@ above.
   the true latent (uncensored) DGP parameters better than naively fitting
   `quaidsFit()` on the same censored data, on both a max- and mean-
   absolute-difference basis. See "Milestone 19: zero budget share
-  correction (Shonkwiler-Yen)" above.
+  correction (Shonkwiler-Yen)" above. Grew by 2 checks validating
+  Milestone 21-25's `aCtl.b0` support for `quaidsZeroFit()`.
 - `quaids_robust_test.e` (Milestone 20/22, 26 checks): the point estimate
   matches a fresh, independent hand-evaluation of the sandwich formula;
   an exact-identity regression guard (`clusterId=0` vs. an explicit
@@ -3249,7 +3274,7 @@ above.
   zero-share warning, negative-share hard failure, adding-up failure,
   explicit cluster summaries, low price variation warning, and
   dimension-mismatch return.
-- `quaids_workflow_test.e` (Milestone 21 seed): checks that
+- `quaids_workflow_test.e` (Milestone 21 seed, 27 checks): checks that
   `quaidsWorkflowFit()` returns the same core fit, sample-mean evaluation
   point, predicted shares, elasticities, robust coefficient SE, and robust
   propagated shares/elasticity SE as
