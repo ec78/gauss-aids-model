@@ -61,7 +61,8 @@ $gaussTests = @(
     "quaids_preflight_test.e",
     "quaids_workflow_test.e",
     "quaids_survey_workflow_test.e",
-    "quaids_survey_test.e"
+    "quaids_survey_test.e",
+    "quaids_replicate_test.e"
 )
 
 if (-not $SkipPubtable) {
@@ -166,6 +167,14 @@ $guardTests = @(
     [pscustomobject]@{
         Script = "guard_error_cases\quaids_bad_b0_shape.e"
         Expected = "quaidsFit: aCtl.b0 must be scalar 0 or an ng x n reduced raw coefficient matrix matching qOut.homogB."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\replicate_bad_weights_shape.e"
+        Expected = "quaidsReplicateWeightFit: replicateWeights must have one row per observation."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\replicate_negative_scale_factor.e"
+        Expected = "quaidsReplicateWeightFit: scaleFactor must be positive."
     }
 )
 

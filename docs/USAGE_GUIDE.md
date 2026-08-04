@@ -480,6 +480,50 @@ diagnostic in this library). Use `quaidsRobustCovariance()` or
 `quaidsRobustBootstrapCovariance()` for the full-basis covariance needed
 by shares, elasticities, and welfare.
 
+## Replicate-Weight (Jackknife/BRR) Standard Errors
+
+Use [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
+when your survey extract ships **pre-computed replicate weight columns**
+(a common design for household-expenditure surveys) rather than requiring
+you to implement your own resampling scheme:
+
+```gauss
+// replicateWeights: TxR matrix, one alternate Tx1 weight column per
+// replicate, supplied by your survey's own documentation. scaleFactorJK1
+// is that design's own prescribed scale factor -- e.g. (R-1)/R for a
+// standard JK1 delete-one-PSU jackknife.
+struct quaidsReplicateOut rOut;
+rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl,
+    surveyWeight, replicateWeights, scaleFactorJK1, "JK1");
+
+call printQuaidsReplicateWeight(rOut);
+print "completed:" rOut.nCompleted "failed:" rOut.nFailed;
+```
+
+This is a genuinely different inference approach from
+[quaidsRobustFit](command-reference/quaidsRobustFit.md)'s closed-form
+sandwich or [quaidsRobustBootstrapFit](command-reference/quaidsRobustBootstrapFit.md)'s
+own resampling bootstrap -- it refits
+[quaidsFit](command-reference/quaidsFit.md) once per **caller-supplied**
+replicate weight column (not a random resample), and combines the results
+using the general linearized replication-variance formula
+`V = sum_r c_r * vec(b_r - b_full) * vec(b_r - b_full)'`. This proc does
+not implement or auto-detect jackknife, BRR, or any other specific
+design -- `replicateWeights` and `scaleFactor` are always required,
+caller-supplied inputs, matching this library's own established "never
+silently guess an inference-affecting parameter" discipline (the same
+rule `quaidsCurvatureBootstrapFit`'s own `B` already follows).
+
+A real, practical advantage over `quaidsRobustFit()`: `rOut.b`/`rOut.v`
+are already in `quaidsFit()`'s own full `bestB` basis, so they feed
+directly into `quaidsSharesFit()`/`quaidsElasFit()`/`quaidsWelfareFit()`
+with no separate expansion step (`quaidsRobustCovariance()` has no
+counterpart needed here). See
+[Methodology Notes](METHODOLOGY_NOTES.md#replicate-weight-jackknifebrr-variance-estimation)
+for the full derivation, including a real, non-trappable crash mode found
+and guarded against while building this (a replicate weight concentrated
+on too few effectively-weighted rows).
+
 ## Reporting (`pubtable`)
 
 `src/pubtable_quaids.src` is an optional adapter onto the `pubtable`
@@ -544,12 +588,26 @@ runnable example.
 - [quaidsFit](command-reference/quaidsFit.md) (Milestone 26) accepts an
   optional sampling-weight argument -- a genuine weighted point estimate,
   with a matching weighted/clustered sandwich SE via
-  [quaidsRobustFit](command-reference/quaidsRobustFit.md). Formal strata
-  as a concept distinct from clustering, replicate-weight (BRR/jackknife)
-  variance, and finite-population correction are not implemented yet.
+  [quaidsRobustFit](command-reference/quaidsRobustFit.md), or
+  replicate-weight (jackknife/BRR-style) SE via
+  [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
+  (Milestone 27, always against caller-supplied replicate columns and
+  scale factor -- no design is auto-detected). Formal strata as a concept
+  distinct from clustering, and finite-population correction, are not
+  implemented yet.
   [quaidsSurveyWorkflowFit](command-reference/quaidsSurveyWorkflowFit.md)
-  wires the same weight into both the estimator and the workflow's
+  wires the same base weight into both the estimator and the workflow's
   representative evaluation point.
+- [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
+  (Milestone 27) does not retry a replicate that fails to converge (fixed,
+  caller-supplied columns cannot be redrawn) -- a failed replicate is
+  simply dropped from the variance sum, a documented simplification since
+  the formal JK1/BRR literature does not define a missing-replicate
+  adjustment this library implements. A replicate whose effective sample
+  size falls below a defensive `2x`-design-columns heuristic is skipped
+  before ever calling `quaidsFit()`, avoiding a real, non-trappable
+  `error G0058` crash mode found while building this milestone -- see the
+  [Methodology Notes](METHODOLOGY_NOTES.md#replicate-weight-jackknifebrr-variance-estimation).
 - [quaidsZeroFit](command-reference/quaidsZeroFit.md) (Milestone 19) is
   unconstrained only -- it errors if `aCtl.homogenous = 1` -- and reports
   a simplified standard error that does not account for the nonlinear

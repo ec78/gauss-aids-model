@@ -5,6 +5,64 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.22.0 - 2026-08-04
+
+Milestone 27: replicate-weight (jackknife/BRR-style) variance estimation --
+the item Milestone 26's own follow-up note flagged as the next
+explicitly-unstarted piece of survey/microdata support ("replicate weights
+(BRR/jackknife)... remain open").
+
+### Added
+- `quaidsReplicateWeightFit()` (new file, `src/quaidsreplicate.src`):
+  replicate-weight standard errors for `quaidsFit()`, from a caller-
+  supplied `TxR` matrix of pre-computed replicate weight columns and a
+  scale factor (positive scalar or `Rx1` vector, always required -- no
+  design is auto-detected or assumed). Implements the general linearized
+  replication-variance formula `V = sum_r c_r * vec(b_r - b_full) *
+  vec(b_r - b_full)'` underlying jackknife (JK1/JKn), BRR, and Fay's BRR
+  alike; reuses Milestone 26's `quaidsFit()` `weight` argument unchanged
+  for both the full-sample point estimate and every replicate refit --
+  no new estimation logic. Unlike the bootstrap procs it otherwise
+  resembles, there is no resampling loop, no `seed`, and no retry (fixed,
+  caller-supplied replicate columns cannot be redrawn); a replicate that
+  fails to converge is simply dropped from the sum, a documented
+  simplification. `rOut.b`/`rOut.v` are already in `quaidsFit()`'s own
+  full `bestB` basis, so -- unlike `quaidsRobustFit()` -- no expansion
+  helper is needed before `quaidsSharesFit()`/`quaidsElasFit()`/
+  `quaidsWelfareFit()`.
+- `printQuaidsReplicateWeight()`: the separated console printer.
+- New `quaidsReplicateOut` struct (`src/quaids.sdf`).
+- A real, non-trappable crash mode found and guarded against while
+  building this: a replicate weight column concentrated on too few
+  effectively-weighted observations (Kish's effective sample size) can
+  drive `quaidsFit()`'s internal iteration into a rank-deficient state
+  and fail with a plain GAUSS indexing error (`error G0058`) that
+  `trap 1` does not catch -- confirmed by direct reproduction, the same
+  class of non-trappable failure already documented for `eighv()`/
+  `glm()`. A pre-call effective-sample-size check (`effN < 2x design
+  columns`) now skips (counts as failed, no crash) any such replicate
+  before `quaidsFit()` is ever called.
+- `tests/quaids_replicate_test.e` (28 checks): base-fit parity (weighted
+  and unweighted), shape/finiteness/non-negativity/symmetry, the
+  reshape/cell-position regression guard, scalar- and vector-form
+  `scaleFactor`, an EXACT zero-variance identity check (replicate weights
+  identical to the base weight give exactly-zero `v`/`se`, the strongest
+  possible correctness check of the variance formula) contrasted against
+  a genuine JK1-style non-vacuous design, deterministic repeatability,
+  direct `quaidsSharesFit()`/`quaidsElasFit()`/`quaidsWelfareFit()`
+  parity with no expansion step, and partial-failure handling via the new
+  effN pre-check.
+- Two new `tests/guard_error_cases/` scripts:
+  `replicate_bad_weights_shape.e`, `replicate_negative_scale_factor.e`.
+- `tests/package_public_api.e` gained a real `quaidsReplicateWeightFit()`/
+  `printQuaidsReplicateWeight()` exercise (weighted base fit, 3-column
+  JK1-style replicate design) against the real installed package.
+- Command-reference pages `quaidsReplicateWeightFit.md`,
+  `printQuaidsReplicateWeight.md`; new "Replicate-Weight (Jackknife/BRR)
+  Standard Errors" sections in `docs/USAGE_GUIDE.md` and
+  `docs/METHODOLOGY_NOTES.md`; new `docs/FEATURE_SUPPORT_MATRIX.md` row
+  and Notes entry.
+
 ## 0.21.0 - 2026-08-03
 
 Milestone 26: sampling-weighted estimation and a matching weighted/clustered

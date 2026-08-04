@@ -13,13 +13,15 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is **pre-alpha** (package version `0.21.0`). The original
-roadmap plus Milestones 11-26 are complete, including the post-20 applied
+This library is **pre-alpha** (package version `0.22.0`). The original
+roadmap plus Milestones 11-27 are complete, including the post-20 applied
 workflow layer (`quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()`,
-robust-covariance propagation, preflight diagnostics) and sampling-weighted
+robust-covariance propagation, preflight diagnostics), sampling-weighted
 estimation (`quaidsFit()`'s optional `weight` argument, with a matching
 weighted/clustered SE via `quaidsRobustFit()`, and a sampling-weighted
-workflow via `quaidsSurveyWorkflowFit()`). Completed pieces include the estimation core,
+workflow via `quaidsSurveyWorkflowFit()`), and replicate-weight
+(jackknife/BRR-style) standard errors from caller-supplied replicate
+weight columns (`quaidsReplicateWeightFit()`). Completed pieces include the estimation core,
 hypothesis tests, elasticities, preflight diagnostics, dataframe entry point,
 `pubtable` export, zero-budget correction, robust/bootstrap inference,
 release tooling, and the documentation set. Remaining caveats are documented
@@ -139,6 +141,11 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
 - Survey/microdata workflow entry point (`quaidsSurveyWorkflowFit`) that
   fits the weighted estimator and evaluates shares and elasticities at a
   sampling-weighted representative point in one call.
+- Replicate-weight (jackknife/BRR-style) standard errors
+  (`quaidsReplicateWeightFit`) from a caller-supplied set of pre-computed
+  replicate weight columns and scale factor -- the design most household-
+  expenditure survey extracts ship, as an alternative to `quaidsRobustFit`'s
+  closed-form sandwich or `quaidsRobustBootstrapFit`'s resampling bootstrap.
 - Optional LaTeX/Markdown/CSV/RTF/HTML/XLSX export via the `pubtable`
   package (`src/pubtable_quaids.src`).
 - Cross-implementation validated against an independent R (`micEconAids`)

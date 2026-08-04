@@ -651,4 +651,30 @@ call assert_true(wfScenario.welfareRobustValid == 1 and wfScenario.seCVRobust >=
     "quaidsWorkflowScenarioFit: robust welfare outputs invalid");
 
 
+/* --- quaidsReplicateWeightFit() / printQuaidsReplicateWeight()
+   (Milestone 27) --- reuses the same converged seed=500 AIDS fixture. A
+   small (3-column) JK1-style delete-one-cluster replicate design is
+   built inline; an explicit uniform weight (weightC, already defined
+   above) is used as the base weight for a real, non-vacuous release-gate
+   exercise rather than the scalar-0 unweighted path already covered by
+   tests/quaids_replicate_test.e. */
+nRepC = 3;
+clusterIdC = ceil(seqa(1, 1, tobsC)/(tobsC/nRepC));
+replicateWeightsC = zeros(tobsC, nRepC);
+gC = 1;
+do while gC <= nRepC;
+    replicateWeightsC[., gC] = (clusterIdC ./= gC) * nRepC/(nRepC-1);
+    gC = gC + 1;
+endo;
+
+struct quaidsReplicateOut rOutC;
+rOutC = quaidsReplicateWeightFit(wC, 0, pricesC, totexpC, instrC, aCtlC, weightC, replicateWeightsC, (nRepC-1)/nRepC, "JK1");
+call assert_true(rOutC.weighted == 1 and rOutC.nRequested == nRepC,
+    "quaidsReplicateWeightFit: weighted/nRequested diagnostics invalid");
+call assert_true(rows(rOutC.se) == rows(rOutC.b) and cols(rOutC.se) == cols(rOutC.b),
+    "quaidsReplicateWeightFit: se shape does not match b");
+
+call printQuaidsReplicateWeight(rOutC);
+
+
 print "package_public_api.e: PASS";

@@ -1,0 +1,331 @@
+/*
+** quaidsreplicate.src
+**
+** Milestone 27: replicate-weight (jackknife/BRR-style) variance estimation,
+** the item Milestone 26's own GOLD_STANDARD_TODO.md follow-up note flagged
+** as the next explicitly-unstarted piece of survey/microdata support:
+** "Formal strata... replicate weights (BRR/jackknife)... remain open."
+**
+** Many real household-expenditure survey designs (e.g. Consumer Expenditure
+** Survey-style extracts) ship a set of PRE-COMPUTED replicate weight
+** columns rather than requiring the analyst to implement their own
+** resampling scheme -- one alternate Tx1 weight vector per replicate,
+** together with a scale factor prescribed by the survey's own
+** documentation (e.g. delete-one-PSU-per-stratum jackknife, JK1, uses
+** c_r = (R-1)/R constant across all R replicates; balanced repeated
+** replication, BRR, typically uses c_r = 1/R). This file does not
+** implement or auto-detect any specific survey design -- it takes
+** `replicateWeights`/`scaleFactor` as REQUIRED, caller-supplied inputs,
+** exactly the same "never silently guess an inference-affecting
+** parameter" discipline this library's own bootstrap procs
+** (quaidsCurvatureBootstrapFit()/quaidsRobustBootstrapFit()) already
+** established for `B`/`seed`.
+**
+** THE MATH: given a full-sample point estimate b_full = qOutFull.bestB
+** (fit under the caller's own base `weight`, reusing Milestone 26's
+** quaidsFit() weight argument unchanged) and R replicate-weight refits
+** b_r (each qOutR.bestB from quaidsFit() called with replicateWeights[.,r]
+** in place of the base weight), the replicate-weight covariance is
+**   V = sum_r c_r * vec(b_r - b_full) * vec(b_r - b_full)'
+** the general form underlying every linearized replication variance
+** estimator (JK1, JKn, BRR, Fay's BRR) -- only the value(s) of c_r differ
+** by design, which is exactly why c_r is a required caller input here
+** rather than a hardcoded constant.
+**
+** THIS IS A GENUINELY SIMPLER CASE than the bootstrap procs it otherwise
+** mirrors: replicate weights are FIXED, caller-supplied columns, not
+** random draws -- there is no resampling loop, no seed, and no
+** "attempt up to 5*B times" retry logic, since a failed replicate cannot
+** be redrawn (it is not random). If a replicate fails to converge, it is
+** dropped from the sum (nFailed bookkeeping, matching the bootstrap
+** procs' own "count failures, do not silently pretend they succeeded"
+** convention) -- documented explicitly as a simplification, since the
+** formal JK1/BRR literature does not, in general, define how to handle a
+** missing replicate without an adjustment this library does not
+** implement (see docs/gauss-repair... no -- see
+** docs/gauss-quaids-replicate-weights.md's own Limitations section).
+**
+** ANOTHER GENUINE SIMPLIFICATION relative to the bootstrap procs: each
+** replicate's fit is already in the EXACT SAME basis as the full-sample
+** fit (both are plain quaidsFit() calls, unlike quaidsRobustFit()'s own
+** reduced regressor-aligned basis) -- so, unlike
+** quaidsRobustCovariance()/quaidsRobustBootstrapCovariance(), no separate
+** expansion helper is needed here. rOut.b/rOut.v are already directly
+** usable as (b, v) inputs to quaidsSharesFit()/quaidsElasFit()/
+** quaidsWelfareFit() without any conversion step.
+*/
+
+/*
+** _quaidsReplicateOneRep: one replicate's worth of work -- refit
+** quaidsFit() under one caller-supplied replicate weight column, trapping
+** the call (Milestone 12's established trap/scalmiss idiom, mirrored from
+** _quaidsCurvBootOneRep()/_quaidsRobustBootOneRep()). Returns
+** (status, bVec): status=1 and bVec=vec(qOutR.bestB)' on a genuine,
+** converged, finite fit; status=0 (bVec=0, unused) otherwise.
+**
+** effNMin pre-check, found necessary empirically (not assumed): a
+** replicate weight column that leaves too few EFFECTIVELY-weighted
+** observations relative to the number of estimated design columns (Kish's
+** effective sample size, the same (sum w)^2/sum(w^2) quaidsFit() itself
+** already reports as qOut.effN) can drive quaidsFit()'s internal iteration
+** into a rank-deficient intermediate state that fails with a plain
+** GAUSS indexing error (`error G0058: Index out of range`, confirmed by
+** direct reproduction with a replicate weight concentrated on 5 rows) --
+** NOT a trappable numerical error. `trap 1,1;` does not catch it (traced
+** directly: the error still aborted the entire calling job even with the
+** trap active), the same class of non-trappable failure already
+** documented for `eighv()` (Milestone 15) and `glm()` (Milestone 19).
+** Since the root cause here (too few effectively-weighted rows for the
+** number of parameters) is cheaply and reliably checkable BEFORE ever
+** calling quaidsFit(), this pre-check avoids the crash for exactly the
+** failure mode found, mirroring Milestone 15's own NaN/Inf pre-check
+** before eighv(). `effNMin = 2*designCols` is a defensive, documented
+** heuristic margin, not a formal statistical requirement -- a replicate
+** failing only this check is counted as an ordinary failed replicate
+** (status=0), identical in effect to a replicate that fails to converge.
+*/
+proc (2) = _quaidsReplicateOneRep(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, weightR, effNMin);
+    local oldtrp, status, bVec, hasNonFinite, effNr;
+    struct quaidsOut qOutR;
+
+    status = 0;
+    bVec = 0;
+
+    effNr = (sumc(weightR)^2)/sumc(weightR^2);
+    if effNr < effNMin;
+        retp(status, bVec);
+    endif;
+
+    oldtrp = trapchk(1);
+    trap 1,1;
+    qOutR = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weightR);
+    trap oldtrp,1;
+
+    if not scalmiss(qOutR.converged) and qOutR.converged == 1;
+        hasNonFinite = minc(minc(qOutR.bestB .eq qOutR.bestB)) == 0;
+        if not hasNonFinite;
+            status = 1;
+            bVec = vec(qOutR.bestB)';
+        endif;
+    endif;
+
+    retp(status, bVec);
+endp;
+
+/*******************************************************************************
+**
+** QUAIDSREPLICATEWEIGHTFIT
+**
+** Purpose:  replicate-weight (jackknife/BRR-style) standard errors for
+**           quaidsFit(), from a caller-supplied set of pre-computed
+**           replicate weight columns and scale factor(s) -- reuses
+**           Milestone 26's quaidsFit() weight argument for both the
+**           full-sample point estimate and every replicate refit. Silent,
+**           no printing -- see printQuaidsReplicateWeight().
+**
+** Format:     struct quaidsReplicateOut rOut =
+**                 quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr,
+**                     aCtl, weight, replicateWeights, scaleFactor, method);
+**
+** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
+**                   quaidsFit().
+**
+**             aCtl -- quaidsControl struct, passed through unchanged to
+**                   every quaidsFit() call (base and every replicate).
+**
+**             weight -- scalar 0, or a Tx1 base/full-sample sampling
+**                   weight -- passed straight through to quaidsFit()'s own
+**                   optional weight argument (scalar 0 hits that proc's
+**                   own unweighted path exactly as if the argument were
+**                   omitted entirely).
+**
+**             replicateWeights -- Tx R matrix. Each column is one
+**                   complete, caller-supplied alternate Tx1 weight vector
+**                   for the SAME T observations -- e.g. one delete-one-PSU
+**                   jackknife replicate, or one BRR half-sample replicate.
+**                   This proc does not construct, infer, or validate
+**                   design-correctness of these columns; it only refits
+**                   quaidsFit() under each one exactly as supplied.
+**
+**             scaleFactor -- a positive scalar (applied to every
+**                   replicate, e.g. JK1's (R-1)/R) or a positive Rx1
+**                   vector (one factor per replicate, for designs where
+**                   replicates are not uniformly scaled). Required -- no
+**                   default, matching quaidsCurvatureBootstrapFit()'s own
+**                   precedent of never silently guessing an
+**                   inference-affecting parameter.
+**
+**             method -- native string, purely descriptive (e.g. "JK1",
+**                   "BRR", "custom"). Echoed in rOut.method and the
+**                   printed report; has no effect on computation.
+**
+** Output:  struct quaidsReplicateOut -- see quaids.sdf. rOut.b/rOut.v are
+**           already in quaidsFit()'s own full qOut.bestB basis -- no
+**           expansion step is needed before passing them to
+**           quaidsSharesFit()/quaidsElasFit()/quaidsWelfareFit().
+**
+*******************************************************************************/
+
+proc (struct quaidsReplicateOut) = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr,
+    struct quaidsControl aCtl, weight, replicateWeights, scaleFactor, method);
+
+    local nobs, n, nint, wnam, bDim1, bDim2, bVecDim, R, i, status, bVec,
+        bReplicate, scaleCompleted, completed, failed, scaleVec, thetaFull,
+        dev, vAll, seAllVec, seAll, scaleScalar, nendog, designCols, effNMin;
+    struct quaidsOut qOutFull;
+    struct quaidsReplicateOut rOut;
+
+    nobs = rows(w);
+
+    if rows(replicateWeights) /= nobs;
+        errorlog "quaidsReplicateWeightFit: replicateWeights must have one row per observation.";
+        end;
+    endif;
+    R = cols(replicateWeights);
+    if R < 1;
+        errorlog "quaidsReplicateWeightFit: replicateWeights must have at least one column.";
+        end;
+    endif;
+    if minc(minc(replicateWeights)) < 0
+        or sumc(sumc(replicateWeights .== replicateWeights)) /= nobs*R
+        or maxc(maxc(abs(replicateWeights))) >= 1e100;
+        errorlog "quaidsReplicateWeightFit: replicateWeights must be finite and nonnegative.";
+        end;
+    endif;
+
+    scaleScalar = rows(scaleFactor)*cols(scaleFactor) == 1;
+    if scaleScalar;
+        if scaleFactor <= 0;
+            errorlog "quaidsReplicateWeightFit: scaleFactor must be positive.";
+            end;
+        endif;
+        scaleVec = scaleFactor*ones(R, 1);
+    elseif rows(scaleFactor) == R and cols(scaleFactor) == 1;
+        if minc(scaleFactor) <= 0;
+            errorlog "quaidsReplicateWeightFit: scaleFactor must be positive.";
+            end;
+        endif;
+        scaleVec = scaleFactor;
+    else;
+        errorlog "quaidsReplicateWeightFit: scaleFactor must be a positive scalar or an Rx1 vector matching replicateWeights' column count.";
+        end;
+    endif;
+
+    /* Base (full-sample) fit -- weight=0 hits quaidsFit()'s own unweighted
+       dynargs path exactly as if the argument were omitted. */
+    qOutFull = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);
+    if qOutFull.converged /= 1;
+        errorlog "quaidsReplicateWeightFit: the base (full-sample) quaidsFit() did not converge.";
+        end;
+    endif;
+
+    n = qOutFull.n;
+    nint = qOutFull.nint;
+    wnam = qOutFull.wnam;
+    bDim1 = rows(qOutFull.bestB);
+    bDim2 = cols(qOutFull.bestB);
+    bVecDim = bDim1*bDim2;
+
+    /* designCols mirrors quaidsRobustFit()'s own X = intcptFull~
+       pricesHybrid[.,1:n1]~endog~u construction -- see
+       _quaidsReplicateOneRep()'s own header for why this is needed here. */
+    if aCtl.linear;
+        nendog = 1;
+    else;
+        nendog = 2;
+    endif;
+    designCols = (1+nint) + qOutFull.n1 + nendog + qOutFull.nu;
+    effNMin = 2*designCols;
+
+    bReplicate = zeros(R, bVecDim);
+    scaleCompleted = zeros(R, 1);
+    completed = 0;
+    failed = 0;
+
+    i = 1;
+    do while i <= R;
+        { status, bVec } = _quaidsReplicateOneRep(w, intcpt, prices, totexp, instr, aCtl, replicateWeights[., i], effNMin);
+        if status == 1;
+            completed = completed + 1;
+            bReplicate[completed, .] = bVec;
+            scaleCompleted[completed] = scaleVec[i];
+        else;
+            failed = failed + 1;
+        endif;
+        i = i + 1;
+    endo;
+
+    if completed < 1;
+        errorlog "quaidsReplicateWeightFit: no replicate produced a converged, finite fit.";
+        end;
+    endif;
+
+    bReplicate = bReplicate[1:completed, .];
+    scaleCompleted = scaleCompleted[1:completed];
+
+    /* V = sum_r c_r * vec(b_r - b_full) * vec(b_r - b_full)'. dev.*scaleCompleted
+       broadcasts each replicate's own scale factor across its row before
+       the outer-product sum -- the same row-broadcast idiom
+       src/quaidsrobust.src's own weight.*(X.*U[.,i]) construction uses. */
+    thetaFull = vec(qOutFull.bestB)';
+    dev = bReplicate - thetaFull;
+    vAll = (dev.*scaleCompleted)'dev;
+    vAll = (vAll + vAll')/2;
+    seAllVec = sqrt(diag(vAll));
+    /* Column-major-ordered (vec()-built) -- reshape into the transposed
+       shape and transpose back, the same reshape()-vs-vec() idiom
+       Milestone 18 found broken twice already (src/quaidscurvature.src,
+       src/quaidsrobust.src) and written correctly from day one here. */
+    seAll = reshape(seAllVec, bDim2, bDim1)';
+
+    rOut.n = n;
+    rOut.nint = nint;
+    rOut.wnam = wnam;
+    rOut.weighted = qOutFull.weighted;
+    rOut.method = method;
+    rOut.b = qOutFull.bestB;
+    rOut.se = seAll;
+    rOut.v = vAll;
+    rOut.scaleFactor = scaleVec;
+    rOut.bReplicate = bReplicate;
+    rOut.nRequested = R;
+    rOut.nCompleted = completed;
+    rOut.nFailed = failed;
+
+    retp(rOut);
+endp;
+
+/*******************************************************************************
+**
+** PRINTQUAIDSREPLICATEWEIGHT
+**
+** Purpose:  prints the coefficient table with replicate-weight standard
+**           errors and the replicate run diagnostics from a
+**           quaidsReplicateOut structure.
+**
+** Format:     call printQuaidsReplicateWeight(rOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsReplicateWeight(struct quaidsReplicateOut rOut);
+
+    local i;
+
+    print;
+    "REPLICATE-WEIGHT (" $+ rOut.method $+ ") STANDARD ERRORS";
+    print "Base fit weighted:" rOut.weighted "Replicates -- requested:" rOut.nRequested
+        "completed:" rOut.nCompleted "failed:" rOut.nFailed;
+    print;
+    format /rd 10, 4;
+    print$ ""~rOut.wnam';
+    print "---------------------------------------------------------------"\
+        "---------------";
+    i = 1;
+    do while i <= rows(rOut.b);
+        print$ (0$+ftocv(i, 1, 0))~ftocv(rOut.b[i, .], 0, 4);
+        print$ (0$+"")~(0$+"("$+ftocv(rOut.se[i, .], 0, 2)$+")");
+        i = i + 1;
+    endo;
+    print;
+
+endp;

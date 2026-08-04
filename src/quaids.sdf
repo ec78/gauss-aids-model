@@ -485,4 +485,34 @@ struct quaidsWorkflowOut {
     matrix scenarioTotexp0;
 };
 
+/*
+** quaidsReplicateOut -- struct returned by quaidsReplicateWeightFit():
+** replicate-weight (jackknife/BRR-style) standard errors for quaidsFit(),
+** from a caller-supplied set of pre-computed replicate weight columns and
+** scale factor(s). See the Milestone 27 section of GOLD_STANDARD_TODO.md.
+*/
+struct quaidsReplicateOut {
+    matrix n;            // number of goods
+    matrix nint;         // number of extra intercept-shifter variables
+    matrix wnam;         // legacy character matrix of good names
+    matrix weighted;     // 1 if the base/full-sample weight was a genuine
+                         //   (non-scalar-zero) weight vector, 0 otherwise
+                         //   -- echoes qOutFull.weighted
+    string method;       // purely descriptive, caller-supplied (e.g.
+                         //   "JK1", "BRR", "custom") -- no effect on
+                         //   computation
+    matrix b;            // base (full-sample) point estimate -- exactly
+                         //   qOutFull.bestB, already in the SAME basis
+                         //   quaidsSharesFit()/quaidsElasFit()/
+                         //   quaidsWelfareFit() expect, no expansion needed
+    matrix se;           // replicate-weight standard errors, same shape as b
+    matrix v;            // full replicate-weight covariance of vec(b)
+    matrix scaleFactor;  // Rx1, the per-replicate scale factor(s) actually
+                         //   used (broadcast from a scalar if supplied that way)
+    matrix bReplicate;   // nCompleted x (rows(b)*cols(b)), raw vec(b_r) draws
+    matrix nRequested;   // R = cols(replicateWeights)
+    matrix nCompleted;   // replicates that produced a converged, finite fit
+    matrix nFailed;      // replicates dropped (did not converge, or non-finite)
+};
+
 #endif

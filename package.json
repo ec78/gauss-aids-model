@@ -33,7 +33,8 @@
         "quaidsrobust.src",
         "quaidsdiagnostics.src",
         "quaidsworkflow.src",
-        "quaidssurvey.src"
+        "quaidssurvey.src",
+        "quaidsreplicate.src"
     ],
-    "version": "0.21.0"
+    "version": "0.22.0"
 }

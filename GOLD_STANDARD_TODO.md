@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-08-03
+Status date: 2026-08-04
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,8 +11,8 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.21.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-26**, as of
+The repository is pre-alpha, package version `0.22.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-27**, as of
 2026-08-03: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
@@ -104,7 +104,15 @@ code" convention; see that section below for the real fixture-design
 finding that selecting a biased sample on an included covariate does not
 bias naive estimation, the standard Heckman result, and why
 `quaidsSurveyWorkflowFit()`'s own existing test needed a behavior-change
-fix as a result).
+fix as a result), and 27 (replicate-weight standard errors,
+`quaidsReplicateWeightFit` -- closing Milestone 26's own next-flagged
+follow-up item, a genuine new sibling proc reusing Milestone 26's
+`weight` argument unchanged rather than touching any already-shipped
+estimation code; see that section below for a real, non-trappable
+`error G0058` crash mode found and guarded against with a pre-call
+effective-sample-size check, the third time in this project's history
+`trap 1` was found not to be a universal safety net for a GAUSS-internal
+failure).
 
 The post-20 roadmap shifted from individual post-estimation procs to full
 applied workflow support. `quaidsWorkflowFit()` is the first seed of that
@@ -118,10 +126,11 @@ status snapshot and `package.json`'s `0.20.0` were reconciled together
 after the fact rather than rewriting already-pushed commit history.
 Milestone 26 then closed the biggest piece of the remaining survey-design
 gap: `quaidsFit()`'s own estimator moments are now genuinely weighted, not
-just the post-estimation evaluation point. Formal strata as a concept
-distinct from clustering, replicate weights (BRR/jackknife), and design-
-based finite-population correction remain the next explicitly-flagged,
-unstarted items -- see Milestone 26's own "Follow-ups" note below.
+just the post-estimation evaluation point. Milestone 27 closed the
+replicate-weight (jackknife/BRR-style) piece of that same gap. Formal
+strata as a concept distinct from clustering, and design-based
+finite-population correction, remain the next explicitly-flagged,
+unstarted items -- see Milestone 27's own "Follow-ups" note below.
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -418,9 +427,11 @@ workflows and methodology extensions in this order:
    added a sampling-weighted workflow evaluation point; Milestone 26 added
    genuine sampling-weighted estimation (`quaidsFit()`'s optional `weight`
    argument, plus a matching weighted/clustered sandwich SE via
-   `quaidsRobustFit()`/`quaidsRobustBootstrapFit()`). Formal strata as a
-   concept distinct from clustering, replicate weights (BRR/jackknife),
-   and finite-population correction remain open.
+   `quaidsRobustFit()`/`quaidsRobustBootstrapFit()`); Milestone 27 added
+   replicate-weight (jackknife/BRR-style) standard errors
+   (`quaidsReplicateWeightFit()`) from a caller-supplied replicate design.
+   Formal strata as a concept distinct from clustering, and
+   finite-population correction, remain open.
 5. **Zero-share restrictions**: extend `quaidsZeroFit()` to support
    homogeneity/symmetry, then evaluate whether local curvature imposition is
    feasible on the corrected system.
@@ -2857,9 +2868,58 @@ point.
   roadmap, and CLAUDE orientation notes.
 
 Follow-ups: formal strata as a concept distinct from clustering,
-replicate-weight (BRR/jackknife/Fay's BRR) variance, finite-population
-correction, and weighted population-total aggregation beyond a single
-representative evaluation point all remain open.
+finite-population correction, and weighted population-total aggregation
+beyond a single representative evaluation point all remain open.
+**Update, Milestone 27**: the "replicate-weight (BRR/jackknife/Fay's
+BRR) variance" item is resolved -- see below.
+
+### Milestone 27 -- Replicate-Weight (Jackknife/BRR) Variance Estimation -- COMPLETE
+
+Closes the item Milestone 26's own "Follow-ups" note flagged as the next
+explicitly-unstarted piece of survey/microdata support.
+
+- [x] Add `quaidsReplicateWeightFit()` (new file, `src/quaidsreplicate.src`):
+  replicate-weight standard errors from a caller-supplied `TxR` matrix of
+  pre-computed replicate weight columns and a scale factor (positive
+  scalar or `Rx1` vector, always required -- no design auto-detected).
+  Reuses Milestone 26's `quaidsFit()` `weight` argument unchanged for
+  both the full-sample point estimate and every replicate refit.
+- [x] Implement the general linearized replication-variance formula
+  `V = sum_r c_r * vec(b_r - b_full) * vec(b_r - b_full)'` underlying
+  jackknife (JK1/JKn), BRR, and Fay's BRR alike.
+- [x] Add `printQuaidsReplicateWeight()` and the new `quaidsReplicateOut`
+  struct (`src/quaids.sdf`).
+- [x] Find and guard against a real, non-trappable `error G0058` crash
+  mode (a replicate weight concentrated on too few effectively-weighted
+  rows can drive `quaidsFit()`'s iteration into a rank-deficient state)
+  via a pre-call effective-sample-size check (`effN < 2x design columns`)
+  -- confirmed by direct reproduction that `trap 1` does not catch this
+  failure, the same class already documented for `eighv()`/`glm()`.
+- [x] Add `tests/quaids_replicate_test.e` (28 checks), including an EXACT
+  zero-variance identity check (replicate weights identical to the base
+  weight give exactly-zero `v`/`se`) contrasted against a genuine
+  JK1-style non-vacuous design, and partial-failure handling via the new
+  `effN` pre-check.
+- [x] Add two `tests/guard_error_cases/` scripts
+  (`replicate_bad_weights_shape.e`, `replicate_negative_scale_factor.e`).
+- [x] Add a real `quaidsReplicateWeightFit()`/`printQuaidsReplicateWeight()`
+  exercise to `tests/package_public_api.e` against the installed package.
+- [x] Run the full existing test suite (19 files, no `-SkipBootstrap`)
+  after every change, confirming zero regressions.
+- [x] Update command-reference (two new pages), usage-guide,
+  methodology-notes (the general replication-variance derivation and the
+  `error G0058` finding), feature-matrix, README, changelog, roadmap, and
+  CLAUDE orientation notes.
+
+Follow-ups: formal strata as a concept distinct from clustering, and
+design-based finite-population correction, remain open -- the last two
+items from Milestone 25/26's own original survey/microdata scope.
+`quaidsReplicateWeightFit()` is not wired into `quaidsWorkflowFit()`/
+`quaidsSurveyWorkflowFit()` in this pass (a deliberate, minimal-footprint
+choice, matching the "new sibling proc first, workflow integration later
+if wanted" precedent set by most milestones since 16) -- a future
+milestone could add an optional replicate-weight SE path to the applied
+workflow layer if a real use case asks for it.
 
 ## Definition of Done for a Gold Standard Release
 
@@ -2944,10 +3004,19 @@ representative evaluation point all remain open.
   summary of it (Milestone 24).
 - [x] An opt-in sampling-weighted workflow evaluation point
   (`quaidsSurveyWorkflowFit`, Milestone 25) recomputes mean-point shares/
-  elasticities at a weighted representative point. **Deliberately
-  scoped**: `quaidsFit()`'s own moment conditions remain unweighted; full
-  survey-design estimation (weighted moments, strata, replicate weights,
-  design-based covariance) is explicitly left for a follow-up milestone.
+  elasticities at a weighted representative point.
+- [x] Genuine sampling-weighted estimation: `quaidsFit()`'s own optional
+  `weight` argument (Milestone 26) is a real weighted point estimate
+  (standard survey-WLS `sqrt(weight)`-scaled cross-products), with a
+  matching weighted/clustered sandwich SE via `quaidsRobustFit`/
+  `quaidsRobustBootstrapFit`, and `quaidsSurveyWorkflowFit` now fits this
+  weighted estimator too, not just the evaluation point.
+- [x] Replicate-weight (jackknife/BRR-style) standard errors
+  (`quaidsReplicateWeightFit`, Milestone 27) from a caller-supplied set of
+  pre-computed replicate weight columns and scale factor. **Deliberately
+  scoped**: formal strata as a concept distinct from clustering, and
+  design-based finite-population correction, are explicitly left for a
+  follow-up milestone.
 - [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
 - [x] Full doc set (`README`, command reference, usage guide, methodology
@@ -2957,8 +3026,8 @@ representative evaluation point all remain open.
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-26 extend it beyond the original scope, as of 2026-08-03
-(package version `0.21.0`). Commits are now being made (and pushed to
+Milestones 11-27 extend it beyond the original scope, as of 2026-08-04
+(package version `0.22.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -3048,3 +3117,18 @@ evaluation point -- a deliberate, documented behavior change from its
 original release. Formal strata as a concept distinct from clustering,
 replicate weights (BRR/jackknife), and design-based finite-population
 correction remain the next explicitly-flagged, unstarted items.
+
+Milestone 27 closed the replicate-weight piece: `quaidsReplicateWeightFit()`
+(new file `src/quaidsreplicate.src`) implements the general linearized
+replication-variance formula underlying jackknife (JK1/JKn), BRR, and
+Fay's BRR alike, from a caller-supplied `TxR` matrix of pre-computed
+replicate weight columns and scale factor -- reusing Milestone 26's
+`quaidsFit()` `weight` argument completely unchanged, a genuine new
+sibling proc rather than another touch to shipped estimation code.
+Building it found and guarded against a third real, non-trappable
+GAUSS crash mode in this project's history (`error G0058`, from a
+replicate weight concentrated on too few effectively-weighted rows) via
+a pre-call effective-sample-size check, the same defensive pattern
+already used for `eighv()`/`glm()`. Formal strata as a concept distinct
+from clustering, and design-based finite-population correction, remain
+the next explicitly-flagged, unstarted items.

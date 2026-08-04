@@ -525,6 +525,90 @@ has, recomputes the representative post-estimation evaluation point --
 this is a deliberate, documented behavior change from that proc's original
 (Milestone 25) release, which left the estimator unweighted.
 
+## Replicate-Weight (Jackknife/BRR) Variance Estimation
+
+[quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
+(Milestone 27) implements the item Milestone 26's own follow-up note
+flagged as the next explicitly-unstarted piece of survey/microdata
+support: "replicate weights (BRR/jackknife)... remain open." Many real
+household-expenditure survey designs ship a set of **pre-computed
+replicate weight columns** rather than requiring the analyst to implement
+their own resampling scheme -- one alternate `Tx1` weight vector per
+replicate, together with a scale factor prescribed by the survey's own
+documentation.
+
+**The math**: given a full-sample point estimate `b_full = qOutFull.bestB`
+(fit under the caller's own base `weight`, reusing Milestone 26's
+`quaidsFit()` `weight` argument unchanged) and `R` replicate refits `b_r`
+(each `qOutR.bestB` from `quaidsFit()` called with
+`replicateWeights[.,r]` in place of the base weight), the replicate-weight
+covariance is
+
+```
+V = sum_r c_r * vec(b_r - b_full) * vec(b_r - b_full)'
+```
+
+the general linear form underlying every linearized replication variance
+estimator -- jackknife (JK1, JKn), balanced repeated replication (BRR),
+Fay's BRR -- only the value(s) of `c_r` differ by design (e.g. JK1's
+`(R-1)/R`, constant across replicates; BRR's `1/R`). This proc does not
+implement, auto-detect, or validate any specific design: `replicateWeights`
+and `scaleFactor` are always required, caller-supplied inputs, matching
+the "never silently guess an inference-affecting parameter" discipline
+already established by `quaidsCurvatureBootstrapFit()`'s own `B`.
+
+**Two genuine simplifications relative to the bootstrap procs this
+otherwise resembles**, both real (not assumed) properties of the
+replicate-weight design:
+
+1. **No resampling loop, no `seed`, no retry.** Replicate weights are
+   FIXED, caller-supplied columns -- a failed replicate cannot be
+   redrawn, since it is not random. A replicate that fails to converge is
+   simply dropped from the sum (`nFailed` bookkeeping), documented as a
+   real simplification: the formal JK1/BRR literature does not, in
+   general, define a missing-replicate adjustment this library
+   implements.
+2. **No expansion helper is needed.** Every replicate's fit is already a
+   plain `quaidsFit()` call, in the EXACT SAME basis as the full-sample
+   fit -- unlike `quaidsRobustFit()`'s own reduced regressor-aligned
+   basis, `rOut.b`/`rOut.v` need no `quaidsRobustCovariance()`-style
+   conversion before feeding `quaidsSharesFit()`/`quaidsElasFit()`/
+   `quaidsWelfareFit()` directly.
+
+**A real, non-trappable crash mode was found and guarded against while
+building this, confirmed by direct reproduction, not assumed**: a
+replicate weight column that leaves too few *effectively*-weighted
+observations relative to the number of estimated design columns (Kish's
+effective sample size, `(sum w)^2 / sum(w^2)` -- the same quantity
+`quaidsFit()`'s own `effN` field reports) can drive `quaidsFit()`'s
+internal iteration into a rank-deficient intermediate state and fail with
+a plain GAUSS indexing error, `error G0058: Index out of range`, at
+`src/quaids.src`'s own iteration-loop coefficient unpacking
+(`alpha = intcpt*b[1:1+nint, 1:n-1]`) -- reproduced directly with a
+replicate weight concentrated on 5 rows (`effN = 5`). Critically,
+`trap 1,1;` does **not** catch this -- confirmed empirically (the error
+still aborted the entire calling job with the trap active), the same
+class of non-trappable failure already documented for `eighv()`
+(Milestone 15, `quaidsCurvatureBootstrapFit`) and `glm()` (Milestone 19,
+`quaidsZeroFit`). Since the cause is cheaply and reliably checkable
+*before* ever calling `quaidsFit()`, `quaidsReplicateWeightFit()`
+computes each replicate's own effective sample size in advance and skips
+(counts as failed, no crash) any replicate falling below `2x` the number
+of design columns (`(1+nint) + n1 + nendog + nu`, mirroring
+`quaidsRobustFit()`'s own `X` construction) -- a defensive, documented
+heuristic margin, not a formal statistical requirement. This mirrors
+Milestone 15's own NaN/Inf pre-check before `eighv()` exactly: guard the
+one specific, now-understood cause before the crash-prone call, rather
+than trying to catch a failure mode `trap` cannot catch.
+
+**Testing**: `tests/quaids_replicate_test.e` includes an EXACT
+zero-variance identity check -- when every replicate weight column is
+identical to the base weight, every replicate refit reproduces the
+full-sample `bestB` exactly, so `v`/`se` must be exactly zero, not just
+small. This is the strongest possible correctness check of the variance
+formula itself (contrasted directly against a genuine JK1-style design,
+which gives non-vacuous, nonzero `se`).
+
 ## References
 
 - Deaton, A., Muellbauer, J. (1980). "An Almost Ideal Demand System."

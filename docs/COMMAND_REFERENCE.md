@@ -62,6 +62,11 @@ sections.
 - [quaidsRobustBootstrapCovariance](command-reference/quaidsRobustBootstrapCovariance.md)
 - [printQuaidsRobustBootstrap](command-reference/printQuaidsRobustBootstrap.md)
 
+## Replicate-Weight Standard Errors
+
+- [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
+- [printQuaidsReplicateWeight](command-reference/printQuaidsReplicateWeight.md)
+
 ## Curvature Imposition (requires `optmt`)
 
 `src/quaidscurvature.src` is listed in `package.json`'s `src` array (real,

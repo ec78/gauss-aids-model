@@ -42,6 +42,7 @@ for the exact switch values.
 | Applied workflow bundle | Yes (`quaidsWorkflowFit` with compact preflight summary; `quaidsWorkflowScenarioFit` for CV/EV scenarios) | Yes (same) | Yes (same) |
 | Sampling-weighted point estimate + weighted/clustered SE | Yes (`quaidsFit`'s optional `weight` argument, since Milestone 26 -- see Notes) | Yes (same) | Yes (same) |
 | Sampling-weighted workflow (estimator + evaluation point) | Yes (`quaidsSurveyWorkflowFit`, since Milestone 26 -- see Notes) | Yes (same) | Yes (same) |
+| Replicate-weight (jackknife/BRR-style) standard errors | Yes (`quaidsReplicateWeightFit`, since Milestone 27, caller-supplied design only -- see Notes) | Yes (same) | Yes (same) |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
 ## Notes
@@ -93,9 +94,31 @@ for the exact switch values.
   point as the weighted mean of intercept shifters, prices, and total
   expenditure -- a deliberate, documented behavior change from that
   proc's original Milestone 25 release, which left the estimator
-  unweighted. Formal strata as a concept distinct from clustering,
-  replicate-weight (BRR/jackknife) variance, and finite-population
-  correction remain future survey/microdata work.
+  unweighted. Formal strata as a concept distinct from clustering, and
+  finite-population correction, remain future survey/microdata work.
+- Replicate-weight (jackknife/BRR-style) standard errors
+  (`quaidsReplicateWeightFit`, Milestone 27) implement the shared linear
+  form underlying every linearized replication variance estimator,
+  `V = sum_r c_r * vec(b_r - b_full) * vec(b_r - b_full)'`, from a
+  caller-supplied `TxR` matrix of replicate weight columns and a
+  scale factor (scalar or `Rx1`) -- **no specific design (JK1, JKn, BRR,
+  Fay's BRR) is implemented or auto-detected**; both inputs are always
+  required, matching `quaidsCurvatureBootstrapFit`'s own "never silently
+  guess an inference-affecting parameter" precedent for `B`. Unlike the
+  bootstrap procs it otherwise resembles, there is no resampling loop, no
+  `seed`, and no retry -- a failed replicate (fixed, caller-supplied, not
+  random) is simply dropped from the sum, a documented simplification
+  since the formal jackknife/BRR literature does not define a
+  missing-replicate adjustment this library implements. `rOut.b`/`rOut.v`
+  are already in `quaidsFit()`'s own full `bestB` basis, so -- unlike
+  `quaidsRobustFit()` -- no expansion helper is needed before
+  `quaidsSharesFit()`/`quaidsElasFit()`/`quaidsWelfareFit()`. Building
+  this found and guarded against a real, non-trappable `error G0058`
+  crash mode (a replicate weight concentrated on too few effectively-
+  weighted rows can drive `quaidsFit()`'s iteration into a rank-deficient
+  state) via a pre-call effective-sample-size check, the same class of
+  defensive guard already used for `eighv()`/`glm()`. See
+  [Methodology Notes](METHODOLOGY_NOTES.md#replicate-weight-jackknifebrr-variance-estimation).
 - Welfare measures (`quaidsWelfareFit`, Milestone 11) are exact, not
   approximated, for all three model choices -- unlike curvature
   imposition, computing CV/EV needs no new estimation, only a closed-form

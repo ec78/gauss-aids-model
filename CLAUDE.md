@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.21.0`) and is packaged as an
+The library is **pre-alpha** (package version `0.22.0`) and is packaged as an
 installable GAUSS application package (`library quaids;`). See
 `GOLD_STANDARD_TODO.md` for the full roadmap — this file is the
 quick-orientation companion to it, and should be kept synchronized with it.
@@ -25,7 +25,7 @@ too likely to collide/confuse as a bare identifier. "AIDS"/"Almost Ideal
 Demand System" remains the correct term for the model family in docs, papers,
 and comments; only the GAUSS identifier prefix changed.
 
-## Repository layout (post-Milestone-26)
+## Repository layout (post-Milestone-27)
 
 ```
 src/
@@ -199,6 +199,25 @@ src/
                     #   argument) -- a deliberate behavior change from the
                     #   Milestone 25 release, which left the estimator
                     #   unweighted. See "Milestone 26" below.
+  quaidsreplicate.src # Milestone 27: quaidsReplicateWeightFit()/
+                    #   printQuaidsReplicateWeight() -- replicate-weight
+                    #   (jackknife/BRR-style) standard errors from a
+                    #   caller-supplied TxR matrix of pre-computed
+                    #   replicate weight columns and scale factor
+                    #   (always required -- no design is auto-detected).
+                    #   Reuses Milestone 26's quaidsFit() weight argument
+                    #   unchanged for both the full-sample point estimate
+                    #   and every replicate refit; unlike the bootstrap
+                    #   procs it otherwise resembles, there is no
+                    #   resampling loop, no seed, and no retry (fixed,
+                    #   caller-supplied columns cannot be redrawn -- a
+                    #   failed replicate is simply dropped). Found and
+                    #   guarded against a real, non-trappable
+                    #   `error G0058` crash mode (a replicate weight
+                    #   concentrated on too few effectively-weighted
+                    #   rows) via a pre-call effective-sample-size check,
+                    #   the same class of defensive guard already used
+                    #   for eighv()/glm(). See "Milestone 27" below.
   pubtable_quaids.src # Optional pubtable adapter -- ptModelFromQuaids()/
                     #   ptFromQuaids() (coefficient tables),
                     #   ptModelFromQuaidsElas()/ptFromQuaidsElas()/
@@ -516,6 +535,23 @@ tests/
                     #   weighted recovery beats naive on
                     #   _quaidsSurveyWeightedDGP's informatively-sampled
                     #   fixture.
+  quaids_replicate_test.e  # Milestone 27: 28 checks -- base-fit parity
+                    #   (weighted and unweighted) against a direct
+                    #   quaidsFit() call; shape/finiteness/non-negativity/
+                    #   symmetry of se/v; the reshape/cell-position
+                    #   regression guard; scalar- and Rx1-vector-form
+                    #   scaleFactor; an EXACT zero-variance identity check
+                    #   -- replicate weights identical to the base weight
+                    #   give exactly-zero v/se, the strongest possible
+                    #   correctness check of the variance formula --
+                    #   contrasted against a genuine JK1-style
+                    #   non-vacuous design; deterministic repeatability;
+                    #   direct quaidsSharesFit()/quaidsElasFit()/
+                    #   quaidsWelfareFit() parity with no expansion step
+                    #   (unlike quaidsRobustFit()); and partial-failure
+                    #   handling via the effN pre-check (a pathological
+                    #   low-effective-sample-size replicate is dropped,
+                    #   not crashed). See "Milestone 27" below.
   package_public_api.e   # Milestone 7: installed-package release gate --
                     #   `library quaids;` (not #include) against a real
                     #   install, exercising quaidsControlCreate/
@@ -642,7 +678,7 @@ docs/
                   #   below for the shell-invocation subtlety this
                   #   required (shell: cmd, not the default
                   #   shell: powershell).
-package.json      # GAUSS package manifest (name: quaids, version: 0.21.0,
+package.json      # GAUSS package manifest (name: quaids, version: 0.22.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
                   #   quaidscurvature.src IS listed (required public API),
@@ -657,7 +693,10 @@ package.json      # GAUSS package manifest (name: quaids, version: 0.21.0,
                   #   public fit/post-estimation APIs. Milestone 26
                   #   (sampling-weighted estimation) likewise adds no new
                   #   src array entry or dependency -- every change is an
-                  #   in-place edit to six already-listed files.
+                  #   in-place edit to six already-listed files. Milestone
+                  #   27 (replicate-weight standard errors) DOES add a new
+                  #   src array entry (`quaidsreplicate.src`), listed
+                  #   last, with no new dependency.
 LICENSE           # MIT, copyright Eric Clower.
 CITATION.cff      # Citation metadata; cites Deaton & Muellbauer (1980) and
                   #   Banks, Blundell & Lewbel (1997).
@@ -685,7 +724,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-26:
+The original ten-milestone roadmap is complete, plus Milestones 11-27:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -739,9 +778,14 @@ clustered sandwich SE via `quaidsRobustFit`/`quaidsRobustBootstrapFit` --
 closing Milestone 25's own biggest deferred item, and this project's
 biggest departure yet from the "new sibling proc, don't touch shipped
 code" convention, since weighting touches essentially the whole
-estimation core -- see each milestone's own section below for the real
-bugs found and fixed along the way, including several in already-shipped
-Milestone 20 code).
+estimation core), and 27 (replicate-weight standard errors,
+`quaidsReplicateWeightFit`, closing Milestone 26's own next-flagged
+follow-up item -- a genuine new sibling proc this time, reusing
+Milestone 26's `weight` argument unchanged rather than touching any
+already-shipped estimation code, and finding a real, non-trappable
+`error G0058` crash mode along the way -- see each milestone's own
+section below for the real bugs found and fixed along the way, including
+several in already-shipped Milestone 20 code).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -3206,6 +3250,101 @@ exactly) for `quaidsFit`/`quaidsPreflight`/`quaidsRobustFit`/
 package. Full local suite (18 files, no skips) re-ran clean after every
 change.
 
+## Milestone 27: replicate-weight standard errors (complete)
+
+Milestone 27 implements the item Milestone 26's own follow-up note
+flagged as the next explicitly-unstarted piece of survey/microdata
+support: "replicate weights (BRR/jackknife)... remain open."
+
+**A genuine new sibling proc, not another touch to shipped estimation
+code** -- unlike Milestone 26 (the biggest deviation yet from this
+project's "new sibling proc, don't touch shipped code" convention),
+`quaidsReplicateWeightFit()` (new file, `src/quaidsreplicate.src`)
+reuses Milestone 26's `quaidsFit()` `weight` argument completely
+unchanged, refitting it once per caller-supplied replicate weight column.
+No line inside `quaids.src`/`quaidsiv.src` moved for this milestone.
+
+**The math**: given a full-sample point estimate `b_full = qOutFull.bestB`
+and `R` replicate refits `b_r` (each `qOutR.bestB` from `quaidsFit()`
+called with `replicateWeights[.,r]` in place of the base weight), the
+replicate-weight covariance is `V = sum_r c_r * vec(b_r - b_full) *
+vec(b_r - b_full)'` -- the general linear form underlying every
+linearized replication variance estimator (jackknife JK1/JKn, BRR, Fay's
+BRR). `replicateWeights` (`TxR`) and `scaleFactor` (positive scalar or
+`Rx1` vector) are always required, caller-supplied inputs -- no specific
+design is implemented, auto-detected, or assumed, matching this
+project's established "never silently guess an inference-affecting
+parameter" discipline (`quaidsCurvatureBootstrapFit()`'s own `B`).
+
+**Two genuine simplifications relative to the bootstrap procs this
+otherwise resembles, both real properties of the replicate-weight
+design, not shortcuts**:
+
+1. No resampling loop, no `seed`, no retry -- replicate weights are
+   FIXED, caller-supplied columns; a failed replicate cannot be redrawn
+   (it is not random). A replicate that fails to converge is simply
+   dropped from the sum (`nFailed` bookkeeping), a documented
+   simplification since the formal JK1/BRR literature does not define a
+   missing-replicate adjustment this library implements.
+2. No expansion helper is needed -- every replicate's fit is already a
+   plain `quaidsFit()` call, in the EXACT SAME basis as the full-sample
+   fit, unlike `quaidsRobustFit()`'s own reduced regressor-aligned basis.
+   `rOut.b`/`rOut.v` feed `quaidsSharesFit()`/`quaidsElasFit()`/
+   `quaidsWelfareFit()` directly.
+
+**A real, non-trappable crash mode was found and guarded against while
+building this, confirmed by direct reproduction, not assumed**: a
+replicate weight column that leaves too few *effectively*-weighted
+observations relative to the number of estimated design columns (Kish's
+effective sample size, the same `(sum w)^2/sum(w^2)` quantity
+`quaidsFit()`'s own `effN` field already reports) can drive
+`quaidsFit()`'s internal iteration into a rank-deficient intermediate
+state and fail with a plain GAUSS indexing error --
+`error G0058: Index out of range`, at `src/quaids.src`'s own
+iteration-loop coefficient unpacking (`alpha = intcpt*b[1:1+nint,
+1:n-1]`) -- reproduced directly with a replicate weight concentrated on
+5 rows (`effN = 5`). Critically, `trap 1,1;` does **not** catch this --
+confirmed empirically (a first attempt wrapped the per-replicate
+`quaidsFit()` call in this codebase's own established `trap`/`scalmiss`
+idiom, exactly like every bootstrap proc already does, and the error
+still aborted the entire calling job with the trap active). This is the
+same class of non-trappable failure already documented for `eighv()`
+(Milestone 15, `quaidsCurvatureBootstrapFit`) and `glm()` (Milestone 19,
+`quaidsZeroFit`) -- confirming, a third time in this project's history,
+that `trap 1` is not a universal safety net for GAUSS-internal failures.
+Since the cause here is cheaply and reliably checkable *before* ever
+calling `quaidsFit()`, `_quaidsReplicateOneRep()` computes each
+replicate's own effective sample size in advance and skips (counts as
+failed, no crash) any replicate falling below `2x` the number of design
+columns (`(1+nint) + n1 + nendog + nu`, mirroring `quaidsRobustFit()`'s
+own `X` construction) -- a defensive, documented heuristic margin, not a
+formal statistical requirement. This mirrors Milestone 15's own NaN/Inf
+pre-check before `eighv()` exactly: guard the one specific, now-
+understood cause before the crash-prone call, rather than trying to
+catch a failure mode `trap` cannot catch.
+
+**Version bump to `0.22.0`**: one new required `.src` file
+(`quaidsreplicate.src`, added to `package.json`'s `src` array) with two
+new required public procs (`quaidsReplicateWeightFit`,
+`printQuaidsReplicateWeight`) and one new required public struct
+(`quaidsReplicateOut`), matching this project's established policy of
+bumping on real new public API surface. No new package dependency --
+pure GAUSS built-ins plus the already-required `quaidsFit()`.
+
+**Testing**: `tests/quaids_replicate_test.e` (new, 28 checks -- see
+"Testing status" below), including an EXACT zero-variance identity check
+(replicate weights identical to the base weight must reproduce the
+full-sample `bestB` exactly on every replicate, so `v`/`se` must be
+exactly zero, not just small -- the strongest possible correctness check
+of the variance formula itself), contrasted directly against a genuine
+JK1-style design giving non-vacuous, nonzero `se`. Two new
+`tests/guard_error_cases/` scripts (`replicate_bad_weights_shape.e`,
+`replicate_negative_scale_factor.e`). `tests/package_public_api.e`
+gained a real `quaidsReplicateWeightFit()`/`printQuaidsReplicateWeight()`
+exercise (a weighted base fit plus a 3-column JK1-style replicate
+design) against the real installed package. Full local suite (19 files,
+no skips) re-ran clean after every change.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -3319,8 +3458,8 @@ GAUSS Already Provides." Summary:
 
 ## Testing status
 
-Seventeen non-bootstrap-gated routine source-tree tests exist (plus a
-`tests/guard_error_cases/` directory of six standalone expected-error
+Eighteen non-bootstrap-gated routine source-tree tests exist (plus a
+`tests/guard_error_cases/` directory of eight standalone expected-error
 scripts, see below), all run from `tests/` as the working directory:
 
 ```
@@ -3341,19 +3480,24 @@ tgauss -b -x quaids_preflight_test.e
 tgauss -b -x quaids_workflow_test.e
 tgauss -b -x quaids_survey_workflow_test.e
 tgauss -b -x quaids_survey_test.e
+tgauss -b -x quaids_replicate_test.e
 ```
 
 `quaids_curvature_bootstrap_test.e` and `quaids_robust_bootstrap_test.e`
 are two more, both gated behind `-SkipBootstrap` (see below) -- listed
 with the other bootstrap-cost caveats further down, not in the block
-above. `tests/guard_error_cases/` (six scripts: `robust_nonconverged_qout.e`,
+above. `tests/guard_error_cases/` (eight scripts: `robust_nonconverged_qout.e`,
 `robust_bad_cluster_length.e`, `robust_one_cluster.e`,
 `curvature_nonconverged_qout.e`, `curvature_invalid_sym.e`,
-`quaids_bad_b0_shape.e`) each confirm one specific validation guard fails
-loudly and clearly on bad input, added alongside the "Unreleased"
-fail-fast fixes to `quaidsRobustFit()`/`quaidsRobustBootstrapFit()`/
-`quaidsCurvatureFit()`/`quaidsFit()`'s `aCtl.b0` handling. Twenty-five
-files run in total with no flags skipped (17 + 6 + 2 bootstrap-gated).
+`quaids_bad_b0_shape.e`, `replicate_bad_weights_shape.e`,
+`replicate_negative_scale_factor.e`) each confirm one specific validation
+guard fails loudly and clearly on bad input, added alongside the
+"Unreleased" fail-fast fixes to `quaidsRobustFit()`/
+`quaidsRobustBootstrapFit()`/`quaidsCurvatureFit()`/`quaidsFit()`'s
+`aCtl.b0` handling (Milestone 26's own handoff), plus
+`quaidsReplicateWeightFit()`'s own two input-validation guards (Milestone
+27). Twenty-eight files run in total with no flags skipped
+(18 + 8 + 2 bootstrap-gated).
 
 - `quaids_schema_test.e` (Milestone 1, 36 checks): asserts `quaidsOut` field
   values/shapes, that `quaidsFit()` prints nothing between call and return,
@@ -3529,8 +3673,22 @@ files run in total with no flags skipped (17 + 6 + 2 bootstrap-gated).
   recovers `_quaidsSurveyWeightedDGP`'s true population parameters
   measurably better (both max- and mean-abs-diff) than naive estimation on
   the same informatively-sampled data.
+- `quaids_replicate_test.e` (Milestone 27, 28 checks): base-fit parity
+  (weighted and unweighted) against a direct `quaidsFit()` call; shape/
+  finiteness/non-negativity/symmetry of `se`/`v`; the reshape/cell-
+  position regression guard; scalar- and `Rx1`-vector-form `scaleFactor`;
+  an EXACT zero-variance identity check -- replicate weights identical to
+  the base weight give exactly-zero `v`/`se`, the strongest possible
+  correctness check of the variance formula itself -- contrasted against
+  a genuine JK1-style non-vacuous design giving genuinely nonzero `se`;
+  deterministic repeatability; direct `quaidsSharesFit()`/
+  `quaidsElasFit()`/`quaidsWelfareFit()` parity with no expansion step
+  (unlike `quaidsRobustFit()`); and partial-failure handling via the new
+  `effN` pre-check (a pathological low-effective-sample-size replicate is
+  dropped, not crashed -- see "Milestone 27" below for the real,
+  non-trappable `error G0058` crash this pre-check was built to avoid).
 
-All eighteen routine source-tree files print one
+All nineteen routine source-tree files print one
 `PASS`/`FAIL` line per check and a final `...: ALL N CHECKS PASSED` (or a
 failure count) summary line — check that line, since `tgauss`'s exit code
 is not currently a reliable pass/fail signal for this harness. `tests/
@@ -3588,7 +3746,13 @@ of the installed package (see "Milestone 6" above).
 `quaidselas.src`, `quaidsshares.src`, `quaidsslutzky.src`, `quaids.src`,
 `quaidsformula.src`, `quaidstests.src`, `quaidscurvature.src`,
 `quaidswelfare.src`, `quaidsrobust.src`, `quaidsdiagnostics.src`,
-`quaidsworkflow.src`, `quaidssurvey.src`.
+`quaidsworkflow.src`, `quaidssurvey.src`, `quaidsreplicate.src`.
+`quaidsreplicate.src` (Milestone 27) loads last; it calls `quaidsFit()`
+directly (once for the base fit, once per replicate), so it must load
+after `quaids.src`, but has no other load-order dependency and adds no
+new `deps` entry -- pure GAUSS built-ins plus the already-required
+`quaidsFit()`, the same footprint as `quaidsrobust.src`'s own bootstrap
+piece.
 `quaidsshares.src` (Milestone 16) has no load-order dependency on
 anything beyond `quaids.sdf` (its private `_quaidsSharesAt()` helper is
 a fresh, independent implementation, not a call into `quaidselas.src`)
