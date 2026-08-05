@@ -11,7 +11,7 @@ console output), returning a `quaidsOut` structure.
 ```gauss
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
-qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);   // Milestone 26
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=myWeight);   // Milestone 26/28
 ```
 
 ## Parameters
@@ -25,16 +25,20 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);   // Milestone
 - `instr` (*TxH matrix*) - instruments for log total expenditure.
 - `aCtl` (*`quaidsControl` structure*) - see
   [quaidsControlCreate](quaidsControlCreate.md) for fields and defaults.
-- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: a sampling/survey
-  weight. Omit entirely for the pre-Milestone-26 unweighted estimator
-  (the default). When supplied, must be finite, nonnegative, and sum to a
-  positive value; it is internally renormalized so it sums to `nobs`
-  (the point estimate is invariant to any overall rescaling of the
-  weight, so every existing `nobs`-denominated formula in this proc is
-  unaffected). Applies the standard survey WLS trick
-  (`(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B`) at every cross-product site
-  in the starting value, iteration loop, Jacobian-corrected variance, and
-  overidentification test -- an exact no-op when `weight` is uniform.
+- `weight` (*Tx1 vector, OPTIONAL, keyword argument, default `0`*) -
+  Milestone 26: a sampling/survey weight. Omit, or pass scalar `0`
+  (explicitly or via the default), for the unweighted estimator. When
+  supplied, must be finite, nonnegative, and sum to a positive value; it
+  is internally renormalized so it sums to `nobs` (the point estimate is
+  invariant to any overall rescaling of the weight, so every existing
+  `nobs`-denominated formula in this proc is unaffected). Applies the
+  standard survey WLS trick (`(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B`) at
+  every cross-product site in the starting value, iteration loop,
+  Jacobian-corrected variance, and overidentification test -- an exact
+  no-op when `weight` is uniform. Milestone 28 converted `weight` from a
+  dynargs trailing argument to a genuine GAUSS keyword-defaulted
+  parameter (`weight=0` in the signature) -- callable by name
+  (`weight=myWeight`) or positionally, exactly like before.
 
 ## Returns
 
@@ -118,6 +122,13 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 call printQuaids(qOut);
 print qOut.bestB;
+```
+
+With a sampling weight, using GAUSS's keyword-argument syntax:
+
+```gauss
+struct quaidsOut qOutW;
+qOutW = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=surveyWeight);
 ```
 
 Dataframe/column-name entry point instead of assembling matrices by hand:

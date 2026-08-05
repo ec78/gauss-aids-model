@@ -15,7 +15,8 @@ printing -- see [printQuaidsCurvatureBootstrap](printQuaidsCurvatureBootstrap.md
 
 ```gauss
 struct quaidsCurvBootOut bootOut;
-bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed);
+bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B);
+bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=42);   // Milestone 28
 ```
 
 ## Parameters
@@ -26,11 +27,12 @@ bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B,
 - `aCtl` (*`quaidsControl` structure*) - passed through unchanged to every
   `quaidsFit()`/`quaidsCurvatureFit()` call, including `aCtl.relax` for
   QUAIDS (see [quaidsCurvatureFit](quaidsCurvatureFit.md)'s Remarks).
-- `B` (*scalar*) - number of bootstrap replications to complete. **Required
-  -- no default** (see Remarks for why).
-- `seed` (*scalar*) - if `seed > 0`, reseeds GAUSS's random number
-  generator before drawing any resamples (reproducible runs); `seed = 0`
-  leaves the current random state unchanged.
+- `B` (*scalar, required*) - number of bootstrap replications to complete.
+  **Required -- no default** (see Remarks for why).
+- `seed` (*OPTIONAL keyword argument, default `0`*) - if `seed > 0`,
+  reseeds GAUSS's random number generator before drawing any resamples
+  (reproducible runs); `seed = 0` (the default) leaves the current random
+  state unchanged.
 
 ## Returns
 
@@ -109,7 +111,7 @@ aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 
 struct quaidsCurvBootOut bootOut;
-bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, 42);
+bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, seed=42);
 
 call printQuaidsCurvatureBootstrap(bootOut);
 print "completed:" bootOut.nCompleted "failed:" bootOut.nFailed;

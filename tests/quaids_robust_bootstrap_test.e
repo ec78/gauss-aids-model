@@ -74,7 +74,7 @@ B = 10;
 bootSeed = 42;
 
 struct quaidsRobustBootOut rbOut;
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, bootSeed);
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=clusterId, seed=bootSeed);
 
 call check(rbOut.nRequested == B, "nRequested echoes B");
 call check(rbOut.nCompleted + rbOut.nFailed <= rbOut.nAttempts, "completed+failed <= attempts");
@@ -126,7 +126,7 @@ call check(1, "printQuaidsRobustBootstrap() runs without error");
    whether whole clusters or plain rows are resampled. --- */
 
 struct quaidsRobustBootOut rbOutNaive;
-rbOutNaive = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 0, B, bootSeed);
+rbOutNaive = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=bootSeed);
 
 call check(meanc(meanc(rbOut.seBoot)) > meanc(meanc(rbOutNaive.seBoot)), "cluster-aware bootstrap seBoot is measurably larger than a plain-row bootstrap's seBoot on genuinely clustered data");
 

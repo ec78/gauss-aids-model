@@ -577,14 +577,14 @@ call assert_true(maxc(maxc(abs(rOutWeighted.se - rOut.se))) == 0,
     "quaidsRobustFit: an explicit uniform weight did not reproduce the unweighted sandwich exactly");
 
 struct quaidsRobustBootOut rbOut;
-rbOut = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 2, 42);
+rbOut = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 2, seed=42);
 call assert_true(rbOut.nCompleted >= 2, "quaidsRobustBootstrapFit: fewer than two replications completed");
 call assert_true(rows(rbOut.seBoot) == rows(rbOut.b) and cols(rbOut.seBoot) == cols(rbOut.b),
     "quaidsRobustBootstrapFit: seBoot shape does not match rbOut.b");
 
 /* Milestone 26: same optional weight argument on the bootstrap variant. */
 struct quaidsRobustBootOut rbOutWeighted;
-rbOutWeighted = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 2, 42, weightC);
+rbOutWeighted = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 2, seed=42, weight=weightC);
 call assert_true(maxc(maxc(abs(rbOutWeighted.b - rbOut.b))) == 0 and maxc(maxc(abs(rbOutWeighted.seRobust - rbOut.seRobust))) == 0,
     "quaidsRobustBootstrapFit: an explicit uniform weight did not reproduce the unweighted base fit/sandwich exactly");
 
@@ -635,7 +635,7 @@ pricesWF1[1] = pricesWF1[1] + ln(1.02);
 weightWF = seqa(1, 1, tobsC);
 weightWF = weightWF/sumc(weightWF)*tobsC;
 struct quaidsWorkflowOut wfSurvey;
-wfSurvey = quaidsSurveyWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, weightWF);
+wfSurvey = quaidsSurveyWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, weightWF);
 call assert_true(wfSurvey.surveyWeighted == 1 and wfSurvey.surveyWeightValid == 1,
     "quaidsSurveyWorkflowFit: survey weight diagnostics invalid");
 call assert_true(wfSurvey.postValid == 1 and rows(wfSurvey.shares) == Nc and rows(wfSurvey.incomeElas) == Nc,
@@ -644,7 +644,7 @@ call assert_true(abs(wfSurvey.surveyWeightSum - tobsC) < 1e-8 and wfSurvey.surve
     "quaidsSurveyWorkflowFit: survey weight summary does not match input");
 
 struct quaidsWorkflowOut wfScenario;
-wfScenario = quaidsWorkflowScenarioFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, intcptWF, pricesWF0, pricesWF1, totexpWF0);
+wfScenario = quaidsWorkflowScenarioFit(wC, 0, pricesC, totexpC, instrC, aCtlC, intcptWF, pricesWF0, pricesWF1, totexpWF0);
 call assert_true(wfScenario.welfareValid == 1 and wfScenario.seCV >= 0 and wfScenario.seEV >= 0,
     "quaidsWorkflowScenarioFit: welfare outputs invalid");
 call assert_true(wfScenario.welfareRobustValid == 1 and wfScenario.seCVRobust >= 0 and wfScenario.seEVRobust >= 0,
@@ -668,7 +668,7 @@ do while gC <= nRepC;
 endo;
 
 struct quaidsReplicateOut rOutC;
-rOutC = quaidsReplicateWeightFit(wC, 0, pricesC, totexpC, instrC, aCtlC, weightC, replicateWeightsC, (nRepC-1)/nRepC, "JK1");
+rOutC = quaidsReplicateWeightFit(wC, 0, pricesC, totexpC, instrC, aCtlC, replicateWeightsC, (nRepC-1)/nRepC, weight=weightC, method="JK1");
 call assert_true(rOutC.weighted == 1 and rOutC.nRequested == nRepC,
     "quaidsReplicateWeightFit: weighted/nRequested diagnostics invalid");
 call assert_true(rows(rOutC.se) == rows(rOutC.b) and cols(rOutC.se) == cols(rOutC.b),

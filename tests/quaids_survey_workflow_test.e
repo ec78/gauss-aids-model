@@ -60,8 +60,8 @@ weight = weight/sumc(weight)*tobs;
 
 struct quaidsWorkflowOut wfBase;
 struct quaidsWorkflowOut wfSurvey;
-wfBase = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
-wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, weight);
+wfBase = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
+wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight);
 
 /* Milestone 26: the underlying estimator IS now weighted -- qOutW is the
    direct quaidsFit() call this weight should reproduce exactly. */
@@ -121,7 +121,7 @@ call check(maxc(maxc(abs(wfSurvey.priceElasRobustSE - elasRobustOut.sep))) == 0,
 
 weightOnes = ones(tobs, 1);
 struct quaidsWorkflowOut wfOnes;
-wfOnes = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, weightOnes);
+wfOnes = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weightOnes);
 call check(maxc(abs(wfOnes.evalPrices - wfBase.evalPrices)) < 1e-12 and abs(wfOnes.evalTotexp - wfBase.evalTotexp) < 1e-12,
     "constant weights reproduce the default workflow evaluation point");
 call check(maxc(abs(wfOnes.shares - wfBase.shares)) < 1e-10 and maxc(abs(wfOnes.incomeElas - wfBase.incomeElas)) < 1e-10,

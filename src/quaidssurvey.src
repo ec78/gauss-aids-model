@@ -27,12 +27,17 @@
 **
 ** Format:    struct quaidsWorkflowOut wfOut =
 **                quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr,
-**                    aCtl, clusterId, weight);
+**                    aCtl, weight, clusterId=0);
+**
+** Milestone 28: `clusterId` converted to a genuine keyword default,
+** moved after the required `weight` argument (GAUSS requires every
+** required, non-defaulted parameter to precede any keyword-defaulted
+** one) -- `weight` itself stays required with no default, since it is
+** this proc's entire purpose, not an optional add-on.
 **
 *******************************************************************************/
 
-proc (struct quaidsWorkflowOut) = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr,
-    struct quaidsControl aCtl, clusterId, weight);
+proc (struct quaidsWorkflowOut) = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, weight, clusterId=0);
 
     local nobs, n, nint, wgt, wsum, m_, intcptPt, pricesPt, totexpPt,
         intcptFull;

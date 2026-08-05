@@ -13,8 +13,8 @@ sharing the same resampling code path). Silent, no printing -- see
 
 ```gauss
 struct quaidsRobustBootOut rbOut;
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed);
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed, weight);   // Milestone 26
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B);
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=householdId, seed=42, weight=myWeight);   // Milestone 26/28
 ```
 
 ## Parameters
@@ -23,22 +23,27 @@ rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, cluster
   [quaidsFit](quaidsFit.md)*).
 - `aCtl` (*`quaidsControl` structure*) - passed through unchanged to
   every [quaidsFit](quaidsFit.md) call.
-- `clusterId` (*scalar `0`, or Tx1 vector*) - `0` for a plain i.i.d. row
-  bootstrap, or a vector of cluster group labels for a cluster (block)
-  bootstrap.
-- `B` (*positive integer scalar*) - number of bootstrap replications to
-  complete. Required -- no default, matching
+- `B` (*positive integer scalar, required*) - number of bootstrap
+  replications to complete. No default, matching
   [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md)'s own
   precedent of never silently guessing an inference-affecting parameter.
-- `seed` (*scalar*) - if `seed > 0`, `rndseed` is set before drawing any
-  resamples (reproducible runs); `seed = 0` leaves GAUSS's current random
-  state unchanged.
-- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: a sampling weight,
-  same semantics as [quaidsFit](quaidsFit.md)'s own `weight`. Omit for the
-  pre-Milestone-26 unweighted bootstrap. Each resample carries its own
-  rows' `weight[idx]` subvector into that replication's
-  [quaidsFit](quaidsFit.md) call; the base (unresampled) fit and sandwich
-  use the full `weight` the same way
+  Declared before the keyword-defaulted parameters below, since GAUSS
+  requires every required (non-defaulted) parameter to precede any
+  keyword-defaulted one -- Milestone 28 moved `B` earlier in the
+  signature than it sat in the original (Milestone 20) release for
+  exactly this reason.
+- `clusterId` (*OPTIONAL keyword argument, default `0`*) - `0` for a
+  plain i.i.d. row bootstrap, or a `Tx1` vector of cluster group labels
+  for a cluster (block) bootstrap.
+- `seed` (*OPTIONAL keyword argument, default `0`*) - if `seed > 0`,
+  `rndseed` is set before drawing any resamples (reproducible runs);
+  `seed = 0` leaves GAUSS's current random state unchanged.
+- `weight` (*OPTIONAL keyword argument, default `0`*) - Milestone 26: a
+  sampling weight, same semantics as [quaidsFit](quaidsFit.md)'s own
+  `weight`. Omit, or pass scalar `0`, for the unweighted bootstrap. Each
+  resample carries its own rows' `weight[idx]` subvector into that
+  replication's [quaidsFit](quaidsFit.md) call; the base (unresampled)
+  fit and sandwich use the full `weight` the same way
   [quaidsRobustFit](quaidsRobustFit.md) would.
 
 ## Returns
@@ -106,7 +111,7 @@ time.
 
 ```gauss
 struct quaidsRobustBootOut rbOut;
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, householdId, 200, 42);
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, clusterId=householdId, seed=42);
 call printQuaidsRobustBootstrap(rbOut);
 
 { bB, vB } = quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl);

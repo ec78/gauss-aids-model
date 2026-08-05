@@ -25,4 +25,4 @@ aCtl.homogenous = 1;
 aCtl.err = .0001;
 
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(tobs, 204, 1, 1);
-rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, 0, ones(tobs, 5), -0.5, "JK1");
+rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, ones(tobs, 5), -0.5, method="JK1");

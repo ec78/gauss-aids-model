@@ -14,7 +14,8 @@ Silent, no printing -- see
 
 ```gauss
 struct quaidsReplicateOut rOut;
-rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, weight, replicateWeights, scaleFactor, method);
+rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactor);
+rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactor, weight=surveyWeight, method="JK1");   // Milestone 28
 ```
 
 ## Parameters
@@ -23,28 +24,36 @@ rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, weight, 
   [quaidsFit](quaidsFit.md).
 - `aCtl` (*`quaidsControl` structure*) - passed through unchanged to
   every `quaidsFit()` call (base and every replicate).
-- `weight` (*scalar `0`, or Tx1 vector*) - base/full-sample sampling
-  weight, passed straight through to `quaidsFit()`'s own optional
-  `weight` argument. Scalar `0` hits that proc's own unweighted path
-  exactly as if the argument were omitted entirely.
-- `replicateWeights` (*Tx R matrix*) - each column is one complete,
-  caller-supplied alternate Tx1 weight vector for the SAME T
+- `replicateWeights` (*Tx R matrix, required*) - each column is one
+  complete, caller-supplied alternate Tx1 weight vector for the SAME T
   observations -- e.g. one delete-one-PSU jackknife replicate, or one
   BRR half-sample replicate. This proc does not construct, infer, or
   validate design-correctness of these columns; it only refits
-  `quaidsFit()` under each one exactly as supplied.
-- `scaleFactor` (*positive scalar, or positive Rx1 vector*) - the
-  replication variance scale factor(s) prescribed by the survey design
-  (e.g. JK1's `(R-1)/R`, constant across all replicates; BRR's `1/R`).
-  **Required -- no default**, matching
+  `quaidsFit()` under each one exactly as supplied. Required with no
+  default (not keyword-callable), matching this project's "never
+  silently guess an inference-affecting parameter" precedent.
+- `scaleFactor` (*positive scalar, or positive Rx1 vector, required*) -
+  the replication variance scale factor(s) prescribed by the survey
+  design (e.g. JK1's `(R-1)/R`, constant across all replicates; BRR's
+  `1/R`). **Required -- no default**, matching
   [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md)'s own
   precedent of never silently guessing an inference-affecting parameter.
   A scalar is broadcast to every replicate; an Rx1 vector supplies one
   factor per replicate, for designs where replicates are not uniformly
-  scaled.
-- `method` (*native string*) - purely descriptive (e.g. `"JK1"`,
-  `"BRR"`, `"custom"`). Echoed in `rOut.method` and the printed report;
-  has no effect on computation.
+  scaled. Declared before `weight`/`method` below, since GAUSS requires
+  every required (non-defaulted) parameter to precede any keyword-
+  defaulted one -- Milestone 28 moved `replicateWeights`/`scaleFactor`
+  earlier in the signature than they sat in the original (Milestone 27)
+  release for exactly this reason.
+- `weight` (*OPTIONAL keyword argument, default `0`*) - base/full-sample
+  sampling weight, passed straight through to `quaidsFit()`'s own
+  optional `weight` argument. Omit, or pass scalar `0`, to hit that
+  proc's own unweighted path exactly as if the argument were omitted
+  entirely.
+- `method` (*OPTIONAL keyword argument, default `"custom"`*) - purely
+  descriptive (e.g. `"JK1"`, `"BRR"`). Echoed in `rOut.method` and the
+  printed report; has no effect on computation, which is why (unlike
+  `replicateWeights`/`scaleFactor`) a default is appropriate here.
 
 ## Returns
 
@@ -109,9 +118,9 @@ columns -- a defensive, documented heuristic margin, not a formal
 statistical requirement.
 
 **`weight=0` is exactly equivalent to omitting `quaidsFit()`'s own
-`weight` argument** -- confirmed directly (GAUSS's `dynargsGet()`
-returns the caller-supplied value regardless of whether it happens to
-equal the default), not assumed.
+`weight` argument** -- both are the same keyword default, so passing
+scalar `0` explicitly or leaving `weight` off entirely hit the identical
+unweighted code path in `quaidsFit()`, confirmed directly, not assumed.
 
 **`bReplicate`'s raw draws are exposed** for a caller who wants to build
 percentile confidence intervals or inspect the replicate distribution
@@ -136,7 +145,7 @@ aCtl.homogenous = 1;
 // weights; scaleFactorJK1 = (R-1)/R for a standard JK1 design.
 struct quaidsReplicateOut rOut;
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl,
-    surveyWeight, replicateWeights, scaleFactorJK1, "JK1");
+    replicateWeights, scaleFactorJK1, weight=surveyWeight, method="JK1");
 
 call printQuaidsReplicateWeight(rOut);
 print "completed:" rOut.nCompleted "failed:" rOut.nFailed;

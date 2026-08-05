@@ -73,7 +73,7 @@ aCtl.maxiter = 100;       // 1 = one-step Stone-index LA-AIDS
 aCtl.homogenous = 1;      // impose homogeneity (and test/report symmetry)
 
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 0);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
 if not pOut.ok;
     call printQuaidsPreflight(pOut);
     end;

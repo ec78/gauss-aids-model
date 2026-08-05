@@ -11,12 +11,14 @@ scenario.
 ```gauss
 struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
-    clusterId, intcptPt, pricesPt0, pricesPt1, totexpPt0);
+    intcptPt, pricesPt0, pricesPt1, totexpPt0);
+wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
+    intcptPt, pricesPt0, pricesPt1, totexpPt0, clusterId=householdId, weight=myWeight);   // Milestone 28
 ```
 
 ## Parameters
 
-- `w`, `intcpt`, `prices`, `totexp`, `instr`, `aCtl`, `clusterId` - same as
+- `w`, `intcpt`, `prices`, `totexp`, `instr`, `aCtl` - same as
   [quaidsWorkflowFit](quaidsWorkflowFit.md).
 - `intcptPt` - intercept/control vector for the welfare scenario, including
   the leading constant.
@@ -24,6 +26,15 @@ wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
 - `pricesPt1` - new log-price vector.
 - `totexpPt0` - base log total expenditure. Nominal expenditure is held fixed
   at this value when computing CV/EV.
+- `clusterId` (*OPTIONAL keyword argument, default `0`*) - same as
+  [quaidsWorkflowFit](quaidsWorkflowFit.md).
+- `weight` (*OPTIONAL keyword argument, default `0`*) - same as
+  [quaidsWorkflowFit](quaidsWorkflowFit.md). **Milestone 28 note**: this
+  proc's required scenario arguments (`intcptPt`, `pricesPt0`, `pricesPt1`,
+  `totexpPt0`) were moved ahead of `clusterId`/`weight` in the parameter
+  list, since GAUSS requires every required (non-defaulted) parameter to
+  precede any keyword-defaulted one -- `clusterId` sat earlier in the
+  signature before this conversion.
 
 ## Returns
 
@@ -65,13 +76,13 @@ wOutR = quaidsWelfareFit(wfOut.robustBestB, wfOut.robustBestV,
 ## Example
 
 ```gauss
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 
 pricesPt1 = wfOut.evalPrices;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
 wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
-    0, wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
+    wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
 
 if wfScenario.welfareValid;
     print wfScenario.cv wfScenario.seCV;

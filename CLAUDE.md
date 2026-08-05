@@ -13,7 +13,7 @@ iterated FGLS with cross-equation restrictions applied through a
 minimum-distance reparametrization. Use cases: consumer demand estimation,
 welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
-The library is **pre-alpha** (package version `0.22.0`) and is packaged as an
+The library is **pre-alpha** (package version `0.23.0`) and is packaged as an
 installable GAUSS application package (`library quaids;`). See
 `GOLD_STANDARD_TODO.md` for the full roadmap — this file is the
 quick-orientation companion to it, and should be kept synchronized with it.
@@ -678,7 +678,7 @@ docs/
                   #   below for the shell-invocation subtlety this
                   #   required (shell: cmd, not the default
                   #   shell: powershell).
-package.json      # GAUSS package manifest (name: quaids, version: 0.22.0,
+package.json      # GAUSS package manifest (name: quaids, version: 0.23.0,
                   #   license: MIT). pubtable_quaids.src deliberately not
                   #   listed in its src array -- see "Milestone 6" below.
                   #   quaidscurvature.src IS listed (required public API),
@@ -724,7 +724,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-27:
+The original ten-milestone roadmap is complete, plus Milestones 11-28:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -783,9 +783,15 @@ estimation core), and 27 (replicate-weight standard errors,
 follow-up item -- a genuine new sibling proc this time, reusing
 Milestone 26's `weight` argument unchanged rather than touching any
 already-shipped estimation code, and finding a real, non-trappable
-`error G0058` crash mode along the way -- see each milestone's own
-section below for the real bugs found and fixed along the way, including
-several in already-shipped Milestone 20 code).
+`error G0058` crash mode along the way), and 28 (a repo-owner-requested
+keyword-argument API conversion -- nine already-shipped public procs
+converted from dynargs/`0`-sentinel optional arguments to genuine GAUSS
+`param=default` keyword arguments, four of them requiring a real
+parameter reorder since GAUSS requires required parameters to precede
+defaulted ones, a deliberate breaking change explicitly authorized by the
+repo owner since this package has not yet been publicly released -- see
+each milestone's own section below for the real bugs found and fixed
+along the way, including several in already-shipped Milestone 20 code).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -2748,21 +2754,29 @@ aCtl.homogenous = 1;
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-// Heteroskedasticity-robust:
+// Heteroskedasticity-robust (clusterId omitted -- defaults to 0):
 struct quaidsRobustOut rOut;
-rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
 call printQuaidsRobust(rOut);
 
 // Cluster-robust (householdId is a Tx1 vector of group labels):
 struct quaidsRobustOut rOutCluster;
-rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, householdId);
+rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId);
 call printQuaidsRobust(rOutCluster);
 
 // Cluster-aware bootstrap alternative:
 struct quaidsRobustBootOut rbOut;
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, householdId, 200, 42);
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, clusterId=householdId, seed=42);
 call printQuaidsRobustBootstrap(rbOut);
 ```
+
+**Signatures shown above reflect Milestone 28's keyword-argument
+conversion** (`clusterId`/`seed`/`weight` are now keyword-defaulted, and
+`B` was moved earlier in `quaidsRobustBootstrapFit()`'s parameter list to
+precede them) -- see "Milestone 28: keyword-argument API conversion"
+below. The narrative text in this section describes the math and design
+as they stood at Milestone 20; only the call syntax above was updated for
+readability.
 
 Fifth and final item of the full-demand-system-workflow outline being
 worked through in order (after Milestone 16's `quaidsSharesFit`,
@@ -3345,6 +3359,171 @@ exercise (a weighted base fit plus a 3-column JK1-style replicate
 design) against the real installed package. Full local suite (19 files,
 no skips) re-ran clean after every change.
 
+## Milestone 28: keyword-argument API conversion (complete)
+
+Requested directly by the repo owner, not from the roadmap outline: "the
+API is not making use of GAUSS's named, optional argument... update it to
+use named keyword arguments," explicitly authorizing breaking changes
+("You do NOT have to maintain backwards compatibility... This package has
+NOT been released to the public yet").
+
+**GAUSS keyword-argument mechanics, confirmed empirically before touching
+any real source file** (this project's standing discipline): a parameter
+is keyword-callable only if it has an explicit default
+(`proc(...) = f(a, b=default);`), and **keyword-defaulted parameters and
+`...` (dynargs) cannot coexist in the same proc**
+(`error G0742: Keyword parameters and '...' cannot be used in the same
+proc`) -- a hard compile-time constraint, not a style choice. Since every
+prior milestone's optional trailing argument (Milestone 26's `weight` on
+`quaidsFit`/`quaidsRobustFit`/`quaidsRobustBootstrapFit`/
+`quaidsWorkflowFit`/`quaidsWorkflowScenarioFit`) used exactly that
+dynargs idiom, every one of them had to be rewritten as a genuine
+keyword-defaulted parameter, not merely annotated. Also confirmed: GAUSS
+requires every required (non-defaulted) parameter to be declared *before*
+any keyword-defaulted parameter in the same proc -- not caught at compile
+time as cleanly as the dynargs conflict, but reproducibly unsafe (mis-
+binding under positional calls) if violated, so treated as a hard rule
+throughout this milestone. A required parameter genuinely omitted at a
+call site still throws GAUSS's own clean `error G0159: Wrong number of
+parameters` as long as this required-before-defaulted ordering holds --
+double-checked in an isolated single-statement script after an earlier,
+contaminated multi-statement probe produced a misleading result (the
+earlier probe's apparent "silently binds garbage" finding was traced to a
+prior compile error in the same batch file corrupting later results, not
+a real GAUSS behavior).
+
+**Design rule applied uniformly**: convert every parameter that was
+already optional *by convention* -- a dynargs-based trailing `weight`, or
+a required-positional argument using a `0`-sentinel convention
+(`clusterId`) -- into a genuine `param=default` keyword argument. Leave
+every parameter this project has already deliberately made required-with-
+no-default under its own "never silently guess an inference-affecting
+parameter" precedent (`B` in both bootstrap procs, `replicateWeights`/
+`scaleFactor` in `quaidsReplicateWeightFit`) as plain required,
+non-keyword-callable positional arguments -- GAUSS enforces this
+distinction anyway (`error G0739: Unknown keyword argument`) if a caller
+tries to name a required parameter. `seed=0` and `method="custom"` were
+given real defaults, not just left dynargs-shaped: `seed`'s `0` already
+meant "don't reseed" (a well-defined default, not a guess), and
+`method`'s value is purely cosmetic (echoed in the printed report, zero
+effect on computation), so a default there loses nothing.
+
+**Nine public procs converted, four of them requiring a real parameter
+reorder** (not just an appended default) because a required parameter sat
+*after* what became a defaulted one in the original signature -- the
+highest-risk part of this milestone, since an unfixed old positional call
+site would silently misbind values into the wrong slots rather than throw
+a compile error:
+
+- `quaidsFit()` (`src/quaids.src`): `weight=0` replaces the Milestone 26
+  dynargs `weight`. No reorder -- `weight` was already the last argument.
+- `quaidsPreflight()` (`src/quaidsdiagnostics.src`): `clusterId=0`,
+  `weight=0` replace two required-positional `0`-sentinel arguments. No
+  reorder -- both were already last.
+- `quaidsRobustFit()` (`src/quaidsrobust.src`): `clusterId=0`, `weight=0`
+  replace a required-positional `clusterId` and a dynargs `weight`. No
+  reorder.
+- `quaidsRobustBootstrapFit()` (`src/quaidsrobust.src`): **reordered** --
+  was `(..., aCtl, clusterId, B, seed, ...weight)`, now
+  `(..., aCtl, B, clusterId=0, seed=0, weight=0)`. `B` (required, no
+  default) had to move ahead of `clusterId`/`seed`/`weight`.
+- `quaidsCurvatureBootstrapFit()` (`src/quaidscurvature.src`): `seed=0`
+  replaces a required-positional `seed`. No reorder -- `B` already
+  preceded `seed`.
+- `quaidsWorkflowFit()` (`src/quaidsworkflow.src`): `clusterId=0`,
+  `weight=0` replace a required-positional `clusterId` and a dynargs
+  `weight`. No reorder.
+- `quaidsWorkflowScenarioFit()` (`src/quaidsworkflow.src`): **reordered**
+  -- was `(..., aCtl, clusterId, intcptPt, pricesPt0, pricesPt1,
+  totexpPt0, ...weight)`, now `(..., aCtl, intcptPt, pricesPt0,
+  pricesPt1, totexpPt0, clusterId=0, weight=0)`. The four required
+  scenario arguments had to move ahead of `clusterId`. Also simplified
+  the body: the old `isWeighted`-branching dynargs logic collapsed into
+  one unconditional forwarding call to `quaidsWorkflowFit()`, since
+  `weight=0` already hits that proc's own unweighted path.
+- `quaidsSurveyWorkflowFit()` (`src/quaidssurvey.src`): **reordered** --
+  was `(..., aCtl, clusterId, weight)`, now
+  `(..., aCtl, weight, clusterId=0)`. `weight` stays required (it's the
+  entire purpose of this proc); `clusterId` moved after it.
+- `quaidsReplicateWeightFit()` (`src/quaidsreplicate.src`): **reordered**
+  -- was `(..., aCtl, weight, replicateWeights, scaleFactor, method)`,
+  now `(..., aCtl, replicateWeights, scaleFactor, weight=0,
+  method="custom")`. `replicateWeights`/`scaleFactor` stay required (per
+  Milestone 27's own "never guess" precedent); `weight`/`method` became
+  keyword defaults and moved after them.
+
+**Mechanical cleanup that came with removing dynargs**: every converted
+proc that previously read its optional argument via
+`weight = dynargsGet(1, 0);` had that line deleted (the parameter is now
+bound directly by the call), and `weight` had to be removed from each
+proc's `local` declaration list -- leaving it in throws
+`error G0089: Duplicate definition of local 'weight'`, since it is now a
+formal parameter, not a local assigned inside the body.
+
+**Every real call site for the four reordered procs was found by
+repository-wide search and fixed** -- not left to silently misbind:
+`tests/quaids_robust_bootstrap_test.e`, `tests/quaids_survey_test.e`,
+`tests/quaids_replicate_test.e`, `tests/package_public_api.e`,
+`tests/quaids_survey_workflow_test.e`, `tests/quaids_pubtable_test.e`,
+`tests/quaids_workflow_test.e`, `tests/guard_error_cases/
+replicate_bad_weights_shape.e`, `tests/guard_error_cases/
+replicate_negative_scale_factor.e`, and `examples/workflow_example.e`.
+Full local suite (19 files, no skips) re-ran clean after every source and
+call-site change, confirming zero regressions from the reorder.
+
+**A real, previously-unknown gap between `#include`-compiled and
+`library`-loaded keyword defaults, found only by running the full
+installed-package release gate, not by the source-tree suite** (which
+never exercises `library quaids;`): after the first rebuild/reinstall,
+`tests/package_public_api.e` failed with
+`error G0159: Wrong number of parameters 'quaidsSurveyWorkflowFit'
+expected 8 arguments, received 7` on a call that only omitted the
+keyword-defaulted trailing `clusterId` -- exactly the kind of positional
+omission already confirmed working dozens of times in the `#include`-
+based source-tree suite. Root cause, found by comparing the regenerated
+`quaids.lcg` catalog against the working procs: `scripts/build_lcg.ps1`'s
+proc-detection regex tags a proc's catalog entry with a `: keywords`
+marker when it detects a `param=default` pattern in the `proc (...) =
+name(...);` declaration line, and GAUSS's `library` autoloader relies on
+that marker to know a lazily-compiled proc may be called with fewer than
+its full parameter count -- **but the regex only scans the single line
+containing `proc (...) = name(`**, so any proc whose signature wraps onto
+a second line (readable, and used throughout this codebase's other
+multi-line signatures) had its trailing `clusterId=0`/`weight=0`/
+`method="custom"` defaults land on the unscanned continuation line,
+silently missing the `: keywords` tag. The proc still compiled and ran
+correctly once fully loaded -- this is a call-site arg-count gate
+`library`'s autoloader enforces *before* compiling the body, using the
+catalog metadata alone, so a missing tag manifests as "wrong number of
+parameters" even though the same source, `#include`d directly, requires
+no such marker and just works. Confirmed by exact correlation: every
+proc whose signature already happened to fit on one line
+(`quaidsFit`, `quaidsRobustFit`, `quaidsRobustBootstrapFit`,
+`quaidsCurvatureBootstrapFit`, `quaidsWorkflowFit`) passed the installed-
+package gate on the first rebuild; every proc whose signature spanned two
+lines (`quaidsPreflight`, `quaidsWorkflowScenarioFit`,
+`quaidsSurveyWorkflowFit`, `quaidsReplicateWeightFit`) either failed
+outright or would have, had the batch not aborted at the first failure
+first. **Fixed by reformatting all four multi-line signatures onto a
+single line** (`src/quaidsdiagnostics.src`, `src/quaidsworkflow.src`
+twice, `src/quaidssurvey.src`, `src/quaidsreplicate.src`) rather than
+touching `build_lcg.ps1`'s regex -- the simpler, lower-risk fix for a
+one-time signature-formatting choice, though a future contributor adding
+a new multi-line keyword-defaulted signature should be aware
+`build_lcg.ps1` will need a genuine multi-line-aware regex fix if this
+pattern recurs. Re-ran the full release-verification pipeline (source
+tests, build, install, `tests/package_public_api.e` against the real
+installed package) after the fix -- `quaids.lcg` now shows `: keywords`
+on all nine converted procs, and the installed-package gate passes clean.
+
+**Version bump to `0.23.0`**: no new `.src` file, but a real, deliberate
+breaking change to nine already-shipped public proc signatures (four with
+changed parameter order), matching this project's established policy of
+bumping on real public API surface change regardless of whether a new
+file was added. Explicitly a breaking release, not additive -- old
+positional call sites for the four reordered procs do not merely gain new
+optional behavior, they require updating.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -3819,6 +3998,17 @@ version to `0.21.0`, matching the Milestone 12/13 precedent of bumping on
 real new public API surface regardless of whether a new file was added.
 No new `deps` entry — pure GAUSS built-ins, the same primitives every
 other covariance/moment computation in this library already uses.
+Milestone 28 likewise added no new `src` file — `quaids.src`,
+`quaidsdiagnostics.src`, `quaidsrobust.src`, `quaidscurvature.src`,
+`quaidsworkflow.src`, `quaidssurvey.src`, and `quaidsreplicate.src` were
+all modified in place (converting `clusterId`/`weight`/`seed`/`method`
+from dynargs or required-`0`-sentinel arguments to genuine GAUSS
+keyword-defaulted parameters, reordering four signatures so every
+required parameter precedes any defaulted one) — but still bumped the
+version to `0.23.0`, matching the Milestone 12/13/26 precedent of
+bumping on real public API surface change regardless of whether a new
+file was added. No new `deps` entry — a pure signature-level refactor,
+no new computation.
 `src/pubtable_quaids.src` (Milestone 6) is deliberately **not** in this
 array — it has a hard dependency on `pubtable.sdf`'s struct types, and
 adding it would make `pubtable` a hard dependency for the whole package to

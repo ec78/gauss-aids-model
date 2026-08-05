@@ -41,7 +41,7 @@ library pubtable, quaids;
 #include quaids.sdf
 #include pubtable_quaids.src
 
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 wfTbls = ptTablesFromQuaidsWorkflow(wfOut);
 
 call ptExport(wfTbls[1], "shares.md");

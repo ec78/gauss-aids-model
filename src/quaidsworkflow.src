@@ -20,24 +20,26 @@
 **            struct-returning call.
 **
 ** Format:    struct quaidsWorkflowOut wfOut =
-**                quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, ...);
+**                quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId=0, weight=0);
 **
-** Milestone 26: gained an OPTIONAL trailing `weight` argument, threaded
-** into this proc's own quaidsPreflight()/quaidsFit()/quaidsRobustFit()/
-** quaidsRobustCovariance() calls. Omit for the pre-Milestone-26 unweighted
-** workflow. This is a DIFFERENT concept from quaidsSurveyWorkflowFit()'s
-** own `weight` argument (which only ever reweights the post-estimation
-** evaluation point, never the estimator itself, per that proc's own
-** header) -- see wfOut.weighted/weightSum/effN (this milestone's real
-** estimator weighting) vs. wfOut.surveyWeighted/surveyWeightSum (Milestone
-** 25's evaluation-point-only weighting).
+** Milestone 26: gained an OPTIONAL `weight` argument (a dynargs trailing
+** argument originally; Milestone 28 converted it to a genuine `weight=0`
+** keyword default), threaded into this proc's own quaidsPreflight()/
+** quaidsFit()/quaidsRobustFit()/quaidsRobustCovariance() calls. Omit, or
+** pass scalar `0`, for the unweighted workflow. This is a DIFFERENT
+** concept from quaidsSurveyWorkflowFit()'s own `weight` argument (which
+** only ever reweights the post-estimation evaluation point, never the
+** estimator itself, per that proc's own header) -- see
+** wfOut.weighted/weightSum/effN (this milestone's real estimator
+** weighting) vs. wfOut.surveyWeighted/surveyWeightSum (Milestone 25's
+** evaluation-point-only weighting).
 **
 *******************************************************************************/
 
-proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId, ...);
+proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId=0, weight=0);
 
     local n, nint, m_, intcptPt, pricesPt, totexpPt, statQ, pvalQ, dfQ,
-        robustBFull, robustVFull, weight, isWeighted;
+        robustBFull, robustVFull, isWeighted;
     struct quaidsOut qOut;
     struct quaidsSharesOut sharesOut;
     struct quaidsSharesOut sharesRobustOut;
@@ -47,12 +49,11 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     struct quaidsPreflightOut pOut;
     struct quaidsWorkflowOut wfOut;
 
-    /* Milestone 26: optional trailing sampling-weight argument, same
-       dynargs idiom as quaidsFit()'s own weight argument. quaidsPreflight()
-       requires a positional weight (0 sentinel for "not supplied"), so
-       isWeighted decides which literal is passed there and whether weight
-       is forwarded to quaidsFit()/quaidsRobustFit() at all. */
-    weight = dynargsGet(1, 0);
+    /* Milestone 26/28: optional keyword sampling-weight argument.
+       quaidsPreflight() requires a positional weight (0 sentinel for "not
+       supplied"), so isWeighted decides which literal is passed there and
+       whether weight is forwarded to quaidsFit()/quaidsRobustFit() at
+       all. */
     isWeighted = rows(weight)*cols(weight) > 1;
 
     if isWeighted;
@@ -245,29 +246,26 @@ endp;
 **
 ** Format:    struct quaidsWorkflowOut wfOut =
 **                quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr,
-**                    aCtl, clusterId, intcptPt, pricesPt0, pricesPt1, totexpPt0, ...);
+**                    aCtl, intcptPt, pricesPt0, pricesPt1, totexpPt0, clusterId=0, weight=0);
 **
-** Milestone 26: gained the same OPTIONAL trailing `weight` argument as
-** quaidsWorkflowFit(), forwarded to it unchanged.
+** Milestone 26: gained the same OPTIONAL `weight` argument as
+** quaidsWorkflowFit(), forwarded to it unchanged. Milestone 28 converted
+** both `clusterId` and `weight` to genuine keyword defaults, moving
+** `clusterId` after the required scenario inputs (`intcptPt`/
+** `pricesPt0`/`pricesPt1`/`totexpPt0`) since GAUSS requires every
+** required (non-defaulted) parameter to precede any keyword-defaulted one.
 **
 *******************************************************************************/
 
-proc (struct quaidsWorkflowOut) = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId,
-    intcptPt, pricesPt0, pricesPt1, totexpPt0, ...);
+proc (struct quaidsWorkflowOut) = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, intcptPt, pricesPt0, pricesPt1, totexpPt0, clusterId=0, weight=0);
 
-    local weight, isWeighted;
     struct quaidsWorkflowOut wfOut;
     struct quaidsWelfareOut wOut;
     struct quaidsWelfareOut wRobustOut;
 
-    weight = dynargsGet(1, 0);
-    isWeighted = rows(weight)*cols(weight) > 1;
-
-    if isWeighted;
-        wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
-    else;
-        wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
-    endif;
+    /* weight=0 hits quaidsWorkflowFit()'s own unweighted keyword-default
+       path exactly as if omitted -- no isWeighted branch needed here. */
+    wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
 
     if wfOut.postValid == 1;
         wOut = quaidsWelfareFit(wfOut.bestB, wfOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);

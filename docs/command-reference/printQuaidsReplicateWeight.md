@@ -35,7 +35,7 @@ discloses which design the caller declared -- purely for readability;
 ```gauss
 struct quaidsReplicateOut rOut;
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl,
-    surveyWeight, replicateWeights, scaleFactorJK1, "JK1");
+    replicateWeights, scaleFactorJK1, weight=surveyWeight, method="JK1");
 
 call printQuaidsReplicateWeight(rOut);
 ```

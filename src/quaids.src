@@ -104,7 +104,7 @@
 **
 ******************************************************************************/
 
-proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl, ...);
+proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl, weight=0);
 
     local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zzi, u, stone, lx,
         nendog, m, ng, gg, gw, b, ok, alpha, gama, a_p, _beta, b_p, lx2, err, iter, df, iw, m_, cov,
@@ -113,7 +113,7 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
         S, X, v_s, b_s, nz, mss, u1, b0, rsq, k, sym, pfsym,
         z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma,
         model, iterHist, firstIter, overidFstat, overidPvf, oldtrp, xvix, b0Scalar,
-        weight, isWeighted, rawWeightSum, effN, rootWt;
+        isWeighted, rawWeightSum, effN, rootWt;
     struct quaidsOut qOut;
 
     nobs = rows(w);
@@ -124,16 +124,15 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
     n = cols(prices);
     n1 = n - aCtl.homogenous;
 
-    /* Milestone 26: optional trailing sampling-weight argument, via
-       GAUSS's dynargs mechanism (confirmed empirically to work cleanly
-       for a plain trailing matrix, not just structs -- see
-       c:\gauss26\src\between.src's identical `proc (X, ..., ...)` +
-       `dynargsCount()`/`dynargsGet()` pattern) -- existing callers that
-       never pass a 7th argument are completely unaffected. `weight`
-       omitted, or an explicit scalar `0`, means unweighted (byte-
-       identical to every pre-Milestone-26 release). A real Tx1 weight
-       vector is validated, then NORMALIZED so sum(weight)==nobs (the
-       point estimate is invariant to any overall rescaling of weight --
+    /* Milestone 26: optional keyword sampling-weight argument (Milestone
+       28 converted this from a dynargs trailing argument to a genuine
+       `weight=0` keyword default -- GAUSS does not allow keyword-
+       defaulted parameters and `...` in the same proc, confirmed
+       empirically, so the two are mutually exclusive). `weight` omitted,
+       or an explicit scalar `0`, means unweighted (byte-identical to
+       every pre-Milestone-26 release). A real Tx1 weight vector is
+       validated, then NORMALIZED so sum(weight)==nobs (the point
+       estimate is invariant to any overall rescaling of weight --
        (X'WX)^-1(X'Wy) is unchanged by W -> cW -- so this normalization is
        purely a convenience that lets every existing nobs-denominated
        formula downstream keep working unchanged, "nobs equivalent-
@@ -142,7 +141,6 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
        degrees-of-freedom calculation in this pass) are captured from the
        RAW, pre-normalization weight, since effN is itself scale-
        invariant but a literal weight sum is not. */
-    weight = dynargsGet(1, 0);
     isWeighted = rows(weight)*cols(weight) > 1;
     if isWeighted;
         if rows(weight) /= nobs or cols(weight) /= 1;

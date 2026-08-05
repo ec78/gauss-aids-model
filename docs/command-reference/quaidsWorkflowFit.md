@@ -12,26 +12,29 @@ cluster-robust standard errors when the base fit converges.
 
 ```gauss
 struct quaidsWorkflowOut wfOut;
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId);
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);   // Milestone 26
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId, weight=myWeight);   // Milestone 26/28
 ```
 
 ## Parameters
 
 - `w`, `intcpt`, `prices`, `totexp`, `instr`, `aCtl` - same as
   [quaidsFit](quaidsFit.md).
-- `clusterId` - same as [quaidsRobustFit](quaidsRobustFit.md): scalar `0`
-  for heteroskedasticity-robust standard errors, or a `Tx1` cluster-label
+- `clusterId` (*OPTIONAL keyword argument, default `0`*) - same as
+  [quaidsRobustFit](quaidsRobustFit.md): scalar `0` for
+  heteroskedasticity-robust standard errors, or a `Tx1` cluster-label
   vector.
-- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: an estimator-level
-  sampling weight, forwarded unchanged into this proc's own
-  [quaidsFit](quaidsFit.md), [quaidsPreflight](quaidsPreflight.md), and
-  [quaidsRobustFit](quaidsRobustFit.md)/
-  [quaidsRobustCovariance](quaidsRobustCovariance.md) calls. Omit for the
-  pre-Milestone-26 unweighted workflow. **Distinct from**
+- `weight` (*OPTIONAL keyword argument, default `0`*) - Milestone 26: an
+  estimator-level sampling weight, forwarded unchanged into this proc's
+  own [quaidsFit](quaidsFit.md), [quaidsPreflight](quaidsPreflight.md),
+  and [quaidsRobustFit](quaidsRobustFit.md)/
+  [quaidsRobustCovariance](quaidsRobustCovariance.md) calls. Omit, or
+  pass scalar `0`, for the unweighted workflow. **Distinct from**
   [quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md)'s own `weight`
   argument, which additionally recomputes the post-estimation evaluation
   point -- see that page and the field note on `surveyWeighted` below.
+  Milestone 28 converted both `clusterId` and `weight` to genuine GAUSS
+  keyword-defaulted parameters.
 
 ## Returns
 
@@ -134,7 +137,7 @@ aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 
 struct quaidsWorkflowOut wfOut;
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 
 if wfOut.postValid;
     print wfOut.shares;
@@ -151,7 +154,7 @@ With an estimator-level sampling weight (Milestone 26):
 
 ```gauss
 struct quaidsWorkflowOut wfWeighted;
-wfWeighted = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, weight);
+wfWeighted = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight=weight);
 print wfWeighted.weighted wfWeighted.weightSum wfWeighted.effN;
 ```
 

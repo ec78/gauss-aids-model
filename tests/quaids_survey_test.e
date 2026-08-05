@@ -108,8 +108,8 @@ call check(maxc(maxc(abs(rOutOnes.b - rOutBase.b))) == 0 and maxc(maxc(abs(rOutO
 
 struct quaidsRobustBootOut rbOutBase;
 struct quaidsRobustBootOut rbOutOnes;
-rbOutBase = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 0, 10, 42);
-rbOutOnes = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 0, 10, 42, wgtOnes);
+rbOutBase = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 10, seed=42);
+rbOutOnes = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 10, seed=42, weight=wgtOnes);
 call check(maxc(maxc(abs(rbOutOnes.b - rbOutBase.b))) == 0 and maxc(maxc(abs(rbOutOnes.seRobust - rbOutBase.seRobust))) == 0,
     "quaidsRobustBootstrapFit with an explicit uniform weight reproduces the unweighted base fit/sandwich exactly");
 

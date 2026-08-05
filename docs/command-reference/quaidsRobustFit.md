@@ -12,8 +12,8 @@ see [printQuaidsRobust](printQuaidsRobust.md).
 
 ```gauss
 struct quaidsRobustOut rOut;
-rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
-rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId, weight);   // Milestone 26
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId, weight=myWeight);   // Milestone 26/28
 ```
 
 ## Parameters
@@ -26,14 +26,17 @@ rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId, weight);   // M
 - `aCtl` (*`quaidsControl` structure*) - `aCtl.linear`/`aCtl.alpha0` used
   to rebuild the model-implied fitted shares; must match what was passed
   to [quaidsFit](quaidsFit.md) to produce `qOut`.
-- `clusterId` (*scalar `0`, or Tx1 vector*) - `0` for heteroskedasticity-
-  robust (every observation is its own cluster); a vector of cluster
-  group labels for cluster-robust.
-- `weight` (*Tx1 vector, OPTIONAL*) - Milestone 26: the same sampling
-  weight passed to [quaidsFit](quaidsFit.md) to produce `qOut` (if any).
-  Omit for the pre-Milestone-26 unweighted sandwich. **Uses a DIFFERENT
-  scaling convention from `quaidsFit()`'s own `sqrt(weight)` WLS trick** --
-  see Remarks.
+- `clusterId` (*OPTIONAL keyword argument, default `0`*) - `0` for
+  heteroskedasticity-robust (every observation is its own cluster); a
+  `Tx1` vector of cluster group labels for cluster-robust.
+- `weight` (*OPTIONAL keyword argument, default `0`*) - Milestone 26: the
+  same sampling weight passed to [quaidsFit](quaidsFit.md) to produce
+  `qOut` (if any). Omit, or pass scalar `0`, for the unweighted sandwich.
+  **Uses a DIFFERENT scaling convention from `quaidsFit()`'s own
+  `sqrt(weight)` WLS trick** -- see Remarks. Milestone 28 converted both
+  `clusterId` and `weight` from a required-positional-with-`0`-sentinel
+  and a dynargs trailing argument, respectively, to genuine GAUSS
+  keyword-defaulted parameters.
 
 ## Returns
 
@@ -123,14 +126,14 @@ aCtl.homogenous = 1;
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-// Heteroskedasticity-robust:
+// Heteroskedasticity-robust (clusterId omitted -- defaults to 0):
 struct quaidsRobustOut rOut;
-rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
 call printQuaidsRobust(rOut);
 
 // Cluster-robust (householdId is a Tx1 vector of group labels):
 struct quaidsRobustOut rOutCluster;
-rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, householdId);
+rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId);
 call printQuaidsRobust(rOutCluster);
 
 { bR, vR } = quaidsRobustCovariance(qOut, rOutCluster, aCtl);

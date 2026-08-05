@@ -399,7 +399,7 @@ endp;
 **           per-cluster (cluster-robust) score aggregation. Silent, no
 **           printing -- see printQuaidsRobust().
 **
-** Format:     struct quaidsRobustOut rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId, ...);
+** Format:     struct quaidsRobustOut rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=0, weight=0);
 **
 ** Input:    qOut -- struct quaidsOut, from quaidsFit() (any aCtl.homogenous).
 **
@@ -413,9 +413,11 @@ endp;
 **                   observation its own cluster), or a Tx1 vector of
 **                   cluster group labels for cluster-robust.
 **
-**             weight -- OPTIONAL trailing argument (Milestone 26). Omit
-**                   for the pre-Milestone-26 unweighted sandwich, or pass
-**                   a Tx1 nonnegative finite weight vector for a
+**             weight -- OPTIONAL keyword argument (Milestone 26; Milestone
+**                   28 converted this from a dynargs trailing argument to
+**                   a genuine `weight=0` keyword default). Omit, or pass
+**                   scalar `0`, for the unweighted sandwich, or pass a Tx1
+**                   nonnegative finite weight vector for a
 **                   Horvitz-Thompson pweight-robust sandwich -- see this
 **                   file's own header for the sqrt(weight)-vs-weight
 **                   convention split between the bread and the meat.
@@ -424,12 +426,12 @@ endp;
 **
 *******************************************************************************/
 
-proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices, totexp, struct quaidsControl aCtl, clusterId, ...);
+proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices, totexp, struct quaidsControl aCtl, clusterId=0, weight=0);
 
     local nobs, n, nint, n1, nendog, intcptFull, fittedW, lx, lx2, U,
         pricesHybrid, endog, X, k, Kdof, gg, Infl, i, un, G, D, InflG,
         Meat, c, bread, v, se, bHatReduced, clusterScalar, ggInv, oldtrp,
-        weight, isWeighted, rootWt;
+        isWeighted, rootWt;
     struct quaidsRobustOut rOut;
 
     nobs = rows(w);
@@ -448,14 +450,11 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
         end;
     endif;
 
-    /* Milestone 26: optional trailing sampling-weight argument, same
-       dynargs idiom as quaidsFit()'s own weight argument (verified
-       empirically to work for a plain trailing matrix, not just structs).
-       Normalized so sum(weight)==nobs, matching quaidsFit()'s own
+    /* Milestone 26/28: optional keyword sampling-weight argument,
+       normalized so sum(weight)==nobs, matching quaidsFit()'s own
        convention -- the point estimate/sandwich are both invariant to an
        overall rescaling of weight, so this keeps every nobs-denominated
        formula below unchanged when weight is supplied. */
-    weight = dynargsGet(1, 0);
     isWeighted = rows(weight)*cols(weight) > 1;
     if isWeighted;
         if rows(weight) /= nobs or cols(weight) /= 1;
@@ -663,7 +662,7 @@ endp;
 **           printQuaidsRobustBootstrap().
 **
 ** Format:     struct quaidsRobustBootOut rbOut =
-**                 quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed, ...);
+**                 quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=0, seed=0, weight=0);
 **
 ** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
 **                   quaidsFit().
@@ -671,22 +670,28 @@ endp;
 **             aCtl -- quaidsControl struct, passed through unchanged to
 **                   every quaidsFit() call.
 **
-**             clusterId -- 0 for a plain i.i.d. row bootstrap, or a Tx1
-**                   vector of cluster group labels for a cluster (block)
-**                   bootstrap.
-**
 **             B -- positive integer scalar, the number of bootstrap
 **                   replications to complete. Required -- no default,
 **                   matching quaidsCurvatureBootstrapFit()'s own
 **                   precedent of never silently guessing an inference-
-**                   affecting parameter.
+**                   affecting parameter. Declared before the keyword-
+**                   defaulted parameters below since GAUSS requires
+**                   every required (non-defaulted) parameter to precede
+**                   any keyword-defaulted one.
 **
-**             seed -- scalar. If seed > 0, rndseed is set before drawing
-**                   any resamples (reproducible runs); seed = 0 leaves
+**             clusterId -- OPTIONAL keyword argument, default `0`: `0`
+**                   for a plain i.i.d. row bootstrap, or a Tx1 vector of
+**                   cluster group labels for a cluster (block) bootstrap.
+**
+**             seed -- OPTIONAL keyword argument, default `0`. If
+**                   `seed > 0`, `rndseed` is set before drawing any
+**                   resamples (reproducible runs); `seed = 0` leaves
 **                   GAUSS's current random state unchanged.
 **
-**             weight -- OPTIONAL trailing argument (Milestone 26). Omit
-**                   for the pre-Milestone-26 unweighted bootstrap, or
+**             weight -- OPTIONAL keyword argument, default `0` (Milestone
+**                   26; Milestone 28 converted this from a dynargs
+**                   trailing argument to a genuine keyword default). Omit,
+**                   or pass scalar `0`, for the unweighted bootstrap, or
 **                   pass a Tx1 nonnegative finite weight vector -- each
 **                   resample carries its own rows' weight[idx] subvector
 **                   into that replication's quaidsFit()/quaidsRobustFit()
@@ -700,12 +705,12 @@ endp;
 **
 *******************************************************************************/
 
-proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId, B, seed, ...);
+proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, B, clusterId=0, seed=0, weight=0);
 
     local nobs, n, nint, n1, wnam, bDim1, bDim2, bVecDim, nClusters, un, G,
         completed, failed, attempts, maxAttempts, gDraw, idx,
         wB, intcptB, pricesB, totexpB, instrB, weightB, status, bVec, bBoot, seBoot,
-        j, oneCluster, clusterScalar, weight, isWeighted;
+        j, oneCluster, clusterScalar, isWeighted;
     struct quaidsOut qOut;
     struct quaidsRobustOut rOut;
     struct quaidsRobustBootOut rbOut;
@@ -717,9 +722,8 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
 
     nobs = rows(w);
 
-    /* Milestone 26: optional trailing sampling-weight argument -- same
+    /* Milestone 26/28: optional keyword sampling-weight argument -- same
        validation/normalization as quaidsRobustFit()'s own weight. */
-    weight = dynargsGet(1, 0);
     isWeighted = rows(weight)*cols(weight) > 1;
     if isWeighted;
         if rows(weight) /= nobs or cols(weight) /= 1;

@@ -34,7 +34,7 @@ the fit can be run silently and printed only when wanted -- mirrors the
 
 ```gauss
 struct quaidsRobustBootOut rbOut;
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, 200, 42);
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, clusterId=clusterId, seed=42);
 call printQuaidsRobustBootstrap(rbOut);
 ```
 

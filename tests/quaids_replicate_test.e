@@ -90,7 +90,7 @@ endo;
 scaleFactorJK1 = (nClusters-1)/nClusters;
 
 struct quaidsReplicateOut rOut;
-rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, 0, replicateWeights, scaleFactorJK1, "JK1");
+rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactorJK1, method="JK1");
 
 call check(rOut.weighted == 0, "unweighted base fit reports weighted=0");
 call check(maxc(maxc(abs(rOut.b - qOutBase.bestB))) == 0,
@@ -118,7 +118,7 @@ call check(rows(rOut.scaleFactor) == nClusters and maxc(abs(rOut.scaleFactor - s
 /* --- Rx1 (BRR-style) scale factor vector. --- */
 scaleFactorVec = (1/nClusters)*ones(nClusters, 1);
 struct quaidsReplicateOut rOutVecScale;
-rOutVecScale = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, 0, replicateWeights, scaleFactorVec, "BRR");
+rOutVecScale = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactorVec, method="BRR");
 call check(maxc(abs(rOutVecScale.scaleFactor - scaleFactorVec)) == 0,
     "Rx1 scaleFactor vector is echoed unchanged");
 call check(rOutVecScale.method $== "BRR", "second method label is echoed verbatim");
@@ -129,7 +129,7 @@ wgtBase = 1 + rndu(tobs, 1)*3;
 struct quaidsOut qOutW;
 qOutW = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, wgtBase);
 struct quaidsReplicateOut rOutWeighted;
-rOutWeighted = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, wgtBase, replicateWeights, scaleFactorJK1, "JK1");
+rOutWeighted = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactorJK1, weight=wgtBase, method="JK1");
 call check(rOutWeighted.weighted == 1, "weighted base fit reports weighted=1");
 call check(maxc(maxc(abs(rOutWeighted.b - qOutW.bestB))) == 0,
     "base point estimate matches a direct weighted quaidsFit() call exactly");
@@ -141,7 +141,7 @@ call check(maxc(maxc(abs(rOutWeighted.b - qOutW.bestB))) == 0,
    formula itself. --- */
 identicalReplicateWeights = ones(tobs, 5);
 struct quaidsReplicateOut rOutIdentical;
-rOutIdentical = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, 0, identicalReplicateWeights, 1, "identical");
+rOutIdentical = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, identicalReplicateWeights, 1, method="identical");
 call check(maxc(maxc(abs(rOutIdentical.v))) == 0,
     "replicate weights identical to the base weight give an EXACTLY zero covariance");
 call check(maxc(maxc(rOutIdentical.se)) == 0,
@@ -157,7 +157,7 @@ call check(maxc(maxc(rOut.se)) > 1e-6,
 
 /* --- Deterministic repeatability. --- */
 struct quaidsReplicateOut rOutRepeat;
-rOutRepeat = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, 0, replicateWeights, scaleFactorJK1, "JK1");
+rOutRepeat = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactorJK1, method="JK1");
 call check(maxc(maxc(abs(rOut.se - rOutRepeat.se))) == 0 and maxc(maxc(abs(rOut.v - rOutRepeat.v))) == 0,
     "repeated evaluation with identical inputs is deterministic");
 
@@ -201,7 +201,7 @@ replicateWeightsMixed[., 3] = zeros(tobs, 1);
 replicateWeightsMixed[1:5, 3] = 200*ones(5, 1);
 
 struct quaidsReplicateOut rOutPartial;
-rOutPartial = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, 0, replicateWeightsMixed, 0.5, "mixed");
+rOutPartial = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeightsMixed, 0.5, method="mixed");
 call check(rOutPartial.nRequested == 3 and rOutPartial.nCompleted == 2 and rOutPartial.nFailed == 1,
     "a pathological low-effective-sample-size replicate is dropped, not crashed");
 call check(sumc(sumc(rOutPartial.se .== rOutPartial.se)) == rows(rOutPartial.se)*cols(rOutPartial.se),

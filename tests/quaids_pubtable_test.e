@@ -194,7 +194,7 @@ pricesPt1 = pricesMean;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
 struct quaidsWorkflowOut wfScenario;
-wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl, 0, intcptMean, pricesMean, pricesPt1, totexpMean);
+wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl, intcptMean, pricesMean, pricesPt1, totexpMean);
 wfTbls = ptTablesFromQuaidsWorkflow(wfScenario);
 call check(rows(wfTbls) == 5 and wfTbls[5].title $== "Welfare scenario",
     "ptTablesFromQuaidsWorkflow: includes welfare table when welfareValid");

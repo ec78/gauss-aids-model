@@ -715,7 +715,7 @@ endp;
 **           something very different for QUAIDS than for AIDS.
 **
 ** Format:     struct quaidsCurvBootOut bootOut =
-**                 quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed);
+**                 quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=0);
 **
 ** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
 **                   quaidsFit(). Must satisfy aCtl.homogenous = 1 (checked
@@ -730,8 +730,9 @@ endp;
 **                   replications to complete. Required -- no default (see
 **                   above).
 **
-**             seed -- scalar. If seed > 0, rndseed is set before drawing
-**                   any resamples (reproducible runs); seed = 0 leaves
+**             seed -- OPTIONAL keyword argument, default `0`. If
+**                   `seed > 0`, `rndseed` is set before drawing any
+**                   resamples (reproducible runs); `seed = 0` leaves
 **                   GAUSS's current random state unchanged. Same convention
 **                   as gauss-qardl's blockBootstrapQARDLDiag().
 **
@@ -746,7 +747,7 @@ endp;
 **
 *******************************************************************************/
 
-proc (struct quaidsCurvBootOut) = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, B, seed);
+proc (struct quaidsCurvBootOut) = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, B, seed=0);
 
     local tobs, n, n1, nint, wnam, bDim1, bDim2, bVecDim,
         completed, failed, attempts, maxAttempts, idx,

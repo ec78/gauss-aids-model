@@ -5,6 +5,91 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.23.0 - 2026-08-04
+
+Milestone 28: keyword-argument API conversion, requested directly by the
+repo owner ("the API is not making use of GAUSS's named, optional
+argument... update it to use named keyword arguments"), explicitly
+authorized as a breaking change since this package has not yet been
+publicly released.
+
+### Changed (breaking)
+- `quaidsFit()`: `weight` converted from an optional trailing dynargs
+  argument to a genuine keyword-defaulted parameter, `weight=0`. No
+  reorder -- `weight` was already the last argument.
+- `quaidsPreflight()`: `clusterId`/`weight` converted from required-
+  positional `0`-sentinel arguments to `clusterId=0, weight=0`. No
+  reorder.
+- `quaidsRobustFit()`: `clusterId` (required-positional `0`-sentinel) and
+  `weight` (dynargs) converted to `clusterId=0, weight=0`. No reorder.
+- `quaidsRobustBootstrapFit()`: **parameter order changed.** Was
+  `(w, intcpt, prices, totexp, instr, aCtl, clusterId, B, seed, ...weight)`;
+  now `(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=0, seed=0,
+  weight=0)`. `B` (required, no default) moved ahead of `clusterId`/
+  `seed`/`weight`, since GAUSS requires required parameters to precede
+  keyword-defaulted ones. **Old positional calls passing `clusterId`/`B`/
+  `seed` in the original order will silently misbind and must be
+  updated.**
+- `quaidsCurvatureBootstrapFit()`: `seed` converted from a required-
+  positional argument to `seed=0`. No reorder -- `B` already preceded
+  `seed`.
+- `quaidsWorkflowFit()`: `clusterId` (required-positional `0`-sentinel)
+  and `weight` (dynargs) converted to `clusterId=0, weight=0`. No
+  reorder.
+- `quaidsWorkflowScenarioFit()`: **parameter order changed.** Was
+  `(w, intcpt, prices, totexp, instr, aCtl, clusterId, intcptPt,
+  pricesPt0, pricesPt1, totexpPt0, ...weight)`; now
+  `(w, intcpt, prices, totexp, instr, aCtl, intcptPt, pricesPt0,
+  pricesPt1, totexpPt0, clusterId=0, weight=0)`. The four required
+  scenario arguments moved ahead of `clusterId`. **Old positional calls
+  will silently misbind and must be updated.**
+- `quaidsSurveyWorkflowFit()`: **parameter order changed.** Was
+  `(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight)`; now
+  `(w, intcpt, prices, totexp, instr, aCtl, weight, clusterId=0)`.
+  `weight` stays required (it is the entire purpose of this proc);
+  `clusterId` moved after it and became keyword-defaulted. **Old
+  positional calls will silently misbind and must be updated.**
+- `quaidsReplicateWeightFit()`: **parameter order changed.** Was
+  `(w, intcpt, prices, totexp, instr, aCtl, weight, replicateWeights,
+  scaleFactor, method)`; now `(w, intcpt, prices, totexp, instr, aCtl,
+  replicateWeights, scaleFactor, weight=0, method="custom")`.
+  `replicateWeights`/`scaleFactor` stay required (per Milestone 27's own
+  "never guess" precedent); `weight`/`method` became keyword-defaulted
+  and moved after them. **Old positional calls will silently misbind and
+  must be updated.**
+
+### Fixed
+- Removed now-dead `dynargsGet()` calls and duplicate `local weight;`
+  declarations left over from the dynargs idiom in every converted proc.
+- Simplified `quaidsWorkflowScenarioFit()`'s body: the old
+  `isWeighted`-branching dynargs logic collapsed into one unconditional
+  forwarding call to `quaidsWorkflowFit()`, since `weight=0` already hits
+  that proc's own unweighted path.
+- `scripts/build_lcg.ps1`'s proc-detection regex only scans the single
+  line containing `proc (...) = name(`, so four converted procs whose
+  signature wrapped onto a second line (`quaidsPreflight`,
+  `quaidsWorkflowScenarioFit`, `quaidsSurveyWorkflowFit`,
+  `quaidsReplicateWeightFit`) had their `param=default` markers land
+  unscanned, missing the `: keywords` catalog tag GAUSS's `library`
+  autoloader needs to allow fewer-than-full-arity calls -- caught only by
+  running the installed-package release gate
+  (`tests/package_public_api.e` via `library quaids;`), not the
+  `#include`-based source-tree suite. Fixed by reformatting those four
+  signatures onto a single line.
+
+### Notes
+- No estimation math changed -- this is a pure call-signature conversion.
+  Every real call site in `tests/` and `examples/` for the four reordered
+  procs was found and fixed; the full local test suite (19 files, no
+  `-SkipBootstrap`, plus all `tests/guard_error_cases/` scripts) passed
+  with zero regressions after the conversion.
+- GAUSS keyword-argument mechanics confirmed empirically before this
+  conversion began: a parameter is keyword-callable only with an explicit
+  default; keyword-defaulted parameters and `...`/dynargs cannot coexist
+  in the same proc (`error G0742`); a required (non-defaulted) parameter
+  cannot be called by name (`error G0739`); required parameters must
+  precede defaulted ones for positional calls to bind safely.
+
 ## 0.22.0 - 2026-08-04
 
 Milestone 27: replicate-weight (jackknife/BRR-style) variance estimation --

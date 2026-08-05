@@ -15,12 +15,11 @@
 **           system.
 **
 ** Format:   struct quaidsPreflightOut pOut =
-**               quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
+**               quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=0, weight=0);
 **
 *******************************************************************************/
 
-proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, instr,
-    struct quaidsControl aCtl, clusterId, weight);
+proc (struct quaidsPreflightOut) = quaidsPreflight(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId=0, weight=0);
 
     local nobs, n, nint, ninst, n1, scalarIntcptZero, dimsOk, pricesOk,
         totexpOk, intcptOk, instrOk, controlOk, intcptFull, allData,

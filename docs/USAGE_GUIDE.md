@@ -13,7 +13,7 @@ basic convergence-risk hints:
 
 ```gauss
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, householdId, 0);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId);
 
 if not pOut.ok;
     call printQuaidsPreflight(pOut);
@@ -61,11 +61,11 @@ silent, struct-returning call:
 ```gauss
 struct quaidsWorkflowOut wfOut;
 
-// clusterId = 0 gives heteroskedasticity-robust SE.
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
+// clusterId omitted defaults to 0 -- heteroskedasticity-robust SE.
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 
 // Or pass a Tx1 group-label vector for cluster-robust SE.
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, householdId);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId);
 ```
 
 The workflow object is intentionally a composition layer, not a separate
@@ -89,7 +89,7 @@ pricesPt1 = wfOut.evalPrices;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
 wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
-    0, wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
+    wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
 
 if wfScenario.welfareValid;
     print wfScenario.cv wfScenario.seCV;
@@ -110,7 +110,7 @@ post-estimation summaries:
 ```gauss
 struct quaidsWorkflowOut wfSurvey;
 wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl,
-    householdId, sampwt);
+    sampwt, clusterId=householdId);
 
 print wfSurvey.weighted wfSurvey.weightSum wfSurvey.effN;
 print wfSurvey.surveyWeightSum;
@@ -417,14 +417,14 @@ cluster-robust sandwich, given an already-fitted `qOut`:
 struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-// Heteroskedasticity-robust:
+// Heteroskedasticity-robust (clusterId omitted -- defaults to 0):
 struct quaidsRobustOut rOut;
-rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
 call printQuaidsRobust(rOut);
 
 // Cluster-robust (householdId is a Tx1 vector of group labels):
 struct quaidsRobustOut rOutCluster;
-rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, householdId);
+rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId);
 call printQuaidsRobust(rOutCluster);
 ```
 
@@ -439,7 +439,7 @@ A cluster-aware bootstrap is also available, resampling whole clusters
 
 ```gauss
 struct quaidsRobustBootOut rbOut;
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, householdId, 200, 42);
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, clusterId=householdId, seed=42);
 call printQuaidsRobustBootstrap(rbOut);
 ```
 
@@ -494,7 +494,7 @@ you to implement your own resampling scheme:
 // standard JK1 delete-one-PSU jackknife.
 struct quaidsReplicateOut rOut;
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl,
-    surveyWeight, replicateWeights, scaleFactorJK1, "JK1");
+    replicateWeights, scaleFactorJK1, weight=surveyWeight, method="JK1");
 
 call printQuaidsReplicateWeight(rOut);
 print "completed:" rOut.nCompleted "failed:" rOut.nFailed;

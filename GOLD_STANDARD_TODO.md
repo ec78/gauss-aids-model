@@ -11,9 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.22.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-27**, as of
-2026-08-03: 0
+The repository is pre-alpha, package version `0.23.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-28**, as of
+2026-08-04: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -112,7 +112,15 @@ estimation code; see that section below for a real, non-trappable
 `error G0058` crash mode found and guarded against with a pre-call
 effective-sample-size check, the third time in this project's history
 `trap 1` was found not to be a universal safety net for a GAUSS-internal
-failure).
+failure), and 28 (a repo-owner-requested keyword-argument API conversion --
+nine already-shipped public procs converted from dynargs/`0`-sentinel
+optional arguments to genuine GAUSS `param=default` keyword arguments,
+four requiring a real parameter reorder since GAUSS requires required
+parameters to precede defaulted ones, explicitly authorized as a breaking
+change since this package has not yet been publicly released; see that
+section below for the empirically-confirmed GAUSS language constraints
+this conversion is built on, most notably that keyword-defaulted
+parameters and `...`/dynargs cannot coexist in the same proc).
 
 The post-20 roadmap shifted from individual post-estimation procs to full
 applied workflow support. `quaidsWorkflowFit()` is the first seed of that
@@ -131,6 +139,9 @@ replicate-weight (jackknife/BRR-style) piece of that same gap. Formal
 strata as a concept distinct from clustering, and design-based
 finite-population correction, remain the next explicitly-flagged,
 unstarted items -- see Milestone 27's own "Follow-ups" note below.
+Milestone 28 was a repo-owner-requested API ergonomics pass (keyword
+arguments), not a roadmap item -- it changed nine call signatures but no
+estimation math, and does not affect the survey-design follow-ups above.
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -2921,6 +2932,83 @@ if wanted" precedent set by most milestones since 16) -- a future
 milestone could add an optional replicate-weight SE path to the applied
 workflow layer if a real use case asks for it.
 
+### Milestone 28 -- Keyword-Argument API Conversion -- COMPLETE
+
+Requested directly by the repo owner (not from the roadmap outline):
+convert the public API to use GAUSS's named/optional (`param=default`)
+argument syntax where appropriate, explicitly authorized as a breaking
+change since the package has not yet been publicly released.
+
+- [x] Confirm GAUSS's keyword-argument mechanics empirically before
+  converting any real source file: a parameter is keyword-callable only
+  with an explicit default; keyword-defaulted parameters and `...`
+  (dynargs) cannot coexist in the same proc (`error G0742`); a required
+  parameter cannot be called by name (`error G0739`); required parameters
+  must precede defaulted ones in the declaration for positional calls to
+  bind safely.
+- [x] Convert nine public procs' optional arguments (previously either a
+  dynargs trailing `weight`, or a required-positional argument using a
+  `0`-sentinel convention) to genuine keyword-defaulted parameters:
+  `quaidsFit` (`weight=0`), `quaidsPreflight` (`clusterId=0, weight=0`),
+  `quaidsRobustFit` (`clusterId=0, weight=0`),
+  `quaidsRobustBootstrapFit` (`clusterId=0, seed=0, weight=0`),
+  `quaidsCurvatureBootstrapFit` (`seed=0`), `quaidsWorkflowFit`
+  (`clusterId=0, weight=0`), `quaidsWorkflowScenarioFit`
+  (`clusterId=0, weight=0`), `quaidsSurveyWorkflowFit` (`clusterId=0`),
+  `quaidsReplicateWeightFit` (`weight=0, method="custom"`).
+- [x] Reorder parameters in four procs where a required argument
+  originally sat after what became a defaulted one:
+  `quaidsRobustBootstrapFit` (`B` moved before `clusterId`/`seed`/
+  `weight`), `quaidsWorkflowScenarioFit` (`intcptPt`/`pricesPt0`/
+  `pricesPt1`/`totexpPt0` moved before `clusterId`),
+  `quaidsSurveyWorkflowFit` (`clusterId` moved after the required
+  `weight`), `quaidsReplicateWeightFit` (`replicateWeights`/
+  `scaleFactor` moved before `weight`/`method`).
+- [x] Leave every parameter this project already deliberately made
+  required-with-no-default (`B` in both bootstrap procs,
+  `replicateWeights`/`scaleFactor` in `quaidsReplicateWeightFit`) as
+  plain required, non-keyword-callable positional arguments, matching
+  the established "never silently guess an inference-affecting
+  parameter" precedent.
+- [x] Remove dead `dynargsGet()` calls and `local weight;` declarations
+  from every converted proc's body (leaving the old `local` entry throws
+  `error G0089: Duplicate definition`, since `weight` is now a formal
+  parameter). Simplify `quaidsWorkflowScenarioFit()`'s body: the old
+  `isWeighted`-branching dynargs logic collapsed into one unconditional
+  forwarding call, since `weight=0` already hits `quaidsWorkflowFit()`'s
+  own unweighted path.
+- [x] Find every real call site for the four reordered procs across
+  `tests/` and `examples/` and fix each one (an unfixed old positional
+  call would silently misbind values into the wrong slots, not throw a
+  compile error).
+- [x] Run the full existing test suite (19 files, no `-SkipBootstrap`, plus
+  all `tests/guard_error_cases/` scripts) after every source and call-site
+  change, confirming zero regressions.
+- [x] Found and fixed a real gap between `#include`-compiled and
+  `library`-loaded keyword defaults, caught only by running the full
+  installed-package release gate (`tests/package_public_api.e` against a
+  real `library quaids;` load), not by the source-tree suite:
+  `scripts/build_lcg.ps1`'s proc-detection regex only scans the single
+  line containing `proc (...) = name(`, so any of the four converted
+  procs whose signature wrapped onto a second line had its trailing
+  `param=default` markers land unscanned, silently missing the `: keywords`
+  tag GAUSS's `library` autoloader needs to allow a call with fewer than
+  the full parameter count. Fixed by reformatting those four signatures
+  (`quaidsPreflight`, `quaidsWorkflowScenarioFit`,
+  `quaidsSurveyWorkflowFit`, `quaidsReplicateWeightFit`) onto a single
+  line rather than patching the regex itself.
+- [x] Update command-reference pages, usage guide, CLAUDE orientation
+  notes, and this roadmap for the new keyword-argument signatures and the
+  four reordered parameter lists.
+
+Follow-ups: none identified -- this milestone is a pure API-ergonomics
+conversion with no new computation and no open design question. Existing
+non-reordered call sites elsewhere in `tests/`/`examples/` that still pass
+a trailing `0`/`0, 0` sentinel positionally were left as-is where they
+still bind correctly (only the four reordered procs required real fixes);
+they remain valid GAUSS, just not updated to the newer keyword style,
+since doing so was not required for correctness.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -3026,8 +3114,8 @@ workflow layer if a real use case asks for it.
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-27 extend it beyond the original scope, as of 2026-08-04
-(package version `0.22.0`). Commits are now being made (and pushed to
+Milestones 11-28 extend it beyond the original scope, as of 2026-08-04
+(package version `0.23.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -3132,3 +3220,17 @@ a pre-call effective-sample-size check, the same defensive pattern
 already used for `eighv()`/`glm()`. Formal strata as a concept distinct
 from clustering, and design-based finite-population correction, remain
 the next explicitly-flagged, unstarted items.
+
+Milestone 28, requested directly by the repo owner rather than from the
+roadmap outline, converted nine already-shipped public procs' optional
+arguments from GAUSS's `...`/dynargs idiom or a required-positional
+`0`-sentinel convention to genuine `param=default` keyword arguments,
+confirming several real GAUSS language constraints empirically along the
+way (most notably that keyword-defaulted parameters and dynargs cannot
+coexist in the same proc). Four procs required a real parameter reorder
+(`quaidsRobustBootstrapFit`, `quaidsWorkflowScenarioFit`,
+`quaidsSurveyWorkflowFit`, `quaidsReplicateWeightFit`) since GAUSS
+requires required parameters to precede defaulted ones -- a deliberate,
+explicitly-authorized breaking change to those four signatures, not an
+additive release, since the package has not yet been publicly released.
+No estimation math changed.

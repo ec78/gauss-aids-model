@@ -12,23 +12,25 @@ flag.
 
 ```gauss
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId, weight=myWeight);
 ```
 
 ## Parameters
 
 - `w`, `intcpt`, `prices`, `totexp`, `instr`, `aCtl` - same shapes and
   meaning as [quaidsFit](quaidsFit.md).
-- `clusterId` - scalar `0` for the heteroskedasticity-robust case, or a
-  `Tx1` cluster-label vector.
-- `weight` (*scalar `0`, or Tx1 vector*) - Milestone 26: **required**
-  (unlike [quaidsFit](quaidsFit.md)'s optional `weight`, this argument
-  follows `clusterId`'s own established required-positional convention in
-  this proc). Scalar `0` means unweighted; a `Tx1` vector is validated the
-  same way [quaidsFit](quaidsFit.md) validates its own `weight` (finite,
-  nonnegative, positive sum) and surfaced via `weightValid`/`weightSum`/
-  `effN` below. An invalid weight is a hard preflight error, the same tier
-  as an invalid `clusterId`.
+- `clusterId` (*OPTIONAL keyword argument, default `0`*) - scalar `0` for
+  the heteroskedasticity-robust case, or a `Tx1` cluster-label vector.
+- `weight` (*OPTIONAL keyword argument, default `0`*) - scalar `0`, or a
+  `Tx1` vector, validated the same way [quaidsFit](quaidsFit.md)
+  validates its own `weight` (finite, nonnegative, positive sum) and
+  surfaced via `weightValid`/`weightSum`/`effN` below. An invalid weight
+  is a hard preflight error, the same tier as an invalid `clusterId`.
+  Milestone 28 converted both `clusterId` and `weight` from required
+  positional arguments (a `0` sentinel meant "not supplied") to genuine
+  GAUSS keyword-defaulted parameters -- omit either one entirely, or
+  supply by name in any order, instead of always typing `, 0, 0`.
 
 ## Returns
 
@@ -76,7 +78,7 @@ struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 
 struct quaidsPreflightOut pOut;
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, householdId, 0);
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId);
 
 if not pOut.ok;
     call printQuaidsPreflight(pOut);

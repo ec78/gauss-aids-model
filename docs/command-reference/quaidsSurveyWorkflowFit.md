@@ -10,22 +10,33 @@ sampling-weighted evaluation point.
 
 ```gauss
 struct quaidsWorkflowOut wfOut;
-wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);
+wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight);
+wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight, clusterId=householdId);   // Milestone 28
 ```
 
 ## Parameters
 
-- `w`, `intcpt`, `prices`, `totexp`, `instr`, `aCtl`, `clusterId` - same as
+- `w`, `intcpt`, `prices`, `totexp`, `instr`, `aCtl` - same as
   [quaidsWorkflowFit](quaidsWorkflowFit.md).
-- `weight` - `Tx1` nonnegative sampling-weight vector. The total weight must
-  be positive. Zero weights are allowed. **Milestone 26: this weight now
-  does double duty** -- it is forwarded into
+- `weight` (*Tx1 vector, required*) - nonnegative sampling-weight vector.
+  The total weight must be positive. Zero weights are allowed. Required
+  with no default -- this is the entire purpose of this proc, so it is
+  not keyword-callable, matching this project's "never silently guess an
+  inference-affecting parameter" precedent (`B` in the bootstrap procs,
+  `replicateWeights`/`scaleFactor` in
+  [quaidsReplicateWeightFit](quaidsReplicateWeightFit.md)). **Milestone
+  26: this weight now does double duty** -- it is forwarded into
   [quaidsWorkflowFit](quaidsWorkflowFit.md)'s own optional `weight`
   argument (so the estimator itself, not just the evaluation point, is
   fit under this weighting), *and* it still computes the weighted
   evaluation point exactly as before. This is a real, deliberate behavior
   change from the original (Milestone 25) version of this proc, which
   left the estimator unweighted -- see Remarks.
+- `clusterId` (*OPTIONAL keyword argument, default `0`*) - same as
+  [quaidsWorkflowFit](quaidsWorkflowFit.md). Milestone 28 moved this
+  parameter after the required `weight` argument and gave it a keyword
+  default (it sat before `weight` as a plain required argument before
+  this conversion).
 
 ## Returns
 
@@ -77,7 +88,7 @@ Invalid weights fail fast with a clear diagnostic.
 
 ```gauss
 struct quaidsWorkflowOut wfSurvey;
-wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, sampwt);
+wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, sampwt);
 
 if wfSurvey.postValid;
     print wfSurvey.evalTotexp;

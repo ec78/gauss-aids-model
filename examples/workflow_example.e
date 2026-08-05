@@ -45,7 +45,7 @@ aCtl.homogenous = 1;
 aCtl.err = .0001;
 
 struct quaidsWorkflowOut wfOut;
-wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 
 print "Model:" wfOut.model;
 print "Converged:" wfOut.converged;
@@ -59,7 +59,7 @@ pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
 struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
-    0, wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
+    wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
 
 if wfScenario.welfareValid;
     print "CV / seCV:" wfScenario.cv wfScenario.seCV;

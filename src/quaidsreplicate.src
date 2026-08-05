@@ -125,19 +125,13 @@ endp;
 **
 ** Format:     struct quaidsReplicateOut rOut =
 **                 quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr,
-**                     aCtl, weight, replicateWeights, scaleFactor, method);
+**                     aCtl, replicateWeights, scaleFactor, weight=0, method="custom");
 **
 ** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
 **                   quaidsFit().
 **
 **             aCtl -- quaidsControl struct, passed through unchanged to
 **                   every quaidsFit() call (base and every replicate).
-**
-**             weight -- scalar 0, or a Tx1 base/full-sample sampling
-**                   weight -- passed straight through to quaidsFit()'s own
-**                   optional weight argument (scalar 0 hits that proc's
-**                   own unweighted path exactly as if the argument were
-**                   omitted entirely).
 **
 **             replicateWeights -- Tx R matrix. Each column is one
 **                   complete, caller-supplied alternate Tx1 weight vector
@@ -146,6 +140,9 @@ endp;
 **                   This proc does not construct, infer, or validate
 **                   design-correctness of these columns; it only refits
 **                   quaidsFit() under each one exactly as supplied.
+**                   Required -- no default (see `scaleFactor` below for
+**                   why, and why both are declared before the keyword-
+**                   defaulted parameters that follow).
 **
 **             scaleFactor -- a positive scalar (applied to every
 **                   replicate, e.g. JK1's (R-1)/R) or a positive Rx1
@@ -155,9 +152,20 @@ endp;
 **                   precedent of never silently guessing an
 **                   inference-affecting parameter.
 **
-**             method -- native string, purely descriptive (e.g. "JK1",
-**                   "BRR", "custom"). Echoed in rOut.method and the
-**                   printed report; has no effect on computation.
+**             weight -- OPTIONAL keyword argument, default `0`. Scalar
+**                   `0`, or a Tx1 base/full-sample sampling weight --
+**                   passed straight through to quaidsFit()'s own optional
+**                   `weight` argument (scalar `0` hits that proc's own
+**                   unweighted path exactly as if the argument were
+**                   omitted entirely).
+**
+**             method -- OPTIONAL keyword argument, default `"custom"`.
+**                   Native string, purely descriptive (e.g. `"JK1"`,
+**                   `"BRR"`). Echoed in rOut.method and the printed
+**                   report; has no effect on computation, which is why
+**                   (unlike `replicateWeights`/`scaleFactor`) a default is
+**                   appropriate here -- it never silently guesses
+**                   anything inference-affecting.
 **
 ** Output:  struct quaidsReplicateOut -- see quaids.sdf. rOut.b/rOut.v are
 **           already in quaidsFit()'s own full qOut.bestB basis -- no
@@ -166,8 +174,7 @@ endp;
 **
 *******************************************************************************/
 
-proc (struct quaidsReplicateOut) = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr,
-    struct quaidsControl aCtl, weight, replicateWeights, scaleFactor, method);
+proc (struct quaidsReplicateOut) = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, replicateWeights, scaleFactor, weight=0, method="custom");
 
     local nobs, n, nint, wnam, bDim1, bDim2, bVecDim, R, i, status, bVec,
         bReplicate, scaleCompleted, completed, failed, scaleVec, thetaFull,
@@ -212,7 +219,7 @@ proc (struct quaidsReplicateOut) = quaidsReplicateWeightFit(w, intcpt, prices, t
     endif;
 
     /* Base (full-sample) fit -- weight=0 hits quaidsFit()'s own unweighted
-       dynargs path exactly as if the argument were omitted. */
+       keyword-default path exactly as if the argument were omitted. */
     qOutFull = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);
     if qOutFull.converged /= 1;
         errorlog "quaidsReplicateWeightFit: the base (full-sample) quaidsFit() did not converge.";

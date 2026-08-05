@@ -46,7 +46,7 @@ shares, elasticities, or welfare measures.
 ```gauss
 struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr,
-    aCtl, householdId, 200, 42);
+    aCtl, 200, clusterId=householdId, seed=42);
 
 { bB, vB } = quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl);
 
