@@ -65,21 +65,18 @@ seed = 204;
 tobs = 1000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(tobs, seed, 1, 1);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsOut qOutBase;
 qOutBase = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(qOutBase.converged == 1, "prerequisite unweighted quaidsFit() converged");
 call check(qOutBase.weighted == 0 and qOutBase.weightSum == tobs and qOutBase.effN == tobs,
     "unweighted quaidsFit reports weighted=0, weightSum=effN=nobs");
 
 wgtOnes = ones(tobs, 1);
-struct quaidsOut qOutOnes;
 qOutOnes = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, wgtOnes);
 call check(qOutOnes.weighted == 1 and qOutOnes.weightSum == tobs and qOutOnes.effN == tobs,
     "explicit uniform weight reports weighted=1, weightSum=effN=nobs");
@@ -88,8 +85,6 @@ call check(maxc(maxc(abs(qOutOnes.bestB - qOutBase.bestB))) == 0,
 call check(maxc(maxc(abs(qOutOnes.bestV - qOutBase.bestV))) == 0,
     "explicit uniform weight reproduces unweighted bestV exactly");
 
-struct quaidsPreflightOut pOutBase;
-struct quaidsPreflightOut pOutOnes;
 pOutBase = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 0);
 pOutOnes = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, wgtOnes);
 call check(pOutBase.weightValid == 1 and pOutBase.weightSum == tobs and pOutBase.effN == tobs,
@@ -99,15 +94,11 @@ call check(pOutOnes.weightValid == 1 and pOutOnes.weightSum == tobs and pOutOnes
 call check(pOutBase.ok == pOutOnes.ok and pOutBase.nErrors == pOutOnes.nErrors,
     "quaidsPreflight ok/nErrors unaffected by an explicit uniform weight");
 
-struct quaidsRobustOut rOutBase;
-struct quaidsRobustOut rOutOnes;
 rOutBase = quaidsRobustFit(qOutBase, w, prices, totexp, aCtl, 0);
 rOutOnes = quaidsRobustFit(qOutBase, w, prices, totexp, aCtl, 0, wgtOnes);
 call check(maxc(maxc(abs(rOutOnes.b - rOutBase.b))) == 0 and maxc(maxc(abs(rOutOnes.se - rOutBase.se))) == 0,
     "quaidsRobustFit with an explicit uniform weight reproduces the unweighted sandwich exactly");
 
-struct quaidsRobustBootOut rbOutBase;
-struct quaidsRobustBootOut rbOutOnes;
 rbOutBase = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 10, seed=42);
 rbOutOnes = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 10, seed=42, weight=wgtOnes);
 call check(maxc(maxc(abs(rbOutOnes.b - rbOutBase.b))) == 0 and maxc(maxc(abs(rbOutOnes.seRobust - rbOutBase.seRobust))) == 0,
@@ -118,7 +109,6 @@ call check(maxc(maxc(abs(rbOutOnes.b - rbOutBase.b))) == 0 and maxc(maxc(abs(rbO
 
 wgtBad = wgtOnes;
 wgtBad[1] = -1;
-struct quaidsPreflightOut pOutBad;
 pOutBad = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, wgtBad);
 call check(pOutBad.weightValid == 0 and pOutBad.ok == 0,
     "a negative weight entry is flagged as a hard preflight error");
@@ -135,11 +125,9 @@ rndseed 77;
 wgtUneq = 1 + rndu(tobs, 1)*3;
 wgtUneq = wgtUneq*tobs/sumc(wgtUneq);
 
-struct quaidsOut qOutW;
 qOutW = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, wgtUneq);
 call check(qOutW.converged == 1, "prerequisite weighted quaidsFit() converged");
 
-struct quaidsRobustOut rOutW;
 rOutW = quaidsRobustFit(qOutW, w, prices, totexp, aCtl, 0, wgtUneq);
 
 n = qOutW.n;
@@ -199,16 +187,13 @@ nPop = 6000;
 seedSurvey = 11;
 { wS, intcptS, pricesS, totexpS, instrS, weightS, trueParamsS } = _quaidsSurveyWeightedDGP(nPop, seedSurvey);
 
-struct quaidsControl aCtlS;
 aCtlS = quaidsControlCreate();
 aCtlS.linear = 1;
 aCtlS.maxiter = 100;
 aCtlS.homogenous = 1;
 aCtlS.err = .0001;
 
-struct quaidsOut qOutNaive;
 qOutNaive = quaidsFit(wS, intcptS, pricesS, totexpS, instrS, aCtlS);
-struct quaidsOut qOutWeighted;
 qOutWeighted = quaidsFit(wS, intcptS, pricesS, totexpS, instrS, aCtlS, weightS);
 
 call check(qOutNaive.converged == 1 and qOutWeighted.converged == 1,

@@ -47,7 +47,6 @@ not imposition as a constrained-estimation mode.
 ## Examples
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call quaidsSlutzky(qOut.bestB, qOut.intcptFull, prices, totexp, aCtl);
 ```

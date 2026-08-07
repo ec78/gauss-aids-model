@@ -81,18 +81,15 @@ seed = 204;
 tobs = 1000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(tobs, seed, 1, 1);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(qOut.converged == 1, "prerequisite quaidsFit() converged");
 
-struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
 
 { bRobustFull, vRobustFull } = quaidsRobustCovariance(qOut, rOut, aCtl);
@@ -157,7 +154,6 @@ call check(minc(minc(ratio)) > 0.5 and maxc(maxc(ratio)) < 5, "robust se stays w
 
 /* Exact-identity regression guard: clusterId=0 is the literal G=nobs
    special case of the cluster-robust formula. */
-struct quaidsRobustOut rOutExplicit;
 rOutExplicit = quaidsRobustFit(qOut, w, prices, totexp, aCtl, seqa(1, 1, tobs));
 call check(maxc(maxc(abs(rOut.se - rOutExplicit.se))) == 0, "clusterId=0 and an explicit per-row seqa(1,1,nobs) label give byte-identical se");
 call check(maxc(maxc(abs(rOut.v - rOutExplicit.v))) == 0, "clusterId=0 and an explicit per-row seqa(1,1,nobs) label give byte-identical v");
@@ -179,8 +175,6 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsSharesOut sharesClassical;
-struct quaidsSharesOut sharesRobust;
 sharesClassical = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 sharesRobust = quaidsSharesFit(bRobustFull, vRobustFull, intcptMean, pricesMean, totexpMean, aCtl);
 call check(maxc(abs(sharesRobust.w - sharesClassical.w)) == 0,
@@ -188,8 +182,6 @@ call check(maxc(abs(sharesRobust.w - sharesClassical.w)) == 0,
 call check(maxc(abs(sharesRobust.se - sharesClassical.se)) > 1e-8,
     "robust covariance propagation changes predicted share SE");
 
-struct quaidsElasOut elasClassical;
-struct quaidsElasOut elasRobust;
 elasClassical = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 elasRobust = quaidsElasFit(bRobustFull, vRobustFull, intcptMean, pricesMean, totexpMean, aCtl);
 call check(maxc(abs(elasRobust.er - elasClassical.er)) == 0 and maxc(maxc(abs(elasRobust.ep - elasClassical.ep))) == 0,
@@ -200,8 +192,6 @@ call check(maxc(abs(elasRobust.ser - elasClassical.ser)) > 1e-8,
 pricesPt1 = pricesMean;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
-struct quaidsWelfareOut welfareClassical;
-struct quaidsWelfareOut welfareRobust;
 welfareClassical = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
 welfareRobust = quaidsWelfareFit(bRobustFull, vRobustFull, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
 call check(welfareRobust.cv == welfareClassical.cv and welfareRobust.ev == welfareClassical.ev,
@@ -219,14 +209,11 @@ call check(1, "printQuaidsRobust() runs without error");
 nClustersTrue = 40;
 { wc, intcptc, pricesc, totexpc, instrc, clusterId } = _quaidsClusterSyntheticDGP(tobs, seed, nClustersTrue);
 
-struct quaidsOut qOutC;
 qOutC = quaidsFit(wc, intcptc, pricesc, totexpc, instrc, aCtl);
 call check(qOutC.converged == 1, "cluster-fixture quaidsFit() converged");
 
-struct quaidsRobustOut rOutNaive;
 rOutNaive = quaidsRobustFit(qOutC, wc, pricesc, totexpc, aCtl, 0);
 
-struct quaidsRobustOut rOutCluster;
 rOutCluster = quaidsRobustFit(qOutC, wc, pricesc, totexpc, aCtl, clusterId);
 
 call check(rOutCluster.nClusters == nClustersTrue, "cluster fixture: nClusters matches the true number of clusters");

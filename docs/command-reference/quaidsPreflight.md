@@ -11,7 +11,6 @@ flag.
 ## Format
 
 ```gauss
-struct quaidsPreflightOut pOut;
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId, weight=myWeight);
 ```
@@ -74,10 +73,8 @@ full weak-IV analysis.
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 
-struct quaidsPreflightOut pOut;
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId);
 
 if not pOut.ok;

@@ -46,20 +46,16 @@ seed = 204;
 tobs = 1000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(tobs, seed, 1, 1);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-struct quaidsPreflightOut pOut;
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 0);
 
 n = qOut.n;
@@ -69,13 +65,6 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsSharesOut sharesOut;
-struct quaidsElasOut elasOut;
-struct quaidsRobustOut robustOut;
-struct quaidsWelfareOut welfareOut;
-struct quaidsWelfareOut welfareRobustOut;
-struct quaidsSharesOut sharesRobustOut;
-struct quaidsElasOut elasRobustOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 robustOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, 0);
@@ -127,7 +116,6 @@ call check(maxc(maxc(abs(wfOut.priceElasRobustSE - elasRobustOut.sep))) == 0,
 pricesPt1 = pricesMean;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
-struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl, intcptMean, pricesMean, pricesPt1, totexpMean);
 welfareOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
 welfareRobustOut = quaidsWelfareFit(bRobustFull, vRobustFull, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
@@ -143,15 +131,12 @@ call check(wfScenario.welfareRobustValid == 1 and wfScenario.seCVRobust == welfa
 call check(maxc(abs(wfScenario.scenarioPrices1 - pricesPt1)) == 0 and wfScenario.scenarioTotexp0 == totexpMean,
     "workflow scenario echoes welfare scenario inputs");
 
-struct quaidsControl aCtlQ;
 aCtlQ = quaidsControlCreate();
 aCtlQ.linear = 0;
 aCtlQ.maxiter = 100;
 aCtlQ.homogenous = 0;
 aCtlQ.err = .0001;
 
-struct quaidsWorkflowOut wfQ;
-struct quaidsOut qOutQ;
 wfQ = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtlQ, 0);
 qOutQ = quaidsFit(w, intcpt, prices, totexp, instr, aCtlQ);
 { statQ, pvalQ, dfQ } = quaidsQuadraticTest(qOutQ);
@@ -170,16 +155,12 @@ call check(wfQ.quadraticStat == statQ and wfQ.quadraticPval == pvalQ and wfQ.qua
 rndseed 55;
 wgtWf = 1 + rndu(tobs, 1)*3;
 
-struct quaidsWorkflowOut wfWeighted;
 wfWeighted = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0, wgtWf);
 
-struct quaidsOut qOutWfWeighted;
 qOutWfWeighted = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, wgtWf);
 
-struct quaidsPreflightOut pOutWfWeighted;
 pOutWfWeighted = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, wgtWf);
 
-struct quaidsRobustOut robustWfWeighted;
 robustWfWeighted = quaidsRobustFit(qOutWfWeighted, w, prices, totexp, aCtl, 0, wgtWf);
 
 call check(wfWeighted.weighted == 1 and wfWeighted.weightSum == qOutWfWeighted.weightSum and wfWeighted.effN == qOutWfWeighted.effN,

@@ -10,7 +10,6 @@ standard errors. Silent, no printing -- see
 ## Format
 
 ```gauss
-struct quaidsWelfareOut wOut;
 wOut = quaidsWelfareFit(b, v, intcpt, pricesPt0, pricesPt1, totexpPt0, aCtl);
 ```
 
@@ -65,7 +64,6 @@ full derivation and how it was verified before implementation.
 ## Examples
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 n = qOut.n;
@@ -78,7 +76,6 @@ totexpPt0 = meanc(totexp);
 pricesPt1 = pricesPt0;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
-struct quaidsWelfareOut wOut;
 wOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
 call printQuaidsWelfare(wOut);
 ```

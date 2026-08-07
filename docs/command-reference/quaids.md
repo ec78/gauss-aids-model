@@ -46,7 +46,6 @@ section).
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;
 aCtl.homogenous = 1;

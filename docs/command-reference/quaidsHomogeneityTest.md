@@ -41,11 +41,9 @@ and power (does it correctly reject a false null?) in
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.homogenous = 0;   // required: unconstrained fit
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 { stat, pval, df } = quaidsHomogeneityTest(qOut);

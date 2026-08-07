@@ -55,7 +55,6 @@ endp;
    so quaidsHomogeneityTest()/quaidsJointTest() have something to test.
    ========================================================================== */
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 aCtl.linear = 0;
 aCtl.maxiter = 100;
@@ -64,7 +63,6 @@ aCtl.err = .0001;
 
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(3000, 204, 1, 1);
 
-struct quaidsOut qOutTrue;
 qOutTrue = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 { stat, pval, df } = quaidsHomogeneityTest(qOutTrue);
@@ -85,7 +83,6 @@ c = 1.5;
 wViol[.,1] = wViol[.,1] + c*prices[.,1];
 wViol[.,2] = wViol[.,2] - c*prices[.,1];
 
-struct quaidsOut qOutViol;
 qOutViol = quaidsFit(wViol, intcpt, prices, totexp, instr, aCtl);
 
 { statV, pvalV, dfV } = quaidsHomogeneityTest(qOutViol);
@@ -144,14 +141,12 @@ a_pSym = sumc( (pricesSym.*(al+intcptSym*al1) )') + .5*sumc(((pricesSym*ga).*pri
 lxSym = totexpSym - a_pSym;
 wSym = al + pricesSym*ga + lxSym*be + eSym + intcptSym*al1;
 
-struct quaidsControl aCtlHom;
 aCtlHom = quaidsControlCreate;
 aCtlHom.linear = 1;
 aCtlHom.maxiter = 100;
 aCtlHom.homogenous = 1;
 aCtlHom.err = .0001;
 
-struct quaidsOut qOutSym;
 qOutSym = quaidsFit(wSym, intcptSym, pricesSym, totexpSym, instrSym, aCtlHom);
 
 call check(qOutSym.symValid == 1, "symmetry test runs when aCtl.homogenous=1");
@@ -167,14 +162,12 @@ call check(qOutSym.symPval < 0.01, "symmetry-given-homogeneity test POWER: rejec
    would spuriously reject symmetry for a reason that has nothing to do
    with symmetry -- confirmed by hitting exactly that failure mode first
    and tracing it back to this mismatch. */
-struct quaidsControl aCtlHomQ;
 aCtlHomQ = quaidsControlCreate;
 aCtlHomQ.linear = 0;
 aCtlHomQ.maxiter = 100;
 aCtlHomQ.homogenous = 1;
 aCtlHomQ.err = .0001;
 
-struct quaidsOut qOutSymTrue;
 qOutSymTrue = quaidsFit(w, intcpt, prices, totexp, instr, aCtlHomQ);
 call check(qOutSymTrue.symPval > 0.05, "symmetry-given-homogeneity test SIZE: fails to reject on a truly symmetric DGP (pval > 0.05)");
 
@@ -214,7 +207,6 @@ a_pO = sumc( (pricesO.*(alO+intcptO*al1O) )') + .5*sumc(((pricesO*gaO).*pricesO)
 lxO = totexpO - a_pO;
 wO = alO + pricesO*gaO + lxO*beO + eO + intcptO*al1O;
 
-struct quaidsOut qOutOI;
 qOutOI = quaidsFit(wO, intcptO, pricesO, totexpO, instrO, aCtlHom);
 
 call check(qOutOI.ninst == 2, "overID fixture: ninst == 2");
@@ -251,7 +243,6 @@ call check(dfQ == qOutTrue.n - 1, "quadratic-term test: df == n-1 (4)");
 call check(pvalQ < 0.01, "quadratic-term test POWER: rejects on a true-QUAIDS (quadratic=1) DGP (pval < 0.01)");
 
 { wLin, intcptLin, pricesLin, totexpLin, instrLin, tpLin } = _quaidsSyntheticDGP(3000, 204, 0, 1);
-struct quaidsOut qOutLinTrue;
 qOutLinTrue = quaidsFit(wLin, intcptLin, pricesLin, totexpLin, instrLin, aCtl);
 
 { statQ0, pvalQ0, dfQ0 } = quaidsQuadraticTest(qOutLinTrue);

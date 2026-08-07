@@ -9,7 +9,6 @@ output), returning a `quaidsElasOut` structure.
 ## Format
 
 ```gauss
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(b, v, intcpt, prices, totexp, aCtl);
 ```
 
@@ -68,7 +67,6 @@ call.
 ## Examples
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 n = qOut.n;
@@ -78,7 +76,6 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 print elasOut.er;
 ```

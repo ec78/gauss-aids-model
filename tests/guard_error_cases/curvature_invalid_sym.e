@@ -14,9 +14,6 @@ library optmt;
 #include ../src/quaidscurvature.src;
 #include quaidsfixtures.src;
 
-struct quaidsControl aCtl;
-struct quaidsOut qOut;
-struct quaidsCurvOut cOut;
 
 tobs = 3000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsCurvatureSyntheticDGP(tobs);

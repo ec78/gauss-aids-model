@@ -33,7 +33,6 @@ splits.
 ## Examples
 
 ```gauss
-struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 call printQuaidsCurvature(cOut);
 ```

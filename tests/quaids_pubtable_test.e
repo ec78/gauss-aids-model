@@ -70,7 +70,6 @@ proc (1) = fileContains(sa, needle);
 endp;
 
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 aCtl.linear = 0;
 aCtl.maxiter = 100;
@@ -78,7 +77,6 @@ aCtl.homogenous = 1;
 aCtl.err = .0001;
 
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(3000, 204, 1, 1);
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 n = qOut.n;
@@ -87,7 +85,6 @@ k = rows(qOut.bestB);
 
 /* --- ptModelFromQuaids: one equation's coefficient column. --- */
 
-struct ptModel mdl1;
 mdl1 = ptModelFromQuaids("Good 1", qOut, 1);
 call check(maxc(abs(mdl1.estimates - qOut.bestB[., 1])) == 0,
     "ptModelFromQuaids: estimates match qOut.bestB column exactly (good 1)");
@@ -97,7 +94,6 @@ call check(rows(mdl1.termNames) == k, "ptModelFromQuaids: termNames has K rows")
 call check(mdl1.termNames[1] $== "CONSTANT", "ptModelFromQuaids: first term name is CONSTANT");
 call check(mdl1.termNames[k] $== qOut.unam[qOut.nu], "ptModelFromQuaids: last term name is the final IV-residual name");
 
-struct ptModel mdl3;
 idx3 = seqa((3-1)*k+1, 1, k);
 mdl3 = ptModelFromQuaids("Good 3", qOut, 3);
 call check(maxc(abs(mdl3.estimates - qOut.bestB[., 3])) == 0,
@@ -110,7 +106,6 @@ call check(maxc(abs(mdl3.estimates - mdl1.estimates)) > 1e-6,
 
 /* --- ptFromQuaids: N-column comparison table. --- */
 
-struct ptTable coefTbl;
 coefTbl = ptFromQuaids(qOut);
 call check(cols(coefTbl.body) == n, "ptFromQuaids: one column per good");
 call check(rows(coefTbl.rowNames) == rows(coefTbl.body), "ptFromQuaids: rowNames match body row count");
@@ -126,10 +121,8 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 
-struct ptModel elasMdl;
 elasMdl = ptModelFromQuaidsElas("Income elasticities", elasOut);
 call check(maxc(abs(elasMdl.estimates - elasOut.er)) == 0,
     "ptModelFromQuaidsElas: estimates match elasOut.er exactly");
@@ -137,12 +130,10 @@ call check(maxc(abs(elasMdl.stdErrors - elasOut.ser)) == 0,
     "ptModelFromQuaidsElas: stdErrors match elasOut.ser exactly");
 call check(rows(elasMdl.termNames) == n, "ptModelFromQuaidsElas: one term name per good");
 
-struct ptTable elasIncomeTbl;
 elasIncomeTbl = ptFromQuaidsElas(elasOut);
 call check(elasIncomeTbl.title $== "Income elasticities", "ptFromQuaidsElas: title is Income elasticities");
 call check(cols(elasIncomeTbl.body) == 1, "ptFromQuaidsElas: single column");
 
-struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);
 call check(rows(elasTbls) == 3, "ptTablesFromQuaidsElas: returns 3 tables");
 call check(elasTbls[1].title $== "Income elasticities", "ptTablesFromQuaidsElas[1]: income elasticities");
@@ -162,23 +153,19 @@ call check(abs(stof(elasTbls[2].body[1, 1]) - elasOut.ep[1, 1]) < 5e-4,
 
 /* --- ptFromQuaidsFamily dispatcher. --- */
 
-struct ptTable dispQ;
 dispQ = ptFromQuaidsFamily(qOut);
 call check(dispQ.title $== coefTbl.title, "ptFromQuaidsFamily(qOut): matches ptFromQuaids");
 
-struct ptTable dispE;
 dispE = ptFromQuaidsFamily(elasOut);
 call check(dispE.title $== elasIncomeTbl.title, "ptFromQuaidsFamily(elasOut): matches ptFromQuaidsElas");
 
 
 /* --- ptTablesFromQuaidsWorkflow: applied workflow bundle. --- */
 
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, 0);
 call check(wfOut.postValid == 1 and wfOut.robustValid == 1,
     "quaidsWorkflowFit prerequisite for pubtable bundle is valid");
 
-struct ptTable wfTbls;
 wfTbls = ptTablesFromQuaidsWorkflow(wfOut);
 call check(rows(wfTbls) == 4, "ptTablesFromQuaidsWorkflow: returns 4 tables without welfare scenario");
 call check(wfTbls[1].title $== "Predicted budget shares",
@@ -193,7 +180,6 @@ call check(strindx(wfTbls[4].title, "Compensated", 1) > 0,
 pricesPt1 = pricesMean;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
-struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl, intcptMean, pricesMean, pricesPt1, totexpMean);
 wfTbls = ptTablesFromQuaidsWorkflow(wfScenario);
 call check(rows(wfTbls) == 5 and wfTbls[5].title $== "Welfare scenario",

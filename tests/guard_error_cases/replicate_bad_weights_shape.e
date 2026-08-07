@@ -14,8 +14,6 @@ new;
 #include ../src/quaidsreplicate.src
 #include quaidsfixtures.src;
 
-struct quaidsControl aCtl;
-struct quaidsReplicateOut rOut;
 
 tobs = 1000;
 aCtl = quaidsControlCreate();

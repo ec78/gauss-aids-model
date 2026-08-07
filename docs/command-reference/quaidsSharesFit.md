@@ -11,7 +11,6 @@ hand-deriving the AIDS/QUAIDS share equation. Silent, no printing -- see
 ## Format
 
 ```gauss
-struct quaidsSharesOut sharesOut;
 sharesOut = quaidsSharesFit(b, v, intcpt, prices, totexp, aCtl);
 ```
 
@@ -76,7 +75,6 @@ section for why.
 ## Examples
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 n = qOut.n;
@@ -85,7 +83,6 @@ intcptPt = meanc(qOut.intcptFull);
 pricesPt = meanc(prices);
 totexpPt = meanc(totexp);
 
-struct quaidsSharesOut sharesOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
 
 call printQuaidsShares(sharesOut);

@@ -44,13 +44,11 @@ shares, elasticities, or welfare measures.
 ## Example
 
 ```gauss
-struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr,
     aCtl, 200, clusterId=householdId, seed=42);
 
 { bB, vB } = quaidsRobustBootstrapCovariance(qOut, rbOut, aCtl);
 
-struct quaidsSharesOut sharesB;
 sharesB = quaidsSharesFit(bB, vB, intcptPt, pricesPt, totexpPt, aCtl);
 ```
 

@@ -55,7 +55,6 @@ permutation-invariant). Both were fixed alongside this proc's own
 ## Examples
 
 ```gauss
-struct quaidsCurvBootOut bootOut;
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, 42);
 
 { ciLower, ciUpper } = quaidsCurvatureBootstrapCI(bootOut, 0.05);

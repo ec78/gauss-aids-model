@@ -110,14 +110,12 @@ endp;
 tobs = 3000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsCurvatureSyntheticDGP(tobs);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(qOut.converged == 1, "starting homogeneity+symmetry fit converged");
 call check(qOut.symValid == 1, "starting homogeneity+symmetry fit has valid symmetry-constrained output");
@@ -147,7 +145,6 @@ call check(maxc(eigUnc) > 0, "unconstrained fit genuinely violates curvature at 
 
 /* --- Fit the curvature-constrained model. --- */
 
-struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 
 call check(cOut.converged == 1, "curvature-constrained fit converged");
@@ -220,14 +217,12 @@ call check(1, "printQuaidsCurvature() runs without error");
 tobsQ = 3000;
 { wQ, intcptQ, pricesQ, totexpQ, instrQ, trueParamsQ } = _quaidsSyntheticDGP(tobsQ, 204, 1, 1);
 
-struct quaidsControl aCtlQ;
 aCtlQ = quaidsControlCreate();
 aCtlQ.linear = 0;
 aCtlQ.maxiter = 100;
 aCtlQ.homogenous = 1;
 aCtlQ.err = .0001;
 
-struct quaidsOut qOutQ;
 qOutQ = quaidsFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ);
 call check(qOutQ.converged == 1, "QUAIDS: starting homogeneity+symmetry fit converged");
 call check(qOutQ.symValid == 1, "QUAIDS: starting homogeneity+symmetry fit has valid symmetry-constrained output");
@@ -260,7 +255,6 @@ struct quaidsControl aCtlCurvQ;
 aCtlCurvQ = aCtlQ;
 aCtlCurvQ.relax = .25;
 
-struct quaidsCurvOut cOutQ;
 cOutQ = quaidsCurvatureFit(qOutQ, wQ, pricesQ, totexpQ, aCtlCurvQ);
 
 call check(cOutQ.converged == 1, "QUAIDS: curvature-constrained fit converged");

@@ -37,14 +37,12 @@ a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
 lx = totexp - a_p;
 w = al + prices*ga + lx*be + e + intcpt*al1;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 
 print "Model:" wfOut.model;
@@ -57,7 +55,6 @@ print wfOut.incomeElas;
 pricesPt1 = wfOut.evalPrices;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
-struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
     wfOut.evalIntcpt, wfOut.evalPrices, pricesPt1, wfOut.evalTotexp);
 

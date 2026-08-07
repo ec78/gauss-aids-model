@@ -13,9 +13,6 @@ new;
 #include ../src/quaidsrobust.src
 #include quaidsfixtures.src;
 
-struct quaidsControl aCtl;
-struct quaidsOut qOut;
-struct quaidsRobustOut rOut;
 
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;

@@ -8,7 +8,6 @@ assembling the `w`/`intcpt`/`prices`/`totexp`/`instr` matrices by hand.
 ## Format
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFull(data, shareVars, priceVars, totexpVar, instrVars, extraVars, aCtl);
 ```
 
@@ -56,10 +55,8 @@ data = loadd("mydata.csv");
 shareVars = "W1"$|"W2"$|"W3"$|"W4"$|"W5";
 priceVars = "P1"$|"P2"$|"P3"$|"P4"$|"P5";
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 
-struct quaidsOut qOut;
 qOut = quaidsFull(data, shareVars, priceVars, "TOTEXP", "Z1", "X1", aCtl);
 
 // No extra intercept shifters:

@@ -9,7 +9,6 @@ console output), returning a `quaidsOut` structure.
 ## Format
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=myWeight);   // Milestone 26/28
 ```
@@ -111,13 +110,11 @@ argument through the applied workflow layer.
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 call printQuaids(qOut);
@@ -127,7 +124,6 @@ print qOut.bestB;
 With a sampling weight, using GAUSS's keyword-argument syntax:
 
 ```gauss
-struct quaidsOut qOutW;
 qOutW = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=surveyWeight);
 ```
 

@@ -74,7 +74,6 @@ lx2 = (lx^2)./exp(b_p);
 
 w = al +  prices*ga + lx*be + e +intcpt*al1 + lx2*la ;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 aCtl.linear = 0;
 aCtl.maxiter = 100;
@@ -85,7 +84,6 @@ aCtl.err = .001;
 /* --- Silence check: nothing should print between these two markers --- */
 
 "=== BEGIN QUAIDSFIT SILENCE WINDOW ===";
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 "=== END QUAIDSFIT SILENCE WINDOW (should be no output above this line since the previous marker) ===";
 

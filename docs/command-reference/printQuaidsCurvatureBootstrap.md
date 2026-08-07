@@ -38,7 +38,6 @@ sits at or near the boundary of the negative-semidefinite cone).
 ## Examples
 
 ```gauss
-struct quaidsCurvBootOut bootOut;
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, 42);
 call printQuaidsCurvatureBootstrap(bootOut);
 ```

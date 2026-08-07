@@ -14,7 +14,6 @@ printing -- see [printQuaidsCurvatureBootstrap](printQuaidsCurvatureBootstrap.md
 ## Format
 
 ```gauss
-struct quaidsCurvBootOut bootOut;
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B);
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=42);   // Milestone 28
 ```
@@ -104,13 +103,11 @@ version before this fix, re-run with the current release.
 ```gauss
 library optmt;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 
-struct quaidsCurvBootOut bootOut;
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, seed=42);
 
 call printQuaidsCurvatureBootstrap(bootOut);

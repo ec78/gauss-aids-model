@@ -50,13 +50,11 @@ instr = 5 + .2*idx + rndns(tobs, 1, s5);
 totexp = .85*instr + .01*rndns(tobs, 1, s6);
 clusterId = ceil(idx/10);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 50;
 aCtl.homogenous = 1;
 
-struct quaidsPreflightOut pOut;
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 0);
 
 call check(pOut.ok == 1 and pOut.nErrors == 0,
@@ -74,7 +72,6 @@ call check(pOut.clusterValid == 1 and pOut.nClusters == tobs and pOut.clusterWar
 
 call printQuaidsPreflight(pOut);
 
-struct quaidsPreflightOut pCluster;
 pCluster = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, 0);
 call check(pCluster.clusterValid == 1 and pCluster.nClusters == 8 and pCluster.minClusterSize == 10,
     "explicit cluster labels produce correct cluster counts");
@@ -84,7 +81,6 @@ call check(pCluster.clusterWarning == 1 and pCluster.ok == 1,
 wZero = w;
 wZero[1, 3] = wZero[1, 3] + wZero[1, 1];
 wZero[1, 1] = 0;
-struct quaidsPreflightOut pZero;
 pZero = quaidsPreflight(wZero, intcpt, prices, totexp, instr, aCtl, 0, 0);
 call check(pZero.ok == 1 and pZero.zeroShareCount == 1 and pZero.nWarnings > 0,
     "zero shares are flagged as a warning while preserving ok status");
@@ -92,26 +88,22 @@ call check(pZero.ok == 1 and pZero.zeroShareCount == 1 and pZero.nWarnings > 0,
 wNeg = w;
 wNeg[1, 1] = -.10;
 wNeg[1, 3] = 1 - wNeg[1, 1] - wNeg[1, 2];
-struct quaidsPreflightOut pNeg;
 pNeg = quaidsPreflight(wNeg, intcpt, prices, totexp, instr, aCtl, 0, 0);
 call check(pNeg.ok == 0 and pNeg.negativeShareCount == 1 and pNeg.convergenceRisk == 2,
     "negative shares are a hard preflight error");
 
 wAdd = w;
 wAdd[1, 1] = wAdd[1, 1] + .01;
-struct quaidsPreflightOut pAdd;
 pAdd = quaidsPreflight(wAdd, intcpt, prices, totexp, instr, aCtl, 0, 0);
 call check(pAdd.ok == 0 and pAdd.shareAddOk == 0 and pAdd.maxShareSumDev > .009,
     "share adding-up violations are hard preflight errors");
 
 pricesLow = prices;
 pricesLow[., 2] = ones(tobs, 1);
-struct quaidsPreflightOut pLow;
 pLow = quaidsPreflight(w, intcpt, pricesLow, totexp, instr, aCtl, 0, 0);
 call check(pLow.lowPriceVariation == 1 and pLow.nWarnings > 0,
     "low price variation is flagged as a warning");
 
-struct quaidsPreflightOut pDim;
 pDim = quaidsPreflight(w, intcpt, prices[1:tobs-1, .], totexp, instr, aCtl, 0, 0);
 call check(pDim.ok == 0 and pDim.dimensionsOk == 0 and pDim.nErrors == 1,
     "dimension mismatch returns a diagnostic struct instead of fitting");
@@ -122,7 +114,6 @@ call check(pDim.ok == 0 and pDim.dimensionsOk == 0 and pDim.nErrors == 1,
    entry is a hard preflight error, the same tier as clusterId. */
 rndseed 88;
 wgtUnequal = 1 + rndu(tobs, 1)*4;
-struct quaidsPreflightOut pWeighted;
 pWeighted = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, wgtUnequal);
 call check(pWeighted.weightValid == 1 and pWeighted.weightSum == sumc(wgtUnequal),
     "a genuinely unequal valid weight vector is accepted and its sum is reported");
@@ -131,7 +122,6 @@ call check(pWeighted.effN < pWeighted.weightSum,
 
 wgtNonFinite = ones(tobs, 1);
 wgtNonFinite[1] = miss(1, 1);
-struct quaidsPreflightOut pWeightBad;
 pWeightBad = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, wgtNonFinite);
 call check(pWeightBad.weightValid == 0 and pWeightBad.ok == 0,
     "a non-finite weight entry is a hard preflight error");

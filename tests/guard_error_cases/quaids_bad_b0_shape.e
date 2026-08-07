@@ -12,8 +12,6 @@ new;
 #include ../src/quaids.src;
 #include quaidsfixtures.src;
 
-struct quaidsControl aCtl;
-struct quaidsOut qOut;
 
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;

@@ -30,7 +30,6 @@ can run silently and be printed only when wanted -- mirrors every other
 ## Examples
 
 ```gauss
-struct quaidsSharesOut sharesOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
 call printQuaidsShares(sharesOut);
 ```

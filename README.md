@@ -66,23 +66,19 @@ library quaids;
 // w: TxN budget shares. prices: TxN log prices (absolute). totexp: Tx1 log
 // total expenditure (treated as endogenous). instr: TxH instruments.
 // intcpt: TxK extra intercept-shifter variables, or 0 for none.
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;          // 0 = QUAIDS, 1 = AIDS/LA-AIDS
 aCtl.maxiter = 100;       // 1 = one-step Stone-index LA-AIDS
 aCtl.homogenous = 1;      // impose homogeneity (and test/report symmetry)
 
-struct quaidsPreflightOut pOut;
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
 if not pOut.ok;
     call printQuaidsPreflight(pOut);
     end;
 endif;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
 call printQuaidsElas(elasOut);
 
@@ -179,15 +175,12 @@ library pubtable, quaids;
 #include quaids.sdf
 #include pubtable_quaids.src   // not in package.json's src array -- see docs/COMMAND_REFERENCE.md
 
-struct ptTable coefTbl;
 coefTbl = ptFromQuaids(qOut);
 call ptExport(coefTbl, "results.tex");   // .tex/.md/.csv/.rtf/.html/.xlsx by extension
 
-struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);  // 3x1: income, uncompensated, compensated
 call ptExportAll(elasTbls, "elasticities");
 
-struct ptTable workflowTbls;
 workflowTbls = ptTablesFromQuaidsWorkflow(wfOut);
 call ptExportAll(workflowTbls, "workflow");
 ```

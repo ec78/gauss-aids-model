@@ -8,7 +8,6 @@ Builds a `pubtable` table bundle from a `quaidsWorkflowOut` object. Optional
 ## Format
 
 ```gauss
-struct ptTable tbls;
 tbls = ptTablesFromQuaidsWorkflow(wfOut);
 ```
 

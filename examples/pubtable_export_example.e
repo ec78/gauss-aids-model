@@ -63,19 +63,16 @@ lx2 = (lx^2)./exp(b_p);
 
 w = al +  prices*ga + lx*be + e +intcpt*al1 + lx2*la ;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 aCtl.linear = 0;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .001;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 /* Coefficient table: one comparison column per good, symmetry-constrained
    estimates (qOut.bestB/qOut.bestV), with significance stars and SEs. */
-struct ptTable coefTbl;
 coefTbl = ptFromQuaids(qOut);
 
 call ptExport(coefTbl, "quaids_coefficients.tex");
@@ -90,12 +87,10 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 
 /* Income elasticities, uncompensated price elasticities, compensated
    price elasticities -- three tables, one export call each per format. */
-struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);
 
 call ptExport(elasTbls[1], "quaids_income_elasticities.md");

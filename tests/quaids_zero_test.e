@@ -88,7 +88,6 @@ endo;
 call check(minc(fracs) > 0.01 and maxc(fracs) < 0.99, "fixture: zero-share fractions are genuine but not degenerate (no good is always/never zero)");
 
 
-struct quaidsControl aCtl;
 struct quaidsControl aCtlB0;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;
@@ -96,8 +95,6 @@ aCtl.maxiter = 100;
 aCtl.homogenous = 0;
 aCtl.err = .0001;
 
-struct quaidsZeroOut zOut;
-struct quaidsZeroOut zOutB0;
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(zOut.converged == 1, "quaidsZeroFit converged");
 
@@ -133,7 +130,6 @@ call check(rows(zOutB0.se) == rows(zOut.se) and cols(zOutB0.se) == cols(zOut.se)
 
 /* --- Core validation: corrected recovery beats naive recovery against
    the true latent DGP, on this specific screened seed. --- */
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(qOut.converged == 1, "naive quaidsFit() (for comparison) converged");
 

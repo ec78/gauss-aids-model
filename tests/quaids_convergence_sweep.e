@@ -67,8 +67,6 @@ tobs = 3000;
 structTol = 0.10;
 wrongMult = 10;
 
-struct quaidsControl aCtl;
-struct quaidsOut qOut;
 
 q = 0;
 do while q <= 1;

@@ -42,7 +42,6 @@ than silently corrected.
 ## Examples
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call printQuaids(qOut);
 ```

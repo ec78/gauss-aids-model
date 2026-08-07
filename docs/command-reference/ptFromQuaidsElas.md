@@ -9,7 +9,6 @@ package.
 ## Format
 
 ```gauss
-struct ptTable elasIncomeTbl;
 elasIncomeTbl = ptFromQuaidsElas(elasOut);
 ```
 
@@ -32,7 +31,6 @@ a 3-table bundle.
 ## Examples
 
 ```gauss
-struct ptTable elasIncomeTbl;
 elasIncomeTbl = ptFromQuaidsElas(elasOut);
 call ptExport(elasIncomeTbl, "income_elasticities.md");
 ```

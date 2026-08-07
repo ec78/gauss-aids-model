@@ -48,7 +48,6 @@ seed = 204;
 tobs = 1000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(tobs, seed, 1, 1);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
@@ -58,14 +57,11 @@ aCtl.err = .0001;
 weight = seqa(1, 1, tobs);
 weight = weight/sumc(weight)*tobs;
 
-struct quaidsWorkflowOut wfBase;
-struct quaidsWorkflowOut wfSurvey;
 wfBase = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight);
 
 /* Milestone 26: the underlying estimator IS now weighted -- qOutW is the
    direct quaidsFit() call this weight should reproduce exactly. */
-struct quaidsOut qOutW;
 qOutW = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight);
 
 n = qOutW.n;
@@ -76,10 +72,6 @@ intcptW = mW[1:1+nint];
 pricesW = mW[1+nint+1:1+nint+n];
 totexpW = mW[1+nint+n+1];
 
-struct quaidsSharesOut sharesOut;
-struct quaidsElasOut elasOut;
-struct quaidsSharesOut sharesRobustOut;
-struct quaidsElasOut elasRobustOut;
 sharesOut = quaidsSharesFit(qOutW.bestB, qOutW.bestV, intcptW, pricesW, totexpW, aCtl);
 elasOut = quaidsElasFit(qOutW.bestB, qOutW.bestV, intcptW, pricesW, totexpW, aCtl);
 sharesRobustOut = quaidsSharesFit(wfSurvey.robustBestB, wfSurvey.robustBestV, intcptW, pricesW, totexpW, aCtl);
@@ -120,7 +112,6 @@ call check(maxc(maxc(abs(wfSurvey.priceElasRobustSE - elasRobustOut.sep))) == 0,
     "survey workflow robust price elasticity SE match weighted-point robust covariance propagation");
 
 weightOnes = ones(tobs, 1);
-struct quaidsWorkflowOut wfOnes;
 wfOnes = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weightOnes);
 call check(maxc(abs(wfOnes.evalPrices - wfBase.evalPrices)) < 1e-12 and abs(wfOnes.evalTotexp - wfBase.evalTotexp) < 1e-12,
     "constant weights reproduce the default workflow evaluation point");

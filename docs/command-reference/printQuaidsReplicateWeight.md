@@ -33,7 +33,6 @@ discloses which design the caller declared -- purely for readability;
 ## Examples
 
 ```gauss
-struct quaidsReplicateOut rOut;
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl,
     replicateWeights, scaleFactorJK1, weight=surveyWeight, method="JK1");
 

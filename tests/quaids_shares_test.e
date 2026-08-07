@@ -76,14 +76,12 @@ endp;
 tobs = 3000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsCurvatureSyntheticDGP(tobs);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call check(qOut.converged == 1, "AIDS: starting fit converged (precondition)");
 
@@ -93,7 +91,6 @@ intcptMean = meanc(qOut.intcptFull);
 pricesMean = meanc(prices);
 totexpMean = meanc(totexp);
 
-struct quaidsSharesOut sharesOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 
 wHand = handComputedShare(qOut.bestB, intcptMean, pricesMean, totexpMean, aCtl);
@@ -112,7 +109,6 @@ call check(maxc(abs(sharesOut.se - sqrt(diag(sharesOut.v)))) < 1e-10, "AIDS: se 
    predicted share. */
 pricesShift = pricesMean;
 pricesShift[1] = pricesShift[1] + ln(1.2);
-struct quaidsSharesOut sharesShift;
 sharesShift = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesShift, totexpMean, aCtl);
 call check(maxc(abs(sharesShift.w - sharesOut.w)) > 1e-6, "AIDS: a shifted price point gives a genuinely different predicted share");
 
@@ -127,14 +123,12 @@ call check(1, "AIDS: printQuaidsShares() runs without error");
 tobsQ = 3000;
 { wQ, intcptQ, pricesQ, totexpQ, instrQ, trueParamsQ } = _quaidsSyntheticDGP(tobsQ, 204, 1, 1);
 
-struct quaidsControl aCtlQ;
 aCtlQ = quaidsControlCreate();
 aCtlQ.linear = 0;
 aCtlQ.maxiter = 100;
 aCtlQ.homogenous = 1;
 aCtlQ.err = .0001;
 
-struct quaidsOut qOutQ;
 qOutQ = quaidsFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ);
 call check(qOutQ.converged == 1, "QUAIDS: starting fit converged (precondition)");
 
@@ -144,7 +138,6 @@ intcptMeanQ = meanc(qOutQ.intcptFull);
 pricesMeanQ = meanc(pricesQ);
 totexpMeanQ = meanc(totexpQ);
 
-struct quaidsSharesOut sharesOutQ;
 sharesOutQ = quaidsSharesFit(qOutQ.bestB, qOutQ.bestV, intcptMeanQ, pricesMeanQ, totexpMeanQ, aCtlQ);
 
 wHandQ = handComputedShare(qOutQ.bestB, intcptMeanQ, pricesMeanQ, totexpMeanQ, aCtlQ);

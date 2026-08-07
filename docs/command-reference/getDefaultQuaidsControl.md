@@ -9,7 +9,6 @@ library.
 ## Format
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = getDefaultQuaidsControl();
 ```
 
@@ -30,7 +29,6 @@ Prefer whichever name reads better in your own code.
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = getDefaultQuaidsControl();
 ```
 

@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-08-04
+Status date: 2026-08-07
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -12,8 +12,8 @@ libraries stay consistent to maintain and to use.
 ## Current Status Snapshot
 
 The repository is pre-alpha, package version `0.23.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-28**, as of
-2026-08-04: 0
+milestone roadmap is complete, plus Milestones 11-29**, as of
+2026-08-07: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -120,7 +120,16 @@ parameters to precede defaulted ones, explicitly authorized as a breaking
 change since this package has not yet been publicly released; see that
 section below for the empirically-confirmed GAUSS language constraints
 this conversion is built on, most notably that keyword-defaulted
-parameters and `...`/dynargs cannot coexist in the same proc).
+parameters and `...`/dynargs cannot coexist in the same proc), and 29 (a
+repo-owner-requested review of every procedure for GAUSS's caller-side
+struct auto-declaration -- found the proc-declaration side already fully
+compliant since Milestone 5, so the real work was a script-verified
+cleanup of 352 now-redundant pre-declarations across tests/examples/docs,
+plus one real, previously-undetected bug found and fixed along the way
+in already-shipped `pubtable_quaids.src` code; see that section below for
+the exact GAUSS caveats found empirically -- type-locking across a
+reused variable name, and inference not surviving a `retp()` of an
+external package's proc without an intermediate local variable).
 
 The post-20 roadmap shifted from individual post-estimation procs to full
 applied workflow support. `quaidsWorkflowFit()` is the first seed of that
@@ -142,6 +151,11 @@ unstarted items -- see Milestone 27's own "Follow-ups" note below.
 Milestone 28 was a repo-owner-requested API ergonomics pass (keyword
 arguments), not a roadmap item -- it changed nine call signatures but no
 estimation math, and does not affect the survey-design follow-ups above.
+Milestone 29 was a second repo-owner-requested ergonomics pass (caller-
+side struct auto-declaration), also not a roadmap item and also with no
+effect on estimation math or the survey-design follow-ups -- its one real
+finding was a pre-existing bug in `pubtable_quaids.src`'s
+`ptFromQuaidsElas()`, unrelated to the survey/design-based work.
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -3008,6 +3022,63 @@ a trailing `0`/`0, 0` sentinel positionally were left as-is where they
 still bind correctly (only the four reordered procs required real fixes);
 they remain valid GAUSS, just not updated to the newer keyword style,
 since doing so was not required for correctness.
+
+### Milestone 29 -- Caller-Side Struct Auto-Declaration Cleanup -- COMPLETE
+
+Requested directly by the repo owner: review every procedure for GAUSS's
+struct-inference return typing (`proc (struct T) = name(...);`, no
+variable name in the return slot) "where ever applicable," with an
+example from a sibling project (`dccelib`'s `cce_mg()`).
+
+- [x] Confirmed by direct `grep` that every struct-returning proc in this
+  library already uses the inference-enabling declaration form -- the
+  standing convention since Milestone 5's `quaidsControlCreate()`. No
+  proc-declaration changes were needed.
+- [x] Empirically verified GAUSS's actual auto-declaration mechanics
+  before touching any file: caller-side inference works via both
+  `#include` and `library quaids;`; does NOT survive a plain struct-to-
+  struct copy (`b = a;`, throws `error G0008` on first field access);
+  does NOT allow retyping an already-inferred variable from a second,
+  different struct-returning call in the same scope (`error G0504`); and
+  is never optional for a struct local declared INSIDE a proc body
+  (doubles as the required local-variable declaration, `error G0025` if
+  removed).
+- [x] Confirmed cleanup scope with the repo owner via `AskUserQuestion`:
+  tests + examples + docs (the user-facing surface), not internal
+  `src/`-to-`src/` calls.
+- [x] Built a script-verified removal pass (not manual file-by-file
+  editing) applying the three safety rules above across
+  `tests/*.e`/`tests/guard_error_cases/*.e`/`examples/*.e` (230 removable
+  pre-declarations) and, with per-fenced-code-block scoping (docs
+  legitimately reuse the same variable name across independent Format/
+  Examples snippets), `docs/command-reference/*.md`/
+  `docs/USAGE_GUIDE.md`/`README.md` (122 more).
+- [x] Found and fixed a real, previously-undetected bug in already-
+  shipped `src/pubtable_quaids.src`: `ptFromQuaidsElas()` returned
+  `retp(ptModelTable(ptModelFromQuaidsElas(...)))` directly -- a call
+  into an EXTERNAL `pubtable` package proc with no intermediate local
+  `struct ptTable` variable of its own -- which genuinely breaks caller-
+  side inference (confirmed by isolated reproduction), and, since
+  `ptTablesFromQuaidsElas()` calls `ptFromQuaidsElas()` internally, the
+  same failure propagated into ITS callers' indexed field access too.
+  Narrowed the exact trigger (single-level delegation to one of this
+  library's OWN already-typed procs works fine; only the external-
+  package/no-local-variable combination breaks) before fixing it the same
+  way every other struct-returning proc in this codebase already does:
+  local `struct ptTable tbl;`, assign, `retp(tbl);`.
+- [x] Re-ran the full local suite (19 files, no skips) after the removal
+  pass and the bugfix, confirming zero regressions -- including the two
+  files that caught real problems during this milestone
+  (`quaids_pubtable_test.e` for the bug, `quaids_synthetic_validation_test.e`
+  for an early proc-body-unaware removal pass that had to be corrected
+  before reapplying).
+- [x] Ran all three `examples/*.e` scripts directly and confirmed clean
+  output with no errors.
+
+Follow-ups: none identified. No package rebuild/reinstall was needed
+(`pubtable_quaids.src` is not in `package.json`'s `src` array), and no
+version bump (pure ergonomics cleanup plus one bugfix to an optional
+adapter file, no public signature changed).
 
 ## Definition of Done for a Gold Standard Release
 

@@ -41,7 +41,6 @@ xnames = { exog,p1,p2,p3,p4,p5,totexp,instr,w1,w2,w3,w4,w5,instr };
 output file=out reset;
 
 // Declare control structure
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 
 // Set parameters

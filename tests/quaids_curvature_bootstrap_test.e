@@ -83,24 +83,20 @@ endp;
 tobs = 3000;
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsCurvatureSyntheticDGP(tobs);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 call check(cOut.converged == 1, "AIDS: base curvature fit converged (precondition)");
 
 B = 15;
 seed = 42;
 
-struct quaidsCurvBootOut bootOut;
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed);
 
 call check(bootOut.nRequested == B, "AIDS: nRequested echoes B");
@@ -180,7 +176,6 @@ call check(1, "AIDS: printQuaidsCurvatureBootstrap() runs without error");
 tobsQ = 3000;
 { wQ, intcptQ, pricesQ, totexpQ, instrQ, trueParamsQ } = _quaidsSyntheticDGP(tobsQ, 204, 1, 1);
 
-struct quaidsControl aCtlQ;
 aCtlQ = quaidsControlCreate();
 aCtlQ.linear = 0;
 aCtlQ.maxiter = 100;
@@ -188,16 +183,13 @@ aCtlQ.homogenous = 1;
 aCtlQ.err = .0001;
 aCtlQ.relax = .25;
 
-struct quaidsOut qOutQ;
 qOutQ = quaidsFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ);
 
-struct quaidsCurvOut cOutQ;
 cOutQ = quaidsCurvatureFit(qOutQ, wQ, pricesQ, totexpQ, aCtlQ);
 call check(cOutQ.converged == 1, "QUAIDS: base curvature fit converged (precondition)");
 
 BQ = 5;
 
-struct quaidsCurvBootOut bootOutQ;
 bootOutQ = quaidsCurvatureBootstrapFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ, BQ, seed);
 
 call check(bootOutQ.nRequested == BQ, "QUAIDS: nRequested echoes B");

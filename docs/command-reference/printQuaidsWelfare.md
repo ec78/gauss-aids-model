@@ -32,7 +32,6 @@ the `quaidsElasFit()`/`printQuaidsElas()` and
 ## Examples
 
 ```gauss
-struct quaidsWelfareOut wOut;
 wOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
 call printQuaidsWelfare(wOut);
 ```

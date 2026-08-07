@@ -76,7 +76,6 @@ lx2 = (lx^2)./exp(b_p);
 
 w = al +  prices*ga + lx*be + e +intcpt*al1 + lx2*la ;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 aCtl.linear = 0;
 aCtl.maxiter = 100;
@@ -86,7 +85,6 @@ aCtl.err = .001;
 
 /* --- Matrix-API estimate --- */
 
-struct quaidsOut qOutMatrix;
 qOutMatrix = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 
@@ -119,7 +117,6 @@ print;
 
 /* --- Dataframe-API estimate --- */
 
-struct quaidsOut qOutFormula;
 qOutFormula = quaidsFull(data, shareVars, priceVars, totexpVar, instrVars, extraVars, aCtl);
 
 
@@ -144,11 +141,9 @@ call checkEqual(qOutFormula.vS, qOutMatrix.vS, "final vS (legacy v2) matches exa
 
 /* --- extraVars == 0 (no extra intercept shifters) path --- */
 
-struct quaidsOut qOutNoExtra;
 qOutNoExtra = quaidsFull(data, shareVars, priceVars, totexpVar, instrVars, 0, aCtl);
 call check(qOutNoExtra.nint == 0, "quaidsFull with extraVars=0 yields nint == 0");
 
-struct quaidsOut qOutNoExtraMatrix;
 qOutNoExtraMatrix = quaidsFit(w, 0, prices, totexp, instr, aCtl);
 call checkEqual(qOutNoExtra.b, qOutNoExtraMatrix.b,
     "quaidsFull(extraVars=0) matches quaidsFit(intcpt=0) exactly");

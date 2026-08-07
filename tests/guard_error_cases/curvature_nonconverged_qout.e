@@ -14,9 +14,6 @@ library optmt;
 #include ../src/quaidscurvature.src;
 #include quaidsfixtures.src;
 
-struct quaidsControl aCtl;
-struct quaidsOut qOut;
-struct quaidsCurvOut cOut;
 
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;

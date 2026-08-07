@@ -32,7 +32,6 @@ run silently and printed only when wanted -- mirrors the
 ## Examples
 
 ```gauss
-struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId);
 call printQuaidsRobust(rOut);
 ```

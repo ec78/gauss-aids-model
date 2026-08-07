@@ -55,12 +55,10 @@ Validated for both size and power in
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;
 aCtl.homogenous = 0;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 { stat, pval, df } = quaidsQuadraticTest(qOut);

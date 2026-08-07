@@ -13,7 +13,6 @@ Silent, no printing -- see
 ## Format
 
 ```gauss
-struct quaidsReplicateOut rOut;
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactor);
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactor, weight=surveyWeight, method="JK1");   // Milestone 28
 ```
@@ -135,7 +134,6 @@ can reuse the same `quantile()`-based approach directly against
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
@@ -143,7 +141,6 @@ aCtl.homogenous = 1;
 
 // replicateWeights: TxR matrix of survey-provided jackknife replicate
 // weights; scaleFactorJK1 = (R-1)/R for a standard JK1 design.
-struct quaidsReplicateOut rOut;
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl,
     replicateWeights, scaleFactorJK1, weight=surveyWeight, method="JK1");
 
@@ -151,7 +148,6 @@ call printQuaidsReplicateWeight(rOut);
 print "completed:" rOut.nCompleted "failed:" rOut.nFailed;
 
 // rOut.b/rOut.v feed directly into post-estimation -- no expansion step:
-struct quaidsSharesOut sharesOut;
 sharesOut = quaidsSharesFit(rOut.b, rOut.v, intcptPt, pricesPt, totexpPt, aCtl);
 ```
 

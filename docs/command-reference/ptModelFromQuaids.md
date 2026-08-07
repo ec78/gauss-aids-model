@@ -9,7 +9,6 @@ package.
 ## Format
 
 ```gauss
-struct ptModel mdl;
 mdl = ptModelFromQuaids(name, qOut, eqIdx);
 ```
 
@@ -48,7 +47,6 @@ Not part of `package.json`'s `src` array -- see
 library pubtable, quaids;
 #include pubtable_quaids.src
 
-struct ptModel mdl;
 mdl = ptModelFromQuaids("Good 1", qOut, 1);
 ```
 

@@ -66,12 +66,8 @@ endp;
 
 /* --- (a) aCtl.relax=1 (explicit) == aCtl.relax unset (default) --- */
 
-struct quaidsControl aCtlDefault;
 struct quaidsControl aCtlRelax1;
 struct quaidsControl aCtlB0;
-struct quaidsOut qOutDefault;
-struct quaidsOut qOutRelax1;
-struct quaidsOut qOutB0;
 
 aCtlDefault = quaidsControlCreate;
 aCtlDefault.linear = 0;
@@ -107,8 +103,6 @@ call check(rows(qOutB0.bestB) == rows(qOutDefault.bestB) and cols(qOutB0.bestB) 
 
 /* --- (b) the previously-crashing seed (QUAIDS, seed=43) no longer crashes --- */
 
-struct quaidsControl aCtlCrash;
-struct quaidsOut qOutCrash;
 
 aCtlCrash = quaidsControlCreate;
 aCtlCrash.linear = 0;
@@ -132,10 +126,7 @@ call check(rows(qOutCrash.bestB) == rows(trueParamsC) and cols(qOutCrash.bestB) 
    sweep: never-converged at aCtl.relax=1 (default), converged-correctly
    in 78 iterations at aCtl.relax=.75 -- not a synthetic worst case. */
 
-struct quaidsControl aCtlBase;
 struct quaidsControl aCtlDamped;
-struct quaidsOut qOutBase;
-struct quaidsOut qOutDamped;
 
 aCtlBase = quaidsControlCreate;
 aCtlBase.linear = 0;

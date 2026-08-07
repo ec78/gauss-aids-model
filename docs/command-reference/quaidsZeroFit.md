@@ -11,7 +11,6 @@ imposition on the corrected model). Silent, no printing -- see
 ## Format
 
 ```gauss
-struct quaidsZeroOut zOut;
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 ```
 
@@ -128,13 +127,11 @@ runtime) for the first-stage probits -- no new package dependency.
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;          // 1 for AIDS, 0 for QUAIDS
 aCtl.maxiter = 100;
 aCtl.homogenous = 0;      // required
 
-struct quaidsZeroOut zOut;
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call printQuaidsZero(zOut);
 print "fraction of zero shares per good:" zOut.shareZeroFrac';

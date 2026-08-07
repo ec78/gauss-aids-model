@@ -61,7 +61,6 @@ seed = 204;
 tobs = 1000;
 nClustersTrue = 40;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 aCtl.maxiter = 100;
@@ -73,7 +72,6 @@ aCtl.err = .0001;
 B = 10;
 bootSeed = 42;
 
-struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=clusterId, seed=bootSeed);
 
 call check(rbOut.nRequested == B, "nRequested echoes B");
@@ -91,9 +89,7 @@ seBootCheck = reshape(stdc(rbOut.bBoot), cols(rbOut.b), rows(rbOut.b))';
 call check(maxc(maxc(abs(rbOut.seBoot - seBootCheck))) == 0, "seBoot's cells are correctly positioned relative to bootOut.b (reshape/transpose regression guard)");
 
 /* Exact echo of the base (unresampled) point estimate / closed-form SE. */
-struct quaidsOut qOutBase;
 qOutBase = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
-struct quaidsRobustOut rOutBase;
 rOutBase = quaidsRobustFit(qOutBase, w, prices, totexp, aCtl, clusterId);
 call check(maxc(maxc(abs(rbOut.b - rOutBase.b))) == 0, "rbOut.b exactly echoes the base (unresampled) reduced-form point estimate");
 call check(maxc(maxc(abs(rbOut.seRobust - rOutBase.se))) == 0, "rbOut.seRobust exactly echoes the base closed-form robust/cluster SE");
@@ -110,7 +106,6 @@ m_ = meanc(qOutBase.intcptFull~prices~totexp);
 intcptMean = m_[1:1+qOutBase.nint];
 pricesMean = m_[1+qOutBase.nint+1:1+qOutBase.nint+qOutBase.n];
 totexpMean = m_[1+qOutBase.nint+qOutBase.n+1];
-struct quaidsSharesOut sharesBoot;
 sharesBoot = quaidsSharesFit(bRobustBootFull, vRobustBootFull, intcptMean, pricesMean, totexpMean, aCtl);
 call check(rows(sharesBoot.se) == qOutBase.n,
     "expanded bootstrap covariance can drive quaidsSharesFit delta-method SE");
@@ -125,7 +120,6 @@ call check(1, "printQuaidsRobustBootstrap() runs without error");
    closed-form finding. Same seed for both, so the only difference is
    whether whole clusters or plain rows are resampled. --- */
 
-struct quaidsRobustBootOut rbOutNaive;
 rbOutNaive = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=bootSeed);
 
 call check(meanc(meanc(rbOut.seBoot)) > meanc(meanc(rbOutNaive.seBoot)), "cluster-aware bootstrap seBoot is measurably larger than a plain-row bootstrap's seBoot on genuinely clustered data");

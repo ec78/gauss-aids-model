@@ -9,7 +9,6 @@ scenario.
 ## Format
 
 ```gauss
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
     intcptPt, pricesPt0, pricesPt1, totexpPt0);
 wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,

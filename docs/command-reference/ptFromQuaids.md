@@ -9,7 +9,6 @@ requires the `pubtable` package.
 ## Format
 
 ```gauss
-struct ptTable coefTbl;
 coefTbl = ptFromQuaids(qOut);
 ```
 
@@ -44,10 +43,8 @@ pubtable;`).
 library pubtable, quaids;
 #include pubtable_quaids.src
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-struct ptTable coefTbl;
 coefTbl = ptFromQuaids(qOut);
 call ptExport(coefTbl, "results.tex");
 ```

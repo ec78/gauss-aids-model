@@ -11,7 +11,6 @@ cluster-robust standard errors when the base fit converges.
 ## Format
 
 ```gauss
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId, weight=myWeight);   // Milestone 26/28
 ```
@@ -130,13 +129,11 @@ to recompute the representative evaluation point, as it always has.
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
 
 if wfOut.postValid;
@@ -153,7 +150,6 @@ endif;
 With an estimator-level sampling weight (Milestone 26):
 
 ```gauss
-struct quaidsWorkflowOut wfWeighted;
 wfWeighted = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight=weight);
 print wfWeighted.weighted wfWeighted.weightSum wfWeighted.effN;
 ```

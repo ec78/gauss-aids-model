@@ -71,7 +71,6 @@ endp;
    real cross-check that its point estimate is correct (they are exact
    algebraic identities that only hold given the true model-implied w). */
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 aCtl.linear = 0;
 aCtl.maxiter = 100;
@@ -79,7 +78,6 @@ aCtl.homogenous = 1;
 aCtl.err = .0001;
 
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(3000, 204, 1, 1);
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 
@@ -93,7 +91,6 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsElasOut elasMean;
 elasMean = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 
 { erDirect, epDirect, epcDirect } = quaidsElas_(qOut.bestB, intcptMean, pricesMean, totexpMean, aCtl);
@@ -104,7 +101,6 @@ call check(rows(elasMean.ser) == n, "quaidsElasFit.ser has n rows");
 call check(minc(minc(elasMean.sep)) >= 0, "quaidsElasFit.sep (standard errors) are all non-negative");
 call check(minc(minc(elasMean.sepc)) >= 0, "quaidsElasFit.sepc (standard errors) are all non-negative");
 
-struct quaidsSharesOut sharesMean;
 sharesMean = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 call checkIdentities("at sample mean", elasMean, sharesMean.w);
 
@@ -116,9 +112,7 @@ pt = 500;
 intcptPt1 = qOut.intcptFull[pt,.]';
 pricesPt1 = prices[pt,.]';
 totexpPt1 = totexp[pt];
-struct quaidsElasOut elasObs;
 elasObs = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt1, pricesPt1, totexpPt1, aCtl);
-struct quaidsSharesOut sharesObs;
 sharesObs = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt1, pricesPt1, totexpPt1, aCtl);
 call checkIdentities("at observation 500", elasObs, sharesObs.w);
 
@@ -129,9 +123,7 @@ intcptPt2 = intcptMean;
 pricesPt2 = pricesMean;
 pricesPt2[1] = pricesPt2[1] + ln(1.20);
 totexpPt2 = totexpMean;
-struct quaidsElasOut elasCounterfactual;
 elasCounterfactual = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt2, pricesPt2, totexpPt2, aCtl);
-struct quaidsSharesOut sharesCf;
 sharesCf = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptPt2, pricesPt2, totexpPt2, aCtl);
 call checkIdentities("at a synthetic counterfactual (20% price-1 increase)", elasCounterfactual, sharesCf.w);
 

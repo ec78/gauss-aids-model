@@ -90,6 +90,52 @@ publicly released.
   cannot be called by name (`error G0739`); required parameters must
   precede defaulted ones for positional calls to bind safely.
 
+Milestone 29 (2026-08-07): caller-side struct auto-declaration cleanup,
+requested directly by the repo owner. No version bump -- pure ergonomics
+cleanup plus one bugfix to an optional adapter file, no public signature
+changed.
+
+### Fixed
+- `src/pubtable_quaids.src`'s `ptFromQuaidsElas()` returned
+  `retp(ptModelTable(ptModelFromQuaidsElas(...)))` directly -- a call
+  into an external `pubtable` package proc with no intermediate local
+  `struct ptTable` variable -- which broke GAUSS's caller-side struct-
+  inference for anyone assigning its result without pre-declaring the
+  target variable (`error G0008` on first field access), and, since
+  `ptTablesFromQuaidsElas()` calls it internally, the same failure
+  propagated into that proc's own callers' indexed field access too.
+  Fixed by giving it a local `struct ptTable tbl;`, matching every other
+  struct-returning proc in this codebase's own convention. Confirmed via
+  isolated reproduction that single-level delegation to one of this
+  library's own already-typed procs (as `getDefaultQuaidsControl()`,
+  `quaidsFull()`, and `ptFromQuaidsFamily()` already did) is unaffected --
+  the bug was specific to delegating through an external package's proc
+  with no intermediate local variable.
+
+### Notes
+- Confirmed every struct-returning proc already used the inference-
+  enabling `proc (struct T) = name(...);` declaration form (no variable
+  name in the return slot) -- the standing convention since Milestone 5's
+  `quaidsControlCreate()`. No proc-declaration changes were needed; the
+  actual gap was entirely on the caller side.
+- Removed 230 now-redundant `struct T var;` pre-declarations across
+  `tests/*.e`/`tests/guard_error_cases/*.e`/`examples/*.e`, and 122 more
+  (scoped per fenced code block, since docs legitimately reuse variable
+  names across independent snippets) across
+  `docs/command-reference/*.md`/`docs/USAGE_GUIDE.md`/`README.md` -- 352
+  total, via a script-verified removal pass, not manual editing.
+- Empirically confirmed real GAUSS caveats before removing anything:
+  inference does not survive a plain struct-to-struct copy (`error
+  G0008`); an already-inferred variable cannot be retyped by a later,
+  different struct-returning call in the same scope (`error G0504`); and
+  a struct declaration inside a proc body is never optional regardless of
+  inference, since it doubles as the required local-variable declaration
+  (`error G0025` if removed) -- caught by an early, proc-body-unaware
+  removal pass that broke `quaids_synthetic_validation_test.e`, fixed
+  before reapplying.
+- Full local test suite (19 files, no skips) and all three `examples/*.e`
+  scripts re-ran clean after the cleanup and the bugfix.
+
 ## 0.22.0 - 2026-08-04
 
 Milestone 27: replicate-weight (jackknife/BRR-style) variance estimation --

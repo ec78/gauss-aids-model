@@ -9,7 +9,6 @@ sampling-weighted evaluation point.
 ## Format
 
 ```gauss
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight);
 wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight, clusterId=householdId);   // Milestone 28
 ```
@@ -87,7 +86,6 @@ Invalid weights fail fast with a clear diagnostic.
 ## Examples
 
 ```gauss
-struct quaidsWorkflowOut wfSurvey;
 wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, sampwt);
 
 if wfSurvey.postValid;

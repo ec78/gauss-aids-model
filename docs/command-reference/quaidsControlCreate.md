@@ -7,7 +7,6 @@ Creates a `quaidsControl` struct populated with default estimation options.
 ## Format
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 ```
 
@@ -55,14 +54,12 @@ things worse. Not a convergence guarantee -- see
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 aCtl.err = .0001;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 ```
 

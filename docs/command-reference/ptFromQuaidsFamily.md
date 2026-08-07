@@ -10,7 +10,6 @@ package.
 ## Format
 
 ```gauss
-struct ptTable tbl;
 tbl = ptFromQuaidsFamily(x);
 ```
 
@@ -38,10 +37,8 @@ handle the QUAIDS-missing case themselves.
 ## Examples
 
 ```gauss
-struct ptTable coefTbl;
 coefTbl = ptFromQuaidsFamily(qOut);        // dispatches to ptFromQuaids
 
-struct ptTable elasTbl;
 elasTbl = ptFromQuaidsFamily(elasOut);     // dispatches to ptFromQuaidsElas
 ```
 

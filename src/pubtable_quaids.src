@@ -199,13 +199,17 @@ endp;
 ** the n x n price elasticity matrices, see ptTablesFromQuaidsElas).
 */
 proc (struct ptTable) = ptFromQuaidsElas(...);
+    struct ptTable tbl;
+
     #ifDef QUAIDS_SDF_INCLUDED
         struct quaidsElasOut elasOut;
         elasOut = dynargsGet(1);
-        retp(ptModelTable(ptModelFromQuaidsElas("Income elasticities", elasOut)));
+        tbl = ptModelTable(ptModelFromQuaidsElas("Income elasticities", elasOut));
     #else;
         _library_missing_error(currentprocname(), "QUAIDS");
     #endif;
+
+    retp(tbl);
 endp;
 
 /*

@@ -46,15 +46,12 @@ The transformation changes standard errors only. Point estimates remain
 ## Example
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
-struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, householdId);
 
 { bR, vR } = quaidsRobustCovariance(qOut, rOut, aCtl);
 
-struct quaidsElasOut elasR;
 elasR = quaidsElasFit(bR, vR, intcptPt, pricesPt, totexpPt, aCtl);
 ```
 

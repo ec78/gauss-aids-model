@@ -8,7 +8,6 @@ Builds a `pubtable` `ptModel` for income elasticities (one column) from a
 ## Format
 
 ```gauss
-struct ptModel mdl;
 mdl = ptModelFromQuaidsElas(name, elasOut);
 ```
 
@@ -32,7 +31,6 @@ shape; see [ptTablesFromQuaidsElas](ptTablesFromQuaidsElas.md) for those.
 ## Examples
 
 ```gauss
-struct ptModel mdl;
 mdl = ptModelFromQuaidsElas("Income elasticities", elasOut);
 ```
 

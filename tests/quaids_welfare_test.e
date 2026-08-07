@@ -155,14 +155,12 @@ endp;
 
 { w, intcpt, prices, totexp, instr, trueParams } = _quaidsSyntheticDGP(3000, 204, 1, 1);
 
-struct quaidsControl aCtlQ;
 aCtlQ = quaidsControlCreate();
 aCtlQ.linear = 0;
 aCtlQ.maxiter = 100;
 aCtlQ.homogenous = 1;
 aCtlQ.err = .0001;
 
-struct quaidsOut qOutQ;
 qOutQ = quaidsFit(w, intcpt, prices, totexp, instr, aCtlQ);
 call check(qOutQ.converged == 1, "QUAIDS starting fit converged");
 
@@ -170,14 +168,12 @@ intcptPtQ = meanc(qOutQ.intcptFull);
 call checkWelfare("QUAIDS", qOutQ, aCtlQ, prices, totexp, intcptPtQ);
 
 
-struct quaidsControl aCtlL;
 aCtlL = quaidsControlCreate();
 aCtlL.linear = 1;
 aCtlL.maxiter = 100;
 aCtlL.homogenous = 1;
 aCtlL.err = .0001;
 
-struct quaidsOut qOutL;
 qOutL = quaidsFit(w, intcpt, prices, totexp, instr, aCtlL);
 call check(qOutL.converged == 1, "AIDS starting fit converged");
 

@@ -11,7 +11,6 @@ see [printQuaidsRobust](printQuaidsRobust.md).
 ## Format
 
 ```gauss
-struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId, weight=myWeight);   // Milestone 26/28
 ```
@@ -119,20 +118,16 @@ to the existing unweighted formulas exactly when `weight` is uniform.
 ## Examples
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.homogenous = 1;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 // Heteroskedasticity-robust (clusterId omitted -- defaults to 0):
-struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
 call printQuaidsRobust(rOut);
 
 // Cluster-robust (householdId is a Tx1 vector of group labels):
-struct quaidsRobustOut rOutCluster;
 rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId);
 call printQuaidsRobust(rOutCluster);
 

@@ -12,7 +12,6 @@ sharing the same resampling code path). Silent, no printing -- see
 ## Format
 
 ```gauss
-struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B);
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=householdId, seed=42, weight=myWeight);   // Milestone 26/28
 ```
@@ -110,7 +109,6 @@ time.
 ## Examples
 
 ```gauss
-struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, clusterId=householdId, seed=42);
 call printQuaidsRobustBootstrap(rbOut);
 

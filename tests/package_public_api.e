@@ -124,12 +124,10 @@ w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
 
 /* --- quaidsControlCreate() / getDefaultQuaidsControl() --- */
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 call assert_true(aCtl.maxiter > 1 and aCtl.homogenous == 1, "quaidsControlCreate defaults look wrong");
 call assert_true(aCtl.relax == 1, "quaidsControlCreate: aCtl.relax (Milestone 12) default should be 1 (no damping)");
 
-struct quaidsControl aCtlAlias;
 aCtlAlias = getDefaultQuaidsControl();
 call assert_true(aCtlAlias.maxiter == aCtl.maxiter and aCtlAlias.homogenous == aCtl.homogenous,
     "getDefaultQuaidsControl does not match quaidsControlCreate");
@@ -142,7 +140,6 @@ aCtl.err = .001;
 
 /* --- quaidsFit() / quaids() --- */
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 call assert_true(qOut.model $== "QUAIDS" and qOut.n == N and qOut.nobs == tobs,
     "quaidsFit metadata invalid");
@@ -152,15 +149,12 @@ call assert_true(rows(qOut.bestB) > 0 and rows(qOut.bestV) == rows(qOut.bestB)*N
 /* aCtl.relax (Milestone 12): confirm the installed package's .sdf/.lcg
    actually picked up the new quaidsControl field, not just that it
    compiles source-tree-side. */
-struct quaidsOut qOutRelax;
 struct quaidsControl aCtlRelax;
 aCtlRelax = aCtl;
 aCtlRelax.relax = .75;
 qOutRelax = quaidsFit(w, intcpt, prices, totexp, instr, aCtlRelax);
 call assert_true(rows(qOutRelax.bestB) == rows(qOut.bestB), "quaidsFit with aCtl.relax=.75 (installed package) produced a valid fit");
 
-struct quaidsOut qOutLA;
-struct quaidsControl aCtlLA;
 aCtlLA = quaidsControlCreate;
 aCtlLA.linear = 1;
 aCtlLA.maxiter = 1;
@@ -193,7 +187,6 @@ data = dfaddcol(data, "TOTEXP", totexp);
 data = dfaddcol(data, "Z1", instr);
 data = dfaddcol(data, "X1", intcpt);
 
-struct quaidsOut qOutFull;
 qOutFull = quaidsFull(data, xnames, pnames, "TOTEXP", "Z1", "X1", aCtl);
 call assert_true(maxc(maxc(abs(qOutFull.bestB - qOut.bestB))) == 0,
     "quaidsFull does not match quaidsFit on the same data");
@@ -208,7 +201,6 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 call assert_true(rows(elasOut.er) == N and rows(elasOut.ep) == N and cols(elasOut.ep) == N,
     "quaidsElasFit output shape invalid");
@@ -220,7 +212,6 @@ call assert_true(rows(elasOut.er) == N and rows(elasOut.ep) == N and cols(elasOu
    formula (this file used to recompute it inline here, duplicating
    quaidsElas_() and tests/quaids_elasticities_test.e's own former
    modelShareAt() helper). */
-struct quaidsSharesOut sharesOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 call assert_true(rows(sharesOut.w) == N and rows(sharesOut.se) == N and rows(sharesOut.v) == N and cols(sharesOut.v) == N,
     "quaidsSharesFit output shape invalid");
@@ -255,11 +246,9 @@ call quaidsSlutzky(qOut.bestB, qOut.intcptFull, prices, totexp, aCtl);
 pricesPt1 = pricesMean;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
-struct quaidsWelfareOut wOut;
 wOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesPt1, totexpMean, aCtl);
 call assert_true(wOut.seCV >= 0 and wOut.seEV >= 0, "quaidsWelfareFit standard errors invalid");
 
-struct quaidsWelfareOut wOutZero;
 wOutZero = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, pricesMean, totexpMean, aCtl);
 call assert_true(wOutZero.cv == 0 and wOutZero.ev == 0,
     "quaidsWelfareFit zero-price-change identity failed");
@@ -269,14 +258,12 @@ call printQuaidsWelfare(wOut);
 
 /* --- quaidsHomogeneityTest() / quaidsJointTest() (need an unconstrained fit) --- */
 
-struct quaidsControl aCtlU;
 aCtlU = quaidsControlCreate;
 aCtlU.linear = 0;
 aCtlU.maxiter = 100;
 aCtlU.homogenous = 0;
 aCtlU.err = .001;
 
-struct quaidsOut qOutU;
 qOutU = quaidsFit(w, intcpt, prices, totexp, instr, aCtlU);
 
 { statH, pvalH, dfH } = quaidsHomogeneityTest(qOutU);
@@ -341,14 +328,12 @@ do while rC <= nroundsC;
     rC = rC + 1;
 endo;
 
-struct quaidsControl aCtlC;
 aCtlC = quaidsControlCreate();
 aCtlC.linear = 1;
 aCtlC.maxiter = 100;
 aCtlC.homogenous = 1;
 aCtlC.err = .0001;
 
-struct quaidsOut qOutC;
 qOutC = quaidsFit(wC, 0, pricesC, totexpC, instrC, aCtlC);
 call assert_true(qOutC.converged == 1, "quaidsCurvatureFit prerequisite AIDS fit did not converge");
 
@@ -359,7 +344,6 @@ call assert_true(qOutC.converged == 1, "quaidsCurvatureFit prerequisite AIDS fit
    convergence/recovery validation -- that already lives in
    tests/quaids_survey_test.e. */
 weightC = ones(tobsC, 1);
-struct quaidsOut qOutCWeighted;
 qOutCWeighted = quaidsFit(wC, 0, pricesC, totexpC, instrC, aCtlC, weightC);
 call assert_true(qOutCWeighted.weighted == 1 and qOutCWeighted.weightSum == tobsC and qOutCWeighted.effN == tobsC,
     "quaidsFit: weight diagnostics invalid for an explicit uniform weight");
@@ -367,7 +351,6 @@ call assert_true(maxc(maxc(abs(qOutCWeighted.bestB - qOutC.bestB))) == 0,
     "quaidsFit: an explicit uniform weight did not reproduce the unweighted fit exactly");
 
 /* --- quaidsPreflight() / printQuaidsPreflight() (Milestone 23) --- */
-struct quaidsPreflightOut pOutC;
 pOutC = quaidsPreflight(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, 0);
 call assert_true(pOutC.dimensionsOk == 1 and pOutC.designInvOk == 1,
     "quaidsPreflight: converged seed=500 fixture has invalid dimensions or design");
@@ -378,14 +361,12 @@ call assert_true(pOutC.clusterValid == 1 and pOutC.nClusters == tobsC,
 call assert_true(pOutC.weightValid == 1 and pOutC.weightSum == tobsC and pOutC.effN == tobsC,
     "quaidsPreflight: weight=0 (unweighted) diagnostics invalid");
 
-struct quaidsPreflightOut pOutCWeighted;
 pOutCWeighted = quaidsPreflight(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, weightC);
 call assert_true(pOutCWeighted.weightValid == 1 and pOutCWeighted.weightSum == tobsC and pOutCWeighted.effN == tobsC,
     "quaidsPreflight: weight diagnostics invalid for an explicit uniform weight");
 
 call printQuaidsPreflight(pOutC);
 
-struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOutC, wC, pricesC, totexpC, aCtlC);
 call assert_true(cOut.converged == 1, "quaidsCurvatureFit did not converge");
 call assert_true(maxc(cOut.eigenvalues) < 1e-3,
@@ -397,7 +378,6 @@ call printQuaidsCurvature(cOut);
    (Milestone 15) --- B kept tiny (this is a release gate, not a
    statistical validation -- see tests/quaids_curvature_bootstrap_test.e
    for the real check) since it refits the whole pipeline B times. */
-struct quaidsCurvBootOut bootOut;
 bootOut = quaidsCurvatureBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 2, 42);
 call assert_true(bootOut.nCompleted >= 1, "quaidsCurvatureBootstrapFit: no replications completed");
 call assert_true(rows(bootOut.seBoot) == rows(cOut.b) and cols(bootOut.seBoot) == cols(cOut.b),
@@ -456,14 +436,12 @@ lx2Q = (lxQ^2)./exp(b_pQ);
 
 wQ = alQ + pricesQ*gaQ0 + lxQ*beQ + eNoiseQ + intcptQ*al1Q + lx2Q*laQ;
 
-struct quaidsControl aCtlQ;
 aCtlQ = quaidsControlCreate();
 aCtlQ.linear = 0;
 aCtlQ.maxiter = 100;
 aCtlQ.homogenous = 1;
 aCtlQ.err = .0001;
 
-struct quaidsOut qOutQ;
 qOutQ = quaidsFit(wQ, intcptQ, pricesQ, totexpQ, instrQ, aCtlQ);
 call assert_true(qOutQ.converged == 1, "quaidsCurvatureFit (QUAIDS) prerequisite fit did not converge");
 
@@ -471,7 +449,6 @@ struct quaidsControl aCtlCurvQ;
 aCtlCurvQ = aCtlQ;
 aCtlCurvQ.relax = .25;
 
-struct quaidsCurvOut cOutQ;
 cOutQ = quaidsCurvatureFit(qOutQ, wQ, pricesQ, totexpQ, aCtlCurvQ);
 call assert_true(cOutQ.converged == 1, "quaidsCurvatureFit (QUAIDS) did not converge");
 call assert_true(maxc(cOutQ.eigenvalues) < 1e-3,
@@ -526,14 +503,12 @@ wLatentZ = alZ + pricesZ*gaZ + lxZ*beZ + eZ + intcptZ*al1Z + lx2Z*laZ;
 wZ = wLatentZ .* (wLatentZ .> 0);
 wZ = wZ ./ sumc(wZ');
 
-struct quaidsControl aCtlZ;
 aCtlZ = quaidsControlCreate();
 aCtlZ.linear = 0;
 aCtlZ.maxiter = 100;
 aCtlZ.homogenous = 0;
 aCtlZ.err = .0001;
 
-struct quaidsZeroOut zOut;
 zOut = quaidsZeroFit(wZ, intcptZ, pricesZ, totexpZ, instrZ, aCtlZ);
 call assert_true(zOut.converged == 1, "quaidsZeroFit did not converge");
 call assert_true(rows(zOut.probitB) > 0 and cols(zOut.probitB) == Nz, "quaidsZeroFit probitB shape invalid");
@@ -556,7 +531,6 @@ call printQuaidsZero(zOut);
    release gate, not a re-validation. B kept tiny, same reasoning as the
    quaidsCurvatureBootstrapFit block above. */
 
-struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOutC, wC, pricesC, totexpC, aCtlC, 0);
 call assert_true(rOut.nClusters == qOutC.nobs, "quaidsRobustFit: nClusters == nobs when clusterId=0");
 call assert_true(rows(rOut.se) == rows(rOut.b) and cols(rOut.se) == cols(rOut.b), "quaidsRobustFit: se shape does not match b");
@@ -571,19 +545,16 @@ call printQuaidsRobust(rOut);
 
 /* Milestone 26: quaidsRobustFit()'s own optional weight argument -- an
    explicit uniform weight must reproduce the unweighted sandwich exactly. */
-struct quaidsRobustOut rOutWeighted;
 rOutWeighted = quaidsRobustFit(qOutC, wC, pricesC, totexpC, aCtlC, 0, weightC);
 call assert_true(maxc(maxc(abs(rOutWeighted.se - rOut.se))) == 0,
     "quaidsRobustFit: an explicit uniform weight did not reproduce the unweighted sandwich exactly");
 
-struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 2, seed=42);
 call assert_true(rbOut.nCompleted >= 2, "quaidsRobustBootstrapFit: fewer than two replications completed");
 call assert_true(rows(rbOut.seBoot) == rows(rbOut.b) and cols(rbOut.seBoot) == cols(rbOut.b),
     "quaidsRobustBootstrapFit: seBoot shape does not match rbOut.b");
 
 /* Milestone 26: same optional weight argument on the bootstrap variant. */
-struct quaidsRobustBootOut rbOutWeighted;
 rbOutWeighted = quaidsRobustBootstrapFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 2, seed=42, weight=weightC);
 call assert_true(maxc(maxc(abs(rbOutWeighted.b - rbOut.b))) == 0 and maxc(maxc(abs(rbOutWeighted.seRobust - rbOut.seRobust))) == 0,
     "quaidsRobustBootstrapFit: an explicit uniform weight did not reproduce the unweighted base fit/sandwich exactly");
@@ -602,7 +573,6 @@ call printQuaidsRobustBootstrap(rbOut);
    robust-bootstrap blocks, so post-estimation and robust outputs should
    be valid. */
 
-struct quaidsWorkflowOut wfOut;
 wfOut = quaidsWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0);
 call assert_true(wfOut.postValid == 1 and wfOut.robustValid == 1,
     "quaidsWorkflowFit: post/robust outputs were not computed");
@@ -618,7 +588,6 @@ call assert_true(wfOut.preflightIVFstat == pOutC.ivFstat and wfOut.preflightNClu
 /* Milestone 26: quaidsWorkflowFit()'s own optional estimator-level weight
    argument -- an explicit uniform weight must reproduce the unweighted
    workflow fit exactly. */
-struct quaidsWorkflowOut wfOutWeighted;
 wfOutWeighted = quaidsWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, 0, weightC);
 call assert_true(wfOutWeighted.weighted == 1 and wfOutWeighted.weightSum == tobsC,
     "quaidsWorkflowFit: weight diagnostics invalid for an explicit uniform weight");
@@ -634,7 +603,6 @@ pricesWF1[1] = pricesWF1[1] + ln(1.02);
 
 weightWF = seqa(1, 1, tobsC);
 weightWF = weightWF/sumc(weightWF)*tobsC;
-struct quaidsWorkflowOut wfSurvey;
 wfSurvey = quaidsSurveyWorkflowFit(wC, 0, pricesC, totexpC, instrC, aCtlC, weightWF);
 call assert_true(wfSurvey.surveyWeighted == 1 and wfSurvey.surveyWeightValid == 1,
     "quaidsSurveyWorkflowFit: survey weight diagnostics invalid");
@@ -643,7 +611,6 @@ call assert_true(wfSurvey.postValid == 1 and rows(wfSurvey.shares) == Nc and row
 call assert_true(abs(wfSurvey.surveyWeightSum - tobsC) < 1e-8 and wfSurvey.surveyWeightNPositive == tobsC,
     "quaidsSurveyWorkflowFit: survey weight summary does not match input");
 
-struct quaidsWorkflowOut wfScenario;
 wfScenario = quaidsWorkflowScenarioFit(wC, 0, pricesC, totexpC, instrC, aCtlC, intcptWF, pricesWF0, pricesWF1, totexpWF0);
 call assert_true(wfScenario.welfareValid == 1 and wfScenario.seCV >= 0 and wfScenario.seEV >= 0,
     "quaidsWorkflowScenarioFit: welfare outputs invalid");
@@ -667,7 +634,6 @@ do while gC <= nRepC;
     gC = gC + 1;
 endo;
 
-struct quaidsReplicateOut rOutC;
 rOutC = quaidsReplicateWeightFit(wC, 0, pricesC, totexpC, instrC, aCtlC, replicateWeightsC, (nRepC-1)/nRepC, weight=weightC, method="JK1");
 call assert_true(rOutC.weighted == 1 and rOutC.nRequested == nRepC,
     "quaidsReplicateWeightFit: weighted/nRequested diagnostics invalid");

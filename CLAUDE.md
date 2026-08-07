@@ -724,7 +724,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-28:
+The original ten-milestone roadmap is complete, plus Milestones 11-29:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -791,7 +791,13 @@ parameter reorder since GAUSS requires required parameters to precede
 defaulted ones, a deliberate breaking change explicitly authorized by the
 repo owner since this package has not yet been publicly released -- see
 each milestone's own section below for the real bugs found and fixed
-along the way, including several in already-shipped Milestone 20 code).
+along the way, including several in already-shipped Milestone 20 code),
+and 29 (a repo-owner-requested review of every procedure for GAUSS's
+caller-side struct auto-declaration -- found the proc-declaration side
+already fully compliant since Milestone 5, so the real work was a
+script-verified cleanup of 352 now-redundant pre-declarations across
+tests/examples/docs, plus one real, previously-undetected bug found and
+fixed along the way in already-shipped `pubtable_quaids.src` code).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -3524,6 +3530,137 @@ file was added. Explicitly a breaking release, not additive -- old
 positional call sites for the four reordered procs do not merely gain new
 optional behavior, they require updating.
 
+## Milestone 29: caller-side struct auto-declaration cleanup (complete)
+
+Requested directly by the repo owner: "the next programming improvement to
+implement is autodetected structures... update [procedures] to allow for
+autodetected structures where ever applicable," with an example from a
+sibling project (`dccelib`'s `cce_mg()`) in the exact form
+`proc (struct mgOut) = pcce_mg(data, ...);` -- a struct-typed return slot
+with no variable name.
+
+**The proc-declaration side needed zero changes, confirmed by direct
+grep before writing any code**: every struct-returning proc in this
+library already uses exactly that form (`proc (struct quaidsOut) =
+quaidsFit(...);`, no `qOut` in the return slot) -- this has been the
+standing convention since Milestone 5's `quaidsControlCreate()`, and
+every struct-returning proc added since (all 24 of them, across
+`src/quaids*.src` and `src/pubtable_quaids.src`) followed it. The actual
+gap was entirely on the CALLER side: tests, examples, and doc code
+snippets throughout the repo still wrote
+`struct quaidsOut qOut; qOut = quaidsFit(...);` instead of the shorter
+`qOut = quaidsFit(...);`, never taking advantage of the inference this
+return-type declaration already enables.
+
+**Empirically verified the actual GAUSS mechanics before touching
+anything, per this project's standing discipline** (`gauss-qardl`'s own
+`CLAUDE.md` documents the convention but with no cited source and
+inconsistent adoption even there -- not good enough evidence on its own):
+
+1. `x = someProc(...);` with no prior `struct T x;` line genuinely works,
+   both via `#include` and via `library quaids;` -- confirmed with a
+   minimal isolated script in both modes.
+2. **A real caveat, found empirically, not assumed**: once a variable's
+   type is inferred from a struct-returning call, GAUSS does **not**
+   allow it to be retyped by a later assignment from a *different*
+   struct-returning proc in the same scope -- `error G0504: Invalid
+   structure member` at the first field access of the new type, since the
+   variable silently keeps its first-inferred layout. Confirmed this is
+   general GAUSS behavior (reproduced identically via plain `#include`,
+   not a `library`-specific quirk). This codebase already uses distinct,
+   semantically-named variables per struct type everywhere (`qOut`,
+   `pOut`, `rOut`, `sharesOut`, `elasOut`, ...), so this caveat does not
+   bite in practice, but it shaped the removal script's safety rules
+   below.
+3. **Inference does NOT propagate through a plain struct-to-struct copy**
+   (`b = a;` where `a` is already a typed struct) -- this throws
+   `error G0008: Syntax error` at the first `.field` access on `b`,
+   confirming the Milestone 5-documented rule (`G0008` on first field
+   access for an undeclared struct parameter) extends to this case too.
+   Only an actual call to a `proc (struct T) = name(...)`-declared proc
+   triggers inference.
+4. **Inside a proc body, `struct T var;` is never optional**, regardless
+   of inference -- it is simultaneously the *local-variable declaration*
+   GAUSS requires for every local inside a proc (the same role a plain
+   `local` statement plays for non-struct locals) and the type
+   declaration. Removing it doesn't just lose an ergonomic shortcut, it
+   breaks compilation outright (`error G0025: Undefined symbol`) -- found
+   by an early, over-eager removal pass that broke
+   `quaids_synthetic_validation_test.e`'s internal `checkRecovery()`
+   helper proc, caught immediately by the full regression suite and fixed
+   by adding proc-body detection to the removal script before reapplying.
+
+**Scope, confirmed with the repo owner via `AskUserQuestion`** before any
+file was touched, given the proc-declaration side needed no changes and
+the caller-side sweep touches a large number of files: **tests + examples
++ docs, not internal `src/`-to-`src/` calls** -- the user-facing surface a
+caller actually learns from and copies, not this library's own internal
+implementation style.
+
+**Mechanical, script-verified removal, not manual file-by-file editing**:
+a Python script scanned every `tests/*.e`, `tests/guard_error_cases/*.e`,
+and `examples/*.e` file for `struct T var;` declarations, and removed one
+only if ALL of the following held: (a) not inside a proc body; (b) `var`
+is declared exactly once in the file (no type-reuse risk); (c) the first
+subsequent assignment to `var` is a call to one of this library's own
+24 known struct-returning procs (including multi-line call sites, joined
+before checking). A second pass applied the identical logic to
+`docs/command-reference/*.md`/`docs/USAGE_GUIDE.md`/`README.md`, but
+scoped **per fenced ` ```gauss ` code block** rather than whole-file,
+since docs legitimately re-declare the same variable name (`aCtl`,
+`qOut`, ...) across independent Format/Examples snippets that never
+actually run together -- the whole-file version of the same script was
+overly conservative here (correctly safe, just left far more in place
+than necessary) until this per-block scoping was added.
+
+**A real, previously-undetected bug found and fixed along the way, in
+already-shipped `src/pubtable_quaids.src` code, not introduced by this
+milestone**: `ptFromQuaidsElas()` was declared
+`proc (struct ptTable) = ptFromQuaidsElas(...);` but its body did
+`retp(ptModelTable(ptModelFromQuaidsElas("Income elasticities",
+elasOut)));` -- returning the result of an EXTERNAL `pubtable` package
+call directly, with no local `struct ptTable` variable of its own.
+Confirmed by direct isolated reproduction that this genuinely breaks
+caller-side inference (`elasIncomeTbl = ptFromQuaidsElas(elasOut);
+print elasIncomeTbl.title;` throws `error G0008` even though the proc
+itself compiles and runs correctly) -- and, since
+`ptTablesFromQuaidsElas()` calls `ptFromQuaidsElas()` internally, the
+same failure propagated into its own callers' indexed struct-array field
+access (`elasTbls[1].title`) too. **Narrowed the exact trigger with
+further isolated tests**: single-level delegation straight to one of
+this library's OWN already-typed procs (`retp(quaidsControlCreate())` in
+`getDefaultQuaidsControl()`, `retp(quaidsFit(...))` in `quaidsFull()`,
+`retp(ptFromQuaids(x))`/`retp(ptFromQuaidsElas(x))` in
+`ptFromQuaidsFamily()`) all work fine for inference -- the failure is
+specific to `retp()`-ing a call into an *external package's* proc without
+an intermediate local variable of the declared return type. Fixed by
+giving `ptFromQuaidsElas()` a local `struct ptTable tbl;`, assigning to
+it, and `retp(tbl);` -- matching every other struct-returning proc in
+this codebase's own convention, and the same fix immediately resolved
+both the direct and the transitive (`ptTablesFromQuaidsElas`) failure.
+This is a pure bugfix to already-shipped optional-adapter code (not part
+of `package.json`'s `src` array, so no package rebuild/reinstall was
+needed) -- no signature changed, so no version bump, matching this
+project's established "bump on new public API surface, not pure
+bugfixes" policy.
+
+**Verification**: full local suite (19 files, no skips) re-ran clean
+after the script-driven removal and the `pubtable_quaids.src` fix,
+including `quaids_pubtable_test.e` (the file that caught the real bug)
+and `quaids_synthetic_validation_test.e` (the file that caught the
+proc-body false positive). All three `examples/*.e` scripts
+(`quaids_example.e`, `workflow_example.e`, `pubtable_export_example.e`)
+were also run directly and produced their expected output with no
+errors. 230 caller-side pre-declarations removed across 32 test/example
+files, and 122 more across 44 documentation files -- 352 total, zero of
+which required any change to a proc's own declared signature.
+
+**No version bump**: a pure ergonomics cleanup plus one bugfix to an
+optional, non-`src`-array adapter file, matching this project's
+established policy (version bumps track public API surface changes, not
+every milestone -- see Milestones 3, 7, 8, 12's crash-guard note for
+precedent on unconditional bugfixes landing with no bump of their own).
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -3603,6 +3740,23 @@ GAUSS Already Provides." Summary:
   as a formal parameter, not in the `local` list — standard GAUSS syntax.
   `struct quaidsOut qOut;` (a local, not a parameter) is declared the same
   way, separately from the `local` statement, inside `quaidsFit()`/`quaids()`.
+  This is never optional, regardless of caller-side inference (below) — it
+  doubles as the required local-variable declaration for every struct
+  local inside a proc body.
+- **Caller-side struct auto-declaration**: every struct-returning proc is
+  declared `proc (struct TypeName) = name(...);` (no variable name in the
+  return slot), which lets a CALLER skip pre-declaring the target
+  variable — `qOut = quaidsFit(...);` works with no prior
+  `struct quaidsOut qOut;` line, both via `#include` and via
+  `library quaids;`. This only applies to top-level/script-scope
+  variables assigned directly from such a proc call — it does not extend
+  to a plain struct-to-struct copy (`b = a;`, `a` already typed — throws
+  `error G0008` on first field access), and once a variable's type is
+  inferred it cannot be retyped by a later call returning a different
+  struct type in the same scope (`error G0504`). See "Milestone 29:
+  caller-side struct auto-declaration cleanup" below for the full
+  empirical verification and the real `pubtable_quaids.src` bug this
+  uncovered.
 - **Character-matrix name vectors vs. the native `string array` type**: name
   vectors built with the classic `0$+"X"$+ftocv(...)` idiom (`xnam`, `wnam`,
   `znam`, `unam`, `enam`) are legacy character matrices, not the newer

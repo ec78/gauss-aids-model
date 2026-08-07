@@ -11,7 +11,6 @@ reparametrization. Silent, no printing -- see
 ## Format
 
 ```gauss
-struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 ```
 
@@ -116,18 +115,15 @@ with the current release.
 ```gauss
 library optmt;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;         // 0 for QUAIDS, 1 for AIDS
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 aCtl.relax = .25;    // recommended for QUAIDS; not needed for AIDS
 
-struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 
 call printQuaidsCurvature(cOut);

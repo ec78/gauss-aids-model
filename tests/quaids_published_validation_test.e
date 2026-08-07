@@ -85,13 +85,11 @@ prices = ln(data[., "pFood1" "pFood2" "pFood3" "pFood4"]);
 totexp = ln(data[., "xFood"]);
 instr = ln(data[., "xAgg"]);
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate;
 aCtl.linear = 1;
 aCtl.maxiter = 1;
 aCtl.homogenous = 1;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, 0, prices, totexp, instr, aCtl);
 
 call check(qOut.model $== "LA-AIDS", "model == LA-AIDS (aCtl.linear=1, aCtl.maxiter=1)");
@@ -144,14 +142,12 @@ print maxc(maxc(abs(alphaGauss-alphaR)))~maxc(maxc(abs(betaGauss-betaR)))~maxc(m
    would fail to catch a genuine regression. */
 tolIL = 0.15;
 
-struct quaidsControl aCtlIL;
 aCtlIL = quaidsControlCreate;
 aCtlIL.linear = 1;
 aCtlIL.maxiter = 100;
 aCtlIL.homogenous = 1;
 aCtlIL.err = .0001;
 
-struct quaidsOut qOutIL;
 qOutIL = quaidsFit(w, 0, prices, totexp, instr, aCtlIL);
 
 call check(qOutIL.model $== "AIDS", "model == AIDS (aCtl.linear=1, aCtl.maxiter>1)");

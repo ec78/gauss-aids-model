@@ -34,7 +34,6 @@ silently and printed only when wanted -- mirrors the
 ## Examples
 
 ```gauss
-struct quaidsZeroOut zOut;
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call printQuaidsZero(zOut);
 ```

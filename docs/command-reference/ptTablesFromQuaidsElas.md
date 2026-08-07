@@ -10,7 +10,6 @@ requires the `pubtable` package.
 ## Format
 
 ```gauss
-struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);
 ```
 
@@ -41,7 +40,6 @@ Mirrors `pubtable_qardl.src`'s `*Full`-workflow table bundles (e.g.
 ## Examples
 
 ```gauss
-struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);
 call ptExport(elasTbls[1], "income_elasticities.md");
 call ptExport(elasTbls[2], "uncompensated_elasticities.tex");

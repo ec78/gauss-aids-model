@@ -12,7 +12,6 @@ zero/negative shares, weak instruments, low variation, cluster counts, and
 basic convergence-risk hints:
 
 ```gauss
-struct quaidsPreflightOut pOut;
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=householdId);
 
 if not pOut.ok;
@@ -26,10 +25,8 @@ struct-returning call with no console output -- the right choice for
 scripts, simulations, and anywhere you only need the returned structure:
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 ```
 
@@ -59,7 +56,6 @@ sample mean, and compute robust or cluster-robust standard errors in one
 silent, struct-returning call:
 
 ```gauss
-struct quaidsWorkflowOut wfOut;
 
 // clusterId omitted defaults to 0 -- heteroskedasticity-robust SE.
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
@@ -108,7 +104,6 @@ you want both a genuinely weighted estimator and population-representative
 post-estimation summaries:
 
 ```gauss
-struct quaidsWorkflowOut wfSurvey;
 wfSurvey = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl,
     sampwt, clusterId=householdId);
 
@@ -152,7 +147,6 @@ All three are the same estimator, `quaidsFit`, selected by
 | QUAIDS | `0` | `> 1` | Nonlinear translog, iterated, plus a quadratic log-expenditure term |
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 
 // LA-AIDS: one-step, Stone price index.
@@ -213,11 +207,9 @@ symmetry-constrained system (`qOut.symcB`/`qOut.symcV`). Set
 calling the standalone Wald tests:
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.homogenous = 0;
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 { statH, pvalH, dfH } = quaidsHomogeneityTest(qOut);
@@ -263,7 +255,6 @@ intcptMean = m_[1:1+nint];
 pricesMean = m_[1+nint+1:1+nint+n];
 totexpMean = m_[1+nint+n+1];
 
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 call printQuaidsElas(elasOut);
 
@@ -288,7 +279,6 @@ prediction and policy simulation without hand-deriving the share
 equation:
 
 ```gauss
-struct quaidsSharesOut sharesOut;
 sharesOut = quaidsSharesFit(qOut.bestB, qOut.bestV, intcptMean, pricesMean, totexpMean, aCtl);
 call printQuaidsShares(sharesOut);
 
@@ -321,7 +311,6 @@ totexpPt0 = meanc(totexp);
 pricesPt1 = pricesPt0;
 pricesPt1[1] = pricesPt1[1] + ln(1.05);
 
-struct quaidsWelfareOut wOut;
 wOut = quaidsWelfareFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
 call printQuaidsWelfare(wOut);
 ```
@@ -344,14 +333,12 @@ since Milestone 13, QUAIDS (`aCtl.linear = 0`) too -- requires the
 ```gauss
 library optmt, quaids;
 
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;         // or 0 for QUAIDS
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;    // required -- quaidsCurvatureFit needs a
                         // homogeneity+symmetry-constrained starting fit
 
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 aCtl.relax = .25;    // recommended for QUAIDS -- its curvature outer
@@ -359,7 +346,6 @@ aCtl.relax = .25;    // recommended for QUAIDS -- its curvature outer
                      // undamped (relax=1, the default) runs can diverge.
                      // Not needed for AIDS.
 
-struct quaidsCurvOut cOut;
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 call printQuaidsCurvature(cOut);
 
@@ -383,13 +369,11 @@ probit (the probability of a non-zero share) followed by a corrected
 second-stage GLS fit:
 
 ```gauss
-struct quaidsControl aCtl;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;          // 1 for AIDS, 0 for QUAIDS
 aCtl.maxiter = 100;
 aCtl.homogenous = 0;      // required -- see Limitations below
 
-struct quaidsZeroOut zOut;
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call printQuaidsZero(zOut);
 
@@ -414,16 +398,13 @@ homoskedastic `S = sse/nobs`) to a heteroskedasticity-robust or
 cluster-robust sandwich, given an already-fitted `qOut`:
 
 ```gauss
-struct quaidsOut qOut;
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 // Heteroskedasticity-robust (clusterId omitted -- defaults to 0):
-struct quaidsRobustOut rOut;
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
 call printQuaidsRobust(rOut);
 
 // Cluster-robust (householdId is a Tx1 vector of group labels):
-struct quaidsRobustOut rOutCluster;
 rOutCluster = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId);
 call printQuaidsRobust(rOutCluster);
 ```
@@ -438,7 +419,6 @@ A cluster-aware bootstrap is also available, resampling whole clusters
 [quaidsFit](command-reference/quaidsFit.md) on each resample:
 
 ```gauss
-struct quaidsRobustBootOut rbOut;
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, 200, clusterId=householdId, seed=42);
 call printQuaidsRobustBootstrap(rbOut);
 ```
@@ -492,7 +472,6 @@ you to implement your own resampling scheme:
 // replicate, supplied by your survey's own documentation. scaleFactorJK1
 // is that design's own prescribed scale factor -- e.g. (R-1)/R for a
 // standard JK1 delete-one-PSU jackknife.
-struct quaidsReplicateOut rOut;
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl,
     replicateWeights, scaleFactorJK1, weight=surveyWeight, method="JK1");
 
@@ -536,15 +515,12 @@ library pubtable, quaids;
 #include quaids.sdf
 #include pubtable_quaids.src
 
-struct ptTable coefTbl;
 coefTbl = ptFromQuaids(qOut);
 call ptExport(coefTbl, "results.tex");
 
-struct ptTable elasTbls;
 elasTbls = ptTablesFromQuaidsElas(elasOut);   // 3x1: income, uncompensated, compensated
 call ptExport(elasTbls[1], "income_elasticities.md");
 
-struct ptTable workflowTbls;
 workflowTbls = ptTablesFromQuaidsWorkflow(wfOut);  // shares + elasticity tables, plus welfare if present
 call ptExport(workflowTbls[1], "workflow_shares.md");
 ```

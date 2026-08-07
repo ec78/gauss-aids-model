@@ -33,7 +33,6 @@ printed output against the pre-split combined
 ## Examples
 
 ```gauss
-struct quaidsElasOut elasOut;
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
 call printQuaidsElas(elasOut);
 ```
