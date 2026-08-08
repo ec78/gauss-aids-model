@@ -324,18 +324,65 @@ exactly zero -- the same `design()`-based selection-matrix construction
 `quaidsFit()`'s own symmetry-restriction stage already uses, just with a
 diagonal (not `gamma_ij=gamma_ji`) restriction pattern.
 
+**Homogeneity and symmetry** (`aCtl.homogenous = 1`) impose homogeneity
+via the same `n1 = n - aCtl.homogenous` reparametrization `quaidsFit()`
+uses (only `n1` relative price columns as regressors), and symmetry
+simultaneously with the diagonal-delta restriction in one combined
+minimum-distance projection. A genuinely new derivation was needed here,
+not just a copy of `quaidsFit()`'s own symmetry stage: an initial design
+symmetrized only the `n1 x n1` gamma sub-block and left the redundant
+price row's column entries free, reasoning they had "no symmetric
+partner pre-recovery" -- found, by direct testing against a
+known-symmetric synthetic DGP, to leave the *recovered* (absolute-price)
+gamma measurably asymmetric (~0.05-0.8 depending on the cell). The
+correct restriction additionally constrains those column entries to be a
+deterministic function of the *same* symmetric sub-block, via
+homogeneity's own row-sum-zero identity (`gammaRel[i,n] =
+-sum_{k=1}^{n1} gammaRel[k,i]`, derived from `gammaAbs[n,j] =
+-sum_{k=1}^{n1} gammaRel[k,j]` applied at `j=i` together with the
+sub-block's own symmetry). This is why the symmetry test's degrees of
+freedom are `n1*(n1+1)/2` (the within-sub-block restrictions,
+`n1*(n1-1)/2`, plus `n1` more from this cross-constraint), not the
+smaller `n1*(n1-1)/2` the incomplete design implied -- independently
+confirmed via a free-parameter count (`n1*n` free `gammaRel` parameters
+before symmetry, `n1*(n1+1)/2` after, matching the standard AIDS
+homogeneity+symmetry count `n(n-1)/2`).
+
+**A real, previously-shipped bug, found and fixed**: `quaidsZeroFit()`
+never converted its estimated gamma coefficients out of the internal
+"relative price" basis `_quaidsIVFirstStage()` applies (columns `1..n-1`
+become `p_i-p_n`, column `n` stays absolute) into genuine absolute-price
+form -- unlike `quaidsFit()`, which has a dedicated final recovery block
+for exactly this. This meant `zOut.b`'s gamma columns `1..n-1` held
+`gamma_ij-gamma_in` (a coefficient on the relative-price regressor), not
+genuine `gamma_ij`, in the originally-shipped unconstrained mode. Fixed
+in both modes via a new recovery step mirroring `quaidsFit()`'s own
+two-branch design, but implemented as a direct per-column matrix
+left-multiply (`bRecovered = SmallX*b`) rather than `quaidsFit()`'s own
+vec/sortind selection-matrix idiom -- simpler to verify directly since
+the same transform applies identically and independently to every one of
+the `n` equation columns here (unlike `quaidsFit()`, which also recovers
+an entire missing equation column via adding-up). Verified with a
+hand-constructed matrix carrying a distinctive marker value per cell,
+confirming every row lands at its expected output position before
+trusting it against real data. This changes `zOut.b`'s *values* (not its
+shape, confirmed to be `1+nint+nendog+nu+2n` regardless of
+`aCtl.homogenous`) for existing unconstrained callers.
+
+**A related consequence**: `aCtl.b0` now expects `zOut.bRaw`'s shape/
+basis (the raw, pre-recovery internal form), not `zOut.b`'s -- mirroring
+`quaidsFit()`'s own `qOut.homogB`/`aCtl.b0` pairing, and unavoidable once
+`zOut.b` stopped being that raw internal form.
+
 **Scope of this implementation, deliberately limited**:
 
-- **Unconstrained only** -- no homogeneity/symmetry imposition on the
-  corrected model in this pass (errors if `aCtl.homogenous = 1`).
-  Combining the diagonal-delta restriction with a second, simultaneous
-  homogeneity/symmetry restriction is real additional work, left for a
-  follow-up.
 - **Standard errors are a simplified formula**
   (`V(vec(b)) = S .*. inv(gg)`, the classic SUR-with-shared-regressors
   covariance) -- unlike `quaidsFit()`'s own variance, it does not correct
   for the nonlinear translog-price-index feedback, nor for first-stage
-  probit/IV generated-regressor uncertainty.
+  probit/IV generated-regressor uncertainty. The symmetry test statistic
+  reuses this same simplified covariance for consistency with the
+  existing diagonal-delta machinery.
 - **Adding-up does not hold exactly** for the corrected coefficients --
   a real, known property of Shonkwiler-Yen itself (each equation is
   independently rescaled by its own good-specific `F_i`), not a bug. No
@@ -343,17 +390,21 @@ diagonal (not `gamma_ij=gamma_ji`) restriction pattern.
 
 **Validation**: `tests/quaids_zero_test.e` fits a synthetic 5-good QUAIDS
 fixture (`_quaidsZeroSyntheticDGP`, `tests/quaidsfixtures.src`) whose
-*latent* (uncensored) shares are known exactly, then censors them the
-economically correct way -- `w_i = max(0, latent_i) / sum_j max(0,
-latent_j)`, an accounting identity, not an ad hoc redistribution -- to
-produce genuine, non-degenerate per-good zero-share fractions (found by
-direct screening at `seed=1`: roughly 17-84% depending on the good). The
-core check compares `quaidsZeroFit()`'s recovered coefficients against
-the true latent-DGP parameters, and against a naive `quaidsFit()` fit to
-the same censored data: the corrected fit recovers the truth measurably
+*latent* (uncensored) shares are known exactly and genuinely symmetric by
+construction, then censors them the economically correct way -- `w_i =
+max(0, latent_i) / sum_j max(0, latent_j)`, an accounting identity, not
+an ad hoc redistribution -- to produce genuine, non-degenerate per-good
+zero-share fractions (found by direct screening at `seed=1`: roughly
+17-84% depending on the good). The core check compares
+`quaidsZeroFit()`'s recovered coefficients against the true latent-DGP
+parameters, and against a naive `quaidsFit()` fit to the same censored
+data, in both modes: the corrected fit recovers the truth measurably
 better on both a max-absolute-difference and a mean-absolute-difference
-basis. Also checks the diagonal-delta restriction holds exactly (off-
-diagonal entries exactly zero, on-diagonal entries genuinely estimated).
+basis. Also checks the diagonal-delta restriction holds exactly in both
+modes (off-diagonal entries exactly zero, on-diagonal entries genuinely
+estimated), and, in homogeneous mode, that the recovered `n x n` gamma
+block is exactly symmetric (to floating-point precision) -- the direct
+regression guard for the cross-constraint bug above.
 
 **A known, unresolved limitation**: GAUSS's built-in `glm()` (used for the
 first-stage probits, no new package dependency) can hard-crash on some

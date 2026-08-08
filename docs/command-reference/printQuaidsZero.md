@@ -22,7 +22,9 @@ call printQuaidsZero(zOut);
 Nothing (prints to the console): the probit-stage summary table, then the
 corrected coefficient table (intercept | gamma | beta | `[lambda]` | `u` |
 `delta`, one column per good) with standard errors and convergence
-diagnostics.
+diagnostics. When `zOut.symValid` (`aCtl.homogenous = 1`), also prints the
+symmetry-given-homogeneity Wald test and the homogeneity+symmetry+
+diagonal-delta-constrained coefficient table (`zOut.bS`/`zOut.seS`).
 
 ## Remarks
 

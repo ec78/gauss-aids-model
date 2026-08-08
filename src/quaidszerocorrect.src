@@ -40,14 +40,39 @@
 ** (quaids.src:526-614), just a different restriction pattern (diagonal,
 ** not gamma_ij=gamma_ji).
 **
-** Scope of this pass (explicitly deferred, not silently absent):
-** - UNCONSTRAINED only (no homogeneity/symmetry imposition on the
-**   corrected model -- errors clearly if aCtl.homogenous=1). Every good
-**   is directly, independently estimated (n1=n throughout), matching
-**   quaidsFit()'s own aCtl.homogenous=0 branch. Imposing homogeneity/
-**   symmetry on top of the Shonkwiler-Yen correction is real, additional
-**   work (combining two different minimum-distance restrictions in one
-**   pass) left for a follow-up milestone.
+** Milestone 30 adds homogeneity/symmetry imposition on top of the
+** Shonkwiler-Yen correction (aCtl.homogenous=1), via the SAME kind of
+** n1=n-aCtl.homogenous reparametrization quaidsFit() itself uses for
+** homogeneity (only n1 price/gamma ROWS are used as regressors -- every
+** one of the n EQUATION columns is still directly, independently
+** estimated throughout, unlike quaidsFit(), whose singular share-
+** residual covariance forces it to also drop and adding-up-recover an
+** equation COLUMN; quaidsZeroFit()'s wTilde=w/F residuals are not
+** singular this way, so no column recovery is needed here -- see
+** _quaidsZeroSymDiagRestrict()'s own header). Symmetry and the existing
+** diagonal-delta restriction are imposed SIMULTANEOUSLY in one combined
+** minimum-distance GLS projection (_quaidsZeroSymDiagRestrict()) against
+** the same simplified Vi=invpd(S).*.gg covariance
+** _quaidsZeroDiagRestrict() already used -- this was the "combining two
+** different minimum-distance restrictions in one pass" explicitly
+** flagged as real, additional work when this file was first written.
+**
+** Milestone 30 also fixes a real, previously-undetected bug present
+** since this file's original (Milestone 19) release: quaidsZeroFit()
+** never converted its estimated gamma coefficients out of the internal
+** "relative price" basis _quaidsIVFirstStage() applies (columns 1:n-1
+** become p_i-p_n, column n stays absolute) into genuine absolute-price
+** form -- unlike quaidsFit(), which has a dedicated final recovery block
+** for exactly this (quaids.src's "RECOVERS ABSOLUTE PRICE EFFECTS FROM
+** RELATIVE"). This meant zOut.b's gamma columns 1..n-1 previously held
+** gamma_ij-gamma_in (a coefficient on the relative-price regressor), not
+** genuine gamma_ij, in the shipped unconstrained mode. Fixed in BOTH
+** modes via the new _quaidsZeroRecoverAbsolute() helper, mirroring
+** quaidsFit()'s own two-branch recovery block. This changes zOut.b's
+** VALUES (not its shape) for existing unconstrained callers -- see
+** CHANGELOG.md.
+**
+** Remaining scope, still deliberately limited (not silently absent):
 ** - Standard errors are a SIMPLIFIED formula: `V(vec(b)) = S .*. inv(gg)`
 **   (the classic SUR-with-shared-regressors covariance), which does NOT
 **   account for (a) the nonlinear translog-price-index feedback the way
@@ -55,7 +80,9 @@
 **   363), or (b) first-stage probit/IV generated-regressor uncertainty.
 **   Both are real, honestly-documented simplifications, matching this
 **   project's established precedent for `quaidsCurvatureFit()`'s own
-**   "simplified, not a full sandwich" delta-method SE.
+**   "simplified, not a full sandwich" delta-method SE. The new symmetry
+**   test statistic (zOut.symStat) reuses this same simplified covariance
+**   for consistency with the existing diagonal-delta machinery.
 ** - Adding-up does NOT hold exactly for the corrected coefficients --
 **   this is a real, known property of Shonkwiler-Yen itself (each
 **   equation is rescaled by its own good-specific F_i), not a bug. No
@@ -143,6 +170,215 @@ proc (3) = _quaidsZeroDiagRestrict(b, S, gg, ngOld, n);
     retp(bRestricted, Vrestricted, ok);
 endp;
 
+/*
+** _quaidsZeroSymDiagRestrict: Milestone 30. Given the homogeneity-
+** reparametrized coefficient matrix b (ng=ngOld+n rows x n columns,
+** ngOld=1+nint+n1+nendog+nu, n1=n-1 -- caller must guarantee
+** aCtl.homogenous=1) and its simplified covariance components (S, gg),
+** imposes BOTH restrictions simultaneously in one minimum-distance GLS
+** projection: gamma symmetry (see the derivation below for why this is
+** NOT just "symmetrize the n1 x n1 submatrix gamma[1:n1,1:n1], leave
+** column n free" -- an earlier draft of this proc did exactly that and
+** was found, by direct empirical testing against a known-symmetric DGP,
+** to leave the RECOVERED n x n absolute-price gamma measurably
+** asymmetric), and hazard-block diagonality (identical to
+** _quaidsZeroDiagRestrict()'s own Xdelta construction). Intercept and
+** beta/[lambda]/u rows are left free via identity passthrough.
+**
+** The missing constraint, derived and verified before implementation:
+** homogeneity's own row-recovery (_quaidsZeroRecoverAbsolute's
+** R1Inner = eye(n1)|(-ones(1,n1))) gives the RECOVERED absolute-price
+** gamma as gammaAbs[i,j] = gammaRel[i,j] for i<=n1, and
+** gammaAbs[n,j] = -sum_{k=1}^{n1} gammaRel[k,j], for EVERY column j
+** (including j=n). Full symmetry of gammaAbs (gammaAbs[i,n]==
+** gammaAbs[n,i] for i=1..n1) therefore requires
+** gammaRel[i,n] == -sum_{k=1}^{n1} gammaRel[k,i], NOT "gammaRel[.,n]
+** free" -- i.e. column n's entries are themselves a DETERMINISTIC
+** function of the SAME symmetric n1 x n1 sub-block (gammaSym) that
+** drives columns 1..n1, via that sub-block's own row sums (using
+** gammaSym's symmetry to rewrite the column-i sum as row i's own sum).
+** Parametrizing via s=vech(gammaSym) (n1*(n1+1)/2 free parameters,
+** matching the standard textbook count for homogeneity+symmetry
+** jointly): vec(gammaSym)=R1*s (the usual vech->vec map), and
+** gammaRel[.,n] = -(ones(1,n1).*.eye(n1))*vec(gammaSym) (the standard
+** "row-sums as a linear map on vec()" identity, verified directly by a
+** hand-worked 2x2 example before use) = -(ones(1,n1).*.eye(n1))*R1*s.
+** Stacking both maps gives R1Combined (n1*(n1+1) rows x n1*(n1+1)/2
+** columns), replacing the plain R1 an earlier draft used only for the
+** sub-block. symDf is therefore n1*(n1+1)/2 (not n1*(n1-1)/2 -- the
+** latter only counts the within-sub-block symmetry restrictions,
+** missing these n1 additional column-n restrictions; verified by an
+** independent degrees-of-freedom count: n1*n free gammaRel parameters
+** before symmetry, n1*(n1+1)/2 remaining after, matching the standard
+** AIDS homogeneity+symmetry free-parameter count n(n-1)/2). Internal
+** helper, no #ifDef guard needed.
+*/
+proc (3) = _quaidsZeroSymDiagRestrict(b, S, gg, nint, ngOld, n1, n);
+    local ng, nFree, nSym, icFree, ic, igSymSubBlock, igSymColN, igSym,
+        igDelta, i, j, R1, R1ColN, R1Combined, Xdelta, k1, Xsel, Si, Vi,
+        oldtrp, XViXi, ok, bVec, Vrestricted, bRestricted, Gsym, rowSum;
+
+    ng = ngOld + n;
+
+    /* Free rows: intercept + beta/[lambda]/u blocks only -- gamma's
+       column-n entries are no longer free, see header. */
+    nFree = ngOld - (1+nint+n1);
+    icFree = seqa(1, 1, 1+nint) | seqa(1+nint+n1+1, 1, nFree);
+    ic = vec(icFree + seqa(0, ng, n)');
+
+    /* Gamma rows x columns 1..n1 (the symmetric sub-block): */
+    igSymSubBlock = seqa(1+nint+1, 1, n1);
+    igSymSubBlock = vec(igSymSubBlock + seqa(0, ng, n1)');
+    /* Gamma rows x column n: derived from the SAME vech(gammaSym)
+       parameters via the row-sum identity above, not free. */
+    igSymColN = seqa(1+nint+1, 1, n1) + ng*(n-1);
+    igSym = igSymSubBlock | igSymColN;
+
+    /* Delta rows x all n columns: diagonal-restricted (identical idiom
+       to _quaidsZeroDiagRestrict). */
+    igDelta = seqa(ngOld+1, 1, n);
+    igDelta = vec(igDelta + seqa(0, ng, n)');
+
+    i = ic | igSym | igDelta;
+    i = sortind(i);
+
+    R1 = design(vec(xpnd(seqa(1, 1, n1*(n1+1)/2))));   /* n1^2 x nSym: vec(gammaSym)=R1*s */
+    nSym = cols(R1);
+    R1ColN = -(ones(1, n1).*.eye(n1))*R1;               /* n1 x nSym: gammaRel[.,n]=R1ColN*s */
+    R1Combined = R1 | R1ColN;                            /* n1*(n1+1) x nSym */
+
+    Xdelta = zeros(n*n, n);
+    j = 1;
+    do while j <= n;
+        Xdelta[(j-1)*n+j, j] = 1;
+        j = j + 1;
+    endo;
+
+    k1 = rows(ic);
+
+    Xsel = ( eye(k1)                     ~zeros(k1, nSym)     ~zeros(k1, n) )|
+           ( zeros(rows(R1Combined), k1) ~R1Combined          ~zeros(rows(R1Combined), n) )|
+           ( zeros(n*n, k1)              ~zeros(n*n, nSym)    ~Xdelta        );
+    Xsel = Xsel[i, .];
+
+    ok = 1;
+    oldtrp = trapchk(1);
+    trap 1,1;
+    Si = invpd(S);
+    trap oldtrp,1;
+    if scalmiss(Si);
+        ok = 0;
+    else;
+        Vi = Si .*. gg;
+        oldtrp = trapchk(1);
+        trap 1,1;
+        XViXi = invpd(Xsel'Vi*Xsel);
+        trap oldtrp,1;
+        if scalmiss(XViXi);
+            ok = 0;
+        endif;
+    endif;
+
+    if ok;
+        bVec = vec(b);
+        Vrestricted = Xsel*XViXi*Xsel';
+        bRestricted = Vrestricted*Vi*bVec;
+        bRestricted = reshape(bRestricted, n, ng)';
+    else;
+        /* Degrade gracefully (Milestone 12's established idiom): zero
+           delta off-diagonal directly, symmetrize gamma[1:n1,1:n1] via
+           simple averaging, and derive column n from that symmetrized
+           sub-block's own row sums (not GLS-optimal, but well-defined
+           and harmless) rather than crash the whole call. */
+        bRestricted = b;
+        j = 1;
+        do while j <= n;
+            bRestricted[ngOld+1:ngOld+n, j] = zeros(n, 1);
+            bRestricted[ngOld+j, j] = b[ngOld+j, j];
+            j = j + 1;
+        endo;
+        Gsym = b[1+nint+1:1+nint+n1, 1:n1];
+        Gsym = (Gsym + Gsym')/2;
+        bRestricted[1+nint+1:1+nint+n1, 1:n1] = Gsym;
+        rowSum = -sumc(Gsym');
+        bRestricted[1+nint+1:1+nint+n1, n] = rowSum;
+        Vrestricted = zeros(n*ng, n*ng);
+    endif;
+
+    retp(bRestricted, Vrestricted, ok);
+endp;
+
+/*
+** _quaidsZeroRecoverAbsolute: Milestone 30. Converts a coefficient
+** matrix/covariance pair out of the internal "relative price" basis
+** _quaidsIVFirstStage() applies (prices[.,1:n-1] become p_i-p_n, price
+** column n stays absolute) into genuine absolute-price gamma -- the
+** same job quaidsFit()'s own "RECOVERS ABSOLUTE PRICE EFFECTS FROM
+** RELATIVE" block does (quaids.src ~665-725), which quaidsZeroFit() had
+** no analog of before this milestone (a real, previously-undetected
+** bug in the shipped Milestone 19 unconstrained mode -- see this file's
+** header).
+**
+** Implemented via direct per-column matrix left-multiplication
+** (bRecovered = SmallX*b, vRecovered = (eye(n).*.SmallX)*v*(eye(n).*.SmallX)')
+** rather than quaidsFit()'s own vec/sortind selection-matrix idiom --
+** the SAME relative->absolute transform applies identically and
+** independently to every one of the n equation columns here (unlike
+** quaidsFit(), which also has to recover an entire missing equation
+** COLUMN via adding-up), so a single ngFinal x ng "SmallX" matrix
+** applied once per column is both simpler and easier to verify directly
+** than composing two vec-space passes. Two branches:
+**   - aCtl.homogenous=0 (n1=n): relative->absolute conversion only, no
+**     row-count change. gamma_abs_i = gamma_rel_i for i<n,
+**     gamma_abs_n = gamma_rel_n - sum_{i<n}(gamma_rel_i) (the standard
+**     rel_i=p_i-p_n identity), i.e. left-multiply gamma's own n x n
+**     row-block by R1Inner = (eye(n-1)~0)|(-ones(1,n-1)~1).
+**   - aCtl.homogenous=1 (n1=n-1): homogeneity's own row-recovery IS
+**     already the absolute-price recovery in one step (no separate
+**     relative->absolute pass needed on top) -- under homogeneity every
+**     estimated gamma row is already purely relative (there is no
+**     absolute-p_n row at all pre-recovery, since the iteration loop
+**     pads gama with an implicit zero row for column n), so
+**     gamma_abs_i = gamma_rel_i for i<=n1, gamma_abs_n =
+**     -sum_{i<=n1}(gamma_rel_i), i.e. left-multiply by
+**     R1Inner = eye(n1)|(-ones(1,n1)) (n x n1). Verified directly by
+**     algebraic derivation (not assumed) before implementation.
+** In both branches, intercept/endog/u/delta blocks pass through
+** unchanged via identity (delta relocated to the end of the recovered
+** row space in the homogeneous branch, since gamma's row count grew).
+** The output row count, 1+nint+nendog+nu+2n, is independent of n1 --
+** zOut.b's SHAPE is unaffected by this fix in either mode, only its
+** VALUES change. Internal helper, no #ifDef guard needed.
+*/
+proc (2) = _quaidsZeroRecoverAbsolute(b, v, nint, ngOld, n1, n, nendog, nu, struct quaidsControl aCtl);
+    local ng, ngFinal, R1Inner, SmallX, BigX, bRecovered, vRecovered;
+
+    ng = ngOld + n;
+
+    if not aCtl.homogenous;
+        ngFinal = ng;
+        R1Inner = ( eye(n-1) ~ zeros(n-1, 1) ) |
+                  ( -ones(1, n-1) ~ 1 );
+        SmallX = eye(ngFinal);
+        SmallX[1+nint+1:1+nint+n, 1+nint+1:1+nint+n] = R1Inner;
+    else;
+        ngFinal = 1+nint+nendog+nu+2*n;
+        R1Inner = eye(n1) | (-ones(1, n1));
+
+        SmallX = zeros(ngFinal, ng);
+        SmallX[1:1+nint, 1:1+nint] = eye(1+nint);
+        SmallX[1+nint+1:1+nint+n, 1+nint+1:1+nint+n1] = R1Inner;
+        SmallX[1+nint+n+1:1+nint+n+nendog+nu, 1+nint+n1+1:1+nint+n1+nendog+nu] = eye(nendog+nu);
+        SmallX[ngFinal-n+1:ngFinal, ngOld+1:ngOld+n] = eye(n);
+    endif;
+
+    bRecovered = SmallX*b;
+    BigX = eye(n).*.SmallX;
+    vRecovered = BigX*v*BigX';
+
+    retp(bRecovered, vRecovered);
+endp;
+
 /*******************************************************************************
 **
 ** QUAIDSZEROFIT
@@ -172,23 +408,21 @@ endp;
 
 proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
 
-    local nobs, n, nint, xnam, wnam, unam, nu, nz, zzi, m1, enam,
+    local nobs, n, n1, nint, xnam, wnam, unam, nu, nz, zzi, m1, enam,
         u, ivBtmp, ivSEtmp, ivTtmp, ivPvttmp, ivCortmp, ivTvtmp, ivDftmp,
         ivRsqtmp, ivRbsqtmp, ivSsetmp, ivStdesttmp, ivFstattmp, ivPvftmp,
         zProbit, F, fDens, wTilde, h, i, yProbit, probitB, probitSE,
         probitConverged, shareZeroFrac,
         oldtrp, stone, lx, endog, nendog, m, ngOld, ng, gg, gw,
         b, b0, ok, iter, err, alpha, gama, a_p, _beta, b_p, lx2, firstIter,
-        iterHist, ww, sse, S, bFinal, Vfinal, restrictOk, se, b0Scalar;
+        iterHist, ww, sse, S, bDiag, VDiag, diagOk, bDiagAbs, vDiagAbs,
+        bSymDiag, VSymDiag, symDiagOk, bSymAbs, vSymAbs, se, seS, b0Scalar,
+        ggi, Vsym, viTest, u1, igSym, bVecFull, bSymDiagVecFull;
     struct quaidsZeroOut zOut;
-
-    if aCtl.homogenous == 1;
-        errorlog "quaidsZeroFit: homogeneity/symmetry imposition on the zero-corrected model is not yet supported -- call with aCtl.homogenous = 0.";
-        end;
-    endif;
 
     nobs = rows(w);
     n = cols(prices);
+    n1 = n - aCtl.homogenous;
 
     if intcpt == 0;
         intcpt = ones(nobs, 1);
@@ -271,8 +505,8 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
     endif;
     nendog = cols(endog);
 
-    m = moment(intcpt~prices[., 1:n]~endog~u~h~wTilde, 0);
-    ngOld = 1+nint+n+nendog+nu;
+    m = moment(intcpt~prices[., 1:n1]~endog~u~h~wTilde, 0);
+    ngOld = 1+nint+n1+nendog+nu;
     ng = ngOld + n;
     gg = m[1:ng, 1:ng];
     gw = m[1:ng, ng+1:ng+n];
@@ -282,7 +516,7 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
         b = solpd(gw, gg);
     else;
         if rows(aCtl.b0) /= ng or cols(aCtl.b0) /= n;
-            errorlog "quaidsZeroFit: aCtl.b0 must be scalar 0 or an ng x n zero-corrected coefficient matrix matching zOut.b.";
+            errorlog "quaidsZeroFit: aCtl.b0 must be scalar 0 or an ng x n reduced raw coefficient matrix matching zOut.bRaw.";
             end;
         endif;
         b = aCtl.b0;
@@ -299,24 +533,28 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
     do while ok;
         b0 = b;
         alpha = intcpt*b[1:1+nint, 1:n-1];
-        gama = b[1+nint+1:1+nint+n, 1:n-1];
+        if aCtl.homogenous;
+            gama = b[1+nint+1:1+nint+n1, 1:n-1] | zeros(1, n-1);
+        else;
+            gama = b[1+nint+1:1+nint+n, 1:n-1];
+        endif;
 
         a_p = aCtl.alpha0 + prices[., n]
             + sumc((prices[., 1:n-1].*alpha)')
             + .5*sumc(((prices*gama).*prices[., 1:n-1])');
         lx = totexp - a_p;
         if not aCtl.linear;
-            _beta = b[1+nint+n+1, 1:n-1];
+            _beta = b[1+nint+n1+1, 1:n-1];
             b_p = exp(prices[., 1:n-1]*_beta');
             lx2 = (lx^2)./b_p;
             endog = lx~lx2;
         else;
             endog = lx;
         endif;
-        m[1+nint+n+1:1+nint+n+nendog, .]
-            = endog'(intcpt~prices[., 1:n]~endog~u~h~wTilde);
-        m[., 1+nint+n+1:1+nint+n+nendog]
-            = m[1+nint+n+1:1+nint+n+nendog, .]';
+        m[1+nint+n1+1:1+nint+n1+nendog, .]
+            = endog'(intcpt~prices[., 1:n1]~endog~u~h~wTilde);
+        m[., 1+nint+n1+1:1+nint+n1+nendog]
+            = m[1+nint+n1+1:1+nint+n1+nendog, .]';
         gg = m[1:ng, 1:ng];
         gw = m[1:ng, ng+1:ng+n];
         b = solpd(gw, gg);
@@ -354,16 +592,83 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
     sse = ww - b'gw;
     S = sse/nobs;
 
-    { bFinal, Vfinal, restrictOk } = _quaidsZeroDiagRestrict(b, S, gg, ngOld, n);
+    /* Raw, pre-recovery coefficient matrix -- exposed so aCtl.b0 has a
+       valid warm-start input to match against, mirroring quaidsFit()'s
+       own qOut.homogB/aCtl.b0 pairing (its aCtl.b0 explicitly documents
+       itself as matching qOut.homogB, not the final recovered qOut.b/
+       qOut.bestB -- confirmed by reading quaids.src directly). Needed
+       because zOut.b/zOut.bS are now (Milestone 30) in recovered,
+       absolute-price form -- a different shape in homogeneous mode, and
+       a different BASIS even in unconstrained mode -- so no longer a
+       valid b0 input on their own. */
+    zOut.bRaw = b;
 
-    se = zeros(ng, n);
-    if restrictOk;
-        se = reshape(sqrt(diag(Vfinal)), n, ng)';
+    { bDiag, VDiag, diagOk } = _quaidsZeroDiagRestrict(b, S, gg, ngOld, n);
+    { bDiagAbs, vDiagAbs } = _quaidsZeroRecoverAbsolute(bDiag, VDiag, nint, ngOld, n1, n, nendog, nu, aCtl);
+
+    se = zeros(rows(bDiagAbs), n);
+    if diagOk;
+        se = reshape(sqrt(diag(vDiagAbs)), n, rows(bDiagAbs))';
+    endif;
+
+    zOut.symValid = aCtl.homogenous;
+    if aCtl.homogenous;
+        { bSymDiag, VSymDiag, symDiagOk } = _quaidsZeroSymDiagRestrict(b, S, gg, nint, ngOld, n1, n);
+        { bSymAbs, vSymAbs } = _quaidsZeroRecoverAbsolute(bSymDiag, VSymDiag, nint, ngOld, n1, n, nendog, nu, aCtl);
+
+        /* Symmetry test statistic: Vi=invpd(S).*.gg (used by both
+           restrict procs above) is already the INVERSE covariance of
+           vec(b) -- get the uninverted sub-covariance directly via the
+           Kronecker identity inv(S.*.inv(gg)) = inv(S).*.gg, i.e.
+           S.*.invpd(gg) is the uninverted covariance. */
+        ggi = invpd(gg);
+        igSym = seqa(1+nint+1, 1, n1);
+        igSym = vec(igSym + seqa(0, ngOld+n, n1)');
+        igSym = igSym | (seqa(1+nint+1, 1, n1) + (ngOld+n)*(n-1));
+        Vsym = S .*. ggi;
+        Vsym = Vsym[igSym, igSym];
+        oldtrp = trapchk(1);
+        trap 1,1;
+        viTest = invpd(Vsym);
+        trap oldtrp,1;
+        if scalmiss(viTest);
+            zOut.symStat = miss(0, 0);
+            zOut.symPval = miss(0, 0);
+        else;
+            bVecFull = vec(b);
+            bSymDiagVecFull = vec(bSymDiag);
+            u1 = bVecFull[igSym] - bSymDiagVecFull[igSym];
+            zOut.symStat = u1'*viTest*u1;
+            zOut.symPval = cdfchic(zOut.symStat, n1*(n1+1)/2);
+        endif;
+        zOut.symDf = n1*(n1+1)/2;
+
+        seS = zeros(rows(bSymAbs), n);
+        if symDiagOk;
+            seS = reshape(sqrt(diag(vSymAbs)), n, rows(bSymAbs))';
+        endif;
+
+        zOut.bS = bSymAbs;
+        zOut.vS = vSymAbs;
+        zOut.seS = seS;
+        zOut.bestB = bSymAbs;
+        zOut.bestV = vSymAbs;
+    else;
+        zOut.symStat = miss(0, 0);
+        zOut.symPval = miss(0, 0);
+        zOut.symDf = miss(0, 0);
+        zOut.bS = 0;
+        zOut.vS = 0;
+        zOut.seS = 0;
+        zOut.bestB = bDiagAbs;
+        zOut.bestV = vDiagAbs;
     endif;
 
     zOut.n = n;
+    zOut.n1 = n1;
     zOut.nint = nint;
     zOut.nobs = nobs;
+    zOut.homogenous = aCtl.homogenous;
     zOut.xnam = xnam;
     zOut.wnam = wnam;
     zOut.unam = unam;
@@ -371,8 +676,8 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
     zOut.probitSE = probitSE;
     zOut.probitConverged = probitConverged;
     zOut.shareZeroFrac = shareZeroFrac;
-    zOut.b = bFinal;
-    zOut.v = Vfinal;
+    zOut.b = bDiagAbs;
+    zOut.v = vDiagAbs;
     zOut.se = se;
 
     retp(zOut);
@@ -392,7 +697,7 @@ endp;
 
 proc 0 = printQuaidsZero(struct quaidsZeroOut zOut);
 
-    local n, i;
+    local n, i, str;
 
     n = zOut.n;
 
@@ -418,5 +723,27 @@ proc 0 = printQuaidsZero(struct quaidsZeroOut zOut);
         i = i + 1;
     endo;
     print;
+
+    if zOut.symValid;
+        print "TEST OF SYMMETRY GIVEN HOMOGENEITY";
+        print;
+        str = ftos(zOut.symDf, "chi2(%*.*lf)", 1, 0);
+        str = strsect(str, 1, 15) $+ ftos(zOut.symStat, "%*.*lf", 19, 8);
+        print str;;
+        print ftos(zOut.symPval, "                    p-value:  %*.*lf", 20, 3);
+        print;
+
+        print "HOMOGENEITY + SYMMETRY + DIAGONAL-DELTA CONSTRAINED COEFFICIENT TABLE";
+        print$ ""~zOut.wnam';
+        print "---------------------------------------------------------------"\
+            "---------------";
+        i = 1;
+        do while i <= rows(zOut.bS);
+            print$ (0$+ftocv(i, 1, 0))~ftocv(zOut.bS[i, .], 0, 4);
+            print$ (0$+"")~(0$+"("$+ftocv(zOut.seS[i, .], 0, 2)$+")");
+            i = i + 1;
+        endo;
+        print;
+    endif;
 
 endp;

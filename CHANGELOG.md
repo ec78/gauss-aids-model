@@ -5,6 +5,81 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## 0.24.0 - 2026-08-08
+
+Milestone 30: homogeneity/symmetry imposition for `quaidsZeroFit()`,
+requested directly by the repo owner, closing the follow-up Milestone
+19's own header explicitly deferred ("combining two different
+minimum-distance restrictions in the same pass" was left for later).
+
+### Added
+- `quaidsZeroFit()`: `aCtl.homogenous = 1` now imposes homogeneity (via
+  the same `n1 = n - aCtl.homogenous` reparametrization `quaidsFit()`
+  itself uses) and symmetry (via a new combined symmetry+diagonal-delta
+  minimum-distance restriction, `_quaidsZeroSymDiagRestrict()`) on the
+  Shonkwiler-Yen-corrected model, instead of hard-erroring.
+- New `quaidsZeroOut` fields: `n1`, `homogenous`, `bRaw` (the raw,
+  pre-recovery coefficient matrix -- the only valid shape/basis for a
+  supplied `aCtl.b0`, mirroring `quaidsFit()`'s own `qOut.homogB`/
+  `aCtl.b0` pairing), `symValid`, `symStat`, `symPval`, `symDf`
+  (`= n1*(n1+1)/2`), `bS`/`vS`/`seS` (the homogeneity+symmetry+
+  diagonal-delta-constrained estimates), `bestB`/`bestV`.
+- `printQuaidsZero()`: prints the symmetry-given-homogeneity Wald test
+  and the constrained coefficient table when `zOut.symValid`.
+
+### Fixed (breaking)
+- `quaidsZeroFit()`'s `b` (and now `bS`) previously reported gamma
+  coefficients in a mixed relative/absolute price basis (columns
+  `1..n-1` held `gamma_ij-gamma_in`, not genuine `gamma_ij`) --
+  `quaidsZeroFit()` never had an analog of `quaidsFit()`'s own
+  "RECOVERS ABSOLUTE PRICE EFFECTS FROM RELATIVE" conversion. This was a
+  real, previously-undetected bug present since the original (Milestone
+  19) release, not something introduced by this milestone. Fixed via a
+  new `_quaidsZeroRecoverAbsolute()` helper, applied in **both**
+  unconstrained and homogeneous modes -- confirmed with the repo owner
+  as in-scope, since implementing homogeneity support requires this same
+  recovery machinery anyway. **This changes `zOut.b`'s VALUES (not its
+  shape -- confirmed independent of `aCtl.homogenous`, always
+  `1+nint+nendog+nu+2n` rows) for existing unconstrained callers.**
+- A related consequence: `aCtl.b0` now expects `zOut.bRaw`'s shape/basis,
+  not `zOut.b`'s -- `zOut.b` is no longer the raw internal form `aCtl.b0`
+  needs to match.
+
+### Notes
+- A genuine missing cross-constraint was found and fixed in this
+  milestone's own first symmetry-restriction draft (not a pre-existing
+  bug): an initial design symmetrized only the `n1 x n1` gamma sub-block
+  and left the redundant price row's column entries "free," reasoning
+  they had no symmetric partner pre-recovery. Direct testing against a
+  known-symmetric synthetic DGP found the *recovered* gamma measurably
+  asymmetric (~0.05-0.8 depending on the cell). Root cause: those
+  "free" entries have an implicit symmetric partner after recovery, via
+  homogeneity's own row-sum-zero identity -- fixed by expressing both
+  the sub-block and the redundant column as functions of the same
+  `vech(gammaSym)` parameters. This is why `symDf = n1*(n1+1)/2`, not
+  the smaller `n1*(n1-1)/2` the incomplete design implied (independently
+  confirmed via a free-parameter count matching the standard AIDS
+  homogeneity+symmetry result). After the fix, recovered gamma is
+  exactly symmetric to floating-point precision.
+- The relative-price recovery step (`_quaidsZeroRecoverAbsolute()`) was
+  implemented via direct per-column matrix left-multiplication rather
+  than `quaidsFit()`'s own vec/sortind selection-matrix idiom -- a first
+  attempt mirroring that idiom line-for-line produced badly scrambled
+  output, found via an isolated unit test using a hand-constructed
+  matrix with distinctive per-cell marker values; the simpler
+  reformulation was verified correct on the same test before trusting it
+  against real data.
+- `tests/quaids_zero_test.e` grew from 19 to 41 checks: the existing
+  unconstrained-mode battery re-verified against the bugfixed values,
+  the identical battery for the new homogeneous path, an exact-symmetry
+  regression guard on the recovered gamma block, and `symDf`/`symStat`/
+  `symPval` checks. The existing `_quaidsZeroSyntheticDGP()` fixture was
+  reused unchanged (already genuinely symmetric by construction).
+  Naive-vs-corrected comparison numbers were re-derived (not assumed)
+  after the bugfix in both modes; "corrected beats naive" still holds on
+  both metrics. Full local suite (19 files, no skips) passed after every
+  change.
+
 ## 0.23.0 - 2026-08-04
 
 Milestone 28: keyword-argument API conversion, requested directly by the

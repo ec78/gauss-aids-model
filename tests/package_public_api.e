@@ -516,6 +516,22 @@ call assert_true(sumc(zOut.probitConverged) == Nz, "quaidsZeroFit: not all first
 
 call printQuaidsZero(zOut);
 
+/* Milestone 30: homogeneity/symmetry imposition on the zero-corrected
+   model, against the same installed package. */
+struct quaidsControl aCtlZH;
+aCtlZH = aCtlZ;
+aCtlZH.homogenous = 1;
+zOutZH = quaidsZeroFit(wZ, intcptZ, pricesZ, totexpZ, instrZ, aCtlZH);
+call assert_true(zOutZH.converged == 1, "quaidsZeroFit (homogeneous) did not converge");
+call assert_true(zOutZH.symValid == 1, "quaidsZeroFit (homogeneous): symValid should be 1");
+n1Z = Nz - 1;
+call assert_true(zOutZH.symDf == n1Z*(n1Z+1)/2, "quaidsZeroFit (homogeneous): symDf should be n1*(n1+1)/2");
+gammaBSZ = zOutZH.bS[1+zOutZH.nint+1:1+zOutZH.nint+Nz, .];
+call assert_true(maxc(maxc(abs(gammaBSZ - gammaBSZ'))) < 1e-6, "quaidsZeroFit (homogeneous): recovered gamma should be exactly symmetric");
+call assert_true(rows(zOutZH.b) == rows(zOut.b) and cols(zOutZH.b) == cols(zOut.b), "quaidsZeroFit (homogeneous): zOut.b shape should match the unconstrained case");
+
+call printQuaidsZero(zOutZH);
+
 
 /* --- quaidsRobustFit() / printQuaidsRobust() / quaidsRobustBootstrapFit()
    / printQuaidsRobustBootstrap() (Milestone 20) plus full-basis robust

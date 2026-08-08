@@ -4,9 +4,9 @@
 
 Estimates AIDS/QUAIDS budget-share equations corrected for zero budget
 shares (corner solutions) via the Shonkwiler & Yen (1999) two-step
-procedure. Unconstrained only in this first pass (no homogeneity/symmetry
-imposition on the corrected model). Silent, no printing -- see
-[printQuaidsZero](printQuaidsZero.md).
+procedure. Supports both unconstrained estimation and homogeneity/symmetry
+imposition on top of the correction (`aCtl.homogenous`). Silent, no
+printing -- see [printQuaidsZero](printQuaidsZero.md).
 
 ## Format
 
@@ -26,21 +26,43 @@ zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 - `instr` (*TxH matrix*) - instruments for log total expenditure.
 - `aCtl` (*`quaidsControl` structure*) - same fields as
   [quaidsFit](quaidsFit.md) (`linear`, `maxiter`, `err`, `alpha0`,
-  `relax`, `b0`). **`aCtl.homogenous` must be `0`** -- errors clearly
-  otherwise (see Remarks).
+  `relax`, `b0`). `aCtl.homogenous = 0` (default) leaves every good
+  directly, independently estimated; `aCtl.homogenous = 1` additionally
+  imposes homogeneity and symmetry on the corrected model -- see Remarks.
+  If supplied, `aCtl.b0` must match `zOut.bRaw`'s shape/basis, not
+  `zOut.b`'s (see Remarks).
 
 ## Returns
 
 `zOut` is a `quaidsZeroOut` structure:
 
+- `n`, `n1` - number of goods, and `n - aCtl.homogenous` (the number of
+  independently-estimated price/gamma rows; equation columns are always
+  all `n`).
+- `homogenous` - echoes `aCtl.homogenous`.
 - `probitB`, `probitSE` - first-stage probit coefficients/standard errors,
   one column per good, regressed on `intcpt~prices~totexp`.
 - `probitConverged` - `n x 1`, `1` if that good's probit converged.
 - `shareZeroFrac` - `n x 1`, observed fraction of zero shares per good
   (diagnostic).
-- `b`, `v`, `se` - the corrected coefficient matrix (intercept | gamma |
-  beta | `[lambda]` | `u` | a trailing `n x n` hazard/`delta` block, see
-  Remarks), its covariance, and standard errors.
+- `bRaw` - the raw, pre-recovery coefficient matrix, in the internal
+  relative-price/reduced-row basis. This, not `b`, is the only valid
+  shape/basis for a supplied `aCtl.b0` -- mirrors
+  [quaidsFit](quaidsFit.md)'s own `qOut.homogB`/`aCtl.b0` pairing.
+- `b`, `v`, `se` - the diagonal-delta-constrained coefficient matrix, in
+  genuine **absolute-price** form (intercept | gamma | beta | `[lambda]`
+  | `u` | a trailing `n x n` hazard/`delta` block, see Remarks), its
+  covariance, and standard errors. Shape is `1+nint+nendog+nu+2n` rows,
+  independent of `aCtl.homogenous` -- only the values differ.
+- `symValid` - `== aCtl.homogenous`.
+- `symStat`, `symPval`, `symDf` - the symmetry-given-homogeneity Wald
+  test (`symDf = n1*(n1+1)/2` -- see Remarks for why this is *not*
+  `n1*(n1-1)/2`).
+- `bS`, `vS`, `seS` - the homogeneity+symmetry+diagonal-delta-constrained
+  coefficient matrix (same shape/layout as `b`), covariance, and standard
+  errors. `0` if `aCtl.homogenous = 0`.
+- `bestB`, `bestV` - `= bS`/`vS` if `aCtl.homogenous`, else `= b`/`v` --
+  what downstream post-estimation should be evaluated against.
 - `converged`, `iterations`, `finalErr` - outer-iteration diagnostics.
 
 ## Remarks
@@ -72,6 +94,33 @@ probit) plus one new shared regressor column per equation
 shared-design-matrix machinery, and everything built on it, survives
 unchanged.
 
+**Homogeneity** (`aCtl.homogenous = 1`) is imposed the same way
+[quaidsFit](quaidsFit.md) imposes it: only `n1 = n-1` (relative) price
+columns are used as regressors, instead of `n`. Unlike `quaidsFit()`,
+no equation *column* needs recovering via adding-up -- `quaidsZeroFit()`'s
+`wTilde = w/F` residuals are not singular the way `quaidsFit()`'s raw
+share residuals are (each equation is independently rescaled by its own
+`F_i`), so every one of the `n` equations stays directly, independently
+estimated throughout; only gamma's *rows* (which prices are used as
+regressors) shrink from `n` to `n1`.
+
+**Symmetry** (also `aCtl.homogenous = 1`) is imposed simultaneously with
+the diagonal-delta restriction in one combined minimum-distance GLS
+projection. This is *not* simply "symmetrize the `n1 x n1` gamma
+sub-block, leave the redundant price row's column free" -- that was an
+earlier draft's design, found by direct testing against a known-symmetric
+DGP to leave the *recovered* absolute-price gamma measurably asymmetric.
+The correct restriction additionally constrains the redundant row's
+entries to be a deterministic function of that same symmetric sub-block
+(via homogeneity's own row-sum-zero identity), which is why
+`symDf = n1*(n1+1)/2` (the within-sub-block restrictions, `n1*(n1-1)/2`,
+*plus* `n1` more from this cross-constraint) rather than the smaller
+`n1*(n1-1)/2` an incomplete restriction would suggest -- confirmed by an
+independent free-parameter count (`n1*n` free gammaRel parameters before
+symmetry, `n1*(n1+1)/2` after, matching the standard AIDS
+homogeneity+symmetry count `n(n-1)/2`). See `quaidszerocorrect.src`'s own
+`_quaidsZeroSymDiagRestrict()` header for the full derivation.
+
 **The diagonal-delta restriction**: appending `n` hazard columns to a
 shared design matrix means the one-shot GLS solve initially estimates a
 full `n x n` cross-equation `delta` block (every equation's response to
@@ -83,14 +132,18 @@ imposes this via the same `design()`-based minimum-distance restriction
 rows, not the single row every other block has, with off-diagonal entries
 forced to exactly zero.
 
+**A real, previously-shipped bug, found and fixed**: prior to this, `b`'s
+gamma columns were left in a mixed relative/absolute price basis (columns
+`1..n-1` held `gamma_ij - gamma_in`, not genuine `gamma_ij`) --
+`quaidsZeroFit()` never had an analog of [quaidsFit](quaidsFit.md)'s own
+"RECOVERS ABSOLUTE PRICE EFFECTS FROM RELATIVE" conversion. Fixed in both
+modes -- `b`/`bS` are now genuine absolute-price coefficients, matching
+[quaidsFit](quaidsFit.md)'s own output convention. This changes `b`'s
+*values* (not shape) relative to earlier releases.
+
 **Scope, deliberately** (matching this project's established honest-
 scoping precedent):
 
-- **Unconstrained only.** Every good is directly, independently estimated
-  (errors clearly if `aCtl.homogenous = 1`). Imposing homogeneity/symmetry
-  on top of the Shonkwiler-Yen correction is real, additional work
-  (combining two different minimum-distance restrictions in one pass)
-  left for a follow-up milestone.
 - **Standard errors are a simplified formula**
   (`V(vec(b)) = S .*. inv(gg)`, the classic SUR-with-shared-regressors
   covariance) -- it does *not* account for the nonlinear translog-price-
@@ -98,7 +151,8 @@ scoping precedent):
   corrected variance does, nor for first-stage probit/IV
   generated-regressor uncertainty. Matches this project's established
   precedent for [quaidsCurvatureFit](quaidsCurvatureFit.md)'s own
-  "simplified, not a full sandwich" delta-method SE.
+  "simplified, not a full sandwich" delta-method SE. The symmetry test
+  statistic reuses this same simplified covariance for consistency.
 - **Adding-up does not hold exactly** for the corrected coefficients --
   a real, known property of Shonkwiler-Yen itself (each equation is
   rescaled by its own good-specific `F_i`), not a bug. No post-hoc
@@ -107,9 +161,10 @@ scoping precedent):
   `intcpt`/`prices`/`totexp`, matching this library's "no separate
   exogenous-mode arguments" philosophy.
 - **Starting values**: scalar `aCtl.b0 = 0` uses the built-in Stone-index
-  starting values. A supplied matrix must match `zOut.b`'s coefficient
-  shape for a compatible zero-corrected fit (including the trailing
-  hazard/`delta` block).
+  starting values. A supplied matrix must match `zOut.bRaw`'s shape (the
+  raw, pre-recovery internal basis) -- not `zOut.b`'s recovered shape,
+  which can differ (both in row count when `aCtl.homogenous=1`, and in
+  basis regardless of mode).
 
 **A known, unresolved limitation**: GAUSS's built-in `glm()` can hard-crash
 on some degenerate inputs (e.g. `error: Intel MKL ERROR ... DGELS`), a
@@ -130,11 +185,20 @@ runtime) for the first-stage probits -- no new package dependency.
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;          // 1 for AIDS, 0 for QUAIDS
 aCtl.maxiter = 100;
-aCtl.homogenous = 0;      // required
+aCtl.homogenous = 0;      // 1 to also impose symmetry
 
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call printQuaidsZero(zOut);
 print "fraction of zero shares per good:" zOut.shareZeroFrac';
+```
+
+With homogeneity/symmetry imposed:
+
+```gauss
+aCtl.homogenous = 1;
+zOutH = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
+print "symmetry test p-value:" zOutH.symPval;
+print zOutH.bestB;   // == zOutH.bS
 ```
 
 ## Source

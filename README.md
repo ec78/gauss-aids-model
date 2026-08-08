@@ -13,20 +13,23 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is **pre-alpha** (package version `0.22.0`). The original
-roadmap plus Milestones 11-27 are complete, including the post-20 applied
+This library is **pre-alpha** (package version `0.24.0`). The original
+roadmap plus Milestones 11-30 are complete, including the post-20 applied
 workflow layer (`quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()`,
 robust-covariance propagation, preflight diagnostics), sampling-weighted
 estimation (`quaidsFit()`'s optional `weight` argument, with a matching
 weighted/clustered SE via `quaidsRobustFit()`, and a sampling-weighted
-workflow via `quaidsSurveyWorkflowFit()`), and replicate-weight
-(jackknife/BRR-style) standard errors from caller-supplied replicate
-weight columns (`quaidsReplicateWeightFit()`). Completed pieces include the estimation core,
-hypothesis tests, elasticities, preflight diagnostics, dataframe entry point,
-`pubtable` export, zero-budget correction, robust/bootstrap inference,
-release tooling, and the documentation set. Remaining caveats are documented
-validation and convergence limits -- see `GOLD_STANDARD_TODO.md` for the
-release roadmap and next development milestones.
+workflow via `quaidsSurveyWorkflowFit()`), replicate-weight (jackknife/
+BRR-style) standard errors from caller-supplied replicate weight columns
+(`quaidsReplicateWeightFit()`), a keyword-argument API conversion, and
+homogeneity/symmetry imposition for the Shonkwiler-Yen zero-budget-share
+correction (`quaidsZeroFit()`'s `aCtl.homogenous` option). Completed
+pieces include the estimation core, hypothesis tests, elasticities,
+preflight diagnostics, dataframe entry point, `pubtable` export,
+zero-budget correction, robust/bootstrap inference, release tooling, and
+the documentation set. Remaining caveats are documented validation and
+convergence limits -- see `GOLD_STANDARD_TODO.md` for the release roadmap
+and next development milestones.
 
 ## Requirements
 

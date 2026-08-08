@@ -240,16 +240,23 @@ struct quaidsWelfareOut {
 /*
 ** quaidsZeroOut -- struct returned by quaidsZeroFit(): AIDS/QUAIDS
 ** coefficients corrected for zero budget shares via the Shonkwiler-Yen
-** (1999) two-step procedure -- an unconstrained (no homogeneity/symmetry
-** imposition in this first pass) fit, with a per-good first-stage probit
-** correcting for the probability of a corner (zero-share) solution. See
-** the Milestone 19 section of GOLD_STANDARD_TODO.md.
+** (1999) two-step procedure, with a per-good first-stage probit
+** correcting for the probability of a corner (zero-share) solution.
+** Milestone 30 added homogeneity/symmetry imposition on top of the
+** correction (aCtl.homogenous=1) alongside the original unconstrained
+** mode, plus a bugfix converting the reported gamma coefficients to
+** genuine absolute-price form in BOTH modes (previously left in a
+** mixed relative/absolute basis -- see src/quaidszerocorrect.src's own
+** header). See the Milestone 19 and Milestone 30 sections of
+** GOLD_STANDARD_TODO.md.
 */
 struct quaidsZeroOut {
-    matrix n;          // number of goods (every good is directly estimated -- no
-                       //   adding-up recovery in this unconstrained-only pass)
+    matrix n;          // number of goods
+    matrix n1;         // n - homogenous (number of independently-estimated
+                       //   price/gamma rows; equation columns are always all n)
     matrix nint;       // number of extra intercept-shifter variables
     matrix nobs;
+    matrix homogenous; // echoes aCtl.homogenous
     matrix xnam;       // legacy character matrix of intercept-block names
     matrix wnam;       // legacy character matrix of good names
     matrix unam;       // legacy character matrix of IV-residual names
@@ -257,12 +264,35 @@ struct quaidsZeroOut {
     matrix probitSE;   // first-stage probit standard errors, same shape as probitB
     matrix probitConverged;  // n x 1, 1 if that good's probit converged
     matrix shareZeroFrac;    // n x 1, observed fraction of zero shares per good
-    matrix b;    // corrected coefficient matrix: intcpt | gamma | beta | [lambda]
-                // | u | delta (trailing n x n block, diagonal by construction --
-                //   see quaidsZeroFit()'s own header for why this block is n x n
-                //   rows, not a single row like every other block)
+    matrix bRaw; // raw, pre-recovery coefficient matrix (ng=1+nint+n1+nendog+nu+n
+                // rows x n columns) -- the ONLY valid shape/basis for aCtl.b0,
+                // mirroring quaidsFit()'s qOut.homogB/aCtl.b0 pairing. Not in
+                // absolute-price form and not diagonal/symmetry-restricted.
+    matrix b;    // homogeneity-reparametrized (if aCtl.homogenous=1) + diagonal-
+                // delta-constrained coefficient matrix, in genuine absolute-price
+                // form: intcpt | gamma | beta | [lambda] | u | delta (trailing
+                // n x n block, diagonal by construction -- see quaidsZeroFit()'s
+                // own header for why this block is n x n rows, not a single row
+                // like every other block). Shape is 1+nint+nendog+nu+2n rows x n
+                // columns regardless of aCtl.homogenous.
     matrix v;    // covariance of vec(b) -- a simplified formula, see Remarks
     matrix se;   // standard errors, same shape as b
+    matrix symValid;  // == aCtl.homogenous
+    matrix symStat;   // symmetry-given-homogeneity Wald test statistic
+    matrix symPval;
+    matrix symDf;     // n1*(n1+1)/2 -- the within-sub-block symmetry restrictions
+                      //   (n1*(n1-1)/2) PLUS n1 additional restrictions linking
+                      //   gamma's column-n entries to that same sub-block via
+                      //   homogeneity's own row-sum-zero identity (see
+                      //   _quaidsZeroSymDiagRestrict()'s header for the full
+                      //   derivation)
+    matrix bS;   // homogeneity+symmetry+diagonal-delta-constrained coefficient
+                // matrix, same shape/layout as b (0 if aCtl.homogenous=0)
+    matrix vS;
+    matrix seS;
+    matrix bestB;  // = bS if aCtl.homogenous, else = b -- what downstream
+                  //   post-estimation should be evaluated against
+    matrix bestV;
     matrix converged;  // 1 if the outer (translog price index) iteration converged
     matrix iterations;
     matrix finalErr;

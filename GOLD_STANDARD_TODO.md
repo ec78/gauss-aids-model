@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-08-07
+Status date: 2026-08-08
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -11,9 +11,9 @@ libraries stay consistent to maintain and to use.
 
 ## Current Status Snapshot
 
-The repository is pre-alpha, package version `0.23.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-29**, as of
-2026-08-07: 0
+The repository is pre-alpha, package version `0.24.0`. **The original ten-
+milestone roadmap is complete, plus Milestones 11-30**, as of
+2026-08-08: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -129,7 +129,18 @@ plus one real, previously-undetected bug found and fixed along the way
 in already-shipped `pubtable_quaids.src` code; see that section below for
 the exact GAUSS caveats found empirically -- type-locking across a
 reused variable name, and inference not surviving a `retp()` of an
-external package's proc without an intermediate local variable).
+external package's proc without an intermediate local variable), and 30
+(homogeneity/symmetry imposition for `quaidsZeroFit()`, closing
+Milestone 19's own explicitly-deferred follow-up -- planned via
+`EnterPlanMode`/`ExitPlanMode` given the size of the estimation-math
+change, and found two more real bugs along the way: a previously-
+undetected relative-vs-absolute-price basis error in `quaidsZeroFit()`'s
+already-shipped unconstrained mode (fixed in both modes, a real
+value-changing behavior change confirmed with the repo owner first), and
+a genuine missing cross-constraint in this milestone's own first
+symmetry-restriction draft, caught only by direct empirical testing
+against a known-symmetric synthetic DGP -- see that section below for
+both derivations).
 
 The post-20 roadmap shifted from individual post-estimation procs to full
 applied workflow support. `quaidsWorkflowFit()` is the first seed of that
@@ -156,6 +167,17 @@ side struct auto-declaration), also not a roadmap item and also with no
 effect on estimation math or the survey-design follow-ups -- its one real
 finding was a pre-existing bug in `pubtable_quaids.src`'s
 `ptFromQuaidsElas()`, unrelated to the survey/design-based work.
+Milestone 30 returned to the original roadmap outline's own last-flagged
+item: `quaidsZeroFit()` (Milestone 19) is no longer unconstrained-only --
+`aCtl.homogenous=1` now imposes homogeneity and symmetry on the
+Shonkwiler-Yen-corrected model, via the same reparametrization
+`quaidsFit()` itself uses plus a combined symmetry+diagonal-delta
+minimum-distance restriction. Building it also fixed a real,
+previously-undetected bug in the already-shipped unconstrained mode
+(gamma reported in a mixed relative/absolute price basis, never
+converted to genuine absolute-price form) -- unrelated to the survey/
+design-based work, which remains the next explicitly-flagged, unstarted
+item (formal strata, finite-population correction).
 
 - Milestone 0: dead code removed, files moved into `src/`/`examples/`,
   package/proc naming decided (`quaids`), license decided (MIT).
@@ -2471,7 +2493,10 @@ AIDS-then-QUAIDS curvature precedent**: **unconstrained only** in this
 pass -- `quaidsZeroFit()` errors clearly if `aCtl.homogenous = 1`.
 Imposing homogeneity/symmetry *on top of* the correction is real,
 additional work (combining two different minimum-distance restrictions
-simultaneously), left for a follow-up. Standard errors use a simplified
+simultaneously), left for a follow-up. **Update, Milestone 30**: this
+follow-up is resolved -- see that section for the design and two more
+real bugs found along the way, including one in this milestone's own
+shipped unconstrained mode. Standard errors use a simplified
 `V(vec(b)) = S .*. inv(gg)` formula -- honestly documented as not
 correcting for the nonlinear translog-price-index feedback the way
 `quaidsFit()`'s own Jacobian-corrected variance does, nor for first-stage
@@ -3080,6 +3105,87 @@ Follow-ups: none identified. No package rebuild/reinstall was needed
 version bump (pure ergonomics cleanup plus one bugfix to an optional
 adapter file, no public signature changed).
 
+### Milestone 30 -- Homogeneity/Symmetry for quaidsZeroFit() -- COMPLETE
+
+Closes the item Milestone 19's own header flagged as a deliberate
+follow-up: `aCtl.homogenous=1` was a hard error in `quaidsZeroFit()`;
+combining a symmetry restriction with the existing diagonal-delta
+restriction "in the same pass" was explicitly called out as real,
+additional work at the time.
+
+- [x] Planned via `EnterPlanMode`/`ExitPlanMode` before writing code,
+  given the size of the estimation-math change -- research for the plan
+  surfaced a second, independent, real bug (see below), confirmed with
+  the repo owner via `AskUserQuestion` before folding its fix into this
+  milestone's scope.
+- [x] Generalized `quaidsZeroFit()`'s estimation core to
+  `n1 = n - aCtl.homogenous` (only `n1` relative price columns used as
+  regressors under homogeneity), mirroring `quaidsFit()`'s own
+  reparametrization exactly. Verified as a byte-identical no-op refactor
+  for the unconstrained case before extending to homogeneous mode.
+- [x] Found and fixed a real, previously-undetected bug in the already-
+  shipped Milestone 19 unconstrained mode: `quaidsZeroFit()` never
+  converted its estimated gamma coefficients out of the internal
+  relative-price basis into genuine absolute-price form (unlike
+  `quaidsFit()`, which has a dedicated recovery block for exactly this).
+  Fixed via a new `_quaidsZeroRecoverAbsolute()` helper, in **both**
+  modes (confirmed with the repo owner as in-scope, a real value-
+  changing behavior change to already-shipped output).
+- [x] Implemented the recovery step via direct per-column matrix
+  left-multiplication rather than `quaidsFit()`'s own vec/sortind
+  selection-matrix idiom -- found, by building an isolated unit test with
+  a hand-constructed matrix carrying distinctive per-cell marker values,
+  that a first attempt mirroring `quaidsFit()`'s pattern line-for-line
+  produced badly scrambled output; the simpler direct-matrix
+  reformulation was verified correct on the same marker test before
+  trusting it against real data.
+- [x] Added `_quaidsZeroSymDiagRestrict()`, a new sibling proc imposing
+  symmetry and the existing diagonal-delta restriction simultaneously in
+  one minimum-distance GLS projection. Found and fixed a genuine missing
+  cross-constraint in the first working draft (which left the redundant
+  price row's column entries "free"): by direct testing against a
+  known-symmetric synthetic DGP, the recovered gamma matrix was
+  measurably asymmetric; derived and fixed the correct constraint
+  (`symDf = n1*(n1+1)/2`, not `n1*(n1-1)/2`), confirmed independently via
+  a free-parameter count matching the standard AIDS homogeneity+symmetry
+  result. After the fix, recovered gamma is exactly symmetric to
+  floating-point precision.
+- [x] Added `zOut.bRaw` (the raw, pre-recovery coefficient matrix) so
+  `aCtl.b0` has a valid, correctly-shaped warm-start input to target --
+  mirroring `quaidsFit()`'s own `qOut.homogB`/`aCtl.b0` pairing, a direct
+  consequence of `zOut.b` no longer being in that raw internal form.
+- [x] Added `zOut.n1`/`homogenous`/`symValid`/`symStat`/`symPval`/
+  `symDf`/`bS`/`vS`/`seS`/`bestB`/`bestV` to `quaidsZeroOut`
+  (`src/quaids.sdf`), mirroring `quaidsOut`'s own naming. Confirmed
+  `zOut.b`'s shape (`1+nint+nendog+nu+2n` rows) is independent of
+  `aCtl.homogenous` -- a direct regression test, not just a comment.
+- [x] `printQuaidsZero()` gained a symmetry-test print block mirroring
+  `printQuaids()`'s own, shown only when `zOut.symValid`.
+- [x] `tests/quaids_zero_test.e` grew from 19 to 41 checks: the full
+  existing battery re-verified against the bugfixed (recovered) values,
+  the identical battery for the new homogeneous path, an exact-symmetry
+  regression guard on the recovered gamma block, and `symDf`/`symStat`/
+  `symPval` checks. Reused the existing `_quaidsZeroSyntheticDGP()`
+  fixture unchanged (already genuinely symmetric by construction) --
+  no new fixture needed. Re-derived (not assumed) the naive-vs-corrected
+  comparison numbers after the bugfix in both modes; "corrected beats
+  naive" still holds on both metrics.
+- [x] Added a homogeneous-mode `quaidsZeroFit()`/`printQuaidsZero()`
+  exercise to `tests/package_public_api.e` against the real installed
+  package.
+- [x] Ran the full local suite (19 files, no skips) after every change,
+  confirming zero regressions.
+- [x] Updated `docs/command-reference/quaidsZeroFit.md`/
+  `printQuaidsZero.md`, `docs/METHODOLOGY_NOTES.md`'s zero-share section,
+  CLAUDE.md, this roadmap, and `CHANGELOG.md` for the new capability and
+  both bugs found along the way.
+
+Follow-ups: formal strata as a concept distinct from clustering, and
+design-based finite-population correction, remain the next explicitly-
+flagged, unstarted items in the separate survey/design-based estimation
+thread (unaffected by this milestone). No other homogeneity/symmetry
+follow-up items are outstanding for `quaidsZeroFit()`.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -3128,11 +3234,13 @@ adapter file, no public signature changed).
 - [x] Zero budget shares (corner solutions) are correctable via a
   Shonkwiler-Yen two-step procedure (`quaidsZeroFit`, Milestone 19),
   reformulated to preserve the shared-design-matrix Kronecker-product
-  identity every other estimation stage relies on. **Deliberately
-  scoped**, not silently incomplete: unconstrained only (no homogeneity/
-  symmetry imposition on the corrected model yet), a simplified delta-
-  method standard error, and adding-up does not hold exactly for the
-  corrected coefficients (a real property of the method itself).
+  identity every other estimation stage relies on, with homogeneity and
+  symmetry imposable on top of the correction (Milestone 30) via a
+  combined minimum-distance restriction and the same `n1=n-aCtl.homogenous`
+  reparametrization `quaidsFit()` itself uses. **Deliberately scoped**,
+  not silently incomplete: a simplified delta-method standard error, and
+  adding-up does not hold exactly for the corrected coefficients (a real
+  property of the method itself).
 - [x] Robust and cluster-robust standard errors (`quaidsRobustFit`,
   Milestone 20) generalize the pooled, homoskedastic sandwich every other
   covariance in this library uses, unified through one `clusterId`
@@ -3185,8 +3293,8 @@ adapter file, no public signature changed).
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-28 extend it beyond the original scope, as of 2026-08-04
-(package version `0.23.0`). Commits are now being made (and pushed to
+Milestones 11-30 extend it beyond the original scope, as of 2026-08-08
+(package version `0.24.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
 current status (that language in earlier milestone write-ups reflected
@@ -3305,3 +3413,32 @@ requires required parameters to precede defaulted ones -- a deliberate,
 explicitly-authorized breaking change to those four signatures, not an
 additive release, since the package has not yet been publicly released.
 No estimation math changed.
+
+Milestone 29, also requested directly by the repo owner, reviewed every
+procedure for GAUSS's caller-side struct auto-declaration (`proc
+(struct T) = name(...);`, no variable name in the return slot). Found
+the proc-declaration side already fully compliant since Milestone 5 --
+the real work was a script-verified cleanup of 352 now-redundant
+`struct T var;` pre-declarations across `tests/`/`examples/`/docs, plus
+one real, previously-undetected bug found and fixed along the way in
+already-shipped `pubtable_quaids.src` code (`ptFromQuaidsElas()` broke
+caller-side inference by `retp()`-ing an external package's proc call
+with no intermediate local variable). No estimation math changed, no
+version bump (pure ergonomics cleanup plus an adapter-file bugfix).
+
+Milestone 30 returned to the original roadmap outline's own last-flagged
+item: `quaidsZeroFit()` (Milestone 19) is no longer unconstrained-only.
+`aCtl.homogenous=1` now imposes homogeneity (via the same
+`n1=n-aCtl.homogenous` reparametrization `quaidsFit()` itself uses) and
+symmetry (via a new combined symmetry+diagonal-delta minimum-distance
+restriction) on the Shonkwiler-Yen-corrected model. Planned via
+`EnterPlanMode`/`ExitPlanMode` given the size of the change. Building it
+found and fixed two more real bugs: a previously-undetected relative-
+vs-absolute-price basis error in the already-shipped unconstrained mode
+(fixed in both modes, confirmed with the repo owner as an in-scope,
+value-changing behavior change), and a genuine missing cross-constraint
+in this milestone's own first symmetry-restriction draft (gamma's
+redundant-row column entries are not actually free under symmetry --
+caught only by direct empirical testing against a known-symmetric
+synthetic DGP, not algebra alone). `quaidsZeroFit()`'s own test suite
+grew from 19 to 41 checks.
