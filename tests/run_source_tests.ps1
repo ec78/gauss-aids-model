@@ -169,12 +169,32 @@ $guardTests = @(
         Expected = "quaidsFit: aCtl.b0 must be scalar 0 or an ng x n reduced raw coefficient matrix matching qOut.homogB."
     },
     [pscustomobject]@{
+        Script = "guard_error_cases\quaids_scalar_weight.e"
+        Expected = "quaidsFit: weight must be scalar 0 or a Tx1 vector matching the number of observations."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\robust_scalar_weight.e"
+        Expected = "quaidsRobustFit: weight must be scalar 0 or a Tx1 vector matching the number of observations."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\robust_bootstrap_scalar_weight.e"
+        Expected = "quaidsRobustBootstrapFit: weight must be scalar 0 or a Tx1 vector matching the number of observations."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\workflow_scalar_weight.e"
+        Expected = "quaidsWorkflowFit: weight must be scalar 0 or a Tx1 vector matching the number of observations."
+    },
+    [pscustomobject]@{
         Script = "guard_error_cases\replicate_bad_weights_shape.e"
         Expected = "quaidsReplicateWeightFit: replicateWeights must have one row per observation."
     },
     [pscustomobject]@{
         Script = "guard_error_cases\replicate_negative_scale_factor.e"
         Expected = "quaidsReplicateWeightFit: scaleFactor must be positive."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\replicate_scalar_weight.e"
+        Expected = "quaidsFit: weight must be scalar 0 or a Tx1 vector matching the number of observations."
     }
 )
 

@@ -26,20 +26,19 @@
 ** argument originally; Milestone 28 converted it to a genuine `weight=0`
 ** keyword default), threaded into this proc's own quaidsPreflight()/
 ** quaidsFit()/quaidsRobustFit()/quaidsRobustCovariance() calls. Omit, or
-** pass scalar `0`, for the unweighted workflow. This is a DIFFERENT
-** concept from quaidsSurveyWorkflowFit()'s own `weight` argument (which
-** only ever reweights the post-estimation evaluation point, never the
-** estimator itself, per that proc's own header) -- see
-** wfOut.weighted/weightSum/effN (this milestone's real estimator
-** weighting) vs. wfOut.surveyWeighted/surveyWeightSum (Milestone 25's
-** evaluation-point-only weighting).
+** pass scalar `0`, for the unweighted workflow. Since Milestone 26,
+** quaidsSurveyWorkflowFit() forwards its required `weight` into this
+** same estimator-level argument and also uses it for the weighted
+** evaluation point. See wfOut.weighted/weightSum/effN for estimator
+** weighting and wfOut.surveyWeighted/surveyWeightSum for the survey
+** workflow's weighted-evaluation-point metadata.
 **
 *******************************************************************************/
 
 proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, clusterId=0, weight=0);
 
     local n, nint, m_, intcptPt, pricesPt, totexpPt, statQ, pvalQ, dfQ,
-        robustBFull, robustVFull, isWeighted;
+        robustBFull, robustVFull, isWeighted, weightScalar;
     struct quaidsOut qOut;
     struct quaidsSharesOut sharesOut;
     struct quaidsSharesOut sharesRobustOut;
@@ -50,11 +49,17 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
     struct quaidsWorkflowOut wfOut;
 
     /* Milestone 26/28: optional keyword sampling-weight argument.
-       quaidsPreflight() requires a positional weight (0 sentinel for "not
-       supplied"), so isWeighted decides which literal is passed there and
-       whether weight is forwarded to quaidsFit()/quaidsRobustFit() at
-       all. */
-    isWeighted = rows(weight)*cols(weight) > 1;
+       Scalar 0 is the only unweighted sentinel; real sampling weights must
+       be Tx1 vectors. isWeighted then decides whether the raw vector is
+       forwarded to quaidsPreflight()/quaidsFit()/quaidsRobustFit(). */
+    weightScalar = rows(weight)*cols(weight) == 1;
+    if weightScalar;
+        if scalmiss(weight) or weight /= 0;
+            errorlog "quaidsWorkflowFit: weight must be scalar 0 or a Tx1 vector matching the number of observations.";
+            end;
+        endif;
+    endif;
+    isWeighted = not weightScalar;
 
     if isWeighted;
         pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId, weight);

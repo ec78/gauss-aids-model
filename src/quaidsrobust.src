@@ -431,7 +431,7 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
     local nobs, n, nint, n1, nendog, intcptFull, fittedW, lx, lx2, U,
         pricesHybrid, endog, X, k, Kdof, gg, Infl, i, un, G, D, InflG,
         Meat, c, bread, v, se, bHatReduced, clusterScalar, ggInv, oldtrp,
-        isWeighted, rootWt;
+        isWeighted, rootWt, rawWeightSum, effN;
     struct quaidsRobustOut rOut;
 
     nobs = rows(w);
@@ -455,20 +455,8 @@ proc (struct quaidsRobustOut) = quaidsRobustFit(struct quaidsOut qOut, w, prices
        convention -- the point estimate/sandwich are both invariant to an
        overall rescaling of weight, so this keeps every nobs-denominated
        formula below unchanged when weight is supplied. */
-    isWeighted = rows(weight)*cols(weight) > 1;
-    if isWeighted;
-        if rows(weight) /= nobs or cols(weight) /= 1;
-            errorlog "quaidsRobustFit: weight must be a Tx1 vector matching the number of observations.";
-            end;
-        endif;
-        if minc(weight) < 0 or sumc(weight .== weight) /= nobs or maxc(weight) >= 1e100 or sumc(weight) <= 0;
-            errorlog "quaidsRobustFit: weight must be finite, nonnegative, and sum to a positive value.";
-            end;
-        endif;
-        weight = weight*nobs/sumc(weight);
-    else;
-        weight = ones(nobs, 1);
-    endif;
+    { isWeighted, weight, rawWeightSum, effN } =
+        _quaidsNormalizeWeight(weight, nobs, "quaidsRobustFit");
     rootWt = sqrt(weight);
 
     { fittedW, lx, lx2 } = _quaidsRobustFittedW(qOut.bestB, intcptFull, prices, totexp, aCtl);
@@ -710,7 +698,7 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
     local nobs, n, nint, n1, wnam, bDim1, bDim2, bVecDim, nClusters, un, G,
         completed, failed, attempts, maxAttempts, gDraw, idx,
         wB, intcptB, pricesB, totexpB, instrB, weightB, status, bVec, bBoot, seBoot,
-        j, oneCluster, clusterScalar, isWeighted;
+        j, oneCluster, clusterScalar, isWeighted, rawWeightSum, effN;
     struct quaidsOut qOut;
     struct quaidsRobustOut rOut;
     struct quaidsRobustBootOut rbOut;
@@ -724,18 +712,8 @@ proc (struct quaidsRobustBootOut) = quaidsRobustBootstrapFit(w, intcpt, prices, 
 
     /* Milestone 26/28: optional keyword sampling-weight argument -- same
        validation/normalization as quaidsRobustFit()'s own weight. */
-    isWeighted = rows(weight)*cols(weight) > 1;
-    if isWeighted;
-        if rows(weight) /= nobs or cols(weight) /= 1;
-            errorlog "quaidsRobustBootstrapFit: weight must be a Tx1 vector matching the number of observations.";
-            end;
-        endif;
-        if minc(weight) < 0 or sumc(weight .== weight) /= nobs or maxc(weight) >= 1e100 or sumc(weight) <= 0;
-            errorlog "quaidsRobustBootstrapFit: weight must be finite, nonnegative, and sum to a positive value.";
-            end;
-        endif;
-        weight = weight*nobs/sumc(weight);
-    endif;
+    { isWeighted, weight, rawWeightSum, effN } =
+        _quaidsNormalizeWeight(weight, nobs, "quaidsRobustBootstrapFit");
 
     clusterScalar = rows(clusterId)*cols(clusterId) == 1;
     if clusterScalar;

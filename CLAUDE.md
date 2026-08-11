@@ -515,8 +515,8 @@ tests/
                     #   run_source_tests.ps1's default invocation -- added
                     #   to the same -SkipBootstrap-gated group as
                     #   quaids_curvature_bootstrap_test.e.
-  quaids_preflight_test.e  # Milestone 23: 16 checks (13 + 3 at Milestone
-                    #   26) -- clean preflight, zero-share warning,
+  quaids_preflight_test.e  # Milestone 23: 17 checks (13 + 3 at Milestone
+                    #   26 + 1 post-review scalar-weight guard) -- clean preflight, zero-share warning,
                     #   negative-share hard failure, adding-up failure,
                     #   cluster summaries, low price variation warning,
                     #   dimension-mismatch return, and (Milestone 26) a
@@ -3287,7 +3287,8 @@ whether a new file was added.
 
 **Testing**: `tests/quaids_survey_test.e` (new, 19 checks -- see "Testing
 status" below); `tests/quaids_workflow_test.e` (27 -> 32 checks);
-`tests/quaids_preflight_test.e` (13 -> 16 checks);
+`tests/quaids_preflight_test.e` (13 -> 16 checks, now 17 after the
+post-review scalar-nonzero-weight guard);
 `tests/quaids_survey_workflow_test.e` (15 -> 17 checks, with the behavior-
 change fix above); `tests/package_public_api.e` gained real weight
 exercises (an explicit uniform weight, reproducing the unweighted fit
@@ -4003,7 +4004,7 @@ GAUSS Already Provides." Summary:
 ## Testing status
 
 Eighteen non-bootstrap-gated routine source-tree tests exist (plus a
-`tests/guard_error_cases/` directory of eight standalone expected-error
+`tests/guard_error_cases/` directory of thirteen standalone expected-error
 scripts, see below), all run from `tests/` as the working directory:
 
 ```
@@ -4030,18 +4031,20 @@ tgauss -b -x quaids_replicate_test.e
 `quaids_curvature_bootstrap_test.e` and `quaids_robust_bootstrap_test.e`
 are two more, both gated behind `-SkipBootstrap` (see below) -- listed
 with the other bootstrap-cost caveats further down, not in the block
-above. `tests/guard_error_cases/` (eight scripts: `robust_nonconverged_qout.e`,
+above. `tests/guard_error_cases/` (thirteen scripts: `robust_nonconverged_qout.e`,
 `robust_bad_cluster_length.e`, `robust_one_cluster.e`,
 `curvature_nonconverged_qout.e`, `curvature_invalid_sym.e`,
-`quaids_bad_b0_shape.e`, `replicate_bad_weights_shape.e`,
-`replicate_negative_scale_factor.e`) each confirm one specific validation
+`quaids_bad_b0_shape.e`, `quaids_scalar_weight.e`,
+`robust_scalar_weight.e`, `robust_bootstrap_scalar_weight.e`,
+`workflow_scalar_weight.e`, `replicate_bad_weights_shape.e`,
+`replicate_negative_scale_factor.e`, `replicate_scalar_weight.e`) each confirm one specific validation
 guard fails loudly and clearly on bad input, added alongside the
 "Unreleased" fail-fast fixes to `quaidsRobustFit()`/
 `quaidsRobustBootstrapFit()`/`quaidsCurvatureFit()`/`quaidsFit()`'s
 `aCtl.b0` handling (Milestone 26's own handoff), plus
 `quaidsReplicateWeightFit()`'s own two input-validation guards (Milestone
-27). Twenty-eight files run in total with no flags skipped
-(18 + 8 + 2 bootstrap-gated).
+27), and the post-review scalar-nonzero-weight contract guards. Thirty-three
+files run in total with no flags skipped (18 + 13 + 2 bootstrap-gated).
 
 - `quaids_schema_test.e` (Milestone 1, 36 checks): asserts `quaidsOut` field
   values/shapes, that `quaidsFit()` prints nothing between call and return,
@@ -4172,12 +4175,14 @@ guard fails loudly and clearly on bad input, added alongside the
   by `run_source_tests.ps1`'s default invocation — added to the same
   `-SkipBootstrap`-gated group as `quaids_curvature_bootstrap_test.e`
   rather than a new flag.
-- `quaids_preflight_test.e` (Milestone 23, 16 checks): clean preflight,
+- `quaids_preflight_test.e` (Milestone 23, 17 checks): clean preflight,
   zero-share warning, negative-share hard failure, adding-up failure,
   explicit cluster summaries, low price variation warning, and
   dimension-mismatch return. Milestone 26 added 3 checks: a genuinely
   unequal valid weight's `weightValid`/`weightSum`/reduced `effN`, and a
-  non-finite weight entry's hard preflight error.
+  non-finite weight entry's hard preflight error. The post-review pass added
+  a scalar-nonzero-weight guard, matching the estimator paths' fail-fast
+  contract.
 - `quaids_workflow_test.e` (Milestone 21 seed, 32 checks): checks that
   `quaidsWorkflowFit()` returns the same core fit, sample-mean evaluation
   point, predicted shares, elasticities, robust coefficient SE, and robust
@@ -4262,8 +4267,12 @@ source-tree files above: it loads `library quaids;` against a real
 than `#include`-ing the source tree, so it only runs correctly after
 `scripts/run_release_verification.ps1 -InstallArtifact` (or equivalent)
 has installed the package — it is a release gate, not a routine
-`run_source_tests.ps1` member. See "Milestone 7: package build and release
-tooling" above.
+`run_source_tests.ps1` member. GitHub Actions deliberately runs only the
+source-tree suite with `-SkipBootstrap`; before tagging or publishing a
+release, rerun `scripts/run_release_verification.ps1 -InstallArtifact`
+so `package_public_api.e` verifies the installed `.lcg` catalog and
+`library quaids;` path. See "Milestone 7: package build and release tooling"
+above.
 
 `examples/quaids_example.e` remains a manual, eyeball-comparison smoke
 script (no assertions) — superseded for correctness-checking purposes by

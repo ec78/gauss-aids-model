@@ -141,24 +141,8 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
        degrees-of-freedom calculation in this pass) are captured from the
        RAW, pre-normalization weight, since effN is itself scale-
        invariant but a literal weight sum is not. */
-    isWeighted = rows(weight)*cols(weight) > 1;
-    if isWeighted;
-        if rows(weight) /= nobs or cols(weight) /= 1;
-            errorlog "quaidsFit: weight must be a Tx1 vector matching the number of observations.";
-            end;
-        endif;
-        if minc(weight) < 0 or sumc(weight .== weight) /= nobs or maxc(weight) >= 1e100 or sumc(weight) <= 0;
-            errorlog "quaidsFit: weight must be finite, nonnegative, and sum to a positive value.";
-            end;
-        endif;
-        rawWeightSum = sumc(weight);
-        effN = (rawWeightSum^2)/sumc(weight^2);
-        weight = weight*nobs/rawWeightSum;
-    else;
-        rawWeightSum = nobs;
-        effN = nobs;
-        weight = ones(nobs, 1);
-    endif;
+    { isWeighted, weight, rawWeightSum, effN } =
+        _quaidsNormalizeWeight(weight, nobs, "quaidsFit");
     rootWt = sqrt(weight);
 
     if intcpt == 0;

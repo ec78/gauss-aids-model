@@ -372,7 +372,7 @@ second-stage GLS fit:
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;          // 1 for AIDS, 0 for QUAIDS
 aCtl.maxiter = 100;
-aCtl.homogenous = 0;      // required -- see Limitations below
+aCtl.homogenous = 1;      // 1 to impose homogeneity/symmetry; 0 unconstrained
 
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call printQuaidsZero(zOut);
@@ -584,9 +584,10 @@ runnable example.
   before ever calling `quaidsFit()`, avoiding a real, non-trappable
   `error G0058` crash mode found while building this milestone -- see the
   [Methodology Notes](METHODOLOGY_NOTES.md#replicate-weight-jackknifebrr-variance-estimation).
-- [quaidsZeroFit](command-reference/quaidsZeroFit.md) (Milestone 19) is
-  unconstrained only -- it errors if `aCtl.homogenous = 1` -- and reports
-  a simplified standard error that does not account for the nonlinear
+- [quaidsZeroFit](command-reference/quaidsZeroFit.md) (Milestones 19/30)
+  supports unconstrained estimation and homogeneity/symmetry imposition via
+  `aCtl.homogenous`, but reports a simplified standard error that does not
+  account for the nonlinear
   translog-price-index feedback or first-stage probit/IV generated-
   regressor uncertainty. Adding-up does not hold exactly for its corrected
   coefficients, a real property of the Shonkwiler-Yen method itself. Its

@@ -41,9 +41,8 @@
 ** procs' own "count failures, do not silently pretend they succeeded"
 ** convention) -- documented explicitly as a simplification, since the
 ** formal JK1/BRR literature does not, in general, define how to handle a
-** missing replicate without an adjustment this library does not
-** implement (see docs/gauss-repair... no -- see
-** docs/gauss-quaids-replicate-weights.md's own Limitations section).
+** missing replicate without an adjustment this library does not implement;
+** see docs/command-reference/quaidsReplicateWeightFit.md.
 **
 ** ANOTHER GENUINE SIMPLIFICATION relative to the bootstrap procs: each
 ** replicate's fit is already in the EXACT SAME basis as the full-sample

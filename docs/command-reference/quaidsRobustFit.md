@@ -31,6 +31,7 @@ rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId, wei
 - `weight` (*OPTIONAL keyword argument, default `0`*) - Milestone 26: the
   same sampling weight passed to [quaidsFit](quaidsFit.md) to produce
   `qOut` (if any). Omit, or pass scalar `0`, for the unweighted sandwich.
+  Scalar `0` is the only scalar sentinel; scalar nonzero weights are rejected.
   **Uses a DIFFERENT scaling convention from `quaidsFit()`'s own
   `sqrt(weight)` WLS trick** -- see Remarks. Milestone 28 converted both
   `clusterId` and `weight` from a required-positional-with-`0`-sentinel

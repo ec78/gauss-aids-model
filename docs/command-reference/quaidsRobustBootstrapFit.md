@@ -39,7 +39,8 @@ rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clus
   `seed = 0` leaves GAUSS's current random state unchanged.
 - `weight` (*OPTIONAL keyword argument, default `0`*) - Milestone 26: a
   sampling weight, same semantics as [quaidsFit](quaidsFit.md)'s own
-  `weight`. Omit, or pass scalar `0`, for the unweighted bootstrap. Each
+  `weight`. Omit, or pass scalar `0`, for the unweighted bootstrap. Scalar
+  `0` is the only scalar sentinel; scalar nonzero weights are rejected. Each
   resample carries its own rows' `weight[idx]` subvector into that
   replication's [quaidsFit](quaidsFit.md) call; the base (unresampled)
   fit and sandwich use the full `weight` the same way

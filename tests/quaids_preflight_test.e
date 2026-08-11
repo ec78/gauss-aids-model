@@ -126,6 +126,10 @@ pWeightBad = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, wgtNonFi
 call check(pWeightBad.weightValid == 0 and pWeightBad.ok == 0,
     "a non-finite weight entry is a hard preflight error");
 
+pWeightScalar = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, 0, 1);
+call check(pWeightScalar.weightValid == 0 and pWeightScalar.ok == 0,
+    "scalar nonzero weight is invalid; scalar 0 is the only unweighted sentinel");
+
 print;
 print "-----------------------------------------------------------";
 if nfail == 0;

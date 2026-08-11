@@ -28,7 +28,8 @@ wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
 - `clusterId` (*OPTIONAL keyword argument, default `0`*) - same as
   [quaidsWorkflowFit](quaidsWorkflowFit.md).
 - `weight` (*OPTIONAL keyword argument, default `0`*) - same as
-  [quaidsWorkflowFit](quaidsWorkflowFit.md). **Milestone 28 note**: this
+  [quaidsWorkflowFit](quaidsWorkflowFit.md). Scalar `0` is the only scalar
+  sentinel; scalar nonzero weights are rejected. **Milestone 28 note**: this
   proc's required scenario arguments (`intcptPt`, `pricesPt0`, `pricesPt1`,
   `totexpPt0`) were moved ahead of `clusterId`/`weight` in the parameter
   list, since GAUSS requires every required (non-defaulted) parameter to

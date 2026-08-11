@@ -479,9 +479,9 @@ workflows and methodology extensions in this order:
    (`quaidsReplicateWeightFit()`) from a caller-supplied replicate design.
    Formal strata as a concept distinct from clustering, and
    finite-population correction, remain open.
-5. **Zero-share restrictions**: extend `quaidsZeroFit()` to support
-   homogeneity/symmetry, then evaluate whether local curvature imposition is
-   feasible on the corrected system.
+5. **Zero-share restrictions**: Milestone 30 extended `quaidsZeroFit()` to
+   support homogeneity/symmetry. The remaining optional extension is whether
+   local curvature imposition is feasible on the corrected system.
 6. **Scenario engine**: add reusable price/tax/subsidy scenario APIs for
    predicted shares, elasticities, compensating/equivalent variation,
    household-level aggregation, and export-ready tables.
@@ -3286,6 +3286,11 @@ follow-up items are outstanding for `quaidsZeroFit()`.
   follow-up milestone.
 - [x] Package builds, installs, and passes an installed-package public API
   test, matching the `qardl`/`dccelib` release process.
+- [ ] Before any tag or public release, rerun the installed-package gate
+  against a real installed copy (`scripts/run_release_verification.ps1
+  -InstallArtifact` or equivalent), not just source-tree CI. Push CI
+  intentionally runs `tests/run_source_tests.ps1 -SkipBootstrap` and does
+  not exercise `library quaids;` or the generated `.lcg` catalog.
 - [x] Full doc set (`README`, command reference, usage guide, methodology
   notes, feature support matrix, `CLAUDE.md`) exists and is synchronized with
   the code.

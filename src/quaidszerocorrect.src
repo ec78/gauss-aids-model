@@ -384,16 +384,15 @@ endp;
 ** QUAIDSZEROFIT
 **
 ** Purpose:  AIDS/QUAIDS estimation corrected for zero budget shares via
-**           the Shonkwiler-Yen (1999) two-step procedure. Unconstrained
-**           only (no homogeneity/symmetry imposition) in this first
-**           pass -- see this file's header for the full scope notes.
+**           the Shonkwiler-Yen (1999) two-step procedure. Supports both
+**           unconstrained estimation and, when aCtl.homogenous=1,
+**           homogeneity/symmetry imposition on top of the correction.
 **           Silent, no printing -- see printQuaidsZero().
 **
 ** Format:     struct quaidsZeroOut zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 **
 ** Input:    w, intcpt, prices, totexp, instr -- same sample and shapes as
-**                   quaidsFit(). Must satisfy aCtl.homogenous = 0
-**                   (checked up front -- see this file's header).
+**                   quaidsFit().
 **
 **             aCtl -- quaidsControl struct, same fields as quaidsFit()
 **                   uses (aCtl.linear, aCtl.maxiter, aCtl.err,

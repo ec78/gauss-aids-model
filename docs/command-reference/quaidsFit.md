@@ -27,8 +27,10 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=myWeight);   // 
 - `weight` (*Tx1 vector, OPTIONAL, keyword argument, default `0`*) -
   Milestone 26: a sampling/survey weight. Omit, or pass scalar `0`
   (explicitly or via the default), for the unweighted estimator. When
-  supplied, must be finite, nonnegative, and sum to a positive value; it
-  is internally renormalized so it sums to `nobs` (the point estimate is
+  supplied, must be finite, nonnegative, and sum to a positive value.
+  Scalar `0` is the only scalar sentinel; scalar nonzero weights are
+  rejected. The vector is internally renormalized so it sums to `nobs`
+  (the point estimate is
   invariant to any overall rescaling of the weight, so every existing
   `nobs`-denominated formula in this proc is unaffected). Applies the
   standard survey WLS trick (`(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B`) at

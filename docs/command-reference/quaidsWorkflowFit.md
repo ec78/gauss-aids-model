@@ -28,7 +28,8 @@ wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, clusterId=hous
   own [quaidsFit](quaidsFit.md), [quaidsPreflight](quaidsPreflight.md),
   and [quaidsRobustFit](quaidsRobustFit.md)/
   [quaidsRobustCovariance](quaidsRobustCovariance.md) calls. Omit, or
-  pass scalar `0`, for the unweighted workflow. **Distinct from**
+  pass scalar `0`, for the unweighted workflow. Scalar `0` is the only
+  scalar sentinel; scalar nonzero weights are rejected. **Distinct from**
   [quaidsSurveyWorkflowFit](quaidsSurveyWorkflowFit.md)'s own `weight`
   argument, which additionally recomputes the post-estimation evaluation
   point -- see that page and the field note on `surveyWeighted` below.

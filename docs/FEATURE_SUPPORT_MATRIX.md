@@ -35,7 +35,7 @@ for the exact switch values.
 | Synthetic deterministic validation | Yes (`tests/quaids_synthetic_validation_test.e`) | Yes | Yes |
 | Published-data cross-validation vs. R | Yes (`Blanciforti86` vs. 3SLS, `tests/quaids_published_validation_test.e`) | Yes (`Blanciforti86` vs. `method="IL"`, wider tolerance -- see Notes) | No independent reference implementation exists (see Notes) |
 | Iteration convergence guarantee | Not applicable (one-step) | No -- a 200-seed sweep measured a 58% failure rate (never-converges or converges to a wrong answer) at default settings; check `qOut.converged`. `aCtl.relax=.75` measurably reduces this -- see Notes | No -- same caveat, 76% failure rate measured |
-| Zero budget share correction | Yes (`quaidsZeroFit`, since Milestone 19, unconstrained only -- see Notes) | Yes (same) | Yes (same) |
+| Zero budget share correction | Yes (`quaidsZeroFit`, since Milestone 19; homogeneity/symmetry since Milestone 30 -- see Notes) | Yes (same) | Yes (same) |
 | Robust / cluster-robust standard errors | Yes (`quaidsRobustFit`, since Milestone 20, simplified bread -- see Notes) | Yes (same) | Yes (same) |
 | Robust / cluster bootstrap | Yes (`quaidsRobustBootstrapFit`, since Milestone 20) | Yes (same) | Yes (same) |
 | Robust covariance propagation to shares/elasticities/welfare | Yes (`quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance`, since Milestone 22) | Yes (same) | Yes (same) |
@@ -205,11 +205,10 @@ for the exact switch values.
   equation (`w_i/F_i = ...`), which avoids breaking the shared-design-
   matrix Kronecker-product identity every stage of `quaidsFit()` relies on
   -- a literal textbook implementation (rescaling every regressor by
-  `F_i`) would not. **Unconstrained only in this pass** -- no homogeneity/
-  symmetry imposition on the corrected model (errors if
-  `aCtl.homogenous=1`); combining the method's own diagonal-delta
-  restriction with a second, simultaneous homogeneity/symmetry
-  restriction is left for a follow-up. Standard errors are a simplified
+  `F_i`) would not. Since Milestone 30, `aCtl.homogenous=1` also imposes
+  homogeneity/symmetry on the corrected model, in the same minimum-
+  distance projection as the method's own diagonal-delta restriction.
+  Standard errors are a simplified
   `S .*. inv(gg)` formula that does not correct for the nonlinear
   translog-price-index feedback or first-stage probit/IV
   generated-regressor uncertainty. Adding-up does not hold exactly for the

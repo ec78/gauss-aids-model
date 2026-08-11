@@ -48,7 +48,8 @@ rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicat
   sampling weight, passed straight through to `quaidsFit()`'s own
   optional `weight` argument. Omit, or pass scalar `0`, to hit that
   proc's own unweighted path exactly as if the argument were omitted
-  entirely.
+  entirely. Scalar `0` is the only scalar sentinel; scalar nonzero weights
+  are rejected by the underlying fit.
 - `method` (*OPTIONAL keyword argument, default `"custom"`*) - purely
   descriptive (e.g. `"JK1"`, `"BRR"`). Echoed in `rOut.method` and the
   printed report; has no effect on computation, which is why (unlike

@@ -20,3 +20,39 @@ endp;
 proc (struct quaidsControl) = getDefaultQuaidsControl();
     retp(quaidsControlCreate());
 endp;
+
+/*
+** _quaidsNormalizeWeight -- shared validator/normalizer for estimator paths
+** that should fail fast on invalid sampling weights. The only scalar sentinel
+** is 0; any real weight must be a finite, nonnegative Tx1 vector with positive
+** total weight. Returns (isWeighted, normalizedWeight, rawWeightSum, effN).
+*/
+proc (4) = _quaidsNormalizeWeight(weight, nobs, caller);
+    local weightScalar, isWeighted, rawWeightSum, effN;
+
+    weightScalar = rows(weight)*cols(weight) == 1;
+    if weightScalar;
+        if not scalmiss(weight) and weight == 0;
+            retp(0, ones(nobs, 1), nobs, nobs);
+        else;
+            errorlog caller $+ ": weight must be scalar 0 or a Tx1 vector matching the number of observations.";
+            end;
+        endif;
+    endif;
+
+    if rows(weight) /= nobs or cols(weight) /= 1;
+        errorlog caller $+ ": weight must be scalar 0 or a Tx1 vector matching the number of observations.";
+        end;
+    endif;
+    if minc(weight) < 0 or sumc(weight .== weight) /= nobs or maxc(weight) >= 1e100 or sumc(weight) <= 0;
+        errorlog caller $+ ": weight must be finite, nonnegative, and sum to a positive value.";
+        end;
+    endif;
+
+    isWeighted = 1;
+    rawWeightSum = sumc(weight);
+    effN = (rawWeightSum^2)/sumc(weight^2);
+    weight = weight*nobs/rawWeightSum;
+
+    retp(isWeighted, weight, rawWeightSum, effN);
+endp;

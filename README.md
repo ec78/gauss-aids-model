@@ -82,6 +82,13 @@ endif;
 
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
+n = qOut.n;
+nint = qOut.nint;
+m_ = meanc(qOut.intcptFull~prices~totexp);
+intcptPt = m_[1:1+nint];
+pricesPt = m_[1+nint+1:1+nint+n];
+totexpPt = m_[1+nint+n+1];
+
 elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
 call printQuaidsElas(elasOut);
 
@@ -210,6 +217,11 @@ expected guard-error checks:
 ```powershell
 powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1
 ```
+
+The default GitHub Actions workflow runs this source-tree suite with
+`-SkipBootstrap` and does not install the package. Before a release, run the
+installed-package gate below or the full release verification command so
+`library quaids;` and the generated catalog are tested too.
 
 After building and installing the package, verify the installed public API:
 

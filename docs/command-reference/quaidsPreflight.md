@@ -26,6 +26,8 @@ pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl, clusterId=househo
   validates its own `weight` (finite, nonnegative, positive sum) and
   surfaced via `weightValid`/`weightSum`/`effN` below. An invalid weight
   is a hard preflight error, the same tier as an invalid `clusterId`.
+  Scalar `0` is the only scalar sentinel; scalar nonzero weights are
+  invalid.
   Milestone 28 converted both `clusterId` and `weight` from required
   positional arguments (a `0` sentinel meant "not supplied") to genuine
   GAUSS keyword-defaulted parameters -- omit either one entirely, or
