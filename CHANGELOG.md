@@ -5,6 +5,46 @@ pre-alpha and does not yet follow strict semantic versioning guarantees
 (see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
 below match `package.json` at the time each milestone landed.
 
+## Unreleased
+
+Two release-packaging fixes, prompted by external feedback that the
+0.24.0 artifact was "not installing properly." No GAUSS public API
+changed (no `.src`/`.sdf` edits), so no version bump per this project's
+established build-tooling policy (Milestone 7 precedent).
+
+### Fixed
+- `scripts/build_package.ps1` built its release `.zip` via
+  `Compress-Archive`, which -- confirmed directly against a scratch
+  fixture on this machine, not assumed -- writes entry names using the
+  platform path separator (backslashes on Windows), not the
+  ZIP-spec-mandated forward slash. `System.IO.Compression.ZipFile
+  .CreateFromDirectory()` was checked too and has the identical problem
+  under the .NET Framework this Windows PowerShell 5.1 host runs on. A
+  strict or cross-platform unzip implementation can fail to recognize
+  backslash-separated entries as nested paths, extracting
+  `src\quaids.sdf` etc. as flat, literally-backslashed filenames instead
+  of populating `src/`/`docs/`/`tests/`/`examples/` subdirectories --
+  plausible root cause of an install failure. `build_package.ps1` now
+  builds the archive entry-by-entry via `System.IO.Compression.ZipArchive`
+  with explicit forward-slash relative paths; verified the rebuilt
+  artifact has zero backslash-containing entries.
+- `package.json`'s `deps` entries were bare package-name strings
+  (`"optmt"`), which cannot pin a required dependency version. Changed to
+  `{ "optmt": "2.0.3" }`. **Caveat**: unlike the zip-separator fix above,
+  this format was not independently verifiable against any evidence
+  available in this environment -- every package installed on this
+  machine, and every public Aptech GAUSS package.json found, has an empty
+  `deps` array with no real-world precedent for a populated one in either
+  string or object form, and Aptech's own documentation does not specify
+  the `deps` schema. Applied on the strength of the reported feedback
+  alone; the `"2.0.3"` version string is likewise taken as given, not
+  independently confirmed as `optmt`'s actual current published version
+  (the copy installed on this machine reports `"version": "0.0.0"`, an
+  older auto-generated artifact). `tests/verify_package_manifest.ps1`
+  now rejects any `deps` entry that is a bare string, guarding against a
+  silent regression back to the old form regardless of which format
+  turns out to be the actually-correct one.
+
 ## 0.24.0 - 2026-08-08
 
 Milestone 30: homogeneity/symmetry imposition for `quaidsZeroFit()`,

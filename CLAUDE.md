@@ -1479,6 +1479,61 @@ Milestone 7 (every milestone's changes are staged but uncommitted, per the
 — `CHANGELOG.md`/`package.json` versioning infrastructure is in place for
 whenever the repo owner chooses to commit and tag.
 
+**Update (2026-08-27, packaging fix, no milestone/version bump)**: the
+repo owner reported the 0.24.0 artifact "was not installing properly"
+and relayed external feedback identifying two possible causes. Both were
+checked against real evidence in this environment before touching
+anything, per this project's standing discipline, with two different
+outcomes:
+
+1. **Confirmed and fixed**: `build_package.ps1`'s `Compress-Archive` call
+   writes zip entry names using the platform path separator — verified
+   directly against a scratch fixture on this machine (both
+   `Compress-Archive` and `System.IO.Compression.ZipFile
+   .CreateFromDirectory()` produce `src\quaids.sdf`-style backslash
+   entries here, not the ZIP-spec-mandated forward slash). A strict or
+   cross-platform unzip implementation can fail to recognize
+   backslash-separated entries as nested paths at all, extracting them
+   as flat, literally-backslashed filenames instead of populating
+   `src/`/`docs/`/`tests/`/`examples/` — a real, plausible cause of an
+   install failure. Fixed by building the archive entry-by-entry via
+   `System.IO.Compression.ZipArchive` with explicit forward-slash
+   relative paths (`build_package.ps1`); confirmed the rebuilt artifact
+   has zero backslash-containing entries.
+2. **Could not be verified, applied anyway on the repo owner's explicit
+   instruction**: the feedback also claimed `package.json`'s `deps`
+   entries needed to change from bare strings (`"optmt"`) to
+   `{"optmt": "2.0.3"}` version-pinned objects. This one has no
+   supporting evidence found anywhere in this environment — every
+   package installed on this machine (`c:\gauss26\pkgs\*\package.json`,
+   12 packages checked) and every public Aptech GAUSS package.json found
+   via GitHub code search across the `aptech` org has an empty `deps`
+   array; a GitHub-org-wide search for `"optmt"` in any `package.json`
+   turned up only this repo's own file; Aptech's own package-manager
+   documentation does not specify the `deps` schema at all. The proposed
+   shape (an array of single-key objects) also doesn't match a familiar
+   convention (npm's own `dependencies` is one flat object, not an array
+   of one-key objects). Flagged this explicitly to the repo owner via
+   `AskUserQuestion` rather than silently applying unverified advice;
+   the repo owner chose to apply it anyway. Changed `package.json`
+   accordingly and extended `tests/verify_package_manifest.ps1` to
+   reject any bare-string `deps` entry (confirmed the new guard actually
+   fires on the old form, not just that it compiles) — a genuinely
+   useful guard regardless of which format later turns out to be
+   correct, since it prevents silently regressing to the one format now
+   known to be a real problem. The `"2.0.3"` version string itself is
+   also unverified as `optmt`'s actual current published version (the
+   copy installed on this machine self-reports `"version": "0.0.0"`, an
+   older auto-generated artifact) — taken as given from the feedback, not
+   independently confirmed.
+
+Full `run_release_verification.ps1 -BuildArtifact -ForceArtifact
+-InstallArtifact` pipeline re-run after both changes — source tests,
+rebuild, reinstall, and `tests/package_public_api.e` against the real
+reinstalled package all pass. No `.src`/`.sdf` file changed, so no
+version bump, matching this section's own original policy statement
+above.
+
 ## Milestone 8: documentation
 
 Full doc set added: `README.md`, `docs/COMMAND_REFERENCE.md` plus 18

@@ -86,6 +86,32 @@ if ([string]::IsNullOrWhiteSpace([string]$pkg.license)) {
     throw "package.json license is empty"
 }
 
+# deps entries must be { "packageName": "requiredVersion" } objects, not
+# bare package-name strings -- a plain string entry (this repo's own
+# "optmt" prior to being fixed) does not pin a required version, which is
+# what broke installation. Reject the old string form outright so a future
+# change can't silently regress back to it.
+foreach ($dep in @($pkg.deps)) {
+    if ($dep -is [string]) {
+        throw "package.json deps entries must be objects mapping package name to required version (e.g. { `"optmt`": `"2.0.3`" }), found a bare string entry: '$dep'"
+    }
+    if ($dep -isnot [System.Management.Automation.PSCustomObject]) {
+        throw "package.json deps entries must be JSON objects, found a $($dep.GetType().Name) entry: $dep"
+    }
+    $depProps = @($dep.PSObject.Properties)
+    if ($depProps.Count -ne 1) {
+        throw "package.json deps entry must have exactly one package-name key, found $($depProps.Count): $($dep | ConvertTo-Json -Compress)"
+    }
+    $depName = $depProps[0].Name
+    $depVersion = [string]$depProps[0].Value
+    if ([string]::IsNullOrWhiteSpace($depName)) {
+        throw "package.json deps entry has an empty package name"
+    }
+    if ([string]::IsNullOrWhiteSpace($depVersion)) {
+        throw "package.json deps entry '$depName' has an empty required version"
+    }
+}
+
 # --- Milestone 8: docs/COMMAND_REFERENCE.md cross-check ---
 
 $commandRefPath = Join-Path $RepoRoot "docs\COMMAND_REFERENCE.md"

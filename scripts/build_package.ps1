@@ -107,8 +107,36 @@ try {
     Get-ChildItem -LiteralPath $stageRoot -Recurse -File -Filter "*.zip" |
         Remove-Item -Force
 
+    # Compress-Archive (and .NET's own ZipFile.CreateFromDirectory, under
+    # the .NET Framework this Windows PowerShell 5.1 host runs on) both
+    # write entry names using the platform path separator, i.e. backslashes
+    # on Windows -- verified directly against a scratch fixture, not
+    # assumed. The ZIP spec calls for forward slashes; a strict or
+    # cross-platform unzip implementation (as the GAUSS package installer
+    # may use) can fail to recognize backslash-separated entries as nested
+    # paths at all, extracting them as flat, literally-backslashed
+    # filenames instead of populating src/docs/tests/examples
+    # subdirectories. Build the archive entry-by-entry instead, forcing
+    # forward slashes explicitly.
     $tmpArtifact = Join-Path ([System.IO.Path]::GetTempPath()) ("quaids_artifact_" + [System.Guid]::NewGuid().ToString("N") + ".zip")
-    Compress-Archive -Path (Join-Path $stageRoot "*") -DestinationPath $tmpArtifact -Force
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $fs = [System.IO.File]::Open($tmpArtifact, [System.IO.FileMode]::Create)
+    try {
+        $archive = New-Object System.IO.Compression.ZipArchive($fs, [System.IO.Compression.ZipArchiveMode]::Create)
+        try {
+            $bslash = [char]92
+            $fslash = [char]47
+            Get-ChildItem -LiteralPath $stageRoot -Recurse -File | ForEach-Object {
+                $relPath = $_.FullName.Substring($stageRoot.Length + 1).Replace($bslash, $fslash)
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $_.FullName, $relPath) | Out-Null
+            }
+        } finally {
+            $archive.Dispose()
+        }
+    } finally {
+        $fs.Dispose()
+    }
     [System.IO.File]::Copy($tmpArtifact, $artifactPath, $true)
     Remove-Item -LiteralPath $tmpArtifact -Force -ErrorAction SilentlyContinue
 } finally {
