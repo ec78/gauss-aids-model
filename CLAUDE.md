@@ -1479,7 +1479,7 @@ Milestone 7 (every milestone's changes are staged but uncommitted, per the
 — `CHANGELOG.md`/`package.json` versioning infrastructure is in place for
 whenever the repo owner chooses to commit and tag.
 
-**Update (2026-08-27, packaging fix, no milestone/version bump)**: the
+**Update (2026-08-27, packaging fixes, no milestone/version bump)**: the
 repo owner reported the 0.24.0 artifact "was not installing properly"
 and relayed external feedback identifying two possible causes. Both were
 checked against real evidence in this environment before touching
@@ -1530,9 +1530,47 @@ outcomes:
 Full `run_release_verification.ps1 -BuildArtifact -ForceArtifact
 -InstallArtifact` pipeline re-run after both changes — source tests,
 rebuild, reinstall, and `tests/package_public_api.e` against the real
-reinstalled package all pass. No `.src`/`.sdf` file changed, so no
-version bump, matching this section's own original policy statement
-above.
+reinstalled package all pass.
+
+**Second update, same day — a real, reproducible install failure
+reported directly**: after the fixes above, the repo owner actually
+tried installing the rebuilt artifact and hit a genuine compile error —
+`error G0507: Undefined structure 'quaidsOut'` at `src/quaids.src` line
+107, exactly the `proc (struct quaidsOut) = quaidsFit(...)` declaration
+line itself, referencing `quaidsOut` before it existed. Root cause: a
+real end-user install via GAUSS's official Package Manager / Tools >
+Install Application evidently does not guarantee `quaids.sdf`'s structs
+get registered before some other package file's structs are referenced
+at compile time — unlike this repo's own test/verification pipeline,
+which either `#include`s all 16 `src/` files together in
+`package.json`'s "`quaids.sdf` first" order (every `tests/*.e` file), or
+loads via `library quaids;` against a catalog this repo's own
+`build_lcg.ps1` generates (`package_public_api.e`), neither of which
+had ever surfaced this failure. **This repo's own pipeline could not
+reproduce the exact failure the repo owner saw** — there is no locally
+available equivalent of the real GAUSS Package Manager / Tools > Install
+Application flow to test against directly. Rather than keep chasing why
+the two loading paths differ, the fix removes the dependency on load
+order entirely: every one of the 16 `.src` files listed in
+`package.json`'s `src` array now opens with `#include quaids.sdf`,
+safely idempotent thanks to `quaids.sdf`'s own `#ifndef
+QUAIDS_SDF_INCLUDED` reinclusion guard (built at Milestone 6 for exactly
+this kind of repeat-inclusion safety, though for a different caller at
+the time — `pubtable_quaids.src`). This is the same class of fix as
+Milestone 9's own finding that `library quaids;` alone does not activate
+`quaids.sdf`'s `#define` for a file outside the package (`
+pubtable_quaids.src`) — struct availability cannot be assumed from load
+order alone under `library`, so every file that needs a struct now says
+so directly. Confirmed no regression: full 18-file source-tree suite and
+the installed-package gate (`tests/package_public_api.e` via `library
+quaids;`) both pass clean after the change, and the freshly rebuilt/
+reinstalled package's own `src/quaids.src`/`src/quaidsutil.src` were
+read back directly to confirm the `#include` line actually shipped.
+
+No `.src`/`.sdf` file gained or lost a struct field or changed any
+computation across any of these three fixes (the `#include` addition is
+a compile-order fix only), so no version bump, matching this section's
+own original policy statement above.
 
 ## Milestone 8: documentation
 

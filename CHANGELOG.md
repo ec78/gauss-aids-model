@@ -7,12 +7,38 @@ below match `package.json` at the time each milestone landed.
 
 ## Unreleased
 
-Two release-packaging fixes, prompted by external feedback that the
-0.24.0 artifact was "not installing properly." No GAUSS public API
-changed (no `.src`/`.sdf` edits), so no version bump per this project's
-established build-tooling policy (Milestone 7 precedent).
+Three release-packaging fixes, prompted by the repo owner reporting the
+0.24.0 artifact "not installing properly." None changes any proc's
+behavior or public API surface (no `.src`/`.sdf` file gained/lost a
+struct field or a computational change), matching this project's
+established build-tooling no-version-bump policy (Milestone 7
+precedent).
 
 ### Fixed
+- Every `.src` file in `package.json`'s `src` array (16 files) now opens
+  with `#include quaids.sdf`, guarded safely by the file's own existing
+  `#ifndef QUAIDS_SDF_INCLUDED` reinclusion guard (Milestone 6). Root
+  cause, reported directly by the repo owner with a real error
+  (`error G0507: Undefined structure 'quaidsOut'` at `quaids.src` line
+  107 -- the `proc (struct quaidsOut) = quaidsFit(...)` declaration
+  itself): unlike this repo's own test/verification pipeline (which
+  always `#include`s all 16 files together in `package.json` order, or
+  loads via `library quaids;` against a catalog this repo's own
+  `build_lcg.ps1` generates), a real end-user install via GAUSS's
+  official Package Manager / Tools > Install Application evidently does
+  not guarantee `quaids.sdf`'s structs are registered before some other
+  file's structs are referenced at compile time. This repo's own
+  `library`-based release-verification pipeline (`build_lcg.ps1` +
+  `package_public_api.e`) was not able to reproduce the exact failure
+  the repo owner saw -- this fix removes the dependency on load order
+  entirely rather than chasing why the two loading paths differ, the
+  same "reduce load-order sensitivity across module boundaries" fix
+  `pubtable_quaids.src`'s callers already need per Milestone 9's own
+  finding that `library quaids;` alone does not activate `quaids.sdf`'s
+  `#define` for a file outside the package. Confirmed no regression: full
+  18-file source-tree suite and the installed-package gate
+  (`tests/package_public_api.e` via `library quaids;`) both pass clean
+  after the change.
 - `scripts/build_package.ps1` built its release `.zip` via
   `Compress-Archive`, which -- confirmed directly against a scratch
   fixture on this machine, not assumed -- writes entry names using the

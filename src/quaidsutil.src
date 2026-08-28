@@ -1,3 +1,5 @@
+#include quaids.sdf
+
 proc (struct quaidsControl) = quaidsControlCreate();
     struct quaidsControl aCtl;
 

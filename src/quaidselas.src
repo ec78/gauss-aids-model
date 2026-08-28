@@ -1,3 +1,5 @@
+#include quaids.sdf
+
 /*
 ** Milestone 5 note: quaidsElas_() already computed elasticities at an
 ** arbitrary caller-supplied point (intcpt/prices/totexp are point
