@@ -196,18 +196,19 @@ call ptExportAll(workflowTbls, "workflow");
 ```
 
 Requires the [pubtable](https://github.com/aptech/gauss_table_creator)
-package installed separately. See `examples/pubtable_export_example.e` for
+package installed separately. See `examples/13_pubtable_reporting.e` for
 a full runnable example.
 
 ## Examples
 
-The `examples/` directory contains runnable GAUSS programs:
-
-| File | Description |
-| --- | --- |
-| `quaids_example.e` | End-to-end synthetic-data workflow: fit, print, eyeball-compare to true parameters |
-| `workflow_example.e` | One-call workflow: fit, mean-point shares/elasticities, robust SE, and CV/EV scenario |
-| `pubtable_export_example.e` | Export a coefficient table and elasticity tables to LaTeX/Markdown/CSV |
+The `examples/` directory contains a numbered, read-in-order suite of 13
+runnable GAUSS programs -- one per major feature area, from basic
+estimation through curvature imposition, survey weighting, and
+publication-quality reporting -- sharing a small, well-commented
+synthetic household-budget dataset (`examples/example_data.src`). See
+[examples/README.md](examples/README.md) for the full list, run
+instructions, and which two examples need an optional package
+(`optmt`/`pubtable`) installed.
 
 ## Testing
 

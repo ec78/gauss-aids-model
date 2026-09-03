@@ -526,7 +526,7 @@ call ptExport(workflowTbls[1], "workflow_shares.md");
 ```
 
 See the [command reference](COMMAND_REFERENCE.md#reporting-optional-requires-pubtable)
-for each adapter proc, and `examples/pubtable_export_example.e` for a full
+for each adapter proc, and `examples/13_pubtable_reporting.e` for a full
 runnable example.
 
 ## Limitations

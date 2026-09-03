@@ -78,7 +78,7 @@ try {
         "CITATION.cff",
         "LICENSE",
         "src/quaids.sdf",
-        "examples/quaids_example.e",
+        "examples/01_basic_estimation.e",
         "scripts/build_package.ps1",
         "scripts/verify_release_artifact.ps1",
         "docs/COMMAND_REFERENCE.md",

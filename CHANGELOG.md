@@ -7,12 +7,32 @@ below match `package.json` at the time each milestone landed.
 
 ## Unreleased
 
-Three release-packaging fixes, prompted by the repo owner reporting the
-0.24.0 artifact "not installing properly." None changes any proc's
-behavior or public API surface (no `.src`/`.sdf` file gained/lost a
-struct field or a computational change), matching this project's
-established build-tooling no-version-bump policy (Milestone 7
-precedent).
+Three release-packaging fixes (below), prompted by the repo owner
+reporting the 0.24.0 artifact "not installing properly," plus Milestone
+31's comprehensive example suite. None changes any proc's behavior or
+public API surface (no `.src`/`.sdf` file in `package.json`'s `src`
+array gained/lost a struct field or a computational change), matching
+this project's established build-tooling/documentation no-version-bump
+policy (Milestone 7/8 precedent).
+
+### Added
+- Milestone 31: `examples/` grew from 3 terse, sparsely-commented
+  scripts (covering basic estimation, the applied workflow, and
+  pubtable reporting) to a numbered, 13-file, read-in-order suite
+  covering every major feature area -- dataframe input, preflight
+  diagnostics, hypothesis tests, elasticities/shares/Slutzky, welfare
+  analysis, zero-share correction, robust/cluster-robust standard
+  errors, replicate weights, curvature imposition, survey-weighted
+  estimation, the applied workflow, and pubtable reporting -- sharing
+  one well-commented synthetic-data generator
+  (`examples/example_data.src`, 6 procs, each mathematically identical
+  to an already-validated `tests/quaidsfixtures.src` fixture). Every
+  example was individually run and verified via real `tgauss -b -x`
+  invocations, not just written. New `examples/README.md` reading-order
+  index. See CLAUDE.md's "Milestone 31: comprehensive example suite"
+  section for real findings from building it: a disclosed (not hidden)
+  synthetic-data limitation, a stale-installed-`.lcg`-catalog red
+  herring, and a genuine curvature-imposition dataset-choice finding.
 
 ### Fixed
 - Every `.src` file in `package.json`'s `src` array (16 files) now opens

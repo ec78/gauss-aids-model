@@ -1,0 +1,357 @@
+/*
+** example_data.src
+**
+** Shared synthetic-data generators for the numbered example suite in
+** examples/. Not part of the installed quaids package -- purely a
+** teaching aid, #included directly by each example script (mirrors
+** tests/quaidsfixtures.src's own "private generator, not public API"
+** role, but written for a learning audience rather than internal test
+** infrastructure).
+**
+** Every proc here is mathematically IDENTICAL (same sequence and shapes
+** of rndns()/rndu() draws, same coefficient-construction formulas) to an
+** already-validated fixture in tests/quaidsfixtures.src, called with the
+** exact (tobs, seed) combination used throughout this project's own test
+** suite -- reusing validated, known-to-converge randomness rather than
+** re-screening seeds from scratch. GAUSS's rndns(rows, cols, seed)
+** advances a per-seed draw stream on each call (confirmed by reading the
+** original fixtures: repeated calls passing the same seed value return
+** DIFFERENT numbers, not the same ones repeated) -- so preserving the
+** exact call order and shapes is what preserves the validated numerical
+** behavior. Only cosmetic changes were made here: variable names,
+** comments, and the goodNames helper below, none of which consume a
+** random draw.
+**
+** The scenario throughout: a household budget survey with 5 spending
+** categories (Food, Housing, Transportation, Recreation, Other), log
+** total expenditure treated as endogenous and instrumented by a log
+** wage-income variable, and a household-size demographic shifter. This
+** is SIMULATED data for demonstration purposes only -- it is not drawn
+** from, and does not represent, any real survey.
+**
+** A real, honest caveat, confirmed by direct testing rather than
+** assumed: individual budget shares in quaidsExampleData()/
+** quaidsExampleClusterData()/quaidsExampleSurveyData() are NOT bounded
+** to [0,1] the way real expenditure fractions are -- they can come out
+** negative or above 1 for some observations (adding-up, sum_i w_i == 1
+** in every row, DOES hold exactly, by construction). This is a genuine,
+** confirmed property of this DGP family (used throughout tests/ for
+** exactly this reason: it reliably converges), not a bug in these
+** procs -- the dominant driver is the deterministic price/expenditure
+** structural swing, not noise (confirmed by testing a version with the
+** noise term shrunk 50x, which barely changed the range). A linear/
+** quasi-linear share equation used as a data-GENERATING process has no
+** mechanism to enforce [0,1] the way real survey data (or a censored
+** model) does; quaidsExampleZeroData() below deliberately floors
+** negative latent shares to demonstrate exactly that distinction. Every
+** example that prints raw shares says so explicitly at the point it
+** matters, rather than leaving a reader to wonder if something is
+** broken.
+*/
+
+/*
+** quaidsExampleGoodNames -- the 5 budget-category labels used throughout
+** the example suite, in the same column order as every w/prices matrix
+** below (good 1 = Food, ..., good 5 = Other).
+*/
+proc (1) = quaidsExampleGoodNames();
+    retp("Food" $| "Housing" $| "Transportation" $| "Recreation" $| "Other");
+endp;
+
+/*
+** quaidsExampleData -- the general-purpose dataset used by most of the
+** numbered examples. Mirrors tests/quaidsfixtures.src's own
+** _quaidsSyntheticDGP(tobs, seed, 1, 1) exactly: a genuinely QUAIDS
+** system (a real quadratic log-expenditure term, not just AIDS) with log
+** total expenditure genuinely endogenous. Most examples call this as
+** quaidsExampleData(3000, 204) -- seed 204 is the seed nearly every file
+** in tests/ already uses, confirmed (Milestone 3's seed-sensitivity
+** screening, see CLAUDE.md) to converge cleanly across LA-AIDS/iterated-
+** AIDS/QUAIDS, unlike many other seeds in this DGP family.
+*/
+proc (5) = quaidsExampleData(tobs, seed);
+    local N, al, al1, ga, be, la, ro, prices, instr, intcpt, u, totexp, e,
+        a_p, lx, b_p, lx2, w;
+
+    N = 5;
+
+    al = round(rndns(1,N-1,seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1,N-1,seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1,N-1,seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1,N-1,seed)*10)/10;
+    be = be~(-sumc(be'));
+    la = .01*round(rndns(1,N-1,seed)*10)/10;
+    la = la~(-sumc(la'));
+    ro = round(rndns(1,N-1,seed)*10)/10;
+
+    prices = 1+rndns(tobs,N,seed);
+    instr = 5+5*rndns(tobs,1,seed);
+    intcpt = 2+2*rndns(tobs,1,seed);
+    u = .1*rndns(tobs,1,seed);
+    totexp = .85*instr + u;
+    e = 2*rndns(tobs,N-1,seed) + u*ro;
+    e = e~(-sumc(e'));
+
+    a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    retp(w, intcpt, prices, totexp, instr);
+endp;
+
+/*
+** quaidsExampleZeroData -- a dataset with genuine zero budget shares
+** (corner solutions), for the Shonkwiler-Yen zero-share-correction
+** example. Mirrors tests/quaidsfixtures.src's own
+** _quaidsZeroSyntheticDGP(tobs, seed) exactly -- the same structural
+** coefficients scaled to 0.25x quaidsExampleData()'s own magnitudes
+** (confirmed in that fixture's own history to be what actually produces
+** a genuine, uneven-but-non-degenerate zero-share pattern, rather than
+** noise or price variance) and the same accounting-identity censoring
+** (observed share = max(0, latent share) / sum of max(0, latent
+** shares)), so adding-up holds exactly in the observed data by
+** construction. The default call, quaidsExampleZeroData(3000, 1), is the
+** exact combination tests/quaids_zero_test.e uses.
+*/
+proc (5) = quaidsExampleZeroData(tobs, seed);
+    local N, al, al1, ga, be, la, ro, prices, instr, intcpt, u, totexp, e,
+        a_p, lx, b_p, lx2, wLatent, w;
+
+    N = 5;
+
+    al = round(rndns(1, N-1, seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .25*.5*round(rndns(1, N-1, seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = .25*round(rndns(N-1, N-1, seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .25*.5*round(rndns(1, N-1, seed)*10)/10;
+    be = be~(-sumc(be'));
+    la = .25*.01*round(rndns(1, N-1, seed)*10)/10;
+    la = la~(-sumc(la'));
+    ro = round(rndns(1, N-1, seed)*10)/10;
+
+    prices = 1+rndns(tobs, N, seed);
+    instr = 5+5*rndns(tobs, 1, seed);
+    intcpt = 2+2*rndns(tobs, 1, seed);
+    u = .1*rndns(tobs, 1, seed);
+    totexp = .85*instr + u;
+    e = 0.04*rndns(tobs, N-1, seed) + u*ro;
+    e = e~(-sumc(e'));
+
+    a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    wLatent = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    /* Observed share is an accounting identity, not a redistribution
+       formula: expenditure floored at zero, divided by total ACTUAL
+       (post-flooring) expenditure. */
+    w = wLatent .* (wLatent .> 0);
+    w = w ./ sumc(w');
+
+    retp(w, intcpt, prices, totexp, instr);
+endp;
+
+/*
+** quaidsExampleCurvatureData -- an AIDS (linear, no quadratic term)
+** dataset whose TRUE gamma is curvature-consistent (negative
+** semidefinite Slutzky matrix) at its own sample mean, by construction.
+** Mirrors tests/quaidsfixtures.src's own _quaidsCurvatureSyntheticDGP(tobs)
+** exactly -- built via a short self-consistent fixed-point iteration
+** (simulate, recompute the reference point from the realized sample,
+** rebuild gamma, repeat), which that fixture's own history found only
+** converges cleanly for a handful of seeds (seed 500, fixed internally
+** here, found by direct screening). Confirmed directly (not assumed) to
+** be a well-behaved choice for quaidsCurvatureFit() -- unlike
+** quaidsExampleData() above, whose much larger, uncurved Slutzky
+** violations (needed for that dataset's own general-purpose role
+** elsewhere in this suite) make curvature imposition numerically
+** unreliable. Used only by 10_curvature_imposition.e's AIDS section.
+*/
+proc (5) = quaidsExampleCurvatureData(tobs);
+    local N, n1, seed, aScale, nrounds, Atrue, K0, C, ga, al, be, ro,
+        prices, instr, u, totexp, e, a_p, lx, w, lxbar, wbar, r;
+
+    N = 5;
+    n1 = N - 1;
+    seed = 500;
+    aScale = 0.15;
+    nrounds = 8;
+
+    Atrue = aScale * lowmat(rndns(n1, n1, seed));
+
+    al = round(rndns(1, N-1, seed)*10)/10;
+    al = al~(1-sumc(al'));
+    be = .5*round(rndns(1, N-1, seed)*10)/10;
+    be = be~(-sumc(be'));
+    ro = round(rndns(1, N-1, seed)*10)/10;
+
+    prices = 1+rndns(tobs, N, seed);
+    instr = 5+5*rndns(tobs, 1, seed);
+    u = .1*rndns(tobs, 1, seed);
+    totexp = .85*instr + u;
+    e = 2*rndns(tobs, N-1, seed) + u*ro;
+    e = e~(-sumc(e'));
+
+    wbar = ones(N, 1)/N;
+    lxbar = 3.25;
+    r = 1;
+    do while r <= nrounds;
+        K0 = -diagrv(eye(N), wbar) + wbar*wbar' + be'be*lxbar;
+        C = -Atrue*Atrue' - K0[1:n1, 1:n1];
+        ga = C | (-sumc(C)');
+        ga = ga ~ (-sumc(ga'));
+
+        a_p = sumc((prices.*al)') + .5*sumc(((prices*ga).*prices)');
+        lx = totexp - a_p;
+        w = al + prices*ga + lx*be + e;
+
+        wbar = meanc(w);
+        lxbar = meanc(lx);
+        r = r + 1;
+    endo;
+
+    retp(w, 0, prices, totexp, instr);
+endp;
+
+/*
+** quaidsExampleClusterData -- a dataset with a genuine within-cluster-
+** correlated noise component (e.g. households sharing a regional shock),
+** for the robust/cluster-robust standard-error example and the
+** replicate-weight example. Mirrors tests/quaidsfixtures.src's own
+** _quaidsClusterSyntheticDGP(tobs, seed, nClusters) exactly. The default
+** call, quaidsExampleClusterData(1000, 204, 40), matches
+** tests/quaids_robust_test.e; a smaller nClusters (e.g. 10) gives a more
+** compact, easier-to-read leave-one-cluster-out design for the
+** replicate-weight example.
+*/
+proc (6) = quaidsExampleClusterData(tobs, seed, nClusters);
+    local N, al, al1, ga, be, la, ro, prices, instr, intcpt, u, totexp,
+        clusterId, eCommon, e, a_p, lx, b_p, lx2, w;
+
+    /* rndu() (used below for clusterId) has no seeded-call form, unlike
+       rndns(rows, cols, seed) -- without an explicit rndseed here, which
+       rows share a within-cluster shock would differ from run to run
+       even though every other draw in this proc is seeded. */
+    rndseed seed;
+
+    N = 5;
+
+    al = round(rndns(1,N-1,seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1,N-1,seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1,N-1,seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1,N-1,seed)*10)/10;
+    be = be~(-sumc(be'));
+    la = .01*round(rndns(1,N-1,seed)*10)/10;
+    la = la~(-sumc(la'));
+    ro = round(rndns(1,N-1,seed)*10)/10;
+
+    prices = 1+rndns(tobs,N,seed);
+    instr = 5+5*rndns(tobs,1,seed);
+    intcpt = 2+2*rndns(tobs,1,seed);
+    u = .1*rndns(tobs,1,seed);
+    totexp = .85*instr + u;
+
+    clusterId = ceil(rndu(tobs,1)*nClusters);
+    eCommon = 1.5*rndns(nClusters,N-1,seed);
+    e = 1*rndns(tobs,N-1,seed) + eCommon[clusterId,.] + u*ro;
+    e = e~(-sumc(e'));
+
+    a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    retp(w, intcpt, prices, totexp, instr, clusterId);
+endp;
+
+/*
+** quaidsExampleSurveyData -- an informatively (non-randomly) sampled
+** dataset with known Horvitz-Thompson sampling weights, for the
+** survey-weighted-estimation example. Mirrors tests/quaidsfixtures.src's
+** own _quaidsSurveyWeightedDGP(nPop, seed) exactly: a population is
+** simulated, then split into two sampling strata on an UNOBSERVED
+** idiosyncratic shock (not an included regressor -- selecting on an
+** included regressor was tried in that fixture's own history and found
+** not to bias naive estimation, the standard Heckman result), with the
+** high-shock stratum sampled at a much higher rate than the low-shock
+** stratum. The default call, quaidsExampleSurveyData(6000, 11), matches
+** tests/quaids_survey_test.e, screened there to give a dramatic,
+** unambiguous improvement from weighting (roughly 7x smaller max/mean
+** absolute parameter error) versus ignoring the sample weight entirely.
+*/
+proc (6) = quaidsExampleSurveyData(nPop, seed);
+    local N, rateHigh, rateLow, al, al1, ga, be, ro, pricesPop, instrPop,
+        intcptPop, uPop, totexpPop, ePop, a_p, lx, wPop, medE1, highGroup,
+        rate, incl, idx, w, intcpt, prices, totexp, instr, weight;
+
+    N = 5;
+    rateHigh = 0.6;
+    rateLow = 0.15;
+
+    al = round(rndns(1,N-1,seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1,N-1,seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1,N-1,seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1,N-1,seed)*10)/10;
+    be = be~(-sumc(be'));
+    ro = round(rndns(1,N-1,seed)*10)/10;
+
+    pricesPop = 1+rndns(nPop,N,seed);
+    instrPop = 5+5*rndns(nPop,1,seed);
+    intcptPop = 2+2*rndns(nPop,1,seed);
+    uPop = .1*rndns(nPop,1,seed);
+    totexpPop = .85*instrPop + uPop;
+    ePop = 2*rndns(nPop,N-1,seed) + uPop*ro;
+    ePop = ePop~(-sumc(ePop'));
+
+    a_p = sumc((pricesPop.*(al+intcptPop*al1))') + .5*sumc(((pricesPop*ga).*pricesPop)');
+    lx = totexpPop - a_p;
+    wPop = al + pricesPop*ga + lx*be + ePop + intcptPop*al1;
+
+    /* Informative two-stratum sampling on the UNOBSERVED error of good 1
+       -- e.g. households with unusually high, unmodeled food spending are
+       more likely to respond to the survey. rndseed here (as opposed to
+       rndu()'s own unseeded default) is what makes which rows get
+       selected reproducible from run to run. */
+    medE1 = median(ePop[.,1]);
+    highGroup = ePop[.,1] .> medE1;
+    rate = highGroup*rateHigh + (1-highGroup)*rateLow;
+
+    rndseed seed+1;
+    incl = rndu(nPop,1) .< rate;
+    idx = selif(seqa(1,1,nPop), incl);
+
+    w = wPop[idx,.];
+    intcpt = intcptPop[idx,.];
+    prices = pricesPop[idx,.];
+    totexp = totexpPop[idx,.];
+    instr = instrPop[idx,.];
+    weight = 1/rate[idx,.];
+
+    retp(w, intcpt, prices, totexp, instr, weight);
+endp;

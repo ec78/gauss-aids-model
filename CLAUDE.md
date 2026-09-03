@@ -239,43 +239,38 @@ src/
                     #   file, same as quaids.sdf/quaids.src. See
                     #   "Milestone 6: reporting via pubtable" below.
 examples/
-  quaids_example.e  # One synthetic 5-good dataset (homogeneity/symmetry true
-                    #   by construction), run through quaids() with
-                    #   eyeballed comparison of printed estimates to true
-                    #   parameters. Not an automated test — no assertions.
-                    #   Uses `library quaids;` against the installed
-                    #   package (Milestone 9 -- previously #included the
-                    #   source tree directly via ../src/..., from before
-                    #   Milestone 7 made the package installable; switched
-                    #   once README.md/USAGE_GUIDE.md started documenting
-                    #   `library quaids;` as the primary usage pattern, so
-                    #   the examples actually demonstrate what the docs
-                    #   promise, matching gauss-qardl's own examples/,
-                    #   which are all `library qardl;`-based). Source-tree
-                    #   #include-based testing still lives on in tests/
-                    #   (except tests/package_public_api.e, which is also
-                    #   library-based, by design -- see "Testing status"
-                    #   below).
-  workflow_example.e # Milestone 21: installed-package one-call applied
-                    #   workflow example using quaidsWorkflowFit() and
-                    #   quaidsWorkflowScenarioFit() for mean-point shares/
-                    #   elasticities/robust SE and a CV/EV scenario.
-  pubtable_export_example.e # Milestone 6: same style, but exports a
-                    #   quaidsFit() coefficient table and a
-                    #   quaidsElasFit() elasticity report to
-                    #   LaTeX/Markdown/CSV via pubtable_quaids.src.
-                    #   Requires the pubtable package installed. Uses
-                    #   `library quaids, pubtable;` (Milestone 9) plus a
-                    #   bare `#include quaids.sdf` -- required so that
-                    #   pubtable_quaids.src's #ifDef QUAIDS_SDF_INCLUDED
-                    #   guard is active; `library quaids;` alone lazily
-                    #   loads procs on demand and does not run quaids.sdf's
-                    #   #define (confirmed empirically), matching how
-                    #   pubtable's own bundled pubtable_qardl.src documents
-                    #   the identical requirement for qardl.sdf. Still
-                    #   #includes ../src/pubtable_quaids.src by relative
-                    #   path, since that adapter is not part of the
-                    #   installed quaids package (see "Milestone 6" below).
+                    # Milestone 31: a numbered, 13-file, read-in-order
+                    #   suite (01_basic_estimation.e ..
+                    #   13_pubtable_reporting.e), one focused manual/
+                    #   eyeball-comparison script (no assertions) per
+                    #   major feature area, sharing one small synthetic
+                    #   household-budget dataset generator
+                    #   (example_data.src). Superseded a 3-file suite
+                    #   (quaids_example.e/workflow_example.e/
+                    #   pubtable_export_example.e) that covered only
+                    #   basic estimation, the applied workflow, and
+                    #   pubtable reporting. See examples/README.md for
+                    #   the full reading-order table and
+                    #   "Milestone 31: comprehensive example suite" below
+                    #   for the design rationale and real findings from
+                    #   building it (a synthetic-data share-range caveat,
+                    #   a stale-installed-.lcg-catalog red herring, and a
+                    #   genuine dataset-choice finding for curvature
+                    #   imposition). All 13 use `library quaids;` against
+                    #   the installed package (matching Milestone 9's
+                    #   established convention) and need `examples/` as
+                    #   the working directory, since every one
+                    #   `#include`s example_data.src by relative path.
+                    #   10_curvature_imposition.e additionally needs
+                    #   `optmt` loaded; 13_pubtable_reporting.e needs
+                    #   `pubtable` loaded plus a bare `#include quaids.sdf`
+                    #   (same `#ifDef QUAIDS_SDF_INCLUDED` guard-activation
+                    #   reasoning as the original pubtable_export_example.e
+                    #   it replaces -- `library quaids;` alone lazily loads
+                    #   procs on demand and does not run quaids.sdf's
+                    #   #define) and still `#include`s
+                    #   ../src/pubtable_quaids.src by relative path, since
+                    #   that adapter is not part of the installed package.
 tests/
   quaids_schema_test.e         # Milestone 1: asserts quaidsOut field
                     #   values/shapes, that quaidsFit() prints nothing, and
@@ -738,7 +733,7 @@ GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   change and update it as milestones close.
 ```
 
-The original ten-milestone roadmap is complete, plus Milestones 11-30:
+The original ten-milestone roadmap is complete, plus Milestones 11-31:
 0 (repo hygiene), 1 (API/output-schema baseline), 2 (modular source split +
 dataframe entry point), 3 (validation fixtures, including published-data
 cross-implementation validation), 4 (hypothesis testing completeness), 5
@@ -819,7 +814,13 @@ absolute-price basis error in `quaidsZeroFit()`'s already-shipped
 unconstrained mode, the other a genuine missing cross-constraint in this
 milestone's own first symmetry-restriction draft, caught by direct
 empirical testing against a known-symmetric synthetic DGP rather than
-algebra alone).
+algebra alone), and 31 (a repo-owner-requested comprehensive, numbered
+example suite -- 3 terse smoke scripts grew to 13 well-annotated,
+individually-verified examples covering every major feature area, plus
+a shared synthetic-data generator; along the way, found and disclosed a
+real synthetic-data limitation rather than hiding it, and found a real
+stale-installed-catalog red herring and a genuine curvature-imposition
+dataset-choice finding, both documented in that milestone's own section).
 
 **The package is now actually installed** at `c:\gauss26\pkgs\quaids`
 (Milestone 7), alongside `qardl` and `pubtable` on this machine --
@@ -3966,6 +3967,165 @@ output, matching this project's established policy of bumping on real
 public API surface change and behavior-changing bugfixes alike
 (Milestone 26/27 precedent).
 
+## Milestone 31: comprehensive example suite (complete)
+
+Requested directly by the repo owner after noticing `examples/` had only
+3 scripts, covering basic estimation, the applied workflow, and pubtable
+reporting -- nothing for ~9 other major feature areas (dataframe input,
+preflight, hypothesis tests, welfare analysis on its own, zero-share
+correction, robust/cluster SE, replicate weights, curvature imposition,
+survey-weighted estimation), and asked for a suite that "balances
+simplicity and transparency" and is "well annotated." The existing 3
+scripts were also terse "eyeball comparison" smoke scripts inherited
+from before this project's documentation conventions existed -- cryptic
+single-letter DGP variable names (`al`, `ga`, `be`, `lx2`, `b_p`), almost
+no explanatory comments.
+
+**Scope, confirmed with the repo owner via `AskUserQuestion` before
+writing anything**: full coverage (~12-13 files, one per major feature
+area, closely mirroring `docs/USAGE_GUIDE.md`'s own section list -- each
+example is effectively that section's runnable counterpart); one shared,
+well-commented synthetic-data generator file rather than duplicating
+DGP-construction boilerplate 13 times; a numbered read-in-order sequence
+(`01_basic_estimation.e` .. `13_pubtable_reporting.e`), renaming the 3
+existing examples into it; realistic budget-category names (Food,
+Housing, Transportation, Recreation, Other) instead of anonymous
+`w1..w5`.
+
+**Design**: `examples/example_data.src` (new, not part of the installed
+package -- mirrors `tests/quaidsfixtures.src`'s own "private generator"
+role, written for a learning audience) has 5 procs
+(`quaidsExampleGoodNames`, `quaidsExampleData`, `quaidsExampleZeroData`,
+`quaidsExampleClusterData`, `quaidsExampleSurveyData`, plus
+`quaidsExampleCurvatureData` added later -- see the curvature finding
+below). Each is mathematically IDENTICAL (same sequence and shapes of
+`rndns()`/`rndu()` draws, same coefficient-construction formulas) to an
+already-validated fixture in `tests/quaidsfixtures.src`, called with the
+exact `(tobs, seed)` combination already proven to converge across this
+project's own test suite -- reusing validated randomness rather than
+re-screening seeds from scratch. This relies on a confirmed (not
+assumed) property of GAUSS's RNG: `rndns(rows, cols, seed)` advances a
+per-seed draw stream on each call (repeated calls passing the same seed
+value return DIFFERENT numbers, not the same ones repeated), so
+preserving the exact call order and shapes is what preserves the
+validated numerical behavior -- cosmetic changes (variable names,
+comments, a bonus good-name string array) don't consume draws and are
+safe to change freely.
+
+**A real, honest finding, not something to paper over**: the standard
+dataset's individual budget shares routinely fall outside `[0,1]` (e.g.
+a mean share of `-0.85` or `3.62` for different goods), even though they
+always sum to exactly `1` in every row (adding-up, checked directly in
+`01_basic_estimation.e`). Confirmed directly that this is NOT primarily
+a noise-scale artifact fixable by turning noise down: a probe that
+shrunk the noise term 50x barely changed the range, confirming (as
+`quaidsZeroFit()`'s own Milestone 19 history already found for a related
+reason) that the DETERMINISTIC price/expenditure structural swing, not
+noise, is the dominant driver. A linear/quasi-linear share equation used
+as a data-GENERATING process has no built-in mechanism to enforce
+`[0,1]` the way real survey data (or a censored model) does. Rather than
+engineer a new, unvalidated "nicer-looking" DGP (real risk: this
+project's own history shows building a well-behaved AIDS/QUAIDS
+synthetic fixture is genuinely hard, seed-sensitive work -- Milestones
+3/10/12/19 each document real, non-trivial screening effort for exactly
+this), this was disclosed explicitly and prominently instead:
+`example_data.src`'s own header comment documents it in detail,
+`01_basic_estimation.e` prints the adding-up check alongside a direct
+caveat, `03_preflight_diagnostics.e` uses it as the worked example of
+what `quaidsPreflight()`'s hard-failure (`negativeShareCount`) path looks
+like, and `05_elasticities_shares_slutzky.e`/`06_welfare_analysis.e`
+each carry a short pointer back to it exactly where a reader might
+otherwise wonder if something were broken (predicted shares outside
+`[0,1]`; CV/EV sign not matching price-change direction, a real
+consequence of this fit's own curvature violations, not a formula
+error).
+
+**A real, initially-alarming finding that turned out to be unrelated to
+any example code**: building the curvature example (`quaidsCurvatureFit`,
+requires `optmt`) repeatedly threw `error G0025: Undefined symbol:
+'quaidsCurvatureFit'` or `error G0008: Syntax error '.converged'` via
+direct `tgauss -b -x` invocation, in ways that appeared to depend on
+struct pre-declaration, call ordering, and even seemed non-deterministic
+across identical re-runs. Extensive isolated probing (removing struct
+declarations, swapping `library optmt, quaids;` vs. `library quaids,
+optmt;`, testing a `run`-wrapper invocation matching
+`run_release_verification.ps1`'s own `Invoke-GaussBatch` pattern) all
+failed to explain it -- until directly inspecting the installed
+`c:\gauss26\pkgs\quaids\lib\quaids.lcg` catalog found the real cause:
+`quaidsCurvatureFit`/`printQuaidsCurvature`/`quaidsCurvatureBootstrapFit`/
+`printQuaidsCurvatureBootstrap`/`quaidsCurvatureBootstrapCI` were simply
+**missing** from it (only their 3 private helpers were listed), even
+though `build_lcg.ps1`'s regex, tested directly against those exact
+proc-declaration lines, matched all 5 correctly. The installed catalog
+was several days stale relative to the current source -- a fresh
+`scripts/run_release_verification.ps1 -BuildArtifact -ForceArtifact
+-InstallArtifact` regenerated a correct catalog (confirmed directly:
+`grep quaidsCurvatureFit` now finds it) and the "undefined symbol"
+errors disappeared immediately. Root cause of the STALE catalog itself
+was not further chased (this session's own rebuild produced a correct
+one on the first try) -- flagged here as a real, reproducible class of
+failure (an installed package's `.lcg` catalog silently drifting out of
+sync with its own source) worth remembering if `library`-based symbol
+resolution ever behaves inexplicably again: check the actual installed
+catalog content directly before assuming a code or invocation problem.
+
+**A second, genuine (not a red herring) finding, specific to curvature
+imposition itself**: with the catalog fixed, `quaidsCurvatureFit()` on
+`quaidsExampleData()` (the general-purpose dataset used by most of this
+suite) turned out to be a poor, numerically unreliable choice for AIDS
+curvature imposition specifically -- confirmed by direct, repeated
+testing (3 consecutive isolated runs, all failing identically with
+`error G0674: Invalid input: NaN, INF or Missing value` inside
+`optmt`'s own search) that this is a real, deterministic property of
+this combination, not flakiness. Root cause: this dataset's much larger,
+general-purpose-appropriate Slutzky violations (needed for its role
+throughout the rest of the suite; the AIDS fit's own eigenvalues at the
+mean reach into the tens) push `quaidsCurvatureFit()`'s own
+`optmt`-based line search into a numerically invalid region. QUAIDS
+curvature imposition on the SAME dataset, run in isolation, converged
+cleanly and deterministically every time (185 iterations, identical
+eigenvalues, across 3 repeated runs) -- but chaining an AIDS curvature
+call (which fails) before it, in the same script, made the QUAIDS call
+ALSO fail unpredictably (different crash points across otherwise-
+identical re-runs of the same deterministic script), a real but not
+further-diagnosed `optmt` state-leakage effect across successive calls
+in one session. Fixed by adding a 6th `example_data.src` proc,
+`quaidsExampleCurvatureData(tobs)` -- mirroring
+`tests/quaidsfixtures.src`'s own `_quaidsCurvatureSyntheticDGP(tobs)`
+exactly (the specialized, self-consistent-fixed-point-constructed,
+AIDS-only dataset already validated by `quaids_curvature_test.e`/
+`tests/package_public_api.e`) -- and reordering
+`10_curvature_imposition.e` to run the QUAIDS section (on the general
+dataset) BEFORE the AIDS section (on this new specialized dataset) plus
+its bootstrap, confirmed reliable across repeated full-script re-runs.
+Documented in the example's own comments as a real, confirmed dataset-
+choice finding, not asserted from the algebra alone.
+
+**Testing**: all 13 examples were run for real via `tgauss -b -x` from
+`examples/` as cwd (not just written and assumed correct), several
+multiple times to confirm determinism after the findings above --
+`optmt` and `pubtable` are both installed on this machine, so every
+example including the two with optional-package requirements was
+actually exercised, not skipped. Several real syntax/API mistakes were
+caught this way and fixed before being considered done: `sign()` is not
+a GAUSS builtin (fixed with `.>` comparisons); `+` does not concatenate
+string arrays with a scalar suffix, `$+` does (confirmed empirically);
+`quaidsReplicateOut` has no `intcptFull` field (unlike `quaidsOut`), so
+its evaluation point needed building by hand
+(`1 | meanc(intcpt)`); vertically concatenating a native string array
+with a plain numeric matrix via `|` does not work (mixed native-string/
+matrix type, printed separately instead). `tests/run_source_tests.ps1`
+(18 files) and the full `run_release_verification.ps1 -BuildArtifact
+-ForceArtifact -InstallArtifact` pipeline (confirming the renamed
+required release-artifact entry, `examples/01_basic_estimation.e` in
+`scripts/verify_release_artifact.ps1`, resolves correctly) both re-ran
+clean afterward.
+
+**No version bump**: a pure examples/documentation addition -- no
+`.src`/`.sdf` file in `package.json`'s `src` array changed, matching
+Milestone 8's established no-version-bump precedent for documentation/
+example-only work.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
@@ -4367,29 +4527,23 @@ so `package_public_api.e` verifies the installed `.lcg` catalog and
 `library quaids;` path. See "Milestone 7: package build and release tooling"
 above.
 
-`examples/quaids_example.e` remains a manual, eyeball-comparison smoke
-script (no assertions) — superseded for correctness-checking purposes by
-`quaids_synthetic_validation_test.e`, but kept as a simple, readable
-end-to-end usage example. `examples/pubtable_export_example.e` (Milestone
-6) is the same style for the reporting layer — exports a coefficient table
-and elasticity tables to `.tex`/`.md`/`.csv`, requires `pubtable` installed.
-Both use `library quaids;` against the installed package (Milestone 9),
-matching README.md/USAGE_GUIDE.md's documented usage pattern — see
-"Milestone 9" below.
+`examples/` (Milestone 31) is a numbered, 13-file, read-in-order suite,
+one focused manual/eyeball-comparison script (no assertions) per major
+feature area — see "Milestone 31: comprehensive example suite" below and
+`examples/README.md` for the full list. All 13 need `examples/` as the
+working directory, since every one `#include`s the shared
+`examples/example_data.src` synthetic-data generator by relative path;
+`10_curvature_imposition.e` additionally needs `optmt` loaded and
+`13_pubtable_reporting.e` needs `pubtable` loaded plus a bare
+`#include quaids.sdf` (same reasoning as Milestone 6's original
+`pubtable_export_example.e`, which `13_pubtable_reporting.e` replaces).
 
-To run the examples from a GAUSS 26 console/batch shell:
+To run an example from a GAUSS 26 console/batch shell:
 
 ```
-tgauss -b -x examples/quaids_example.e
-tgauss -b -x examples/pubtable_export_example.e
+cd examples
+tgauss -b -x 01_basic_estimation.e
 ```
-
-`quaids_example.e` no longer depends on its working directory, since it
-loads the installed package via `library quaids;` rather than `#include`.
-`pubtable_export_example.e` still needs `examples/` as the working
-directory (or paths adjusted), since it `#include`s
-`../src/pubtable_quaids.src` by relative path — that adapter is not part
-of the installed package (see "Milestone 6" above).
 
 ## Package manifest
 

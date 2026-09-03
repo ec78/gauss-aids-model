@@ -12,6 +12,7 @@ examples/quaids_coefficients.csv
 examples/quaids_income_elasticities.md
 examples/quaids_uncompensated_elasticities.tex
 examples/quaids_compensated_elasticities.csv
+examples/quaids_workflow
 tests/schema_test_quaids_wrapper_out
 tests/pubtable_test_coef.tex
 tests/pubtable_test_coef.md

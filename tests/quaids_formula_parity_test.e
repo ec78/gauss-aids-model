@@ -41,7 +41,7 @@ proc (0) = checkEqual(a, b, label);
 endp;
 
 
-/* Deterministic synthetic 5-good dataset, same DGP as examples/quaids_example.e */
+/* Deterministic synthetic 5-good dataset, same DGP as examples/01_basic_estimation.e */
 
 seed = 11;
 tobs = 1000;

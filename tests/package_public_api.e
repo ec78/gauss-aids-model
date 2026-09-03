@@ -12,7 +12,7 @@ new;
 ** gauss-qardl's tests/package_public_api.e.
 **
 ** Builds its own small synthetic dataset inline (mirroring
-** examples/quaids_example.e's DGP) rather than reusing
+** examples/01_basic_estimation.e's DGP) rather than reusing
 ** tests/quaidsfixtures.src's private _quaidsSyntheticDGP() -- that helper
 ** is tests/-only source, not part of the installed package, and the point
 ** of this test is to exercise exactly what an installed-package consumer
@@ -85,7 +85,7 @@ proc (0) = assert_true(ok, msg);
     endif;
 endp;
 
-/* Same 5-good synthetic DGP shape as examples/quaids_example.e (homogeneity
+/* Same 5-good synthetic DGP shape as examples/01_basic_estimation.e (homogeneity
    and adding-up true by construction), inlined so this test has no
    dependency on tests/-only fixture code. */
 seed = 11;

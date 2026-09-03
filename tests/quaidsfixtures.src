@@ -6,7 +6,7 @@
 ** #included only by test scripts.
 **
 ** Generates a 5-good AIDS/QUAIDS dataset with homogeneity and adding-up
-** imposed by construction (mirrors examples/quaids_example.e's DGP), with
+** imposed by construction (mirrors examples/01_basic_estimation.e's DGP), with
 ** switches for whether the true DGP has a quadratic (QUAIDS) term and
 ** whether total expenditure is genuinely endogenous. Also returns the true
 ** parameters stacked in exactly the row order quaidsFit()'s final

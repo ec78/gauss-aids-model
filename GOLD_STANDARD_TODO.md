@@ -1,6 +1,6 @@
 # GAUSS AIDS Library Gold Standard Roadmap
 
-Status date: 2026-08-08
+Status date: 2026-09-03
 
 This is the release-readiness checklist and roadmap for turning this repository
 into the reference GAUSS implementation of the Almost Ideal Demand System (AIDS)
@@ -12,8 +12,8 @@ libraries stay consistent to maintain and to use.
 ## Current Status Snapshot
 
 The repository is pre-alpha, package version `0.24.0`. **The original ten-
-milestone roadmap is complete, plus Milestones 11-30**, as of
-2026-08-08: 0
+milestone roadmap is complete, plus Milestones 11-31**, as of
+2026-09-03: 0
 (repository hygiene), 1 (API/output-schema baseline), 2 (modular source
 split + dataframe entry point), 3 (validation fixtures), 4 (hypothesis
 testing completeness), 5 (elasticities/diagnostics generalization), 6
@@ -3186,6 +3186,73 @@ flagged, unstarted items in the separate survey/design-based estimation
 thread (unaffected by this milestone). No other homogeneity/symmetry
 follow-up items are outstanding for `quaidsZeroFit()`.
 
+### Milestone 31 -- Comprehensive Example Suite -- COMPLETE
+
+Requested directly by the repo owner after noticing `examples/` had only
+3 terse, sparsely-commented scripts covering 3 of the library's ~12
+major feature areas. Asked for a suite that "balances simplicity and
+transparency" and is "well annotated," demonstrating the full
+functionality documented in `docs/USAGE_GUIDE.md`.
+
+- [x] Planned via `EnterPlanMode`/`ExitPlanMode`, with 4 scoping
+  questions confirmed via `AskUserQuestion` before writing anything:
+  full coverage (~12-13 files, not a curated subset), one shared
+  synthetic-data generator file (not duplicated per example), a
+  numbered read-in-order sequence (renaming the 3 existing examples),
+  and realistic budget-category names.
+- [x] Built `examples/example_data.src` (6 procs: `quaidsExampleGoodNames`,
+  `quaidsExampleData`, `quaidsExampleZeroData`, `quaidsExampleClusterData`,
+  `quaidsExampleSurveyData`, `quaidsExampleCurvatureData`), each
+  mathematically identical to an already-validated
+  `tests/quaidsfixtures.src` fixture at the exact `(tobs, seed)`
+  combination already proven to converge, reusing validated randomness
+  rather than re-screening seeds from scratch.
+- [x] Wrote and individually verified (via real `tgauss -b -x` runs, not
+  just written and assumed correct) 13 numbered examples
+  (`01_basic_estimation.e` .. `13_pubtable_reporting.e`), replacing the
+  3 existing ones, covering every major feature area: basic estimation,
+  dataframe input, preflight diagnostics, hypothesis tests, elasticities/
+  shares/Slutzky, welfare analysis, zero-share correction, robust/
+  cluster-robust SE, replicate weights, curvature imposition (`optmt`),
+  survey-weighted estimation, applied workflow, and pubtable reporting.
+- [x] Found and disclosed, rather than hid, a real limitation of the
+  reused synthetic dataset: individual budget shares can fall outside
+  `[0,1]` (adding-up still holds exactly) -- confirmed by direct testing
+  that this is a deterministic structural property, not fixable by
+  reducing noise alone. Documented in `example_data.src`'s header and
+  referenced at each point a reader might otherwise wonder if something
+  were broken.
+- [x] Found and fixed a real, reproducible red herring while building
+  the curvature example: `quaidsCurvatureFit()` intermittently threw
+  "Undefined symbol" errors unrelated to any example code -- traced to
+  a STALE installed `.lcg` catalog (missing 5 real procs despite
+  `build_lcg.ps1`'s regex matching them correctly when tested directly);
+  fixed by a fresh package rebuild/reinstall.
+- [x] Found a genuine, confirmed (not assumed) dataset-choice issue for
+  curvature imposition: the general-purpose dataset is numerically
+  unreliable for AIDS curvature imposition (deterministic `NaN`/`Inf`
+  failures inside `optmt`'s search) and chaining a failing AIDS call
+  before a QUAIDS one made the QUAIDS call fail unpredictably too (an
+  `optmt` state-leakage effect across calls, not further diagnosed).
+  Fixed by adding `quaidsExampleCurvatureData()` (mirroring the already-
+  validated `_quaidsCurvatureSyntheticDGP()` fixture) for the AIDS
+  section and reordering the example so QUAIDS (reliable on the general
+  dataset) runs before AIDS (on the specialized one).
+- [x] Added `examples/README.md` (reading-order index, run instructions,
+  optional-package requirements) and updated `README.md`,
+  `docs/USAGE_GUIDE.md`, `scripts/verify_release_artifact.ps1` (its
+  required-entry check, functionally load-bearing, not just docs), and
+  `.gitignore` for the new generated pubtable-export artifact.
+- [x] Re-ran `tests/run_source_tests.ps1` (18 files) and the full
+  `run_release_verification.ps1 -BuildArtifact -ForceArtifact
+  -InstallArtifact` pipeline after every change, confirming zero
+  regressions and that the renamed required release-artifact entry
+  resolves correctly.
+
+No follow-ups: this milestone's scope (a full-coverage example suite)
+is complete as defined; future new public procs should get their own
+new numbered example following the same pattern.
+
 ## Definition of Done for a Gold Standard Release
 
 - [x] `quaids()` (and formula-based `quaidsFull()`) return structured output with
@@ -3298,7 +3365,7 @@ follow-up items are outstanding for `quaidsZeroFit()`.
 ## Release Status
 
 The original ten-milestone gold-standard roadmap is complete, and
-Milestones 11-30 extend it beyond the original scope, as of 2026-08-08
+Milestones 11-31 extend it beyond the original scope, as of 2026-09-03
 (package version `0.24.0`). Commits are now being made (and pushed to
 `origin/master`) at milestone breakpoints, per the repo owner's request —
 see the repo's commit history rather than treating "not yet committed" as
@@ -3447,3 +3514,20 @@ redundant-row column entries are not actually free under symmetry --
 caught only by direct empirical testing against a known-symmetric
 synthetic DGP, not algebra alone). `quaidsZeroFit()`'s own test suite
 grew from 19 to 41 checks.
+
+Milestone 31, requested directly by the repo owner after noticing
+`examples/` had grown stale (3 terse scripts covering 3 of ~12 major
+feature areas), replaced it with a numbered, 13-file, read-in-order
+suite covering every major feature area, sharing one well-commented
+synthetic-data generator (`examples/example_data.src`). Every example
+was individually run and verified, not just written -- this surfaced a
+real, disclosed (not hidden) limitation of the reused synthetic dataset
+(individual shares can fall outside `[0,1]`, though adding-up always
+holds exactly), a stale-installed-`.lcg`-catalog red herring while
+debugging the curvature example, and a genuine, confirmed dataset-choice
+finding for curvature imposition (the general-purpose dataset is
+numerically unreliable for AIDS curvature specifically; fixed with a new
+specialized fixture matching the already-validated one in
+`tests/quaidsfixtures.src`). No estimation math changed, no version
+bump (pure examples/documentation work, matching Milestone 8's
+precedent).
