@@ -4126,6 +4126,78 @@ clean afterward.
 Milestone 8's established no-version-bump precedent for documentation/
 example-only work.
 
+**Update (2026-09-03, two more findings from the same session, no
+version bump)**: the repo owner asked "did you update the installation
+zip with the new examples?" -- a fair check given the zip is a local,
+gitignored build artifact never itself committed. Answering it properly
+(inspecting the actual built `.zip`'s contents rather than assuming the
+last build was still current) surfaced two more real things:
+
+1. **Confirmed and fixed, small**: `examples/quaids_workflow` (the file
+   `13_pubtable_reporting.e`'s `ptExportAll()` call writes when run) had
+   leaked into the release `.zip` -- added to `.gitignore` at the time,
+   but never added to `scripts/build_package.ps1`'s own
+   `$generatedTestFiles` cleanup list, which does its own copy from the
+   working directory and has no notion of `.gitignore`. Fixed by adding
+   it there too, matching the existing `quaids_coefficients.*` entries;
+   confirmed via a fresh rebuild that the artifact no longer appears in
+   the `.zip`.
+2. **Investigated at length, kept as-is, documented for the future**: a
+   routine rebuild/reinstall cycle while verifying fix #1 hit
+   `error G0014: File not found 'c:/gauss26/pkgs/tspdlib/examples\quaids.sdf'`
+   across the ENTIRE source-tree test suite (`tests/run_source_tests.ps1`,
+   including every `guard_error_cases/*.e` script) -- a much bigger
+   blast radius than anything in this session so far, and initially
+   indistinguishable from a real regression in the "#include quaids.sdf"
+   fix documented earlier in this same "Unreleased" update. Traced,
+   through direct inspection (not assumption), to `c:\gauss26\pkgs\quaids\`
+   being **completely absent** at that moment -- confirmed by `ls`
+   failing outright, not just a stale catalog this time -- most likely a
+   side effect of an interrupted reinstall earlier in this same session
+   (a second lingering orphaned `gauss.exe` process, PID different from
+   the one found and killed during the curvature investigation, was also
+   found running at the same time). Confirmed via GAUSS's own
+   documentation (`docs.aptech.com/gauss/include.html`, fetched directly
+   rather than continuing to reverse-engineer the behavior empirically)
+   that a bare `#include filename` searches the current working
+   directory, then `gauss.cfg`'s `src_path` -- there is no "same
+   directory as the file doing the including" resolution, confirming why
+   a bare `#include quaids.sdf` inside an installed package's own `src/`
+   file depends entirely on that package's own `$(PACKAGEDIR)\*\src`
+   entry resolving correctly, which requires the package to actually be
+   installed. This is a **real, if narrow, coupling** introduced by the
+   "#include quaids.sdf" fix: source-tree testing (`#include ../src/*.src`,
+   which exists specifically to test this repo's current source
+   independent of any installed copy) now transitively depends on
+   `c:\gauss26\pkgs\quaids\` existing too, once execution reaches any of
+   the 16 files' own internal self-include -- and this repo's CI workflow
+   (`.github/workflows/tests.yml`) runs only `run_source_tests.ps1`, with
+   no install step, so CI's reliability now silently depends on whatever
+   package state already happens to persist on the self-hosted runner.
+   Tested directly (stripping the self-includes from a scratch copy of
+   the installed package and confirming `library`-based struct field
+   access, including `quaidsCurvatureFit()`, still worked perfectly) that
+   the self-include is not proven necessary for correct `library`-based
+   resolution given `build_lcg.ps1`'s catalog already lists struct
+   definitions (and always has, since Milestone 7) -- but reverting it
+   was rejected: the original G0507 report came from a real end-user
+   install this project's own pipeline could never reproduce, so there is
+   no way to confirm reverting would not silently reintroduce it. Kept
+   the fix as-is (a normal, correct use of GAUSS's own
+   `$(PACKAGEDIR)\*\src` mechanism as long as the package is installed,
+   which `library quaids;` usage requires anyway) and restored the
+   installed copy to a clean, correct state via a fresh
+   `run_release_verification.ps1 -BuildArtifact -ForceArtifact
+   -InstallArtifact` (source tests, build, install, and
+   `package_public_api.e` against the real installed package all
+   confirmed passing afterward) -- documented here as a known, accepted
+   risk rather than silently left for a future session to rediscover
+   from scratch. If `run_source_tests.ps1`/CI ever fails again with an
+   `error G0014` mentioning some unrelated package's `examples/` or
+   `src/` directory, this is almost certainly the same coupling, not a
+   new bug -- check `Test-Path c:\gauss26\pkgs\quaids\src\quaids.sdf`
+   first, before assuming a code regression.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What

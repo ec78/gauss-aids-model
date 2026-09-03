@@ -90,6 +90,15 @@ policy (Milestone 7/8 precedent).
   now rejects any `deps` entry that is a bare string, guarding against a
   silent regression back to the old form regardless of which format
   turns out to be the actually-correct one.
+- `scripts/build_package.ps1`'s generated-artifact cleanup list
+  (`$generatedTestFiles`) did not include `examples/quaids_workflow`,
+  a file `13_pubtable_reporting.e`'s `ptExportAll()` call writes when run
+  during development -- found by directly inspecting a built release
+  `.zip`'s contents after adding Milestone 31's example suite, not
+  assumed clean. Added to the cleanup list, matching the existing
+  entries for `examples/quaids_coefficients.tex`/`.md`/`.csv` etc.;
+  confirmed via a fresh rebuild that the artifact no longer appears in
+  the `.zip`.
 
 ## 0.24.0 - 2026-08-08
 

@@ -93,7 +93,8 @@ try {
         "examples\quaids_coefficients.csv",
         "examples\quaids_income_elasticities.md",
         "examples\quaids_uncompensated_elasticities.tex",
-        "examples\quaids_compensated_elasticities.csv"
+        "examples\quaids_compensated_elasticities.csv",
+        "examples\quaids_workflow"
     )
     foreach ($relPath in $generatedTestFiles) {
         $fullPath = Join-Path $stageRoot $relPath
