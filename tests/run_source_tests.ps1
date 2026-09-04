@@ -4,6 +4,12 @@
 # source-tree test (#include-based, not library-based) in tests/, in one
 # shot. Adapted from gauss-qardl's tests/run_source_tests.ps1.
 #
+# Public release roadmap PR-001/PR-003: also runs
+# scripts/verify_public_api.ps1, which checks release-metadata version
+# consistency (package.json/CITATION.cff/docs/public-api.json/CHANGELOG.md)
+# and reconciles docs/public-api.json's procedure/struct inventory against
+# src/ and docs/COMMAND_REFERENCE.md.
+#
 # This repo's tests print their own "PASS"/"FAIL" line per check and a
 # final "...: ALL N CHECKS PASSED" (or "N CHECKS FAILED") summary line --
 # CLAUDE.md documents that tgauss's process exit code is NOT a reliable
@@ -42,8 +48,12 @@ param(
 )
 
 $testsDir = Join-Path $RepoRoot "tests"
+$scriptsDir = Join-Path $RepoRoot "scripts"
 
 & powershell -ExecutionPolicy Bypass -File (Join-Path $testsDir "verify_package_manifest.ps1") -RepoRoot $RepoRoot
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& powershell -ExecutionPolicy Bypass -File (Join-Path $scriptsDir "verify_public_api.ps1") -RepoRoot $RepoRoot
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $gaussTests = @(
@@ -62,7 +72,8 @@ $gaussTests = @(
     "quaids_workflow_test.e",
     "quaids_survey_workflow_test.e",
     "quaids_survey_test.e",
-    "quaids_replicate_test.e"
+    "quaids_replicate_test.e",
+    "quaids_compatibility_test.e"
 )
 
 if (-not $SkipPubtable) {
@@ -195,6 +206,10 @@ $guardTests = @(
     [pscustomobject]@{
         Script = "guard_error_cases\replicate_scalar_weight.e"
         Expected = "quaidsFit: weight must be scalar 0 or a Tx1 vector matching the number of observations."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\quaids_set_homogeneity_invalid.e"
+        Expected = "quaidsSetHomogeneity: homogeneous must be scalar 0 or 1."
     }
 )
 

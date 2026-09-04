@@ -40,7 +40,7 @@
 **
 *******************************************************************************/
 
-proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
+proc 3 = _quaidsElas(b, intcpt, prices, totexp, struct quaidsControl aCtl);
 
     local nint, n, alpha, gama, _beta, lambda, w, dw_dx, er, ep, epc, a_p,
         lx, lx2, b_p;
@@ -75,6 +75,17 @@ proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
     ep = -eye(n) + ep./w;
     epc = ep + er*w';
 
+    retp(er, ep, epc);
+endp;
+
+/*
+** Deprecated compatibility wrapper. This historical underscore-suffixed
+** name remains callable through the 0.x series, but is not supported public
+** API. Use quaidsElasFit() for a documented, struct-returning interface.
+*/
+proc 3 = quaidsElas_(b, intcpt, prices, totexp, struct quaidsControl aCtl);
+    local er, ep, epc;
+    { er, ep, epc } = _quaidsElas(b, intcpt, prices, totexp, aCtl);
     retp(er, ep, epc);
 endp;
 
@@ -129,7 +140,7 @@ proc (struct quaidsElasOut) = quaidsElasFit(b, v, intcpt, prices, totexp, struct
         wnam = aCtl.othnam[nint:nint-1+n];
     endif;
 
-    { er, ep, epc } = quaidsElas_(b, intcpt, prices, totexp, aCtl);
+    { er, ep, epc } = _quaidsElas(b, intcpt, prices, totexp, aCtl);
     t = er|vec(ep')|vec(epc');
 
 
@@ -152,7 +163,7 @@ proc (struct quaidsElasOut) = quaidsElasFit(b, v, intcpt, prices, totexp, struct
         do while j<=rows(b);
             be=b;
             be[j, i]=b[j, i]-e[k];
-            { er_e, ep_e, epc_e } = quaidsElas_(be, intcpt, prices, totexp, aCtl);
+            { er_e, ep_e, epc_e } = _quaidsElas(be, intcpt, prices, totexp, aCtl);
             te = er_e|vec(ep_e')|vec(epc_e');
             dtk = (te-t)/e[k];
             if k==1;

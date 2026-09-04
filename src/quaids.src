@@ -185,6 +185,7 @@ proc (struct quaidsOut) = quaidsFit(w,  intcpt,  prices,  totexp,  instr,  struc
 
     qOut.model = model;
     qOut.linear = aCtl.linear;
+    qOut.homogeneous = aCtl.homogenous;
     qOut.homogenous = aCtl.homogenous;
     qOut.maxiter = aCtl.maxiter;
     qOut.alpha0 = aCtl.alpha0;

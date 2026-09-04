@@ -13,8 +13,10 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is **pre-alpha** (package version `0.24.0`). The original
-roadmap plus Milestones 11-30 are complete, including the post-20 applied
+This library is a **public alpha** (package version `0.1.0`). Its public
+API is usable, documented, and tested, but the library has not yet reached
+the compatibility guarantees of a `1.0.0` release. The original roadmap
+plus Milestones 11-30 are complete, including the post-20 applied
 workflow layer (`quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()`,
 robust-covariance propagation, preflight diagnostics), sampling-weighted
 estimation (`quaidsFit()`'s optional `weight` argument, with a matching
@@ -23,7 +25,7 @@ workflow via `quaidsSurveyWorkflowFit()`), replicate-weight (jackknife/
 BRR-style) standard errors from caller-supplied replicate weight columns
 (`quaidsReplicateWeightFit()`), a keyword-argument API conversion, and
 homogeneity/symmetry imposition for the Shonkwiler-Yen zero-budget-share
-correction (`quaidsZeroFit()`'s `aCtl.homogenous` option). Completed
+correction (`quaidsZeroFit()`'s homogeneity option). Completed
 pieces include the estimation core, hypothesis tests, elasticities,
 preflight diagnostics, dataframe entry point, `pubtable` export,
 zero-budget correction, robust/bootstrap inference, release tooling, and
@@ -33,7 +35,13 @@ and next development milestones.
 
 ## Requirements
 
-- GAUSS 26 or later.
+| Component | Release status |
+| --- | --- |
+| GAUSS 26 or later | Supported; release tests currently use GAUSS 26.1.4 |
+| Windows | Supported and tested release platform |
+| macOS and Linux | Expected to work for installed-library use, but not release-tested or supported for `0.1.0` |
+| PowerShell build/test scripts | Maintainer tooling for Windows; not part of the portable runtime API |
+
 - The `optmt` GAUSS package is required for curvature-constrained estimation
   (`quaidsCurvatureFit()` and its bootstrap). Core `quaidsFit()` estimation
   does not require extra GAUSS packages.
@@ -72,7 +80,7 @@ library quaids;
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;          // 0 = QUAIDS, 1 = AIDS/LA-AIDS
 aCtl.maxiter = 100;       // 1 = one-step Stone-index LA-AIDS
-aCtl.homogenous = 1;      // impose homogeneity (and test/report symmetry)
+aCtl = quaidsSetHomogeneity(aCtl, 1); // impose homogeneity and test/report symmetry
 
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
 if not pOut.ok;
@@ -120,7 +128,7 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
   argument.
 - Homogeneity and Slutzky symmetry imposed via iterated FGLS with
   cross-equation restrictions (minimum-distance reparametrization), or left
-  unconstrained (`aCtl.homogenous = 0`) for hypothesis testing.
+  unconstrained (`aCtl = quaidsSetHomogeneity(aCtl, 0)`) for hypothesis testing.
 - Standalone Wald tests for homogeneity (`quaidsHomogeneityTest`) and joint
   homogeneity+symmetry (`quaidsJointTest`) against an unconstrained fit,
   plus a built-in symmetry-given-homogeneity test and overidentification
@@ -177,6 +185,21 @@ qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl
 - [CLAUDE.md](CLAUDE.md): detailed context file for AI coding assistants
   (and human contributors) working on this repository -- design decisions,
   real bugs found and fixed, GAUSS-specific gotchas.
+
+## Compatibility Policy
+
+Semantic-versioning compatibility starts with public alpha `0.1.0`.
+During the `0.x` series, minor releases may make documented breaking changes;
+patch releases are intended to remain backward compatible. Every breaking
+change will be called out in the changelog. The supported API is defined in
+[`docs/public-api.json`](docs/public-api.json) and checked automatically.
+
+The historical control field `aCtl.homogenous` remains callable through the
+entire `0.x` series, but new code should use
+`quaidsSetHomogeneity(aCtl, value)`. Returned fit/workflow structs expose the
+correctly spelled `homogeneous` field and retain `homogenous` as a deprecated
+read alias. The compatibility-only `quaidsElas_()` procedure is also retained
+through `0.x`; use `quaidsElasFit()` for supported application code.
 
 ## Reporting (optional, `pubtable`)
 

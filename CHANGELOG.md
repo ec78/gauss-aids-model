@@ -1,19 +1,67 @@
 # Changelog
 
-All notable changes to this project are documented here. This project is
-pre-alpha and does not yet follow strict semantic versioning guarantees
-(see `GOLD_STANDARD_TODO.md` for the release roadmap); version numbers
-below match `package.json` at the time each milestone landed.
+All notable changes to this project are documented here. Public semantic
+versioning begins with `0.1.0`; the higher-numbered entries below are retained
+as internal milestone history and were never public compatibility promises.
 
-## Unreleased
+## 0.1.0 - Unreleased
 
-Three release-packaging fixes (below), prompted by the repo owner
-reporting the 0.24.0 artifact "not installing properly," plus Milestone
-31's comprehensive example suite. None changes any proc's behavior or
-public API surface (no `.src`/`.sdf` file in `package.json`'s `src`
-array gained/lost a struct field or a computational change), matching
-this project's established build-tooling/documentation no-version-bump
-policy (Milestone 7/8 precedent).
+First public alpha, closing Phase 0 ("Define the Public Contract") of
+`PUBLIC_RELEASE_ROADMAP.md` (PR-001/PR-002/PR-003). The release date will
+be added here and to `CITATION.cff` when the release commit is tagged;
+everything below this point, including internal-milestone-numbered work
+that predates the public-release effort, ships as part of `0.1.0` since
+this is the first version with any public compatibility promise at all.
+
+### Public release contract
+
+- Synchronized the version (`0.1.0`) across `package.json`, `CITATION.cff`,
+  `docs/public-api.json`, and this changelog entry's own heading, and
+  added `scripts/verify_public_api.ps1` -- an automated check, run as
+  part of `tests/run_source_tests.ps1` (and therefore CI) -- that fails
+  if those versions ever drift apart.
+- Documented the GAUSS/operating-system support matrix (README
+  Requirements table) and the `0.x` compatibility policy (README
+  Compatibility Policy section): patch releases stay backward compatible,
+  minor `0.x` releases may contain documented breaking changes, and
+  nothing deprecated is removed before `1.0.0`.
+- Added `quaidsSetHomogeneity()`/`quaidsGetHomogeneity()` as the correctly
+  spelled control setter/getter for the historical, misspelled
+  `aCtl.homogenous` field (kept, unavoidably, since GAUSS struct fields
+  cannot be renamed without breaking source compatibility). Returned
+  `quaidsOut`, `quaidsZeroOut`, and `quaidsWorkflowOut` structs now also
+  expose a correctly spelled `homogeneous` field alongside the deprecated
+  `homogenous` alias (both populated with the same value).
+- Classified `quaidsElas_()` as a deprecated compatibility procedure in
+  favor of `quaidsElasFit()`; its implementation moved to a private
+  `_quaidsElas()` helper with `quaidsElas_()` now a thin wrapper around
+  it, confirmed byte-identical to the pre-rename behavior.
+- Added `docs/public-api.json`, a machine-readable inventory of supported
+  procedures, deprecated/compatibility procedures, and public structs,
+  reconciled against `src/` and `docs/COMMAND_REFERENCE.md` by
+  `scripts/verify_public_api.ps1`. Added `docs/command-reference/`
+  pages for `quaidsSetHomogeneity`, `quaidsGetHomogeneity`, and
+  `quaidsElas_`, and a new "Compatibility (Deprecated)" section in
+  `docs/COMMAND_REFERENCE.md`.
+- Added `tests/quaids_compatibility_test.e` (15 checks) and
+  `tests/guard_error_cases/quaids_set_homogeneity_invalid.e`, exercising
+  the setter/getter, both structs' dual homogeneity fields, and
+  `quaidsElas_()`'s continued exact equivalence to `quaidsElasFit()`; both
+  run as part of `tests/run_source_tests.ps1`. Also extended
+  `tests/package_public_api.e` to exercise the same compatibility surface
+  against the real installed package, not just the source tree.
+- Corrected `docs/command-reference/quaidsControlCreate.md`'s `aCtl.b0`
+  description for `quaidsZeroFit()`: the required warm-start shape/basis
+  is `zOut.bRaw`, not `zOut.b` (matching Milestone 30's own fix to the
+  code and every other doc page -- this one page had been missed).
+
+The three release-packaging fixes and the Milestone 31 example suite
+below predate the public-release effort and were originally recorded
+under an "Unreleased" heading with no version bump of their own (no
+`.src`/`.sdf` file gained or lost a struct field or a computational
+change) -- folded into this `0.1.0` entry unchanged rather than
+re-litigated, per PR-001's "move every change included in the artifact
+out of Unreleased into the selected release entry."
 
 ### Added
 - Milestone 31: `examples/` grew from 3 terse, sparsely-commented
@@ -1022,7 +1070,7 @@ work, so the package version did not bump for it -- see
   `matrix`-typed struct field), surfaced by the first-ever exercise of that
   code path in `quaids_formula_parity_test.e`.
 
-## 0.1.0 - 2026-07-20
+## Internal milestone 0.1.0 - 2026-07-20
 
 ### Added
 - Initial `quaids` package scaffold: renamed from `aids` (Milestone 0;

@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "package": "quaids",
+  "version": "0.1.0",
+  "maturity": "public-alpha",
+  "compatibility_policy": {
+    "starts_at": "0.1.0",
+    "patch_releases": "backward-compatible",
+    "minor_zero_releases": "may contain documented breaking changes",
+    "deprecated_removal": "not-before-1.0.0"
+  },
+  "supported_procedures": [
+    "getDefaultQuaidsControl",
+    "printQuaids",
+    "printQuaidsCurvature",
+    "printQuaidsCurvatureBootstrap",
+    "printQuaidsElas",
+    "printQuaidsPreflight",
+    "printQuaidsReplicateWeight",
+    "printQuaidsRobust",
+    "printQuaidsRobustBootstrap",
+    "printQuaidsShares",
+    "printQuaidsWelfare",
+    "printQuaidsZero",
+    "ptFromQuaids",
+    "ptFromQuaidsElas",
+    "ptFromQuaidsFamily",
+    "ptModelFromQuaids",
+    "ptModelFromQuaidsElas",
+    "ptTablesFromQuaidsElas",
+    "ptTablesFromQuaidsWorkflow",
+    "quaids",
+    "quaidsControlCreate",
+    "quaidsCurvatureBootstrapCI",
+    "quaidsCurvatureBootstrapFit",
+    "quaidsCurvatureFit",
+    "quaidsElas",
+    "quaidsElasFit",
+    "quaidsFit",
+    "quaidsFull",
+    "quaidsGetHomogeneity",
+    "quaidsHomogeneityTest",
+    "quaidsJointTest",
+    "quaidsPreflight",
+    "quaidsQuadraticTest",
+    "quaidsReplicateWeightFit",
+    "quaidsRobustBootstrapCovariance",
+    "quaidsRobustBootstrapFit",
+    "quaidsRobustCovariance",
+    "quaidsRobustFit",
+    "quaidsSetHomogeneity",
+    "quaidsSharesFit",
+    "quaidsSlutzky",
+    "quaidsSurveyWorkflowFit",
+    "quaidsWelfareFit",
+    "quaidsWorkflowFit",
+    "quaidsWorkflowScenarioFit",
+    "quaidsZeroFit"
+  ],
+  "optional_adapter_procedures": [
+    "ptFromQuaids",
+    "ptFromQuaidsElas",
+    "ptFromQuaidsFamily",
+    "ptModelFromQuaids",
+    "ptModelFromQuaidsElas",
+    "ptTablesFromQuaidsElas",
+    "ptTablesFromQuaidsWorkflow"
+  ],
+  "compatibility_procedures": [
+    {
+      "name": "quaidsElas_",
+      "status": "deprecated",
+      "replacement": "quaidsElasFit",
+      "removal": "not-before-1.0.0"
+    }
+  ],
+  "internal_procedures": [
+    "quantile"
+  ],
+  "public_structs": {
+    "source": "src/quaids.sdf",
+    "field_scope": "all-declared-fields",
+    "names": [
+      "quaidsControl",
+      "quaidsOut",
+      "quaidsElasOut",
+      "quaidsSharesOut",
+      "quaidsCurvOut",
+      "quaidsCurvBootOut",
+      "quaidsWelfareOut",
+      "quaidsZeroOut",
+      "quaidsRobustOut",
+      "quaidsRobustBootOut",
+      "quaidsPreflightOut",
+      "quaidsWorkflowOut",
+      "quaidsReplicateOut"
+    ]
+  },
+  "deprecated_fields": [
+    {
+      "structs": [
+        "quaidsControl",
+        "quaidsOut",
+        "quaidsZeroOut",
+        "quaidsWorkflowOut"
+      ],
+      "name": "homogenous",
+      "replacement": "quaidsSetHomogeneity/quaidsGetHomogeneity for control; homogeneous for returned structs",
+      "removal": "not-before-1.0.0"
+    }
+  ]
+}

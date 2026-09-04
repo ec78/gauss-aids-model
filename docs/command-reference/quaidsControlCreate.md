@@ -26,7 +26,7 @@ None.
 | `alpha0` | `0` | Fixed value of the translog price-index intercept `alpha_0` |
 | `err` | `.0001` | Relative parameter-change convergence tolerance |
 | `othnam` | `""` | Optional alternate variable names for printed output |
-| `b0` | `0` | Optional user-supplied starting values; `0` = use built-in starting values. For `quaidsFit()`, a supplied matrix must match the reduced raw coefficient matrix shape used by the homogeneity stage (`qOut.homogB`). For `quaidsZeroFit()`, it must match the zero-corrected coefficient shape (`zOut.b`) |
+| `b0` | `0` | Optional user-supplied starting values; `0` = use built-in starting values. For `quaidsFit()`, a supplied matrix must match the reduced raw coefficient matrix shape used by the homogeneity stage (`qOut.homogB`). For `quaidsZeroFit()`, it must match the raw, pre-recovery coefficient shape (`zOut.bRaw`) -- **not** `zOut.b`, which is in recovered, absolute-price form and can differ in both shape and basis |
 | `relax` | `1` | Under-relaxation factor for the iterated (`aCtl.maxiter>1`) fixed-point update, `(0,1]`; `1` = no damping (byte-identical to every release before Milestone 12). See Remarks |
 
 Structure-inference return typing means callers do not need to pre-declare
@@ -41,6 +41,14 @@ Set `aCtl.linear = 1` for LA-AIDS/iterated AIDS, `0` for QUAIDS. Set
 `aCtl.homogenous = 0` to fit unconstrained, e.g. before calling
 `quaidsHomogeneityTest`/`quaidsJointTest`, which both require an
 unconstrained fit.
+
+`aCtl.homogenous` is a historical field-name misspelling retained for
+source compatibility through the `0.x` series. New application code
+should read/write it via [quaidsGetHomogeneity](quaidsGetHomogeneity.md)/
+[quaidsSetHomogeneity](quaidsSetHomogeneity.md) instead of referencing
+the misspelled field name directly -- see the
+[compatibility policy](../../README.md#compatibility-policy) and
+[`docs/public-api.json`](../public-api.json).
 
 `aCtl.relax` (Milestone 12) trades convergence speed for stability on the
 iterated estimator's fixed-point update: `b_new = relax*b_solved +
@@ -69,4 +77,5 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 ## See Also
 
-[getDefaultQuaidsControl](getDefaultQuaidsControl.md), [quaidsFit](quaidsFit.md)
+[getDefaultQuaidsControl](getDefaultQuaidsControl.md), [quaidsFit](quaidsFit.md),
+[quaidsSetHomogeneity](quaidsSetHomogeneity.md), [quaidsGetHomogeneity](quaidsGetHomogeneity.md)

@@ -80,6 +80,7 @@ proc (struct quaidsWorkflowOut) = quaidsWorkflowFit(w, intcpt, prices, totexp, i
 
     wfOut.model = qOut.model;
     wfOut.linear = qOut.linear;
+    wfOut.homogeneous = qOut.homogeneous;
     wfOut.homogenous = qOut.homogenous;
     wfOut.n = qOut.n;
     wfOut.nobs = qOut.nobs;

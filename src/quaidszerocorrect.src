@@ -669,6 +669,7 @@ proc (struct quaidsZeroOut) = quaidsZeroFit(w, intcpt, prices, totexp, instr, st
     zOut.n1 = n1;
     zOut.nint = nint;
     zOut.nobs = nobs;
+    zOut.homogeneous = aCtl.homogenous;
     zOut.homogenous = aCtl.homogenous;
     zOut.xnam = xnam;
     zOut.wnam = wnam;

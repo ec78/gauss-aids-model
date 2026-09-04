@@ -15,6 +15,8 @@ sections.
 
 - [quaidsControlCreate](command-reference/quaidsControlCreate.md)
 - [getDefaultQuaidsControl](command-reference/getDefaultQuaidsControl.md)
+- [quaidsSetHomogeneity](command-reference/quaidsSetHomogeneity.md)
+- [quaidsGetHomogeneity](command-reference/quaidsGetHomogeneity.md)
 
 ## Estimation
 
@@ -97,3 +99,13 @@ the [Reporting section of the usage guide](USAGE_GUIDE.md#reporting-pubtable).
 - [ptTablesFromQuaidsElas](command-reference/ptTablesFromQuaidsElas.md)
 - [ptTablesFromQuaidsWorkflow](command-reference/ptTablesFromQuaidsWorkflow.md)
 - [ptFromQuaidsFamily](command-reference/ptFromQuaidsFamily.md)
+
+## Compatibility (Deprecated)
+
+Retained callable through the `0.x` series (not removed before `1.0.0`)
+but not part of the supported API for new code -- see the
+[compatibility policy](../README.md#compatibility-policy) and
+[`docs/public-api.json`](public-api.json).
+
+- [quaidsElas_](command-reference/quaidsElas_.md) -- use
+  [quaidsElasFit](command-reference/quaidsElasFit.md) instead.

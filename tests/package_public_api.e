@@ -132,6 +132,18 @@ aCtlAlias = getDefaultQuaidsControl();
 call assert_true(aCtlAlias.maxiter == aCtl.maxiter and aCtlAlias.homogenous == aCtl.homogenous,
     "getDefaultQuaidsControl does not match quaidsControlCreate");
 
+/* quaidsSetHomogeneity()/quaidsGetHomogeneity() (public release
+   compatibility API): confirm the installed package's own .lcg catalog
+   actually resolves these, not just that they compile source-tree-side. */
+call assert_true(quaidsGetHomogeneity(aCtl) == aCtl.homogenous,
+    "quaidsGetHomogeneity does not match aCtl.homogenous");
+aCtl = quaidsSetHomogeneity(aCtl, 0);
+call assert_true(aCtl.homogenous == 0 and quaidsGetHomogeneity(aCtl) == 0,
+    "quaidsSetHomogeneity(aCtl, 0) did not take effect");
+aCtl = quaidsSetHomogeneity(aCtl, 1);
+call assert_true(aCtl.homogenous == 1 and quaidsGetHomogeneity(aCtl) == 1,
+    "quaidsSetHomogeneity(aCtl, 1) did not take effect");
+
 aCtl.linear = 0;
 aCtl.maxiter = 100;
 aCtl.homogenous = 1;
@@ -166,6 +178,27 @@ call assert_true(maxc(maxc(abs(b2 - qOut.bS))) == 0 and maxc(maxc(abs(v2 - qOut.
     "legacy quaids() wrapper output does not match quaidsFit()");
 
 call printQuaids(qOut);
+
+/* qOut.homogeneous/homogenous dual fields (public release compatibility
+   API): confirm the installed package's .sdf/.lcg picked up the new
+   struct field, not just that it compiles source-tree-side. */
+call assert_true(qOut.homogeneous == qOut.homogenous and qOut.homogeneous == 1,
+    "qOut.homogeneous does not match the deprecated qOut.homogenous alias");
+
+/* quaidsElas_() deprecated compatibility wrapper: confirm the installed
+   package still resolves it (renamed internally to _quaidsElas()) and
+   that it matches quaidsElasFit()'s own point estimates exactly. */
+nQE = qOut.n;
+nintQE = qOut.nint;
+mQE = meanc(qOut.intcptFull~prices~totexp);
+intcptQE = mQE[1:1+nintQE];
+pricesQE = mQE[1+nintQE+1:1+nintQE+nQE];
+totexpQE = mQE[1+nintQE+nQE+1];
+{ erQE, epQE, epcQE } = quaidsElas_(qOut.bestB, intcptQE, pricesQE, totexpQE, aCtl);
+elasOutQE = quaidsElasFit(qOut.bestB, qOut.bestV, intcptQE, pricesQE, totexpQE, aCtl);
+call assert_true(maxc(maxc(abs(erQE - elasOutQE.er))) == 0 and maxc(maxc(abs(epQE - elasOutQE.ep))) == 0
+    and maxc(maxc(abs(epcQE - elasOutQE.epc))) == 0,
+    "quaidsElas_() does not match quaidsElasFit() from the installed package");
 
 
 /* --- quaidsFull(): dataframe entry point --- */

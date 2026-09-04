@@ -24,6 +24,33 @@ proc (struct quaidsControl) = getDefaultQuaidsControl();
 endp;
 
 /*
+** quaidsSetHomogeneity -- correctly spelled public setter for the historical
+** quaidsControl.homogenous field. The field spelling is retained for source
+** compatibility through the 0.x series; new application code should use this
+** procedure so it does not depend on the misspelling.
+*/
+proc (struct quaidsControl) = quaidsSetHomogeneity(struct quaidsControl aCtl, homogeneous);
+    if rows(homogeneous)*cols(homogeneous) /= 1 or scalmiss(homogeneous) or
+        (homogeneous /= 0 and homogeneous /= 1);
+        errorlog "quaidsSetHomogeneity: homogeneous must be scalar 0 or 1.";
+        end;
+    endif;
+
+    aCtl.homogenous = homogeneous;
+    retp(aCtl);
+endp;
+
+/*
+** quaidsGetHomogeneity -- correctly spelled public getter matching
+** quaidsSetHomogeneity(), so application code can read the control
+** setting back without referencing the misspelled aCtl.homogenous field
+** directly either.
+*/
+proc (1) = quaidsGetHomogeneity(struct quaidsControl aCtl);
+    retp(aCtl.homogenous);
+endp;
+
+/*
 ** _quaidsNormalizeWeight -- shared validator/normalizer for estimator paths
 ** that should fail fast on invalid sampling weights. The only scalar sentinel
 ** is 0; any real weight must be a finite, nonnegative Tx1 vector with positive
