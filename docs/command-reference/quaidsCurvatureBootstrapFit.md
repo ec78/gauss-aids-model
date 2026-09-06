@@ -14,9 +14,16 @@ printing -- see [printQuaidsCurvatureBootstrap](printQuaidsCurvatureBootstrap.md
 ## Format
 
 ```gauss
+library optmt, quaids;
+#include quaidscurvature.src
+
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B);
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=42);   // Milestone 28
 ```
+
+Not loaded by `library quaids;` alone -- see
+[quaidsCurvatureFit](quaidsCurvatureFit.md)'s Format section and
+[`docs/public-api.json`](../public-api.json)'s `optional_modules` entry.
 
 ## Parameters
 
@@ -101,7 +108,8 @@ version before this fix, re-run with the current release.
 ## Examples
 
 ```gauss
-library optmt;
+library optmt, quaids;
+#include quaidscurvature.src
 
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "package": "quaids",
   "version": "0.1.0",
   "maturity": "public-alpha",
@@ -57,14 +57,35 @@
     "quaidsWorkflowScenarioFit",
     "quaidsZeroFit"
   ],
-  "optional_adapter_procedures": [
-    "ptFromQuaids",
-    "ptFromQuaidsElas",
-    "ptFromQuaidsFamily",
-    "ptModelFromQuaids",
-    "ptModelFromQuaidsElas",
-    "ptTablesFromQuaidsElas",
-    "ptTablesFromQuaidsWorkflow"
+  "optional_modules": [
+    {
+      "name": "pubtable_adapter",
+      "requires_package": "pubtable",
+      "source": "src/pubtable_quaids.src",
+      "setup": "library pubtable, quaids; #include quaids.sdf #include pubtable_quaids.src",
+      "procedures": [
+        "ptFromQuaids",
+        "ptFromQuaidsElas",
+        "ptFromQuaidsFamily",
+        "ptModelFromQuaids",
+        "ptModelFromQuaidsElas",
+        "ptTablesFromQuaidsElas",
+        "ptTablesFromQuaidsWorkflow"
+      ]
+    },
+    {
+      "name": "curvature",
+      "requires_package": "optmt",
+      "source": "src/quaidscurvature.src",
+      "setup": "library optmt, quaids; #include quaidscurvature.src",
+      "procedures": [
+        "printQuaidsCurvature",
+        "printQuaidsCurvatureBootstrap",
+        "quaidsCurvatureBootstrapCI",
+        "quaidsCurvatureBootstrapFit",
+        "quaidsCurvatureFit"
+      ]
+    }
   ],
   "compatibility_procedures": [
     {

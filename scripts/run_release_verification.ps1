@@ -129,30 +129,41 @@ if ($InstallArtifact) {
 
 if (-not $SkipInstalledPackageTest) {
     Invoke-Step "Installed-package public API test" {
-        $wrapper = Join-Path ([System.IO.Path]::GetTempPath()) ("quaids_pkg_" + [System.Guid]::NewGuid().ToString("N") + ".e")
+        # Two separate wrapper invocations, not one wrapper chaining two
+        # `run` statements -- confirmed directly that GAUSS's `run` does
+        # not return to the calling script afterward (closer to exec than
+        # call/return): a wrapper with `run "a.e"; new; run "b.e";` only
+        # ever executed "a.e", with "b.e" silently never running at all
+        # despite the overall step still reporting success. Each installed-
+        # package test file gets its own fresh wrapper/process instead.
+        #
+        # `library quaids;` inside these files resolves against GAUSS's own
+        # configured package directory (normally <GaussHome>/pkgs), not
+        # -InstallRoot -- this step is only a real end-to-end check when
+        # -InstallRoot matches that directory (the default). A non-default
+        # -InstallRoot still exercises build/install staging correctly; it
+        # just means this specific step will not find the package unless
+        # GAUSS is separately configured to look there.
         $gaussTestsDir = $testsDir -replace "\\", "/"
-        Set-Content -Path $wrapper -Value @(
-            "new;",
-            "chdir `"$gaussTestsDir`";",
-            "run `"$gaussTestsDir/package_public_api.e`";"
-        )
-        # `library quaids;` inside package_public_api.e resolves against
-        # GAUSS's own configured package directory (normally
-        # <GaussHome>/pkgs), not -InstallRoot -- this step is only a real
-        # end-to-end check when -InstallRoot matches that directory (the
-        # default). A non-default -InstallRoot still exercises
-        # build/install staging correctly; it just means this specific step
-        # will not find the package unless GAUSS is separately configured
-        # to look there.
+        $installedPackageTests = @("package_public_api.e", "package_public_api_core_only.e")
 
-        try {
-            $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-nb", "-b", "-x", $wrapper)
-            $result.Output
-            if ($result.ExitCode -ne 0 -or ($result.Output -match "Program execute failed|error G[0-9]+|Program compile failed")) {
-                exit 1
+        foreach ($testFile in $installedPackageTests) {
+            $wrapper = Join-Path ([System.IO.Path]::GetTempPath()) ("quaids_pkg_" + [System.Guid]::NewGuid().ToString("N") + ".e")
+            Set-Content -Path $wrapper -Value @(
+                "new;",
+                "chdir `"$gaussTestsDir`";",
+                "run `"$gaussTestsDir/$testFile`";"
+            )
+
+            try {
+                $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-nb", "-b", "-x", $wrapper)
+                $result.Output
+                if ($result.ExitCode -ne 0 -or ($result.Output -match "Program execute failed|error G[0-9]+|Program compile failed")) {
+                    exit 1
+                }
+            } finally {
+                Remove-Item -LiteralPath $wrapper -ErrorAction SilentlyContinue
             }
-        } finally {
-            Remove-Item -LiteralPath $wrapper -ErrorAction SilentlyContinue
         }
     }
 }

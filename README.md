@@ -42,9 +42,11 @@ and next development milestones.
 | macOS and Linux | Expected to work for installed-library use, but not release-tested or supported for `0.1.0` |
 | PowerShell build/test scripts | Maintainer tooling for Windows; not part of the portable runtime API |
 
-- The `optmt` GAUSS package is required for curvature-constrained estimation
-  (`quaidsCurvatureFit()` and its bootstrap). Core `quaidsFit()` estimation
-  does not require extra GAUSS packages.
+- Core `quaidsFit()` estimation requires no external GAUSS package --
+  `library quaids;` alone is sufficient. `optmt` is required only for
+  curvature-constrained estimation (`quaidsCurvatureFit()` and its
+  bootstrap), an opt-in adapter -- see
+  [Curvature Imposition](#curvature-imposition-optional-optmt) below.
 - The optional `pubtable` package (LaTeX/Markdown/CSV/RTF/HTML/XLSX table
   export) is needed only if you use `src/pubtable_quaids.src` -- see
   [Reporting](#reporting-optional-pubtable) below.
@@ -200,6 +202,27 @@ entire `0.x` series, but new code should use
 correctly spelled `homogeneous` field and retain `homogenous` as a deprecated
 read alias. The compatibility-only `quaidsElas_()` procedure is also retained
 through `0.x`; use `quaidsElasFit()` for supported application code.
+
+## Curvature Imposition (optional, `optmt`)
+
+```gauss
+library optmt, quaids;
+#include quaidscurvature.src   // not in package.json's src array -- see docs/COMMAND_REFERENCE.md
+
+aCtl.homogenous = 1;    // required -- quaidsCurvatureFit needs a
+                        // homogeneity+symmetry-constrained starting fit
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+
+cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
+call printQuaidsCurvature(cOut);
+print "Slutzky eigenvalues at the sample mean (all should be <= 0):" cOut.eigenvalues';
+```
+
+Requires the [optmt](https://www.aptech.com) package installed separately
+-- not a `library quaids;` dependency, so core estimation never requires
+it. See `examples/10_curvature_imposition.e` for a full runnable example
+and [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md#imposing-curvature-diewert-wales)
+for the AIDS/QUAIDS details and known standard-error limitations.
 
 ## Reporting (optional, `pubtable`)
 

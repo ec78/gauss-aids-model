@@ -97,6 +97,39 @@ evidence).
 
 ## Phase 1: Make Installation Reproducible
 
+**Status: PR-101 complete.** Implemented the "Recommended" option:
+`quaidscurvature.src` is no longer in `package.json`'s `src` array or
+`deps`; it is an opt-in adapter requiring `library optmt, quaids;
+#include quaidscurvature.src`, mirroring the existing `pubtable` adapter
+exactly. `docs/public-api.json`'s new `optional_modules` array and
+`scripts/verify_public_api.ps1` enforce this going forward. See
+CLAUDE.md's "Public Release Phase 1" section for the real GAUSS quirks
+found while implementing and testing it.
+
+**PR-102 partially complete.** Everything independently verifiable from
+this environment is done (fresh install-directory delete/recreate every
+release-verification run, `library quaids;` loading in a brand-new GAUSS
+job, the installed-package gate -- now two separate files, one proving
+core needs no `optmt` -- running against a freshly reinstalled copy, not
+a stale development install). The real GAUSS Tools > Install Application
+/ Package Manager acceptance evidence needs a clean machine and GUI
+access this environment doesn't have; the repo owner will run that pass
+themselves. Suggested checklist for that pass:
+1. Install `quaids <version>.zip` via Tools > Install Application on a
+   machine that has never had this package installed.
+2. In a fresh GAUSS session, confirm `library quaids;` loads with no
+   manual source-path configuration, then run the core quick start from
+   the README.
+3. Separately install `optmt`, then confirm
+   `library optmt, quaids; #include quaidscurvature.src` plus a
+   `quaidsCurvatureFit()` call works.
+4. Install the immediately preceding internal artifact (`0.24.0`) first,
+   then install `0.1.0` over it, and confirm the result matches a clean
+   `0.1.0` install (no stale `.lcg` entries from the old catalog).
+5. Uninstall, then reinstall `0.1.0` from scratch, and re-confirm step 2.
+6. Record the exact GAUSS version, OS, and pass/fail outcome of each step
+   for this release candidate.
+
 ### PR-101 — Resolve the `optmt` dependency model
 
 - **Priority / effort:** P0 / M

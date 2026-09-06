@@ -69,12 +69,25 @@ sections.
 - [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
 - [printQuaidsReplicateWeight](command-reference/printQuaidsReplicateWeight.md)
 
-## Curvature Imposition (requires `optmt`)
+## Curvature Imposition (optional, requires `optmt`)
 
-`src/quaidscurvature.src` is listed in `package.json`'s `src` array (real,
-required public API) but has a hard compile-time dependency on GAUSS's
-`optmt` package (`package.json`'s `deps` array lists `optmt` accordingly)
--- `library quaids;` requires `optmt` installed and loaded too.
+`src/quaidscurvature.src` is **not** listed in `package.json`'s `src`
+array and is not loaded by `library quaids;` -- it has a hard compile-time
+dependency on the `optmt` package's struct types, and core estimation
+(`quaidsFit`, elasticities, welfare, zero-share correction, robust/
+replicate-weight standard errors, the applied workflow) needs no external
+package at all. A caller who wants curvature imposition `#include`s
+`src/quaidscurvature.src` directly, after loading both `quaids` and
+`optmt`:
+
+```gauss
+library optmt, quaids;
+#include quaidscurvature.src
+```
+
+See [`docs/public-api.json`](public-api.json)'s `optional_modules` entry
+and the
+[Imposing Curvature section of the usage guide](USAGE_GUIDE.md#imposing-curvature-diewert-wales).
 
 - [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)
 - [printQuaidsCurvature](command-reference/printQuaidsCurvature.md)

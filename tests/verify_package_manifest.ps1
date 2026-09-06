@@ -56,9 +56,15 @@ if ($missing.Count -gt 0) {
 # -- it has a hard compile-time dependency on pubtable.sdf's struct types
 # (see CLAUDE.md's "Milestone 6: reporting via pubtable" section), so
 # listing it would make pubtable a hard dependency for the whole package to
-# even compile. Any other .src/.sdf file added to src/ is expected to be a
-# required part of the package and must be listed.
-$intentionallyUnlisted = @("pubtable_quaids.src")
+# even compile. quaidscurvature.src is excluded for the identical reason
+# (public release roadmap PR-101): it has a hard compile-time dependency on
+# optmt's struct types, and listing it would make optmt a hard dependency
+# for the whole package -- curvature imposition is now an opt-in adapter,
+# matching pubtable's own treatment (`library optmt, quaids;` +
+# `#include quaidscurvature.src`, see docs/USAGE_GUIDE.md). Any other
+# .src/.sdf file added to src/ is expected to be a required part of the
+# package and must be listed.
+$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src")
 
 $actualSrc = Get-ChildItem -LiteralPath $srcDir -File |
     Where-Object { $_.Extension -in ".src", ".sdf" } |

@@ -78,6 +78,16 @@ new;
 
 library optmt, quaids;
 
+/* Public release roadmap PR-101: quaidscurvature.src is no longer listed
+   in package.json's src array (it has a hard compile-time dependency on
+   optmt's struct types, so listing it would force optmt on every quaids
+   user) -- it is now an opt-in adapter, like the pubtable one, requiring
+   this explicit #include. See docs/public-api.json's "optional_modules"
+   entry and tests/package_public_api_core_only.e, which proves core
+   usage needs no optmt at all (this file's own `library optmt, quaids;`
+   above means it does NOT independently demonstrate that). */
+#include ../src/quaidscurvature.src
+
 proc (0) = assert_true(ok, msg);
     if not ok;
         errorlog "package_public_api.e failed: " $+ msg;

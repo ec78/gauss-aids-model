@@ -30,6 +30,11 @@ be run silently and printed only when wanted -- mirrors the
 `quaidsFit()`/`printQuaids()` and `quaidsElasFit()`/`printQuaidsElas()`
 splits.
 
+Like [quaidsCurvatureFit](quaidsCurvatureFit.md), this proc lives in the
+optional `quaidscurvature.src` adapter (`library optmt, quaids; #include
+quaidscurvature.src`), not the always-loaded `library quaids;` catalog --
+see that page's Format section.
+
 ## Examples
 
 ```gauss

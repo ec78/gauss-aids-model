@@ -11,8 +11,15 @@ draws -- no new resampling or refitting.
 ## Format
 
 ```gauss
+library optmt, quaids;
+#include quaidscurvature.src
+
 { ciLower, ciUpper } = quaidsCurvatureBootstrapCI(bootOut, alpha);
 ```
+
+Not loaded by `library quaids;` alone -- see
+[quaidsCurvatureFit](quaidsCurvatureFit.md)'s Format section and
+[`docs/public-api.json`](../public-api.json)'s `optional_modules` entry.
 
 ## Parameters
 

@@ -35,6 +35,11 @@ SE is never replaced, only supplemented, so a caller can see directly
 where the two disagree (typically wherever the estimated Cholesky factor
 sits at or near the boundary of the negative-semidefinite cone).
 
+Like [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md), this
+proc lives in the optional `quaidscurvature.src` adapter (`library optmt,
+quaids; #include quaidscurvature.src`), not the always-loaded `library
+quaids;` catalog -- see that page's Format section.
+
 ## Examples
 
 ```gauss

@@ -9,12 +9,19 @@
 ** Requires the optmt package. See docs/USAGE_GUIDE.md's "Imposing
 ** Curvature (Diewert-Wales)" section.
 **
+** src/quaidscurvature.src is NOT loaded by `library quaids;` alone -- it
+** is an optional, opt-in adapter (like the pubtable reporting adapter),
+** since it has a hard compile-time dependency on optmt's struct types
+** and core estimation needs no external package at all. See
+** docs/public-api.json's "optional_modules" entry.
+**
 ** Run from the examples/ directory:
 **   tgauss -b -x 10_curvature_imposition.e
 */
 
 new;
 library optmt, quaids;
+#include ../src/quaidscurvature.src
 #include example_data.src
 
 /* ---------------------------------------------------------------------

@@ -152,8 +152,11 @@ for the exact switch values.
 - Curvature imposition (Diewert-Wales Cholesky reparametrization,
   `quaidsCurvatureFit`) is available for LA-AIDS/AIDS (`aCtl.linear=1`,
   Milestone 10) and QUAIDS (`aCtl.linear=0`, Milestone 13), imposed
-  locally at the sample mean, requiring the `optmt` package
-  (`package.json`'s `deps` array, no longer empty). QUAIDS was initially
+  locally at the sample mean, requiring the `optmt` package -- an opt-in
+  adapter (`src/quaidscurvature.src`, not in `package.json`'s `src` array,
+  same treatment as the optional `pubtable` reporting adapter), not a
+  `library quaids;` dependency; see `docs/public-api.json`'s
+  `optional_modules` entry. QUAIDS was initially
   deferred at Milestone 10 -- its Slutzky matrix adds a `lambda`-
   dependent cross-term entangling three nonlinear parameter blocks
   instead of two -- but this resolved (Milestone 13) using the same

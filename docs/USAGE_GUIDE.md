@@ -328,10 +328,16 @@ semidefiniteness) but never imposes it.
 [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md) can impose
 it locally, at the sample mean, for LA-AIDS/AIDS (`aCtl.linear = 1`) and,
 since Milestone 13, QUAIDS (`aCtl.linear = 0`) too -- requires the
-`optmt` package either way:
+`optmt` package either way.
+
+`src/quaidscurvature.src` is **not** loaded by `library quaids;` alone --
+it is an optional, opt-in adapter (like the `pubtable` reporting adapter
+below), since it has a hard compile-time dependency on `optmt`'s struct
+types and core estimation needs no external package at all:
 
 ```gauss
 library optmt, quaids;
+#include quaidscurvature.src
 
 aCtl = quaidsControlCreate();
 aCtl.linear = 1;         // or 0 for QUAIDS

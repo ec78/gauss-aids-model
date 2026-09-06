@@ -92,15 +92,26 @@ foreach ($entry in $srcEntries) {
     }
 }
 
-$pubtablePath = Join-Path $srcDir "pubtable_quaids.src"
-$pubtableText = ""
-if (Test-Path -LiteralPath $pubtablePath) {
-    $pubtableText = Get-Content -LiteralPath $pubtablePath -Raw
-}
-
+# Optional modules (public release roadmap PR-101/PR-003): files
+# deliberately excluded from package.json's src array (a hard compile-time
+# dependency on another package's struct types would otherwise force that
+# package on every quaids user) -- pubtable_quaids.src (needs pubtable) and
+# quaidscurvature.src (needs optmt). Each still ships in the installed
+# package's src/ directory and is real, documented, supported API; a
+# caller opts in via an explicit #include, per each module's own "setup"
+# string in docs/public-api.json.
 $corePocs = Get-ProcNames -Text $sourceText
-$adapterProcs = Get-ProcNames -Text $pubtableText
-$allKnownProcs = @($corePocs + $adapterProcs | Sort-Object -Unique)
+$moduleProcsBySource = @{}
+foreach ($module in @($publicApi.optional_modules)) {
+    $modulePath = Join-Path $RepoRoot ([string]$module.source)
+    if (-not (Test-Path -LiteralPath $modulePath)) {
+        throw "docs/public-api.json optional_modules['$($module.name)'].source not found: $($module.source)"
+    }
+    $moduleText = Get-Content -LiteralPath $modulePath -Raw
+    $moduleProcsBySource[[string]$module.source] = Get-ProcNames -Text $moduleText
+}
+$allModuleProcs = @($moduleProcsBySource.Values | ForEach-Object { $_ } | Sort-Object -Unique)
+$allKnownProcs = @($corePocs + $allModuleProcs | Sort-Object -Unique)
 
 $commandRefText = Get-Content -LiteralPath $commandRefPath -Raw
 $linkMatches = [regex]::Matches($commandRefText, '\[([A-Za-z_][A-Za-z0-9_]*)\]\(command-reference/([^)]+\.md)\)')
@@ -108,7 +119,6 @@ $documentedProcs = @($linkMatches | ForEach-Object { $_.Groups[1].Value } | Sort
 
 $supportedProcs = @($publicApi.supported_procedures)
 $compatProcs = @($publicApi.compatibility_procedures | ForEach-Object { [string]$_.name })
-$adapterListedProcs = @($publicApi.optional_adapter_procedures)
 
 $allInventoryProcs = @($supportedProcs + $compatProcs | Sort-Object -Unique)
 
@@ -122,9 +132,12 @@ if ($missingFromDocs.Count -gt 0) {
     throw "docs/public-api.json lists procedures with no docs/COMMAND_REFERENCE.md entry: $($missingFromDocs -join ', ')"
 }
 
-$adapterNotInPubtable = $adapterListedProcs | Where-Object { $adapterProcs -notcontains $_ }
-if ($adapterNotInPubtable.Count -gt 0) {
-    throw "docs/public-api.json's optional_adapter_procedures not found in src/pubtable_quaids.src: $($adapterNotInPubtable -join ', ')"
+foreach ($module in @($publicApi.optional_modules)) {
+    $moduleProcs = $moduleProcsBySource[[string]$module.source]
+    $notInModuleSource = @($module.procedures) | Where-Object { $moduleProcs -notcontains $_ }
+    if ($notInModuleSource.Count -gt 0) {
+        throw "docs/public-api.json optional_modules['$($module.name)'] lists procedures not found in $($module.source): $($notInModuleSource -join ', ')"
+    }
 }
 
 Write-Host "verify_public_api.ps1: $($allInventoryProcs.Count) inventoried procedures all exist in src/ and are documented"

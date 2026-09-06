@@ -11,8 +11,17 @@ reparametrization. Silent, no printing -- see
 ## Format
 
 ```gauss
+library optmt, quaids;
+#include quaidscurvature.src
+
 cOut = quaidsCurvatureFit(qOut, w, prices, totexp, aCtl);
 ```
+
+Not loaded by `library quaids;` alone -- `src/quaidscurvature.src` is a
+deliberately optional, opt-in adapter (like the `pubtable` reporting
+adapter), since it has a hard compile-time dependency on `optmt`'s struct
+types and core estimation needs no external package at all. See
+[`docs/public-api.json`](../public-api.json)'s `optional_modules` entry.
 
 ## Parameters
 
@@ -113,7 +122,8 @@ with the current release.
 ## Examples
 
 ```gauss
-library optmt;
+library optmt, quaids;
+#include quaidscurvature.src
 
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;         // 0 for QUAIDS, 1 for AIDS

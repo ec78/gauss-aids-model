@@ -55,6 +55,57 @@ this is the first version with any public compatibility promise at all.
   is `zOut.bRaw`, not `zOut.b` (matching Milestone 30's own fix to the
   code and every other doc page -- this one page had been missed).
 
+### Changed (breaking)
+
+- **`quaidsCurvatureFit()`/`printQuaidsCurvature()`/
+  `quaidsCurvatureBootstrapFit()`/`printQuaidsCurvatureBootstrap()`/
+  `quaidsCurvatureBootstrapCI()` are no longer loaded by `library
+  quaids;` alone.** `src/quaidscurvature.src` has a hard compile-time
+  dependency on `optmt`'s struct types, so keeping it in `package.json`'s
+  `src` array forced `optmt` on every `quaids` user, including those who
+  never touch curvature imposition -- confirmed as the only real barrier
+  to `optmt`-free core installation (PR-101's acceptance evidence: "a
+  clean machine without QUAIDS or optmt can install and run the core
+  quick start"). `package.json`'s `deps` array is empty again as a
+  result. `quaidscurvature.src` is now an opt-in adapter, physically
+  shipped in the installed package (like the existing `pubtable`
+  reporting adapter) but requiring an explicit `#include`:
+  ```gauss
+  library optmt, quaids;
+  #include quaidscurvature.src
+  ```
+  Confirmed via a real end-to-end run (fit, impose curvature, bootstrap,
+  percentile CI) that this pattern reproduces the exact previously-shipped
+  behavior. Every curvature `docs/command-reference/*.md` page,
+  `docs/USAGE_GUIDE.md`, `docs/FEATURE_SUPPORT_MATRIX.md`, `README.md`,
+  and `examples/10_curvature_imposition.e` updated to the new setup.
+  `docs/public-api.json` gained a generalized `optional_modules` array
+  (schema v2) covering both the `pubtable` and `curvature` adapters, each
+  reconciled against its own source file by `scripts/verify_public_api.ps1`.
+- Added `tests/package_public_api_core_only.e`, a genuinely separate
+  installed-package test file (not a refactor splitting the existing one)
+  that loads only `library quaids;` -- `optmt` is never loaded or
+  referenced anywhere in the file -- proving core independence directly,
+  since `tests/package_public_api.e` itself still loads `library optmt,
+  quaids;` for its own curvature block and so cannot demonstrate that
+  independence on its own. Confirmed empirically, not assumed, that this
+  needed to be a separate file: an earlier attempt to issue `library
+  quaids;` alone, call `quaidsFit()` for real, and only later add a
+  second `library optmt;` statement before an isolated curvature block
+  broke compilation of `quaids.src`'s own cross-file references (`error
+  G0025: Undefined symbol '_quaidsIVFirstStage'`/`'quaidsElas'`/
+  `'quaidsSlutzky'`) -- a real, reproducible GAUSS quirk where a second
+  `library` statement anywhere in a script disrupts an earlier
+  `library`-loaded package's own cross-file symbol resolution, not
+  something to work around by careful in-file ordering. Wired into
+  `scripts/run_release_verification.ps1`'s installed-package gate as a
+  second, separately-wrapped invocation -- found and fixed a related
+  discovery along the way: GAUSS's `run` statement does not return to the
+  calling script afterward (closer to `exec` than call/return), so a
+  single wrapper chaining `run "a.e"; new; run "b.e";` silently only ever
+  executed `a.e`, with `b.e` never running despite the overall step still
+  reporting success.
+
 The three release-packaging fixes and the Milestone 31 example suite
 below predate the public-release effort and were originally recorded
 under an "Unreleased" heading with no version bump of their own (no

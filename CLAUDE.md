@@ -4198,6 +4198,110 @@ last build was still current) surfaced two more real things:
    new bug -- check `Test-Path c:\gauss26\pkgs\quaids\src\quaids.sdf`
    first, before assuming a code regression.
 
+## Public Release Phase 1: `optmt` dependency separation (PR-101, complete)
+
+Following Phase 0 (see the "Public Release Phase 0" material folded into
+Milestone 31's own section above), the repo owner asked to proceed with
+`PUBLIC_RELEASE_ROADMAP.md`'s Phase 1. PR-101 required a real
+architectural decision the roadmap itself framed as a choice -- confirmed
+with the repo owner via `AskUserQuestion` before implementing: separate
+curvature support out of the always-catalogued package (the roadmap's own
+"Recommended" option, matching the existing optional `pubtable` adapter)
+rather than declaring `optmt` mandatory everywhere. A real, compelling
+factor in that choice, found before asking: separating curvature out
+sidesteps the still-unresolved `package.json` `deps` schema question
+entirely (`deps` goes back to empty, since core estimation needs no
+external package).
+
+**Implementation**: `quaidscurvature.src` removed from `package.json`'s
+`src` array (added to `tests/verify_package_manifest.ps1`'s
+`intentionallyUnlisted` allowlist, exactly like `pubtable_quaids.src`);
+`deps` emptied. The file still physically ships in the installed package
+and release `.zip` (confirmed directly, not assumed) -- only its lazy-load
+catalog entry is gone. `docs/public-api.json` gained a generalized
+`optional_modules` array (bumped to schema v2) replacing the
+pubtable-only `optional_adapter_procedures`, each module (`pubtable_adapter`,
+`curvature`) declaring its own `requires_package`/`source`/`setup`/
+`procedures`; `scripts/verify_public_api.ps1` reconciles each module's
+procedures against its own source file generically now, not a pubtable-
+specific hardcoded check.
+
+**A real GAUSS quirk found and confirmed before trusting the design,
+not assumed**: verified end-to-end with a scratch probe that
+`library optmt, quaids; #include ../src/quaidscurvature.src` (one
+combined `library` statement, then the adapter `#include`) compiles and
+runs curvature imposition correctly, reproducing exact previously-shipped
+eigenvalues. But a SPLIT pattern -- `library quaids;` alone, a real
+`quaidsFit()` call, and only THEN a second `library optmt;` statement
+before the curvature block -- reproducibly broke compilation of
+`quaids.src`'s own cross-file references (`error G0025: Undefined symbol
+'_quaidsIVFirstStage'`/`'quaidsElas'`/`'quaidsSlutzky'`, all defined in
+other package.json src files quaids.src calls into), even though these
+resolve fine under a single combined `library quaids;` alone with a real
+call. This is a general GAUSS finding worth remembering, not specific to
+curvature: **issuing a second `library` statement anywhere in a script
+appears to disrupt an earlier `library`-loaded package's own already-
+in-progress cross-file symbol resolution** -- confirmed reproducible
+across multiple probe variations, not a one-off fluke. Consequence: the
+installed-package proof that core functionality needs no `optmt` could
+not be a single file that also tests curvature (as one might naturally
+try) -- it had to be a genuinely separate file
+(`tests/package_public_api_core_only.e`) with `library quaids;` as its
+only, first, and last library statement.
+
+**A second, unrelated GAUSS finding, found while wiring the new test
+into the release pipeline**: `run_release_verification.ps1`'s existing
+installed-package-test wrapper pattern (`new; chdir ...; run "file.e";`)
+was extended, first, to chain a second `run "file2.e";` after the first
+inside the SAME wrapper -- and `file2.e` silently never executed at all,
+despite the overall step still reporting success (no error, no evidence
+anything was wrong, until direct log inspection showed `file2.e`'s own
+expected print output never appeared). Root cause: GAUSS's `run`
+statement does not return control to the calling script afterward --
+closer to `exec()` than a call/return. Fixed by using two genuinely
+separate wrapper files/processes (one per installed-package test file),
+not one wrapper chaining multiple `run` statements.
+
+**A real bug found in this milestone's own new test file, by actually
+running it, not assumed correct**: `tests/package_public_api_core_only.e`'s
+first draft called `quaidsFull()` with a deliberately minimal one-column
+dataframe (`asDF(w[.,1], "W1")`) but then asked it to select price/
+total-expenditure/instrument columns that were never added to that
+dataframe -- a real mistake in the test itself, not a real library bug,
+caught immediately by `error G0472: Invalid name` / "column 'P1' not
+found". Fixed by building a complete, real 5-good dataframe (matching
+`tests/quaids_formula_parity_test.e`'s own established pattern) and
+asserting exact parity with a direct `quaidsFit()` call, rather than a
+column-count-only smoke check. A second, smaller mistake in the same new
+file: asserting `quaidsSharesFit()`'s adding-up identity via exact `==`
+(matching `tests/quaids_shares_test.e`'s own convention) failed with a
+~9e-16 floating-point residual on this file's own particular evaluation
+point -- confirmed via direct isolation that adding-up itself was fine
+(not a real regression), just not bit-exact for this specific mean-point
+computation chain; fixed with an `abs(...) < 1e-8` tolerance instead of
+insisting on the stricter exact-equality convention used elsewhere.
+
+**Testing**: full source-tree suite (`#include`-based, unaffected by
+`package.json`'s `src` array), `scripts/verify_public_api.ps1`,
+`tests/package_public_api.e` (curvature via the new opt-in adapter
+pattern), and the new `tests/package_public_api_core_only.e` (core via
+`library quaids;` alone, `optmt` never loaded) all re-verified via a full
+`run_release_verification.ps1 -BuildArtifact -ForceArtifact
+-InstallArtifact` pass -- confirmed the release `.zip` and freshly
+reinstalled package both contain `quaidscurvature.src` physically while
+its catalog correctly omits `quaidsCurvatureFit` and friends.
+
+**PR-102 (clean-install acceptance tests)**: the repo owner chose to test
+the real GAUSS Tools > Install Application / Package Manager path
+themselves (no clean machine or GUI access available in this
+environment). What's independently verifiable from here is already
+covered by the testing above (a genuinely fresh install-directory
+delete-and-recreate cycle every run, `library quaids;` loading in a
+brand-new GAUSS job, the installed-package gate running against that
+freshly-installed copy, not a stale development install) -- the real-GUI-
+specific acceptance evidence remains open pending the repo owner's own
+manual pass.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What
