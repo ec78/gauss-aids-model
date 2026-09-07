@@ -73,6 +73,11 @@ for options.
 
 ## Quick Start
 
+This example uses LA-AIDS (`aCtl.maxiter = 1`), the **stable** baseline
+model -- see [Model & Feature Support Tiers](#model--feature-support-tiers)
+below before switching to iterated AIDS or QUAIDS, both of which are
+experimental and require checking `qOut.converged`.
+
 ```gauss
 library quaids;
 
@@ -80,8 +85,10 @@ library quaids;
 // total expenditure (treated as endogenous). instr: TxH instruments.
 // intcpt: TxK extra intercept-shifter variables, or 0 for none.
 aCtl = quaidsControlCreate();
-aCtl.linear = 0;          // 0 = QUAIDS, 1 = AIDS/LA-AIDS
-aCtl.maxiter = 100;       // 1 = one-step Stone-index LA-AIDS
+aCtl.linear = 1;          // 1 = AIDS/LA-AIDS (stable), 0 = QUAIDS (experimental)
+aCtl.maxiter = 1;         // 1 = one-step Stone-index LA-AIDS (stable, no
+                          // iteration to fail); >1 iterates -- see the
+                          // support tiers section before raising this
 aCtl = quaidsSetHomogeneity(aCtl, 1); // impose homogeneity and test/report symmetry
 
 pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
@@ -91,6 +98,14 @@ if not pOut.ok;
 endif;
 
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+if not qOut.converged;
+    // Always check this -- trivially true for LA-AIDS (maxiter=1), but a
+    // real, frequent failure mode once aCtl.maxiter > 1. See the support
+    // tiers section: qOut.converged==1 means the iteration's tolerance
+    // check passed, not that the fit is correct.
+    print "quaidsFit did not converge -- see qOut.iterations/qOut.finalErr.";
+    end;
+endif;
 
 n = qOut.n;
 nint = qOut.nint;
@@ -119,6 +134,27 @@ Named GAUSS dataframes can be used instead of assembling matrices by hand:
 data = loadd("mydata.csv");
 qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl);
 ```
+
+## Model & Feature Support Tiers
+
+| Component | Tier | Why |
+| --- | --- | --- |
+| LA-AIDS (`aCtl.maxiter = 1`) | **Stable** | One-step Stone price index -- no iteration, so no convergence-failure mode. Tradeoff: linear-approximation bias (synthetic-validation tolerance 1.20 vs. 0.10 for the iterated models). |
+| Iterated AIDS (`aCtl.linear=1`, `aCtl.maxiter>1`) | Experimental | A committed 200-seed sweep measured 58% combined failure at default settings (39% never converges, 19% converges to a self-consistent but wrong answer). Always check `qOut.converged`. |
+| QUAIDS (`aCtl.linear=0`, `aCtl.maxiter>1`) -- `quaidsControlCreate()`'s actual default | Experimental (highest risk) | Same sweep measured 76% combined failure (54.5% never converges, 21.5% wrong). This is the library's own default combination -- do not rely on defaults without checking `qOut.converged`. |
+| Zero-share correction (`quaidsZeroFit`) | Experimental | Inherits the base model's convergence risk above, plus a simplified (non-sandwich) SE formula, approximate adding-up in corrected coefficients, and a known non-trappable `glm()` crash mode on some inputs. |
+| Curvature imposition (`quaidsCurvatureFit`, requires `optmt`) | Experimental | Delta-method SE are known-unreliable whenever the estimated Cholesky factor sits at the boundary of the constraint (a common outcome in testing) -- prefer `quaidsCurvatureBootstrapFit`/`quaidsCurvatureBootstrapCI`. QUAIDS curvature additionally needs damping (`aCtl.relax=.25`-ish) to converge at all. |
+| Bootstrap / replicate-weight procedures | Inherits base model's tier | A resampled or replicate refit that itself fails to converge is dropped, not retried -- check the returned struct's `nCompleted`/`nFailed`. |
+
+**What `qOut.converged == 1` proves, and what it does not**: it means the
+iteration's relative parameter change fell below `aCtl.err` before
+`aCtl.maxiter` was reached -- nothing more. It does **not** prove the fixed
+point found is unique or that it is the fixed point you intended: a
+"converged-but-wrong" outcome in the sweep above is a fit that passes this
+exact tolerance check while still being far from the true answer. Full
+detail, including the damping mitigation (`aCtl.relax`): [Feature Support
+Matrix](docs/FEATURE_SUPPORT_MATRIX.md#support-tier-summary) and [Usage
+Guide](docs/USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids).
 
 ## Main Features
 

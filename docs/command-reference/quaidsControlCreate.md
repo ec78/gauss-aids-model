@@ -42,6 +42,17 @@ Set `aCtl.linear = 1` for LA-AIDS/iterated AIDS, `0` for QUAIDS. Set
 `quaidsHomogeneityTest`/`quaidsJointTest`, which both require an
 unconstrained fit.
 
+**The defaults above (`linear=0`, `maxiter=50`) select QUAIDS with
+iteration -- the highest-risk combination on the support-tier list**: a
+200-seed sweep measured a 76% combined convergence-failure rate for QUAIDS
+at these settings, versus 0% for `maxiter=1` LA-AIDS. These coded defaults
+are kept unchanged for `0.x` compatibility; always check `qOut.converged`
+after fitting, and see the [README's Model & Feature Support
+Tiers](../../README.md#model--feature-support-tiers) or the [Feature
+Support Matrix's Support Tier
+Summary](../FEATURE_SUPPORT_MATRIX.md#support-tier-summary) before relying
+on an unexamined default `quaidsControlCreate()` call.
+
 `aCtl.homogenous` is a historical field-name misspelling retained for
 source compatibility through the `0.x` series. New application code
 should read/write it via [quaidsGetHomogeneity](quaidsGetHomogeneity.md)/

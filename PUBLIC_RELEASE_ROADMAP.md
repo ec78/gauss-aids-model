@@ -187,6 +187,36 @@ themselves. Suggested checklist for that pass:
 
 ## Phase 2: Establish a Numerical Reliability Contract
 
+**Status: PR-201 complete.** Added a "Model & Feature Support Tiers" table
+directly in README.md, right after the Quick Start (not buried in a deep
+reference doc): LA-AIDS is labeled Stable; iterated AIDS, QUAIDS,
+zero-share correction, and curvature imposition are labeled Experimental
+(QUAIDS marked highest risk, since it is `quaidsControlCreate()`'s actual
+shipped default); bootstrap/replicate procedures are labeled as inheriting
+their base model's tier. The same table, with the full "why" column, was
+added as a new "Support Tier Summary" section at the top of
+`docs/FEATURE_SUPPORT_MATRIX.md` (previously the convergence-rate data
+existed only in a deep "## Notes" prose section). `docs/USAGE_GUIDE.md`'s
+"Choosing A Model" table gained an explicit tier column, and
+`docs/command-reference/quaidsControlCreate.md` now warns directly on the
+`linear`/`maxiter` defaults that they select the highest-risk combination.
+All three explicitly state what `qOut.converged == 1` does and does not
+prove (tolerance convergence only, not solution uniqueness or recovery of
+the intended fixed point) using the sweep's own "converged-but-wrong"
+bucket as the concrete counterexample. The README's own Quick Start
+example was also changed to lead with LA-AIDS (`aCtl.maxiter=1`) instead
+of QUAIDS and now checks `qOut.converged` before proceeding -- this also
+satisfies PR-203's second acceptance-evidence bullet ("the default quick
+start does not silently enter the highest-risk estimator") without
+touching `quaidsControlCreate()`'s actual coded defaults, per the repo
+owner's explicit choice via `AskUserQuestion` (documentation-only fix;
+PR-203's "change the coded default" option was declined). PR-202 (a
+solution-stability diagnostic) was explicitly deferred per the same
+decision -- it is not required for the First Public Alpha Exit Criteria,
+which only lists PR-201 as required from this phase. Full source-tree
+test suite re-ran clean after these docs-only edits (no `src/`/`tests/`
+files touched).
+
 ### PR-201 — Define support tiers by estimator
 
 - **Priority / effort:** P0 / S

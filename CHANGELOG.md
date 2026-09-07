@@ -106,6 +106,39 @@ this is the first version with any public compatibility promise at all.
   executed `a.e`, with `b.e` never running despite the overall step still
   reporting success.
 
+### Documentation (numerical reliability contract, PR-201)
+
+- Added a "Model & Feature Support Tiers" table directly to `README.md`,
+  next to the Quick Start rather than only in a deep reference doc:
+  LA-AIDS is **Stable** (one-step Stone index, no iteration, no
+  convergence-failure mode); iterated AIDS, QUAIDS, zero-share correction,
+  and curvature imposition are **Experimental**; QUAIDS is called out as
+  the highest measured risk (76% combined convergence-failure rate in the
+  committed 200-seed sweep) and as `quaidsControlCreate()`'s actual
+  shipped default; bootstrap/replicate-weight procedures are documented as
+  inheriting their base model's tier (a failed replicate is dropped, not
+  retried). The same table, with full rationale, was added as a new
+  "Support Tier Summary" section at the top of
+  `docs/FEATURE_SUPPORT_MATRIX.md`. `docs/USAGE_GUIDE.md`'s "Choosing A
+  Model" table gained an explicit tier column, and
+  `docs/command-reference/quaidsControlCreate.md` now warns directly on
+  the documented `linear`/`maxiter` defaults.
+- All of the above now explain, in the same place a user reads model
+  selection guidance, exactly what `qOut.converged == 1` proves and does
+  not prove: tolerance convergence only, not solution uniqueness or
+  recovery of the intended fixed point -- using the sweep's own
+  "converged-but-wrong" bucket as the concrete counterexample.
+- Changed the README Quick Start's own example to lead with LA-AIDS
+  (`aCtl.maxiter = 1`) instead of QUAIDS, and added a `qOut.converged`
+  check before proceeding -- the documented default entry point no longer
+  silently demonstrates the highest-risk estimator combination. This also
+  satisfies PR-203's "the default quick start does not silently enter the
+  highest-risk estimator" acceptance evidence without changing
+  `quaidsControlCreate()`'s actual coded defaults, per an explicit,
+  documentation-only scoping decision (PR-202's solution-stability
+  diagnostic and PR-203's "change the coded default" option were both
+  deferred/declined).
+
 The three release-packaging fixes and the Milestone 31 example suite
 below predate the public-release effort and were originally recorded
 under an "Unreleased" heading with no version bump of their own (no

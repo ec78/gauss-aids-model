@@ -6,6 +6,37 @@ selects via `aCtl.linear`/`aCtl.maxiter` -- see the
 [usage guide](USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids)
 for the exact switch values.
 
+## Support Tier Summary
+
+A new user should be able to identify the stable baseline and the extra
+checks experimental estimators require without reading internal roadmap
+files -- this section is that summary. See the README's own [Model &
+Feature Support Tiers](../README.md#model--feature-support-tiers) for the
+same table in a shorter form next to the quick start.
+
+| Component | Tier | Why |
+| --- | --- | --- |
+| LA-AIDS (`aCtl.maxiter = 1`) | **Stable** | One-step Stone price index -- no iteration, so no convergence-failure mode of this kind exists. Tradeoff: linear-approximation bias (see the synthetic-validation tolerance of 1.20 vs. 0.10 for the iterated models). |
+| Iterated AIDS (`aCtl.linear=1`, `aCtl.maxiter>1`) | Experimental | A committed 200-seed sweep (Milestone 12) measured 58% combined failure at default settings (39% never converges, 19% converges to a self-consistent but wrong answer). Always check `qOut.converged`; `aCtl.relax=.75` measurably helps (see Notes below). |
+| QUAIDS (`aCtl.linear=0`, `aCtl.maxiter>1`) -- `quaidsControlCreate()`'s actual shipped default | Experimental (highest measured risk) | Same sweep measured 76% combined failure (54.5% never converges, 21.5% wrong). This is the library's own default combination -- do not rely on the coded defaults without explicitly checking `qOut.converged`. |
+| Zero-share correction (`quaidsZeroFit`) | Experimental | Inherits the base model's convergence risk above (it runs the same translog-price-index iteration), plus a simplified (non-sandwich) SE formula, approximate (not exact) adding-up in the corrected coefficients, and a known, non-trappable GAUSS `glm()` crash mode on some inputs -- see Notes below. |
+| Curvature imposition (`quaidsCurvatureFit`, requires `optmt`) | Experimental | Delta-method standard errors are known-unreliable whenever the estimated Cholesky factor sits at the boundary of the negative-semidefinite cone, a common outcome in this library's own test fixtures -- prefer `quaidsCurvatureBootstrapFit`/`quaidsCurvatureBootstrapCI`. QUAIDS curvature additionally requires damping (`aCtl.relax=.25`-ish) to converge at all -- see Notes below. |
+| Bootstrap / replicate-weight procedures (`quaidsCurvatureBootstrapFit`, `quaidsRobustBootstrapFit`, `quaidsReplicateWeightFit`) | Inherits the base model's tier | Each resample or caller-supplied replicate is an independent refit of the base model above -- a replicate that itself fails to converge (or falls below a minimum effective sample size) is dropped, not retried. Check the returned struct's `nCompleted`/`nFailed` (or `nRequested`/`nAttempts`) before trusting the reported SE. |
+
+**What `qOut.converged == 1` proves, and what it does not**: it means the
+iteration's relative parameter change (`err = max(abs((b-b0)/b0))`) fell
+below `aCtl.err` before `aCtl.maxiter` was reached -- nothing more. It does
+**not** prove the fixed point found is unique, or that it is the fixed
+point you intended: the "converged-but-wrong" bucket in the sweep above is
+defined as exactly this -- a fit that satisfies this tolerance test while
+still landing far (>10x the normal structural tolerance) from the true
+answer on a known synthetic DGP. Naive successive-substitution on this
+nonlinear FGLS system can have multiple fixed points for a bad price draw;
+no amount of tolerance-tightening or damping changes which basin of
+attraction a given dataset's iteration falls into. For `aCtl.maxiter = 1`
+(LA-AIDS), `qOut.converged` is unconditionally `1` (there is no iteration
+to fail) and this caveat does not apply.
+
 | Feature | LA-AIDS | Iterated AIDS | QUAIDS |
 | --- | --- | --- | --- |
 | Estimator | `quaidsFit`/`quaids`/`quaidsFull` | `quaidsFit`/`quaids`/`quaidsFull` | `quaidsFit`/`quaids`/`quaidsFull` |

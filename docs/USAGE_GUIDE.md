@@ -140,11 +140,11 @@ natural fit instead.
 All three are the same estimator, `quaidsFit`, selected by
 `aCtl.linear` and `aCtl.maxiter`:
 
-| Model | `aCtl.linear` | `aCtl.maxiter` | Price index |
-| --- | --- | --- | --- |
-| LA-AIDS | either | `1` | Stone (linear approximation) |
-| Iterated AIDS | `1` | `> 1` | Nonlinear translog, iterated |
-| QUAIDS | `0` | `> 1` | Nonlinear translog, iterated, plus a quadratic log-expenditure term |
+| Model | `aCtl.linear` | `aCtl.maxiter` | Price index | Support tier |
+| --- | --- | --- | --- | --- |
+| LA-AIDS | either | `1` | Stone (linear approximation) | **Stable** -- no iteration, no convergence-failure mode |
+| Iterated AIDS | `1` | `> 1` | Nonlinear translog, iterated | Experimental -- 58% combined failure rate at defaults (see below) |
+| QUAIDS | `0` | `> 1` | Nonlinear translog, iterated, plus a quadratic log-expenditure term | Experimental, highest measured risk -- 76% combined failure at defaults, and `quaidsControlCreate()`'s own shipped default |
 
 ```gauss
 aCtl = quaidsControlCreate();
@@ -183,9 +183,32 @@ aCtl.relax = .75;   // default is 1 (no damping); .75 measurably reduced
 did not help further in testing and often made things worse. This is a
 modest, evidence-backed mitigation, not a guarantee -- always check
 `qOut.converged` and `qOut.iterations` after any iterated fit before
-trusting the result. See
-[Feature Support Matrix](FEATURE_SUPPORT_MATRIX.md#notes) and
-`GOLD_STANDARD_TODO.md`'s Milestone 12 section for the full breakdown.
+trusting the result.
+
+**What `qOut.converged == 1` proves, and what it does not**: it means the
+iteration's relative parameter change fell below `aCtl.err` before
+`aCtl.maxiter` was reached -- nothing more. It does **not** prove the fixed
+point found is unique or that it is the fixed point you intended -- the
+sweep's own "converged-but-wrong" bucket (19%/21.5% above) is exactly a fit
+that passes this tolerance test while landing far from the true answer.
+Naive successive-substitution on this nonlinear FGLS system can have
+multiple fixed points for a bad price draw; no amount of tolerance
+tightening or damping changes which basin of attraction a given dataset's
+iteration falls into. This caveat is specific to `aCtl.maxiter > 1`;
+LA-AIDS (`aCtl.maxiter = 1`) has no iteration to fail and `qOut.converged`
+is unconditionally `1` there.
+
+The same convergence risk propagates to every procedure that internally
+refits this estimator on an iterated base model: `quaidsZeroFit`'s
+zero-share correction, and every bootstrap/replicate-weight procedure
+(`quaidsCurvatureBootstrapFit`, `quaidsRobustBootstrapFit`,
+`quaidsReplicateWeightFit`) -- see their own sections below and the
+[Feature Support Matrix's Support Tier
+Summary](FEATURE_SUPPORT_MATRIX.md#support-tier-summary) for the complete,
+component-by-component tier list (LA-AIDS, iterated AIDS, QUAIDS,
+zero-share correction, curvature imposition, and bootstrap/replicate
+procedures). See also `GOLD_STANDARD_TODO.md`'s Milestone 12 section for
+the full sweep methodology.
 
 ## Instrumental Variables Are Always Required
 
