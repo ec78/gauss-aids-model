@@ -26,9 +26,10 @@ zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 - `instr` (*TxH matrix*) - instruments for log total expenditure.
 - `aCtl` (*`quaidsControl` structure*) - same fields as
   [quaidsFit](quaidsFit.md) (`linear`, `maxiter`, `err`, `alpha0`,
-  `relax`, `b0`). `aCtl.homogenous = 0` (default) leaves every good
-  directly, independently estimated; `aCtl.homogenous = 1` additionally
-  imposes homogeneity and symmetry on the corrected model -- see Remarks.
+  `relax`, `b0`). `aCtl.homogenous = 0` leaves every good directly,
+  independently estimated; `aCtl.homogenous = 1` (`quaidsControlCreate()`'s
+  default) additionally imposes homogeneity and symmetry on the corrected
+  model -- see Remarks.
   If supplied, `aCtl.b0` must match `zOut.bRaw`'s shape/basis, not
   `zOut.b`'s (see Remarks).
 
@@ -185,7 +186,7 @@ runtime) for the first-stage probits -- no new package dependency.
 aCtl = quaidsControlCreate();
 aCtl.linear = 0;          // 1 for AIDS, 0 for QUAIDS
 aCtl.maxiter = 100;
-aCtl.homogenous = 0;      // 1 to also impose symmetry
+aCtl.homogenous = 0;      // override the default (1) to leave unconstrained
 
 zOut = quaidsZeroFit(w, intcpt, prices, totexp, instr, aCtl);
 call printQuaidsZero(zOut);

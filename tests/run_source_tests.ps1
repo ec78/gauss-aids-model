@@ -10,6 +10,12 @@
 # and reconciles docs/public-api.json's procedure/struct inventory against
 # src/ and docs/COMMAND_REFERENCE.md.
 #
+# Public release roadmap PR-301: also runs scripts/verify_docs_consistency.ps1,
+# a targeted documentation-consistency check (defaults table vs. actual coded
+# defaults, plus regression guards for two real, confirmed doc contradictions
+# found during that milestone's review) -- narrower than PR-303's later,
+# broader documentation quality-gate work.
+#
 # This repo's tests print their own "PASS"/"FAIL" line per check and a
 # final "...: ALL N CHECKS PASSED" (or "N CHECKS FAILED") summary line --
 # CLAUDE.md documents that tgauss's process exit code is NOT a reliable
@@ -54,6 +60,9 @@ $scriptsDir = Join-Path $RepoRoot "scripts"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 & powershell -ExecutionPolicy Bypass -File (Join-Path $scriptsDir "verify_public_api.ps1") -RepoRoot $RepoRoot
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& powershell -ExecutionPolicy Bypass -File (Join-Path $scriptsDir "verify_docs_consistency.ps1") -RepoRoot $RepoRoot
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $gaussTests = @(

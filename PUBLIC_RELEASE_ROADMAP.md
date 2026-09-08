@@ -267,6 +267,34 @@ files touched).
 
 ## Phase 3: Correct and Simplify Customer Documentation
 
+**Status: PR-301 complete.** A search-based review found three real,
+confirmed contradictions (not the full list of Work bullets -- the
+`optmt` install/load instructions and the `aCtl.b0`/`zOut.bRaw` warm-start
+description were already reconciled by Phase 1/Phase 0's own edits):
+`docs/command-reference/quaidsZeroFit.md` claimed `aCtl.homogenous = 0` is
+the default (the real coded default, set in `src/quaidsutil.src`, is
+`1`); `docs/USAGE_GUIDE.md`'s Zero Budget Shares section claimed
+homogeneity/symmetry imposition is "out of scope in this first pass" for
+`quaidsZeroFit()` even though Milestone 30 added it (its own code example
+two paragraphs above already correctly showed `aCtl.homogenous = 1`);
+and the same file's survey-workflow section claimed replicate-weight
+(BRR/jackknife) variance "remain[s] roadmap items" even though
+`quaidsReplicateWeightFit()` (Milestone 27) already ships it and this
+same file documents it in its own dedicated section further down. All
+three fixed. Added `scripts/verify_docs_consistency.ps1` (wired into
+`tests/run_source_tests.ps1` and therefore CI) as the "targeted
+documentation-consistency test" the acceptance evidence calls for: it
+cross-checks `docs/command-reference/quaidsControlCreate.md`'s defaults
+table against `quaidsControlCreate()`'s actual coded defaults for every
+field, checks every doc page for any other stale `aCtl.homogenous`
+default claim (not just the one file that happened to be wrong), and
+carries regression guards for the two prose-only contradictions above.
+Verified each guard actually fails by deliberately reintroducing each bug
+in turn and re-running the script (one genuine bug in the check itself
+was found and fixed this way -- a line-wrapped markdown phrase broke a
+literal-space regex match) before confirming the final, corrected state
+passes clean. Full source-tree suite re-ran clean afterward.
+
 ### PR-301 — Reconcile known contradictions
 
 - **Priority / effort:** P0 / S

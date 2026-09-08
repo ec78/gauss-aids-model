@@ -123,11 +123,13 @@ delta-method standard errors recomputed at that point using the weighted
 fit. If you only want the estimator-level weighting without also
 reweighting the evaluation point, call
 [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md) directly with
-its own optional `weight` argument instead. Weighted point estimates and a
-matching weighted/clustered sandwich SE are the current scope; formal
-strata as a concept distinct from clustering, replicate-weight
-(BRR/jackknife) variance, and finite-population correction remain roadmap
-items.
+its own optional `weight` argument instead. Weighted point estimates and a matching weighted/clustered sandwich SE
+are supported directly; for replicate-weight (jackknife/BRR-style)
+variance from a caller-supplied set of pre-computed replicate weight
+columns, see [Replicate-Weight (Jackknife/BRR) Standard
+Errors](#replicate-weight-jackknifebrr-standard-errors) below
+(`quaidsReplicateWeightFit`). Formal strata as a concept distinct from
+clustering, and finite-population correction, remain roadmap items.
 
 There is no formula-string (`"y ~ x1 + x2"`) API -- AIDS/QUAIDS is a
 multi-equation system (N budget shares against N parallel log prices),
@@ -411,13 +413,17 @@ print "fraction of zero shares per good:" zOut.shareZeroFrac';
 
 `zOut.b`'s trailing `n x n` block (`delta`) is the estimated own-good
 hazard coefficient, restricted to be diagonal (each good's correction only
-depends on its own censoring probability) by construction. See
+depends on its own censoring probability) by construction.
+`aCtl.homogenous = 1` (shown above, and `quaidsControlCreate()`'s own
+default) additionally imposes homogeneity and symmetry on top of the
+correction; `aCtl.homogenous = 0` leaves every good directly,
+independently estimated. See
 [Methodology Notes](METHODOLOGY_NOTES.md#zero-budget-share-correction-shonkwiler-yen)
 for the full derivation and the [Limitations section](#limitations) below
-for what is deliberately out of scope in this first pass (no homogeneity/
-symmetry imposition, a simplified standard-error formula, and adding-up
-not holding exactly for the corrected coefficients -- a real property of
-the method itself, not a bug).
+for what remains a real, documented simplification either way (a
+simplified standard-error formula, and adding-up not holding exactly for
+the corrected coefficients -- a real property of the method itself, not a
+bug).
 
 ## Robust and Cluster-Robust Standard Errors
 

@@ -139,6 +139,29 @@ this is the first version with any public compatibility promise at all.
   diagnostic and PR-203's "change the coded default" option were both
   deferred/declined).
 
+### Fixed (documentation contradictions, PR-301)
+
+- `docs/command-reference/quaidsZeroFit.md` claimed `aCtl.homogenous = 0`
+  is the default; the real coded default (`src/quaidsutil.src`) is `1`.
+- `docs/USAGE_GUIDE.md`'s Zero Budget Shares section claimed
+  homogeneity/symmetry imposition is out of scope for `quaidsZeroFit()`
+  -- stale since Milestone 30 added it (the section's own code example
+  already correctly demonstrated `aCtl.homogenous = 1`).
+- The same file's survey-workflow section claimed replicate-weight
+  (BRR/jackknife) variance remains a roadmap item -- stale since
+  `quaidsReplicateWeightFit()` (Milestone 27) already ships it.
+- Added `scripts/verify_docs_consistency.ps1` (run as part of
+  `tests/run_source_tests.ps1`, and therefore CI) so these three classes
+  of contradiction cannot silently reappear: it cross-checks
+  `docs/command-reference/quaidsControlCreate.md`'s documented defaults
+  table against `quaidsControlCreate()`'s actual coded defaults, scans
+  every doc page for any other stale `aCtl.homogenous`-default claim, and
+  carries direct regression guards for the two prose contradictions
+  above. Verified each guard by deliberately reintroducing each bug and
+  confirming the script fails before confirming the corrected state
+  passes -- found and fixed one real bug in the check itself this way (a
+  literal-space regex did not tolerate markdown's line-wrapped text).
+
 The three release-packaging fixes and the Milestone 31 example suite
 below predate the public-release effort and were originally recorded
 under an "Unreleased" heading with no version bump of their own (no
