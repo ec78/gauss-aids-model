@@ -35,13 +35,9 @@ Identical to `qOut.b`, `qOut.v`, `qOut.bS`, `qOut.vS` from
 ## Remarks
 
 For a silent call that returns a struct without printing, use
-[quaidsFit](quaidsFit.md) directly. `quaids()` is retained unchanged for
-backward compatibility with code written before the Milestone 1
-estimation/printing split -- its signature and printed output are verified
-byte-for-byte identical to the pre-split implementation (as of the split;
-a later, intentional Stone-index bug fix has since changed numerical
-output for the better -- see `GOLD_STANDARD_TODO.md`'s Milestone 3
-section).
+[quaidsFit](quaidsFit.md) directly. `quaids()` is a backward-compatible
+wrapper that fits, prints the full console report, and returns the same
+four legacy matrices this proc has always returned.
 
 ## Examples
 

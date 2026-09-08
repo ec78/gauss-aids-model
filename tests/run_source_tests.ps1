@@ -13,8 +13,12 @@
 # Public release roadmap PR-301: also runs scripts/verify_docs_consistency.ps1,
 # a targeted documentation-consistency check (defaults table vs. actual coded
 # defaults, plus regression guards for two real, confirmed doc contradictions
-# found during that milestone's review) -- narrower than PR-303's later,
-# broader documentation quality-gate work.
+# found during that milestone's review).
+#
+# Public release roadmap PR-303: also runs scripts/verify_docs_quality.ps1,
+# broader documentation quality gates -- command-reference heading structure,
+# internal link/anchor integrity, and keyword-argument spelling in ```gauss
+# code snippets.
 #
 # This repo's tests print their own "PASS"/"FAIL" line per check and a
 # final "...: ALL N CHECKS PASSED" (or "N CHECKS FAILED") summary line --
@@ -63,6 +67,9 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 & powershell -ExecutionPolicy Bypass -File (Join-Path $scriptsDir "verify_docs_consistency.ps1") -RepoRoot $RepoRoot
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& powershell -ExecutionPolicy Bypass -File (Join-Path $scriptsDir "verify_docs_quality.ps1") -RepoRoot $RepoRoot
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $gaussTests = @(

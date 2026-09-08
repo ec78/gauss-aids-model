@@ -28,8 +28,8 @@ for each good. Title reflects the fitted model (`"LA-AIDS results"` /
 Mirrors `pubtable`'s own bundled `pubtable_qardl.src` adapter pattern
 (`ptFromQardl`'s per-quantile comparison table), but lives inside this
 repo (`src/pubtable_quaids.src`) rather than physically inside the
-installed `pubtable` package -- see `GOLD_STANDARD_TODO.md`'s Milestone 6
-section for why. **Not** listed in `package.json`'s `src` array: its
+installed `pubtable` package -- see `GOLD_STANDARD_TODO.md` for why.
+**Not** listed in `package.json`'s `src` array: its
 return-type annotation (`proc (struct ptTable) = ...`) needs
 `pubtable.sdf`'s struct types declared unconditionally, which would make
 `pubtable` a hard compile-time dependency for the whole `quaids` package

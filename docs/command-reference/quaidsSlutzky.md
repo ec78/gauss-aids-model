@@ -35,9 +35,7 @@ at that observation.
 ## Remarks
 
 Unlike [quaidsElasFit](quaidsElasFit.md), which evaluates at one point,
-`quaidsSlutzky()` always accepts an arbitrary sample (any number of rows)
--- this did not need to change during the Milestone 5 elasticities
-generalization, since it was already general.
+`quaidsSlutzky()` accepts an arbitrary sample (any number of rows).
 
 Curvature **imposition** (as opposed to this diagnosis-only check) is
 explicitly out of scope -- even the R `micEconAids` reference implementation

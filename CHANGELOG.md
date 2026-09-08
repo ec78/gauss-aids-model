@@ -162,6 +162,38 @@ this is the first version with any public compatibility promise at all.
   passes -- found and fixed one real bug in the check itself this way (a
   literal-space regex did not tolerate markdown's line-wrapped text).
 
+### Changed (documentation history separation, PR-302)
+
+- Removed milestone chronology, "found and fixed" bug-archaeology
+  narrative, and "since Milestone N"/"(Milestone N)" tags from every
+  primary customer page -- `README.md`, `docs/USAGE_GUIDE.md`,
+  `docs/FEATURE_SUPPORT_MATRIX.md`, `docs/METHODOLOGY_NOTES.md`, and all
+  47 `docs/command-reference/*.md` pages -- roughly 100 mentions removed.
+  Each was replaced with the current-state technical fact it was wrapped
+  around (kept) rather than the historical narrative of how or when it
+  was built (dropped -- that history already lives in `CLAUDE.md`,
+  `GOLD_STANDARD_TODO.md`, and this changelog, this project's established
+  engineering-history home).
+- Rewrote `README.md`'s intro paragraph from a "Milestones 11-30 are
+  complete" chronology into a current-state maturity and feature-pointer
+  paragraph.
+
+### Added (documentation quality gates, PR-303)
+
+- Added `scripts/verify_docs_quality.ps1` (run as part of
+  `tests/run_source_tests.ps1`, and therefore CI), covering three
+  dimensions no existing check covered: (1) every command-reference
+  page's Purpose/Format/Parameters/Returns/Remarks/Examples/Source/See
+  Also heading structure -- found and fixed 4 real, pre-existing
+  deviations (`## Example` instead of `## Examples`) while building this
+  check; (2) internal markdown link and `#anchor` integrity across every
+  doc page, using GitHub's own heading-to-anchor slug algorithm; (3)
+  keyword-argument spelling in every ` ```gauss ` code fence, cross-checked
+  against each called procedure's actual declared parameter list.
+  Verified each of the three checks by deliberately reintroducing one
+  instance of its target error class and confirming the script fails
+  before confirming the corrected state passes clean.
+
 The three release-packaging fixes and the Milestone 31 example suite
 below predate the public-release effort and were originally recorded
 under an "Unreleased" heading with no version bump of their own (no

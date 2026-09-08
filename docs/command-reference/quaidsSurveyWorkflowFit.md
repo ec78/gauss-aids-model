@@ -2,15 +2,15 @@
 
 ## Purpose
 
-Runs the applied workflow with `weight` fitting the estimator itself
-(Milestone 26), and recomputes predicted shares and elasticities at a
-sampling-weighted evaluation point.
+Runs the applied workflow with `weight` fitting the estimator itself, and
+recomputes predicted shares and elasticities at a sampling-weighted
+evaluation point.
 
 ## Format
 
 ```gauss
 wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight);
-wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight, clusterId=householdId);   // Milestone 28
+wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight, clusterId=householdId);
 ```
 
 ## Parameters
@@ -23,19 +23,14 @@ wfOut = quaidsSurveyWorkflowFit(w, intcpt, prices, totexp, instr, aCtl, weight, 
   not keyword-callable, matching this project's "never silently guess an
   inference-affecting parameter" precedent (`B` in the bootstrap procs,
   `replicateWeights`/`scaleFactor` in
-  [quaidsReplicateWeightFit](quaidsReplicateWeightFit.md)). **Milestone
-  26: this weight now does double duty** -- it is forwarded into
+  [quaidsReplicateWeightFit](quaidsReplicateWeightFit.md)). This weight
+  does double duty: it is forwarded into
   [quaidsWorkflowFit](quaidsWorkflowFit.md)'s own optional `weight`
   argument (so the estimator itself, not just the evaluation point, is
-  fit under this weighting), *and* it still computes the weighted
-  evaluation point exactly as before. This is a real, deliberate behavior
-  change from the original (Milestone 25) version of this proc, which
-  left the estimator unweighted -- see Remarks.
+  fit under this weighting), *and* it also computes the weighted
+  evaluation point -- see Remarks.
 - `clusterId` (*OPTIONAL keyword argument, default `0`*) - same as
-  [quaidsWorkflowFit](quaidsWorkflowFit.md). Milestone 28 moved this
-  parameter after the required `weight` argument and gave it a keyword
-  default (it sat before `weight` as a plain required argument before
-  this conversion).
+  [quaidsWorkflowFit](quaidsWorkflowFit.md).
 
 ## Returns
 
@@ -60,17 +55,12 @@ Returns the same `quaidsWorkflowOut` structure as
 
 ## Remarks
 
-**Milestone 26 behavior change**: earlier releases of this proc
-(Milestone 25) left the underlying `quaidsFit()` estimator unweighted --
-`weight` only ever affected the post-estimation evaluation point. Since
-Milestone 26, `weight` is forwarded into
-[quaidsWorkflowFit](quaidsWorkflowFit.md)'s own new optional `weight`
-argument too, so the estimator itself is now genuinely fit under this
-weighting. This closes a gap the Milestone 25 release explicitly flagged
-as incomplete. If you have existing code relying on this proc leaving
-`bestB` identical to the unweighted `quaidsWorkflowFit()` call, that
-assumption no longer holds for a non-uniform `weight` -- a uniform weight
-(e.g. `ones(nobs,1)`) still reproduces the unweighted fit exactly.
+`weight` fits the underlying `quaidsFit()` estimator itself (forwarded
+into [quaidsWorkflowFit](quaidsWorkflowFit.md)'s own optional `weight`
+argument), not just the post-estimation evaluation point -- `bestB` is
+not identical to an unweighted `quaidsWorkflowFit()` call for a
+non-uniform `weight`. A uniform weight (e.g. `ones(nobs,1)`) reproduces
+the unweighted fit exactly.
 
 Use this when household- or person-level microdata should both fit a
 sampling-weighted estimator and report population-representative

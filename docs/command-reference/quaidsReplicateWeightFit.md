@@ -5,7 +5,7 @@
 Replicate-weight (jackknife/BRR-style) standard errors for
 [quaidsFit](quaidsFit.md), built from a caller-supplied set of
 pre-computed replicate weight columns and scale factor(s) -- reuses
-Milestone 26's `quaidsFit()` `weight` argument for both the full-sample
+`quaidsFit()`'s own `weight` argument for both the full-sample
 point estimate and every replicate refit, with no new estimation logic.
 Silent, no printing -- see
 [printQuaidsReplicateWeight](printQuaidsReplicateWeight.md).
@@ -14,7 +14,7 @@ Silent, no printing -- see
 
 ```gauss
 rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactor);
-rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactor, weight=surveyWeight, method="JK1");   // Milestone 28
+rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicateWeights, scaleFactor, weight=surveyWeight, method="JK1");
 ```
 
 ## Parameters
@@ -41,9 +41,7 @@ rOut = quaidsReplicateWeightFit(w, intcpt, prices, totexp, instr, aCtl, replicat
   factor per replicate, for designs where replicates are not uniformly
   scaled. Declared before `weight`/`method` below, since GAUSS requires
   every required (non-defaulted) parameter to precede any keyword-
-  defaulted one -- Milestone 28 moved `replicateWeights`/`scaleFactor`
-  earlier in the signature than they sat in the original (Milestone 27)
-  release for exactly this reason.
+  defaulted one.
 - `weight` (*OPTIONAL keyword argument, default `0`*) - base/full-sample
   sampling weight, passed straight through to `quaidsFit()`'s own
   optional `weight` argument. Omit, or pass scalar `0`, to hit that
@@ -126,8 +124,7 @@ unweighted code path in `quaidsFit()`, confirmed directly, not assumed.
 percentile confidence intervals or inspect the replicate distribution
 directly, mirroring
 [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md)'s own
-`bBoot` field -- no separate CI-computation proc is added by this
-milestone (unlike
+`bBoot` field -- there is no separate CI-computation proc here (unlike
 [quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md)); a caller
 can reuse the same `quantile()`-based approach directly against
 `rOut.bReplicate` if wanted.

@@ -14,24 +14,19 @@ calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
 This library is a **public alpha** (package version `0.1.0`). Its public
-API is usable, documented, and tested, but the library has not yet reached
-the compatibility guarantees of a `1.0.0` release. The original roadmap
-plus Milestones 11-30 are complete, including the post-20 applied
-workflow layer (`quaidsWorkflowFit()`/`quaidsWorkflowScenarioFit()`,
-robust-covariance propagation, preflight diagnostics), sampling-weighted
-estimation (`quaidsFit()`'s optional `weight` argument, with a matching
-weighted/clustered SE via `quaidsRobustFit()`, and a sampling-weighted
-workflow via `quaidsSurveyWorkflowFit()`), replicate-weight (jackknife/
-BRR-style) standard errors from caller-supplied replicate weight columns
-(`quaidsReplicateWeightFit()`), a keyword-argument API conversion, and
-homogeneity/symmetry imposition for the Shonkwiler-Yen zero-budget-share
-correction (`quaidsZeroFit()`'s homogeneity option). Completed
-pieces include the estimation core, hypothesis tests, elasticities,
-preflight diagnostics, dataframe entry point, `pubtable` export,
-zero-budget correction, robust/bootstrap inference, release tooling, and
-the documentation set. Remaining caveats are documented validation and
-convergence limits -- see `GOLD_STANDARD_TODO.md` for the release roadmap
-and next development milestones.
+API is usable, documented, and tested, but has not yet reached the
+compatibility guarantees of a `1.0.0` release -- see
+[Compatibility Policy](#compatibility-policy) below. The full feature set
+-- the estimation core, hypothesis tests, elasticities, preflight
+diagnostics, the dataframe entry point, `pubtable` export, zero-budget-
+share correction (with optional homogeneity/symmetry imposition),
+robust/cluster/bootstrap/replicate-weight inference, sampling-weighted
+estimation, curvature imposition, and the applied workflow layer -- is
+covered in [Main Features](#main-features) below. Remaining caveats are
+documented validation and convergence limits -- see
+[Model & Feature Support Tiers](#model--feature-support-tiers) below and
+`GOLD_STANDARD_TODO.md` for internal development history and the project
+roadmap.
 
 ## Requirements
 

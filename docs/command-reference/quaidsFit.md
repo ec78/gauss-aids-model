@@ -10,7 +10,7 @@ console output), returning a `quaidsOut` structure.
 
 ```gauss
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
-qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=myWeight);   // Milestone 26/28
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=myWeight);
 ```
 
 ## Parameters
@@ -24,8 +24,8 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=myWeight);   // 
 - `instr` (*TxH matrix*) - instruments for log total expenditure.
 - `aCtl` (*`quaidsControl` structure*) - see
   [quaidsControlCreate](quaidsControlCreate.md) for fields and defaults.
-- `weight` (*Tx1 vector, OPTIONAL, keyword argument, default `0`*) -
-  Milestone 26: a sampling/survey weight. Omit, or pass scalar `0`
+- `weight` (*Tx1 vector, OPTIONAL, keyword argument, default `0`*) - a
+  sampling/survey weight. Omit, or pass scalar `0`
   (explicitly or via the default), for the unweighted estimator. When
   supplied, must be finite, nonnegative, and sum to a positive value.
   Scalar `0` is the only scalar sentinel; scalar nonzero weights are
@@ -36,10 +36,8 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl, weight=myWeight);   // 
   standard survey WLS trick (`(sqrt(w).*A)'(sqrt(w).*B) = A'diag(w)B`) at
   every cross-product site in the starting value, iteration loop,
   Jacobian-corrected variance, and overidentification test -- an exact
-  no-op when `weight` is uniform. Milestone 28 converted `weight` from a
-  dynargs trailing argument to a genuine GAUSS keyword-defaulted
-  parameter (`weight=0` in the signature) -- callable by name
-  (`weight=myWeight`) or positionally, exactly like before.
+  no-op when `weight` is uniform. Callable by name (`weight=myWeight`) or
+  positionally.
 
 ## Returns
 
@@ -66,7 +64,7 @@ grouped by phase:
   fit) -- what elasticities ([quaidsElasFit](quaidsElasFit.md)) and the
   Slutzky diagnostic ([quaidsSlutzky](quaidsSlutzky.md)) should be
   evaluated against.
-- `weighted`/`weightSum`/`effN` (Milestone 26): `weighted` is `1` if a
+- `weighted`/`weightSum`/`effN`: `weighted` is `1` if a
   `weight` argument was supplied, `0` otherwise. `weightSum` is the sum of
   the raw (as-supplied) weight vector; equals `nobs` when unweighted.
   `effN` is Kish's effective sample size, `(sum w)^2 / sum(w^2)` -- a
@@ -90,8 +88,9 @@ Set `aCtl.homogenous = 0` before calling
 fit and error clearly otherwise.
 
 Convergence is not guaranteed for the iterated estimator (`aCtl.maxiter >
-1`): roughly half of random seeds in one synthetic-DGP family fail to
-converge cleanly (see `GOLD_STANDARD_TODO.md`'s Milestone 3 findings).
+1`): a committed 200-seed sweep measured 58% combined failure for
+iterated AIDS and 76% for QUAIDS at default settings -- see
+[Model & Feature Support Tiers](../../README.md#model--feature-support-tiers).
 Check `qOut.converged` and `qOut.iterations` after fitting.
 
 If `aCtl.b0` is supplied, it must be the reduced raw coefficient matrix
@@ -99,7 +98,7 @@ shape used internally before final absolute-price recovery. In practice,
 use a previous compatible fit's `qOut.homogB` as the template. Scalar `0`
 uses the built-in linearized-AIDS starting values.
 
-The optional `weight` argument (Milestone 26) is a weighted point-estimate
+The optional `weight` argument is a weighted point-estimate
 extension only -- it does not implement formal strata or replicate-weight
 (BRR/jackknife) design-based variance. For a matching robust/cluster-robust
 SE under the same weight, pass the same `weight` to

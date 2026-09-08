@@ -24,8 +24,7 @@ Nothing (prints to the console). For a silent, struct-returning call, use
 
 ## Remarks
 
-Unchanged signature and printed output from before the Milestone 5
-elasticities-generalization split; now a thin wrapper around
+A thin wrapper around
 [quaidsElasFit](quaidsElasFit.md) and
 [printQuaidsElas](printQuaidsElas.md). The legacy [quaids](quaids.md)
 wrapper calls this at four fixed points (mean, Q1, median, Q3) as part of

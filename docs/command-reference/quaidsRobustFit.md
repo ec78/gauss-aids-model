@@ -12,7 +12,7 @@ see [printQuaidsRobust](printQuaidsRobust.md).
 
 ```gauss
 rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl);
-rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId, weight=myWeight);   // Milestone 26/28
+rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId, weight=myWeight);
 ```
 
 ## Parameters
@@ -28,15 +28,12 @@ rOut = quaidsRobustFit(qOut, w, prices, totexp, aCtl, clusterId=householdId, wei
 - `clusterId` (*OPTIONAL keyword argument, default `0`*) - `0` for
   heteroskedasticity-robust (every observation is its own cluster); a
   `Tx1` vector of cluster group labels for cluster-robust.
-- `weight` (*OPTIONAL keyword argument, default `0`*) - Milestone 26: the
+- `weight` (*OPTIONAL keyword argument, default `0`*) - the
   same sampling weight passed to [quaidsFit](quaidsFit.md) to produce
   `qOut` (if any). Omit, or pass scalar `0`, for the unweighted sandwich.
   Scalar `0` is the only scalar sentinel; scalar nonzero weights are rejected.
   **Uses a DIFFERENT scaling convention from `quaidsFit()`'s own
-  `sqrt(weight)` WLS trick** -- see Remarks. Milestone 28 converted both
-  `clusterId` and `weight` from a required-positional-with-`0`-sentinel
-  and a dynargs trailing argument, respectively, to genuine GAUSS
-  keyword-defaulted parameters.
+  `sqrt(weight)` WLS trick** -- see Remarks.
 
 ## Returns
 
@@ -103,10 +100,10 @@ covariance into `qOut.bestB`'s full basis first, then pass that returned
 gets no independent SE here either, matching every other diagnostic in
 this library).
 
-**The optional `weight` argument (Milestone 26) uses a DIFFERENT scaling
-convention from `quaidsFit()`'s own `sqrt(weight)` WLS trick -- documented
-prominently since this is the single easiest detail in this milestone to
-get backwards**: the bread (`gg`) keeps the `sqrt(weight)` convention
+**The optional `weight` argument uses a DIFFERENT scaling convention from
+`quaidsFit()`'s own `sqrt(weight)` WLS trick -- documented prominently
+since this is the single easiest detail here to get backwards**: the
+bread (`gg`) keeps the `sqrt(weight)` convention
 (`gg = moment(sqrt(weight).*X, 0)/nobs`, matching the weighted design
 `qOut` was fit under), but the per-observation score contribution (`Infl`)
 is scaled by **plain** `weight`, not `sqrt(weight)` -- the standard

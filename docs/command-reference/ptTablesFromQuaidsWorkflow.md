@@ -33,7 +33,7 @@ tbls = ptTablesFromQuaidsWorkflow(wfOut);
 This adapter reports the workflow's applied outputs. For coefficient tables,
 use [ptFromQuaids](ptFromQuaids.md) on a `quaidsOut` fit.
 
-## Example
+## Examples
 
 ```gauss
 library pubtable, quaids;

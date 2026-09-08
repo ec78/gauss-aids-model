@@ -18,7 +18,7 @@ library optmt, quaids;
 #include quaidscurvature.src
 
 bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B);
-bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=42);   // Milestone 28
+bootOut = quaidsCurvatureBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, seed=42);
 ```
 
 Not loaded by `library quaids;` alone -- see
@@ -81,29 +81,19 @@ draw from the target sampling distribution -- there is no partial-
 inclusion rule.
 
 **Failure handling**: both per-replication calls are wrapped in this
-codebase's established `trap`/`scalmiss` guard (the same idiom as
-[quaidsFit](quaidsFit.md)'s own Milestone 12 hardening), and
-`quaidsCurvatureFit()` itself gained additional pre-call finiteness checks
-around its internal eigendecomposition calls as part of this milestone --
-building this bootstrap surfaced a real gap where a sufficiently degenerate
-resample could crash the whole run, not just fail one replication (see
-`GOLD_STANDARD_TODO.md`'s Milestone 15 section).
+codebase's established `trap`/`scalmiss` guard (the same idiom
+[quaidsFit](quaidsFit.md) uses), and `quaidsCurvatureFit()` itself has
+additional pre-call finiteness checks around its internal
+eigendecomposition calls, since a sufficiently degenerate resample can
+otherwise crash the whole run rather than just failing one replication
+(see `GOLD_STANDARD_TODO.md` for the full derivation).
 
 **Silent during the loop**: no progress printing, even on a long-running
 QUAIDS bootstrap -- matches this codebase's own silent-Fit-proc convention.
 
 **Percentile confidence intervals** are computed by the separate
-[quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md) (Milestone
-18) directly from `bBoot`'s raw draws -- no new resampling needed.
-
-**A real bug, found and fixed (Milestone 18)**: `seBoot`'s individual
-cells were silently scrambled relative to `b` from this proc's original
-Milestone 15 release until it was caught building
-`quaidsCurvatureBootstrapCI()`'s own ground-truth cross-check (GAUSS's
-`reshape()` fills row-major, not column-major like `vec()` -- a subtle,
-easily-missed distinction). Invisible to shape/sign/finiteness checks,
-since those are permutation-invariant. If you used `seBoot` from a
-version before this fix, re-run with the current release.
+[quaidsCurvatureBootstrapCI](quaidsCurvatureBootstrapCI.md) directly from
+`bBoot`'s raw draws -- no new resampling needed.
 
 ## Examples
 

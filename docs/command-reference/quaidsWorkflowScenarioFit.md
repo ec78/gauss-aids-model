@@ -12,7 +12,7 @@ scenario.
 wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
     intcptPt, pricesPt0, pricesPt1, totexpPt0);
 wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
-    intcptPt, pricesPt0, pricesPt1, totexpPt0, clusterId=householdId, weight=myWeight);   // Milestone 28
+    intcptPt, pricesPt0, pricesPt1, totexpPt0, clusterId=householdId, weight=myWeight);
 ```
 
 ## Parameters
@@ -29,12 +29,11 @@ wfOut = quaidsWorkflowScenarioFit(w, intcpt, prices, totexp, instr, aCtl,
   [quaidsWorkflowFit](quaidsWorkflowFit.md).
 - `weight` (*OPTIONAL keyword argument, default `0`*) - same as
   [quaidsWorkflowFit](quaidsWorkflowFit.md). Scalar `0` is the only scalar
-  sentinel; scalar nonzero weights are rejected. **Milestone 28 note**: this
-  proc's required scenario arguments (`intcptPt`, `pricesPt0`, `pricesPt1`,
-  `totexpPt0`) were moved ahead of `clusterId`/`weight` in the parameter
-  list, since GAUSS requires every required (non-defaulted) parameter to
-  precede any keyword-defaulted one -- `clusterId` sat earlier in the
-  signature before this conversion.
+  sentinel; scalar nonzero weights are rejected. This proc's required
+  scenario arguments (`intcptPt`, `pricesPt0`, `pricesPt1`, `totexpPt0`)
+  precede `clusterId`/`weight` in the parameter list, since GAUSS requires
+  every required (non-defaulted) parameter to precede any
+  keyword-defaulted one.
 
 ## Returns
 
@@ -73,7 +72,7 @@ wOutR = quaidsWelfareFit(wfOut.robustBestB, wfOut.robustBestV,
     intcptPt, pricesPt0, pricesPt1, totexpPt0, aCtl);
 ```
 
-## Example
+## Examples
 
 ```gauss
 wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);

@@ -17,7 +17,7 @@ same table in a shorter form next to the quick start.
 | Component | Tier | Why |
 | --- | --- | --- |
 | LA-AIDS (`aCtl.maxiter = 1`) | **Stable** | One-step Stone price index -- no iteration, so no convergence-failure mode of this kind exists. Tradeoff: linear-approximation bias (see the synthetic-validation tolerance of 1.20 vs. 0.10 for the iterated models). |
-| Iterated AIDS (`aCtl.linear=1`, `aCtl.maxiter>1`) | Experimental | A committed 200-seed sweep (Milestone 12) measured 58% combined failure at default settings (39% never converges, 19% converges to a self-consistent but wrong answer). Always check `qOut.converged`; `aCtl.relax=.75` measurably helps (see Notes below). |
+| Iterated AIDS (`aCtl.linear=1`, `aCtl.maxiter>1`) | Experimental | A committed 200-seed sweep measured 58% combined failure at default settings (39% never converges, 19% converges to a self-consistent but wrong answer). Always check `qOut.converged`; `aCtl.relax=.75` measurably helps (see Notes below). |
 | QUAIDS (`aCtl.linear=0`, `aCtl.maxiter>1`) -- `quaidsControlCreate()`'s actual shipped default | Experimental (highest measured risk) | Same sweep measured 76% combined failure (54.5% never converges, 21.5% wrong). This is the library's own default combination -- do not rely on the coded defaults without explicitly checking `qOut.converged`. |
 | Zero-share correction (`quaidsZeroFit`) | Experimental | Inherits the base model's convergence risk above (it runs the same translog-price-index iteration), plus a simplified (non-sandwich) SE formula, approximate (not exact) adding-up in the corrected coefficients, and a known, non-trappable GAUSS `glm()` crash mode on some inputs -- see Notes below. |
 | Curvature imposition (`quaidsCurvatureFit`, requires `optmt`) | Experimental | Delta-method standard errors are known-unreliable whenever the estimated Cholesky factor sits at the boundary of the negative-semidefinite cone, a common outcome in this library's own test fixtures -- prefer `quaidsCurvatureBootstrapFit`/`quaidsCurvatureBootstrapCI`. QUAIDS curvature additionally requires damping (`aCtl.relax=.25`-ish) to converge at all -- see Notes below. |
@@ -49,63 +49,55 @@ to fail) and this caveat does not apply.
 | Symmetry-given-homogeneity test | Yes (built into `quaidsFit`) | Yes (built into `quaidsFit`) | Yes (built into `quaidsFit`) |
 | Standalone homogeneity test | Yes (`quaidsHomogeneityTest`, needs `aCtl.homogenous=0` fit) | Yes | Yes |
 | Standalone joint homogeneity+symmetry test | Yes (`quaidsJointTest`) | Yes | Yes |
-| Quadratic-term (AIDS-vs-QUAIDS) specification test | Not applicable (no quadratic term to test) | Not applicable | Yes (`quaidsQuadraticTest`, since Milestone 17) |
+| Quadratic-term (AIDS-vs-QUAIDS) specification test | Not applicable (no quadratic term to test) | Not applicable | Yes (`quaidsQuadraticTest`) |
 | Elasticities at arbitrary points | Yes (`quaidsElasFit`) | Yes | Yes |
 | Delta-method elasticity standard errors | Yes | Yes | Yes |
-| Predicted budget shares at arbitrary points | Yes (`quaidsSharesFit`, since Milestone 16, no extra dependency) | Yes | Yes |
+| Predicted budget shares at arbitrary points | Yes (`quaidsSharesFit`, no extra dependency) | Yes | Yes |
 | Exact algebraic identity validation (Engel/Cournot/homogeneity) | Yes | Yes | Yes |
 | Slutzky negativity diagnostic | Yes (`quaidsSlutzky`) | Yes | Yes |
-| Preflight data/design diagnostics | Yes (`quaidsPreflight`, since Milestone 23) | Yes | Yes |
+| Preflight data/design diagnostics | Yes (`quaidsPreflight`) | Yes | Yes |
 | Welfare measures (exact CV/EV) | Yes (`quaidsWelfareFit`, no extra dependency) | Yes | Yes |
-| Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | Yes since Milestone 13, requires `aCtl.relax` -- see Notes |
-| Curvature bootstrap standard errors | Yes (`quaidsCurvatureBootstrapFit`, since Milestone 15 -- see Notes) | Yes (same) | Yes (same) |
-| Curvature bootstrap percentile CIs | Yes (`quaidsCurvatureBootstrapCI`, since Milestone 18) | Yes (same) | Yes (same) |
+| Curvature imposition | Yes (`quaidsCurvatureFit`, sample mean, requires `optmt` -- see Notes) | Yes (same) | Yes, requires `aCtl.relax` -- see Notes |
+| Curvature bootstrap standard errors | Yes (`quaidsCurvatureBootstrapFit` -- see Notes) | Yes (same) | Yes (same) |
+| Curvature bootstrap percentile CIs | Yes (`quaidsCurvatureBootstrapCI`) | Yes (same) | Yes (same) |
 | Dataframe/column-name entry point | Yes (`quaidsFull`) | Yes | Yes |
 | Formula-string (`"y ~ x"`) API | Not applicable (multi-equation system) | Not applicable | Not applicable |
 | `pubtable` export (LaTeX/Markdown/CSV/...) | Yes (`src/pubtable_quaids.src`, optional) | Yes | Yes |
 | Synthetic deterministic validation | Yes (`tests/quaids_synthetic_validation_test.e`) | Yes | Yes |
 | Published-data cross-validation vs. R | Yes (`Blanciforti86` vs. 3SLS, `tests/quaids_published_validation_test.e`) | Yes (`Blanciforti86` vs. `method="IL"`, wider tolerance -- see Notes) | No independent reference implementation exists (see Notes) |
 | Iteration convergence guarantee | Not applicable (one-step) | No -- a 200-seed sweep measured a 58% failure rate (never-converges or converges to a wrong answer) at default settings; check `qOut.converged`. `aCtl.relax=.75` measurably reduces this -- see Notes | No -- same caveat, 76% failure rate measured |
-| Zero budget share correction | Yes (`quaidsZeroFit`, since Milestone 19; homogeneity/symmetry since Milestone 30 -- see Notes) | Yes (same) | Yes (same) |
-| Robust / cluster-robust standard errors | Yes (`quaidsRobustFit`, since Milestone 20, simplified bread -- see Notes) | Yes (same) | Yes (same) |
-| Robust / cluster bootstrap | Yes (`quaidsRobustBootstrapFit`, since Milestone 20) | Yes (same) | Yes (same) |
-| Robust covariance propagation to shares/elasticities/welfare | Yes (`quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance`, since Milestone 22) | Yes (same) | Yes (same) |
+| Zero budget share correction | Yes (`quaidsZeroFit`, unconstrained or homogeneity/symmetry -- see Notes) | Yes (same) | Yes (same) |
+| Robust / cluster-robust standard errors | Yes (`quaidsRobustFit`, simplified bread -- see Notes) | Yes (same) | Yes (same) |
+| Robust / cluster bootstrap | Yes (`quaidsRobustBootstrapFit`) | Yes (same) | Yes (same) |
+| Robust covariance propagation to shares/elasticities/welfare | Yes (`quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance`) | Yes (same) | Yes (same) |
 | Applied workflow bundle | Yes (`quaidsWorkflowFit` with compact preflight summary; `quaidsWorkflowScenarioFit` for CV/EV scenarios) | Yes (same) | Yes (same) |
-| Sampling-weighted point estimate + weighted/clustered SE | Yes (`quaidsFit`'s optional `weight` argument, since Milestone 26 -- see Notes) | Yes (same) | Yes (same) |
-| Sampling-weighted workflow (estimator + evaluation point) | Yes (`quaidsSurveyWorkflowFit`, since Milestone 26 -- see Notes) | Yes (same) | Yes (same) |
-| Replicate-weight (jackknife/BRR-style) standard errors | Yes (`quaidsReplicateWeightFit`, since Milestone 27, caller-supplied design only -- see Notes) | Yes (same) | Yes (same) |
+| Sampling-weighted point estimate + weighted/clustered SE | Yes (`quaidsFit`'s optional `weight` argument -- see Notes) | Yes (same) | Yes (same) |
+| Sampling-weighted workflow (estimator + evaluation point) | Yes (`quaidsSurveyWorkflowFit` -- see Notes) | Yes (same) | Yes (same) |
+| Replicate-weight (jackknife/BRR-style) standard errors | Yes (`quaidsReplicateWeightFit`, caller-supplied design only -- see Notes) | Yes (same) | Yes (same) |
 | Installed-package (`library quaids;`) support | Yes | Yes | Yes |
 
 ## Notes
 
-- **Iteration convergence guarantee** (Milestone 12): a real, committed
-  200-seed x 2-model sweep (`tests/quaids_convergence_sweep.e`, replacing
-  an informal 8-seed probe referenced since Milestone 3 that never
-  survived as a repo artifact) measured, at default settings
-  (`aCtl.relax=1`, `aCtl.err=.0001`, `aCtl.maxiter=100`): iterated AIDS
-  never-converges 39% of the time and converges to a wrong answer (a
+- **Iteration convergence guarantee**: a committed 200-seed x 2-model
+  sweep (`tests/quaids_convergence_sweep.e`, default settings
+  `aCtl.relax=1`, `aCtl.err=.0001`, `aCtl.maxiter=100`) measures: iterated
+  AIDS never-converges 39% of the time and converges to a wrong answer (a
   self-consistent but incorrect fixed point, distinct from simply running
   out of iterations) another 19% (58% combined failure); QUAIDS
-  never-converges 54.5% and converges wrong another 21.5% (76% combined).
-  Two candidate fixes were tested empirically, not assumed: a near-zero-
-  denominator guard on the convergence check had **zero measurable
-  effect** (documented as an honest non-result); an opt-in damping field
-  `aCtl.relax` (default `1`, i.e. off) measurably improved the correct-
-  convergence rate at `relax=.75` (iterated AIDS 42%->43% correct, QUAIDS
-  24%->26.5% correct) but more aggressive damping (`.5`, `.3`) did not
-  help further and often made things worse. This is a modest, evidence-
-  backed mitigation, not a solved problem -- see
+  never-converges 54.5% and converges wrong another 21.5% (76%
+  combined). `aCtl.relax` under-relaxes the fixed-point update; `relax=.75`
+  measurably improves the correct-convergence rate (iterated AIDS to 43%,
+  QUAIDS to 26.5%), but more aggressive damping (`.5`, `.3`) does not help
+  further and often makes things worse. This is a modest, evidence-backed
+  mitigation, not a solved problem -- see
   [Usage guide](USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids)
-  and `GOLD_STANDARD_TODO.md`'s Milestone 12 section for the full grid
-  and the separate, unrelated crash fix this same sweep also found (an
-  unguarded `invpd()` in the symmetry-test block that used to abort the
-  entire `quaidsFit()` call on a badly-diverged fit).
+  and `GOLD_STANDARD_TODO.md` for the full grid.
 - "Always (control-function)" means `instr` is a required argument to
   every estimator entry point -- there is no exogenous-total-expenditure
   estimation mode in this library.
-- Sampling-weighted estimation (`quaidsFit`'s optional `weight` argument,
-  Milestone 26) is a genuine weighted point estimate: every cross-product
-  in the starting value, iteration loop, Jacobian-corrected variance, and
+- Sampling-weighted estimation (`quaidsFit`'s optional `weight` argument)
+  is a genuine weighted point estimate: every cross-product in the
+  starting value, iteration loop, Jacobian-corrected variance, and
   overidentification test is pre-scaled by `sqrt(weight)`, the standard
   survey-WLS trick, an exact no-op when `weight` is uniform. `weight` is
   renormalized internally to sum to `nobs`. `quaidsRobustFit`/
@@ -113,49 +105,39 @@ to fail) and this caveat does not apply.
   matching Horvitz-Thompson pweight-robust sandwich -- **a different
   scaling convention from the point estimate's own `sqrt(weight)`**: the
   bread keeps `sqrt(weight)`, but the per-observation score contribution
-  uses plain `weight`, checked directly (not just derived on paper)
-  against a deliberately-wrong alternative in
-  `tests/quaids_survey_test.e`. `quaidsPreflight` validates the same
-  weight (a required positional argument there, mirroring `clusterId`'s
-  convention) and `quaidsWorkflowFit` threads an optional `weight` through
-  its own sub-calls. `quaidsSurveyWorkflowFit`'s own `weight` argument
-  (Milestone 25) now does double duty since Milestone 26: it both fits
-  the weighted estimator (via `quaidsWorkflowFit`'s new argument) and, as
-  it always has, recomputes the workflow's representative evaluation
-  point as the weighted mean of intercept shifters, prices, and total
-  expenditure -- a deliberate, documented behavior change from that
-  proc's original Milestone 25 release, which left the estimator
-  unweighted. Formal strata as a concept distinct from clustering, and
+  uses plain `weight`. `quaidsPreflight` validates the same weight (a
+  required positional argument there, mirroring `clusterId`'s convention)
+  and `quaidsWorkflowFit` threads an optional `weight` through its own
+  sub-calls. `quaidsSurveyWorkflowFit`'s own `weight` argument both fits
+  the weighted estimator (via `quaidsWorkflowFit`'s argument) and
+  recomputes the workflow's representative evaluation point as the
+  weighted mean of intercept shifters, prices, and total expenditure.
+  Formal strata as a concept distinct from clustering, and
   finite-population correction, remain future survey/microdata work.
 - Replicate-weight (jackknife/BRR-style) standard errors
-  (`quaidsReplicateWeightFit`, Milestone 27) implement the shared linear
-  form underlying every linearized replication variance estimator,
+  (`quaidsReplicateWeightFit`) implement the shared linear form underlying
+  every linearized replication variance estimator,
   `V = sum_r c_r * vec(b_r - b_full) * vec(b_r - b_full)'`, from a
   caller-supplied `TxR` matrix of replicate weight columns and a
   scale factor (scalar or `Rx1`) -- **no specific design (JK1, JKn, BRR,
   Fay's BRR) is implemented or auto-detected**; both inputs are always
-  required, matching `quaidsCurvatureBootstrapFit`'s own "never silently
-  guess an inference-affecting parameter" precedent for `B`. Unlike the
-  bootstrap procs it otherwise resembles, there is no resampling loop, no
-  `seed`, and no retry -- a failed replicate (fixed, caller-supplied, not
-  random) is simply dropped from the sum, a documented simplification
-  since the formal jackknife/BRR literature does not define a
-  missing-replicate adjustment this library implements. `rOut.b`/`rOut.v`
-  are already in `quaidsFit()`'s own full `bestB` basis, so -- unlike
-  `quaidsRobustFit()` -- no expansion helper is needed before
-  `quaidsSharesFit()`/`quaidsElasFit()`/`quaidsWelfareFit()`. Building
-  this found and guarded against a real, non-trappable `error G0058`
-  crash mode (a replicate weight concentrated on too few effectively-
-  weighted rows can drive `quaidsFit()`'s iteration into a rank-deficient
-  state) via a pre-call effective-sample-size check, the same class of
-  defensive guard already used for `eighv()`/`glm()`. See
+  required. Unlike the bootstrap procs it otherwise resembles, there is no
+  resampling loop, no `seed`, and no retry -- a failed replicate (fixed,
+  caller-supplied, not random) is simply dropped from the sum, since the
+  formal jackknife/BRR literature does not define a missing-replicate
+  adjustment this library implements. `rOut.b`/`rOut.v` are already in
+  `quaidsFit()`'s own full `bestB` basis, so -- unlike `quaidsRobustFit()`
+  -- no expansion helper is needed before
+  `quaidsSharesFit()`/`quaidsElasFit()`/`quaidsWelfareFit()`. A replicate
+  weight concentrated on too few effectively-weighted rows is skipped
+  before it can drive `quaidsFit()`'s iteration into a rank-deficient,
+  crashing state. See
   [Methodology Notes](METHODOLOGY_NOTES.md#replicate-weight-jackknifebrr-variance-estimation).
-- Welfare measures (`quaidsWelfareFit`, Milestone 11) are exact, not
-  approximated, for all three model choices -- unlike curvature
-  imposition, computing CV/EV needs no new estimation, only a closed-form
-  evaluation of the already-fitted expenditure function at two points, so
-  there was no reason to scope QUAIDS out the way Milestone 10 did. See
-  [Methodology Notes](METHODOLOGY_NOTES.md#welfare-measures).
+- Welfare measures (`quaidsWelfareFit`) are exact, not approximated, for
+  all three model choices -- unlike curvature imposition, computing CV/EV
+  needs no new estimation, only a closed-form evaluation of the
+  already-fitted expenditure function at two points, so QUAIDS needs no
+  separate scoping. See [Methodology Notes](METHODOLOGY_NOTES.md#welfare-measures).
 - The published-data cross-validation (`Blanciforti86` vs. R's
   `micEconAids`) covers both LA-AIDS (`aCtl.linear=1, aCtl.maxiter=1`, vs.
   `aidsEst(..., instNames=...)`, 3SLS -- max abs difference ~0.021) and
@@ -165,86 +147,68 @@ to fail) and this caveat does not apply.
   comparison has a wider gap for a real, understood reason, not
   approximation slop: `micEconAids`'s `method="IL"` does not support
   instrumental variables (combining it with `instNames` segfaults R's
-  `aidsEst` rather than erroring cleanly -- confirmed by direct testing),
-  so that reference is SUR-estimated, while GAUSS's iterated fit always
-  instruments log total expenditure. The comparison therefore spans both a
-  different estimation algorithm *and* an IV-vs-no-IV difference. **QUAIDS
-  has no independent reference implementation available**: `micEconAids`
-  does not implement a quadratic log-expenditure term at all, and no other
-  comparably-established QUAIDS implementation was found (see
-  `GOLD_STANDARD_TODO.md`'s Milestone 3 section on the Python from-scratch
-  replica, kept as supplementary evidence only). QUAIDS's validation is
-  therefore the known-true synthetic-DGP recovery in
-  `tests/quaids_synthetic_validation_test.e` -- a real, non-circular check
-  (independently-generated data with known-true parameters, not just
-  re-running the estimator on its own output), but a different, weaker
-  tier of evidence than cross-implementation agreement on real published
-  data. Documented here rather than silently claimed as equivalent.
+  `aidsEst` rather than erroring cleanly), so that reference is
+  SUR-estimated, while GAUSS's iterated fit always instruments log total
+  expenditure. The comparison therefore spans both a different estimation
+  algorithm *and* an IV-vs-no-IV difference. **QUAIDS has no independent
+  reference implementation available**: `micEconAids` does not implement a
+  quadratic log-expenditure term at all, and no other comparably-established
+  QUAIDS implementation was found (see `GOLD_STANDARD_TODO.md` on the
+  Python from-scratch replica, kept as supplementary evidence only).
+  QUAIDS's validation is therefore the known-true synthetic-DGP recovery
+  in `tests/quaids_synthetic_validation_test.e` -- a real, non-circular
+  check (independently-generated data with known-true parameters, not
+  just re-running the estimator on its own output), but a different,
+  weaker tier of evidence than cross-implementation agreement on real
+  published data. Documented here rather than silently claimed as
+  equivalent.
 - Curvature imposition (Diewert-Wales Cholesky reparametrization,
-  `quaidsCurvatureFit`) is available for LA-AIDS/AIDS (`aCtl.linear=1`,
-  Milestone 10) and QUAIDS (`aCtl.linear=0`, Milestone 13), imposed
-  locally at the sample mean, requiring the `optmt` package -- an opt-in
-  adapter (`src/quaidscurvature.src`, not in `package.json`'s `src` array,
-  same treatment as the optional `pubtable` reporting adapter), not a
+  `quaidsCurvatureFit`) is available for LA-AIDS/AIDS (`aCtl.linear=1`)
+  and QUAIDS (`aCtl.linear=0`), imposed locally at the sample mean,
+  requiring the `optmt` package -- an opt-in adapter
+  (`src/quaidscurvature.src`, not in `package.json`'s `src` array, same
+  treatment as the optional `pubtable` reporting adapter), not a
   `library quaids;` dependency; see `docs/public-api.json`'s
-  `optional_modules` entry. QUAIDS was initially
-  deferred at Milestone 10 -- its Slutzky matrix adds a `lambda`-
-  dependent cross-term entangling three nonlinear parameter blocks
-  instead of two -- but this resolved (Milestone 13) using the same
-  lag-then-solve trick `quaidsFit()`'s own iteration already uses, with
-  no growth in what `optmt` searches over. QUAIDS's curvature outer loop
-  is measurably less stable than AIDS's own though: `aCtl.relax`
-  (Milestone 12) is effectively required, not optional, for QUAIDS --
-  undamped runs on the validation fixture diverge to NaN within a
-  handful of iterations. Standard errors from `quaidsCurvatureFit` are a
-  simplified delta-method approximation, known to be unreliable when the
-  estimated Cholesky factor has boundary (near-zero) entries (a standard
-  complication of Cholesky-based negative-semidefinite-cone estimation)
-  -- point estimates and the exact curvature property at the reference
-  point are unaffected. `quaidsCurvatureBootstrapFit` (Milestone 15) closes
-  this gap with a nonparametric i.i.d. row bootstrap (resample, refit the
-  whole pipeline, take the empirical SE), reported alongside rather than
-  replacing the delta-method SE; it has no default replication count, since
-  a single AIDS curvature fit and a single QUAIDS curvature fit differ in
-  runtime by roughly an order of magnitude, making a one-size-fits-all
-  default misleading. `quaidsCurvatureBootstrapCI` (Milestone 18) adds
-  percentile confidence intervals directly from the bootstrap's raw
-  draws, no new resampling needed. Building it surfaced a real, silent
-  bug (present since Milestone 10/15): `quaidsCurvatureFit`'s `se` and
-  `quaidsCurvatureBootstrapFit`'s `seBoot` had their individual cells
-  scrambled relative to `b` (GAUSS's `reshape()` fills row-major, not
-  column-major like `vec()`) -- invisible to shape/sign/finiteness
-  checks, since those are permutation-invariant. Fixed in both places;
-  `v` (the full covariance) was never affected. There is no independent
-  published/cross-
-  implementation validation for the *imposed* estimator on either model:
-  even the R `micEconAids` reference implementation used elsewhere in
-  this library only diagnoses curvature, never imposes it. For QUAIDS
-  specifically, `tests/quaids_curvature_test.e` validates convergence/
-  exact negative-semidefiniteness/non-vacuousness/shape rather than
-  "recovers a known true curvature-consistent gamma" the way the AIDS
-  block does -- a real, committed attempt to build a QUAIDS analog of the
-  AIDS fixture found dozens of numerically self-consistent, genuinely
-  NSD candidate seeds, but every one implied economically implausible
-  mean budget shares, so this is a deliberately weaker (but still real)
-  tier of evidence, documented as such rather than silently equated with
-  AIDS's. See
-  [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
-  and `GOLD_STANDARD_TODO.md`'s Milestone 10 and 13 sections.
+  `optional_modules` entry. QUAIDS's curvature outer loop is measurably
+  less stable than AIDS's own: `aCtl.relax` is effectively required, not
+  optional -- undamped runs on the validation fixture diverge to NaN
+  within a handful of iterations. Standard errors from
+  `quaidsCurvatureFit` are a simplified delta-method approximation, known
+  to be unreliable when the estimated Cholesky factor has boundary
+  (near-zero) entries (a standard complication of Cholesky-based
+  negative-semidefinite-cone estimation) -- point estimates and the exact
+  curvature property at the reference point are unaffected.
+  `quaidsCurvatureBootstrapFit` closes this gap with a nonparametric
+  i.i.d. row bootstrap (resample, refit the whole pipeline, take the
+  empirical SE), reported alongside rather than replacing the delta-method
+  SE; it has no default replication count, since a single AIDS curvature
+  fit and a single QUAIDS curvature fit differ in runtime by roughly an
+  order of magnitude, making a one-size-fits-all default misleading.
+  `quaidsCurvatureBootstrapCI` adds percentile confidence intervals
+  directly from the bootstrap's raw draws, no new resampling needed. There
+  is no independent published/cross-implementation validation for the
+  *imposed* estimator on either model: even the R `micEconAids` reference
+  implementation used elsewhere in this library only diagnoses curvature,
+  never imposes it. For QUAIDS specifically, `tests/quaids_curvature_test.e`
+  validates convergence/exact negative-semidefiniteness/non-vacuousness/
+  shape rather than "recovers a known true curvature-consistent gamma" the
+  way the AIDS block does -- a deliberately weaker (but still real) tier
+  of evidence, documented as such rather than silently equated with AIDS's.
+  See [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
+  and `GOLD_STANDARD_TODO.md` for the full history.
 
-- Zero budget share correction (Shonkwiler-Yen, `quaidsZeroFit`, Milestone
-  19) addresses real survey/microdata's corner solutions (zero-expenditure
+- Zero budget share correction (Shonkwiler-Yen, `quaidsZeroFit`)
+  addresses real survey/microdata's corner solutions (zero-expenditure
   goods), which `quaidsFit()` does not model. A per-good first-stage
   probit's fitted probability `F_i` is divided into the second-stage share
   equation (`w_i/F_i = ...`), which avoids breaking the shared-design-
   matrix Kronecker-product identity every stage of `quaidsFit()` relies on
   -- a literal textbook implementation (rescaling every regressor by
-  `F_i`) would not. Since Milestone 30, `aCtl.homogenous=1` also imposes
-  homogeneity/symmetry on the corrected model, in the same minimum-
-  distance projection as the method's own diagonal-delta restriction.
-  Standard errors are a simplified
-  `S .*. inv(gg)` formula that does not correct for the nonlinear
-  translog-price-index feedback or first-stage probit/IV
+  `F_i`) would not. `aCtl.homogenous=1` also imposes homogeneity/symmetry
+  on the corrected model, in the same minimum-distance projection as the
+  method's own diagonal-delta restriction. Standard errors are a
+  simplified `S .*. inv(gg)` formula that does not correct for the
+  nonlinear translog-price-index feedback or first-stage probit/IV
   generated-regressor uncertainty. Adding-up does not hold exactly for the
   corrected coefficients -- a real, known property of the method itself,
   not a bug. Validated on a synthetic fixture with a known latent
@@ -253,34 +217,28 @@ to fail) and this caveat does not apply.
   true latent parameters measurably better than naively fitting
   `quaidsFit()` on the same censored data. GAUSS's built-in `glm()` (used
   for the first-stage probits, no new package dependency) can hard-crash
-  on some degenerate inputs, a known non-trappable failure mode not
-  hardened against in this pass. See
+  on some degenerate inputs, a known non-trappable failure mode. See
   [Methodology Notes](METHODOLOGY_NOTES.md#zero-budget-share-correction-shonkwiler-yen).
 
-- Robust / cluster-robust standard errors (`quaidsRobustFit`, Milestone
-  20) generalize the pooled, homoskedastic `S.*.inv(gg)` sandwich every
-  other covariance in this library uses to a per-observation
-  (heteroskedasticity-robust) or per-cluster (cluster-robust, with a CR1
-  small-sample correction) score aggregation -- genuinely new math, since
-  neither GAUSS's base runtime nor the `tsmt` package's single-equation
-  `robustSE`/`clusterSE` generalize to this library's stacked multi-
-  equation system. Robust is the literal `G=nobs` special case of
-  cluster-robust, unified through one `clusterId` argument, confirmed by
-  an exact-identity regression test. Uses a **simplified bread**
-  (`inv(gg)`-based, not `quaidsFit()`'s own nonlinear-feedback-corrected
-  Jacobian), which was found, empirically, to make its `se` dramatically
-  more conservative than `qOut`'s own classical SE -- confirmed to be an
-  expected consequence of comparing a simple sandwich against the full
-  cross-equation-efficient FGLS system (not a bug), via an independent
-  hand-derivation using the same regressors/residuals.
-  `quaidsRobustBootstrapFit` (also Milestone 20, shipped in the same pass
-  rather than a later follow-up as Milestone 10/15's curvature/bootstrap
-  split did) offers a cluster-aware nonparametric bootstrap alternative
-  that resamples whole clusters and refits `quaidsFit()` itself, typically
-  landing much closer to `qOut`'s own SE than the closed-form sandwich
-  does. The reduced robust coefficient table covers only the `n1`
-  independently-estimated equations, but Milestone 22 adds
-  `quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance` to expand the
+- Robust / cluster-robust standard errors (`quaidsRobustFit`) generalize
+  the pooled, homoskedastic `S.*.inv(gg)` sandwich every other covariance
+  in this library uses to a per-observation (heteroskedasticity-robust) or
+  per-cluster (cluster-robust, with a CR1 small-sample correction) score
+  aggregation -- genuinely new math, since neither GAUSS's base runtime
+  nor the `tsmt` package's single-equation `robustSE`/`clusterSE`
+  generalize to this library's stacked multi-equation system. Robust is
+  the literal `G=nobs` special case of cluster-robust, unified through one
+  `clusterId` argument. Uses a **simplified bread** (`inv(gg)`-based, not
+  `quaidsFit()`'s own nonlinear-feedback-corrected Jacobian), which makes
+  its `se` dramatically more conservative than `qOut`'s own classical SE
+  -- an expected consequence of comparing a simple sandwich against the
+  full cross-equation-efficient FGLS system, not a bug.
+  `quaidsRobustBootstrapFit` offers a cluster-aware nonparametric
+  bootstrap alternative that resamples whole clusters and refits
+  `quaidsFit()` itself, typically landing much closer to `qOut`'s own SE
+  than the closed-form sandwich does. The reduced robust coefficient table
+  covers only the `n1` independently-estimated equations;
+  `quaidsRobustCovariance`/`quaidsRobustBootstrapCovariance` expand the
   robust or bootstrap covariance into `qOut.bestB`'s full basis for
   elasticities, shares, and welfare. See
   [Methodology Notes](METHODOLOGY_NOTES.md#robust-and-cluster-robust-standard-errors).

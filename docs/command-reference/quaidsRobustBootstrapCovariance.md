@@ -41,7 +41,7 @@ Use this helper when the closed-form robust sandwich is too conservative
 for the application and you want bootstrap uncertainty propagated through
 shares, elasticities, or welfare measures.
 
-## Example
+## Examples
 
 ```gauss
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr,

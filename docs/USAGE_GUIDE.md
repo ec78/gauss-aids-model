@@ -114,7 +114,7 @@ print wfSurvey.shares;
 print wfSurvey.incomeElas;
 ```
 
-Since Milestone 26, `sampwt` does double duty: it both fits `quaidsFit()`
+`sampwt` does double duty: it both fits `quaidsFit()`
 as a genuine sampling-weight-adjusted estimator (via
 [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md)'s own optional
 `weight` argument) and changes the evaluation point used for predicted
@@ -169,15 +169,15 @@ For `aCtl.maxiter > 1`, `qOut.model` reports which of `"AIDS"`/`"QUAIDS"`
 was actually fit.
 
 **Convergence is not guaranteed** for the iterated estimator. A real,
-committed 200-seed sweep (`tests/quaids_convergence_sweep.e`, Milestone
-12 -- run it yourself with `tests/run_convergence_sweep.ps1`) measured,
-at default settings: iterated AIDS fails (never converges, or converges
-to a self-consistent but wrong answer) 58% of the time; QUAIDS 76%. An
+committed 200-seed sweep (`tests/quaids_convergence_sweep.e` -- run it
+yourself with `tests/run_convergence_sweep.ps1`) measured, at default
+settings: iterated AIDS fails (never converges, or converges to a
+self-consistent but wrong answer) 58% of the time; QUAIDS 76%. An
 optional damping control can help:
 
 ```gauss
 aCtl.relax = .75;   // default is 1 (no damping); .75 measurably reduced
-                    // the failure rate in the Milestone 12 sweep
+                    // the failure rate in the 200-seed sweep above
 ```
 
 `aCtl.relax` under-relaxes the fixed-point update (`b_new = relax*b +
@@ -209,8 +209,8 @@ zero-share correction, and every bootstrap/replicate-weight procedure
 Summary](FEATURE_SUPPORT_MATRIX.md#support-tier-summary) for the complete,
 component-by-component tier list (LA-AIDS, iterated AIDS, QUAIDS,
 zero-share correction, curvature imposition, and bootstrap/replicate
-procedures). See also `GOLD_STANDARD_TODO.md`'s Milestone 12 section for
-the full sweep methodology.
+procedures). See also `GOLD_STANDARD_TODO.md` for the full sweep
+methodology and development history.
 
 ## Instrumental Variables Are Always Required
 
@@ -267,8 +267,8 @@ estimates the quadratic term at all, so there is nothing to test.
 ## Elasticities At Any Point
 
 `quaidsElas_()` (the low-level computation) always accepted an arbitrary
-evaluation point -- the Milestone 5 generalization was giving that a
-silent, struct-returning entry point:
+evaluation point; `quaidsElasFit()` wraps that in a silent,
+struct-returning entry point:
 
 ```gauss
 n = qOut.n;
@@ -297,7 +297,7 @@ recovered unconstrained fit).
 
 ## Predicted Budget Shares At Any Point
 
-[quaidsSharesFit](command-reference/quaidsSharesFit.md) (Milestone 16)
+[quaidsSharesFit](command-reference/quaidsSharesFit.md)
 exposes the same model-implied share `quaidsElasFit`'s elasticities are
 built on, directly, at any evaluation point -- useful for out-of-sample
 prediction and policy simulation without hand-deriving the share
@@ -351,9 +351,9 @@ formula and how it was verified.
 `quaidsSlutzky()` always diagnoses curvature (Slutzky negative
 semidefiniteness) but never imposes it.
 [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md) can impose
-it locally, at the sample mean, for LA-AIDS/AIDS (`aCtl.linear = 1`) and,
-since Milestone 13, QUAIDS (`aCtl.linear = 0`) too -- requires the
-`optmt` package either way.
+it locally, at the sample mean, for LA-AIDS/AIDS (`aCtl.linear = 1`) and
+QUAIDS (`aCtl.linear = 0`) too -- requires the `optmt` package either
+way.
 
 `src/quaidscurvature.src` is **not** loaded by `library quaids;` alone --
 it is an optional, opt-in adapter (like the `pubtable` reporting adapter
@@ -573,7 +573,7 @@ runnable example.
   (near-zero) entries -- see the [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
   for why this happens and why point estimates and the exact curvature
   property are unaffected. [quaidsCurvatureBootstrapFit](command-reference/quaidsCurvatureBootstrapFit.md)
-  (Milestone 15) offers a bootstrap alternative that does not share this
+  offers a bootstrap alternative that does not share this
   weakness, reported alongside (not replacing) the delta-method SE --
   see [printQuaidsCurvatureBootstrap](command-reference/printQuaidsCurvatureBootstrap.md).
   It has no default replication count: a single AIDS curvature fit takes
@@ -587,22 +587,22 @@ runnable example.
   `tests/quaids_curvature_test.e`'s QUAIDS checks validate convergence/
   exact NSD/shape instead, a real but weaker tier of evidence.
   [quaidsCurvatureBootstrapCI](command-reference/quaidsCurvatureBootstrapCI.md)
-  (Milestone 18) computes percentile confidence intervals directly from
+  computes percentile confidence intervals directly from
   `quaidsCurvatureBootstrapFit()`'s raw draws (`bootOut.bBoot`) -- no new
   resampling needed, but intervals from a small `B` are correspondingly
   crude.
 - No guaranteed convergence for the iterated estimator (or the curvature-
   constrained outer iteration built on top of it) -- see "Choosing A
-  Model" above. `aCtl.relax` (Milestone 12) is an evidence-backed, opt-in
+  Model" above. `aCtl.relax` is an evidence-backed, opt-in
   mitigation, not a fix.
 - IV is mandatory; there is no exogenous-total-expenditure estimation mode.
-- [quaidsFit](command-reference/quaidsFit.md) (Milestone 26) accepts an
+- [quaidsFit](command-reference/quaidsFit.md) accepts an
   optional sampling-weight argument -- a genuine weighted point estimate,
   with a matching weighted/clustered sandwich SE via
   [quaidsRobustFit](command-reference/quaidsRobustFit.md), or
   replicate-weight (jackknife/BRR-style) SE via
   [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
-  (Milestone 27, always against caller-supplied replicate columns and
+  (always against caller-supplied replicate columns and
   scale factor -- no design is auto-detected). Formal strata as a concept
   distinct from clustering, and finite-population correction, are not
   implemented yet.
@@ -610,16 +610,16 @@ runnable example.
   wires the same base weight into both the estimator and the workflow's
   representative evaluation point.
 - [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
-  (Milestone 27) does not retry a replicate that fails to converge (fixed,
+  does not retry a replicate that fails to converge (fixed,
   caller-supplied columns cannot be redrawn) -- a failed replicate is
   simply dropped from the variance sum, a documented simplification since
   the formal JK1/BRR literature does not define a missing-replicate
   adjustment this library implements. A replicate whose effective sample
   size falls below a defensive `2x`-design-columns heuristic is skipped
   before ever calling `quaidsFit()`, avoiding a real, non-trappable
-  `error G0058` crash mode found while building this milestone -- see the
+  `error G0058` crash mode -- see the
   [Methodology Notes](METHODOLOGY_NOTES.md#replicate-weight-jackknifebrr-variance-estimation).
-- [quaidsZeroFit](command-reference/quaidsZeroFit.md) (Milestones 19/30)
+- [quaidsZeroFit](command-reference/quaidsZeroFit.md)
   supports unconstrained estimation and homogeneity/symmetry imposition via
   `aCtl.homogenous`, but reports a simplified standard error that does not
   account for the nonlinear
@@ -628,8 +628,8 @@ runnable example.
   coefficients, a real property of the Shonkwiler-Yen method itself. Its
   first-stage probit relies on GAUSS's built-in `glm()`, which can
   hard-crash (not just fail to converge) on some degenerate inputs -- a
-  known, non-trappable failure mode, not hardened against in this pass.
-- [quaidsRobustFit](command-reference/quaidsRobustFit.md) (Milestone 20)
+  known, non-trappable failure mode.
+- [quaidsRobustFit](command-reference/quaidsRobustFit.md)
   uses a simplified bread, making its closed-form `se` dramatically more
   conservative than `qOut`'s own classical SE (a confirmed, expected
   property, not a bug -- see that proc's own Remarks).

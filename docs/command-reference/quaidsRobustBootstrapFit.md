@@ -13,7 +13,7 @@ sharing the same resampling code path). Silent, no printing -- see
 
 ```gauss
 rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B);
-rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=householdId, seed=42, weight=myWeight);   // Milestone 26/28
+rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clusterId=householdId, seed=42, weight=myWeight);
 ```
 
 ## Parameters
@@ -28,16 +28,14 @@ rbOut = quaidsRobustBootstrapFit(w, intcpt, prices, totexp, instr, aCtl, B, clus
   precedent of never silently guessing an inference-affecting parameter.
   Declared before the keyword-defaulted parameters below, since GAUSS
   requires every required (non-defaulted) parameter to precede any
-  keyword-defaulted one -- Milestone 28 moved `B` earlier in the
-  signature than it sat in the original (Milestone 20) release for
-  exactly this reason.
+  keyword-defaulted one.
 - `clusterId` (*OPTIONAL keyword argument, default `0`*) - `0` for a
   plain i.i.d. row bootstrap, or a `Tx1` vector of cluster group labels
   for a cluster (block) bootstrap.
 - `seed` (*OPTIONAL keyword argument, default `0`*) - if `seed > 0`,
   `rndseed` is set before drawing any resamples (reproducible runs);
   `seed = 0` leaves GAUSS's current random state unchanged.
-- `weight` (*OPTIONAL keyword argument, default `0`*) - Milestone 26: a
+- `weight` (*OPTIONAL keyword argument, default `0`*) - a
   sampling weight, same semantics as [quaidsFit](quaidsFit.md)'s own
   `weight`. Omit, or pass scalar `0`, for the unweighted bootstrap. Scalar
   `0` is the only scalar sentinel; scalar nonzero weights are rejected. Each
@@ -90,22 +88,14 @@ to expand the empirical bootstrap covariance into `qOut.bestB`'s full
 basis before passing it to [quaidsSharesFit](quaidsSharesFit.md),
 [quaidsElasFit](quaidsElasFit.md), or [quaidsWelfareFit](quaidsWelfareFit.md).
 
-**A real bug found and fixed while building this**: an early version
-tracked the bootstrap point estimate in `qOut.bestB`'s full (adding-up-
-recovered, `n`-column) shape while `quaidsRobustFit()`'s own `se` is in
-the `n1`-column reduced form -- a genuine shape mismatch, caught by
-running [printQuaidsRobustBootstrap](printQuaidsRobustBootstrap.md)
-against real data (`error G0058: Index out of range`), not by re-reading
-the code. Fixed by sharing a single reduction helper
-(`_quaidsRobustReduceB()`) between this proc and
-[quaidsRobustFit](quaidsRobustFit.md), so both report the identically-
-shaped reduced form.
+This proc's point estimate is reported in the same `n1`-column reduced
+form as [quaidsRobustFit](quaidsRobustFit.md)'s own `se`, via a shared
+reduction helper (`_quaidsRobustReduceB()`) used by both procs.
 
-**The reshape/cell-position bug class Milestone 18 found twice already**
-(row-major `reshape()` vs. column-major `vec()`) was guarded against
-from this proc's first version, with its own regression test in
-`tests/quaids_robust_bootstrap_test.e`, not found the hard way a third
-time.
+`seBoot`'s cell positions are guarded against the row-major-`reshape()`-
+vs.-column-major-`vec()` mismatch (a real, easily-introduced class of bug
+elsewhere in this library's reshape-based SE display code), with a
+dedicated regression test in `tests/quaids_robust_bootstrap_test.e`.
 
 ## Examples
 

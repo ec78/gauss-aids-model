@@ -96,8 +96,8 @@ coefficient estimates.
    falls below `aCtl.err` or `aCtl.maxiter` is reached. Each step is a
    plain fixed-point update (`b_new = relax*b + (1-relax)*b_old`,
    `aCtl.relax` default `1` = no damping); this has no global-convergence
-   guarantee -- see `GOLD_STANDARD_TODO.md`'s Milestone 12 section for a
-   measured failure-rate characterization and `aCtl.relax`'s effect.
+   guarantee -- see `GOLD_STANDARD_TODO.md` for a measured failure-rate
+   characterization and `aCtl.relax`'s effect.
 4. **Overidentification test**, if `ninst > nu`.
 5. **Symmetry test given homogeneity**, and a **symmetry-constrained
    re-estimation** via minimum distance, if `aCtl.homogenous == 1`.
@@ -193,8 +193,8 @@ Concavity of a flexible functional form like AIDS/QUAIDS cannot be imposed
 result in the demand-systems literature (Diewert & Wales, 1987), not a gap
 in this implementation. [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md)
 imposes it *locally*, at the sample mean, for LA-AIDS/AIDS
-(`aCtl.linear = 1`) and, since Milestone 13, QUAIDS (`aCtl.linear = 0`)
-too -- see [Feature Support Matrix](FEATURE_SUPPORT_MATRIX.md).
+(`aCtl.linear = 1`) and QUAIDS (`aCtl.linear = 0`) too -- see
+[Feature Support Matrix](FEATURE_SUPPORT_MATRIX.md).
 
 The reparametrization: write the upper-left `(n-1) x (n-1)` block of the
 gamma matrix as `gamma = -A*A' - K0`, where `A` is lower triangular and
@@ -227,7 +227,7 @@ estimates and the exact curvature property are unaffected. See
 [quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md) and the
 [usage guide's Limitations section](USAGE_GUIDE.md#limitations).
 
-### Bootstrap Standard Errors (Milestone 15)
+### Bootstrap Standard Errors
 
 [quaidsCurvatureBootstrapFit](command-reference/quaidsCurvatureBootstrapFit.md)
 closes the gap above with a nonparametric i.i.d. row (pairs) bootstrap:
@@ -438,7 +438,7 @@ variable and shared regressors -- neither generalizes to this library's
 same design matrix `X` but have their own residual columns. Reusing them
 would require unpacking into exactly the same per-cluster score
 aggregation this library builds directly, for zero net simplification --
-the same conclusion this project reached about `gmmFitIV` at Milestone 2.
+the same conclusion this project reached about `gmmFitIV`.
 
 **The construction**: given an already-fitted `qOut` and the raw sample,
 
@@ -467,8 +467,8 @@ argued algebraically.
 **A real, empirically-confirmed finding, not a theoretical worry**: this
 sandwich's `bread` is `inv(gg)` -- it does *not* replicate
 `quaidsFit()`'s own nonlinear-translog-price-index-feedback Jacobian
-correction (its `Ji`/`J` construction). Building this milestone's test
-surfaced that this makes `quaidsRobustFit()`'s `se` dramatically more
+correction (its `Ji`/`J` construction). Testing found that this makes
+`quaidsRobustFit()`'s `se` dramatically more
 *conservative* (often more than an order of magnitude larger) than
 `qOut.homogSE`/`symcSE` -- confirmed, via an independent hand-derivation
 in `tests/quaids_robust_test.e`, to be entirely attributable to comparing
@@ -484,9 +484,8 @@ does not share this gap and is typically much closer to `qOut`'s own SE.
 **Scope, deliberately limited** (the same "new sibling, not a
 modification of already-shipped code" choice as curvature/welfare/
 shares/zero-correction): covers only the `n1` independently-estimated
-equations in its printed coefficient table. Milestone 22 adds an explicit
-linear recovery step,
-[quaidsRobustCovariance](command-reference/quaidsRobustCovariance.md), that
+equations in its printed coefficient table.
+[quaidsRobustCovariance](command-reference/quaidsRobustCovariance.md)
 expands this reduced covariance into `qOut.bestB`'s full basis: equation
 `n` is recovered through adding-up, and under homogeneity the reference-
 price gamma row/column are recovered through the same linear restrictions
@@ -503,7 +502,7 @@ and refits `quaidsFit()` only, not `quaidsRobustFit()`'s own sandwich,
 mirroring `quaidsCurvatureBootstrapFit()`'s identical "refit the estimator,
 not its SE stage, each replication" pattern.
 
-## Sampling-Weighted Estimation (Milestone 26)
+## Sampling-Weighted Estimation
 
 [quaidsFit](command-reference/quaidsFit.md) accepts an optional trailing
 `weight` argument -- a survey/sampling weight applied to the point
@@ -568,29 +567,25 @@ own convention in that proc, since it is a diagnostic pass rather than an
 opt-in estimator extension) so bad weights are caught before fitting.
 [quaidsWorkflowFit](command-reference/quaidsWorkflowFit.md) threads an
 optional `weight` through its own `quaidsFit()`/`quaidsPreflight()`/
-`quaidsRobustFit()` calls. Since this milestone,
+`quaidsRobustFit()` calls.
 [quaidsSurveyWorkflowFit](command-reference/quaidsSurveyWorkflowFit.md)'s
 own `weight` argument does double duty: it both fits the weighted
-estimator (via `quaidsWorkflowFit()`'s new argument) and, as it always
-has, recomputes the representative post-estimation evaluation point --
-this is a deliberate, documented behavior change from that proc's original
-(Milestone 25) release, which left the estimator unweighted.
+estimator (via `quaidsWorkflowFit()`'s argument) and recomputes the
+representative post-estimation evaluation point.
 
 ## Replicate-Weight (Jackknife/BRR) Variance Estimation
 
 [quaidsReplicateWeightFit](command-reference/quaidsReplicateWeightFit.md)
-(Milestone 27) implements the item Milestone 26's own follow-up note
-flagged as the next explicitly-unstarted piece of survey/microdata
-support: "replicate weights (BRR/jackknife)... remain open." Many real
-household-expenditure survey designs ship a set of **pre-computed
+supports replicate-weight (BRR/jackknife) variance for survey/microdata
+designs. Many real household-expenditure survey designs ship a set of **pre-computed
 replicate weight columns** rather than requiring the analyst to implement
 their own resampling scheme -- one alternate `Tx1` weight vector per
 replicate, together with a scale factor prescribed by the survey's own
 documentation.
 
 **The math**: given a full-sample point estimate `b_full = qOutFull.bestB`
-(fit under the caller's own base `weight`, reusing Milestone 26's
-`quaidsFit()` `weight` argument unchanged) and `R` replicate refits `b_r`
+(fit under the caller's own base `weight`, reusing `quaidsFit()`'s own
+`weight` argument unchanged) and `R` replicate refits `b_r`
 (each `qOutR.bestB` from `quaidsFit()` called with
 `replicateWeights[.,r]` in place of the base weight), the replicate-weight
 covariance is
@@ -626,31 +621,23 @@ replicate-weight design:
    conversion before feeding `quaidsSharesFit()`/`quaidsElasFit()`/
    `quaidsWelfareFit()` directly.
 
-**A real, non-trappable crash mode was found and guarded against while
-building this, confirmed by direct reproduction, not assumed**: a
-replicate weight column that leaves too few *effectively*-weighted
-observations relative to the number of estimated design columns (Kish's
-effective sample size, `(sum w)^2 / sum(w^2)` -- the same quantity
-`quaidsFit()`'s own `effN` field reports) can drive `quaidsFit()`'s
-internal iteration into a rank-deficient intermediate state and fail with
-a plain GAUSS indexing error, `error G0058: Index out of range`, at
-`src/quaids.src`'s own iteration-loop coefficient unpacking
-(`alpha = intcpt*b[1:1+nint, 1:n-1]`) -- reproduced directly with a
-replicate weight concentrated on 5 rows (`effN = 5`). Critically,
-`trap 1,1;` does **not** catch this -- confirmed empirically (the error
-still aborted the entire calling job with the trap active), the same
-class of non-trappable failure already documented for `eighv()`
-(Milestone 15, `quaidsCurvatureBootstrapFit`) and `glm()` (Milestone 19,
+**A known crash mode is guarded against rather than relying on `trap` to
+catch it**: a replicate weight column that leaves too few
+*effectively*-weighted observations relative to the number of estimated
+design columns (Kish's effective sample size, `(sum w)^2 / sum(w^2)` --
+the same quantity `quaidsFit()`'s own `effN` field reports) can drive
+`quaidsFit()`'s internal iteration into a rank-deficient intermediate
+state and fail with a plain GAUSS indexing error,
+`error G0058: Index out of range` -- a failure mode `trap 1,1;` does
+**not** catch (the same class of non-trappable failure documented for
+`eighv()` in `quaidsCurvatureBootstrapFit` and `glm()` in
 `quaidsZeroFit`). Since the cause is cheaply and reliably checkable
 *before* ever calling `quaidsFit()`, `quaidsReplicateWeightFit()`
 computes each replicate's own effective sample size in advance and skips
 (counts as failed, no crash) any replicate falling below `2x` the number
 of design columns (`(1+nint) + n1 + nendog + nu`, mirroring
-`quaidsRobustFit()`'s own `X` construction) -- a defensive, documented
-heuristic margin, not a formal statistical requirement. This mirrors
-Milestone 15's own NaN/Inf pre-check before `eighv()` exactly: guard the
-one specific, now-understood cause before the crash-prone call, rather
-than trying to catch a failure mode `trap` cannot catch.
+`quaidsRobustFit()`'s own `X` construction) -- a defensive heuristic
+margin, not a formal statistical requirement.
 
 **Testing**: `tests/quaids_replicate_test.e` includes an EXACT
 zero-variance identity check -- when every replicate weight column is

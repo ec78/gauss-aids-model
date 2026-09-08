@@ -312,6 +312,39 @@ passes clean. Full source-tree suite re-ran clean afterward.
     and feature availability.
   - Search-based review finds no conflicting current-state claims.
 
+**Status: PR-302 and PR-303 complete.** PR-302: stripped milestone
+chronology, "found and fixed" bug-archaeology narrative, and "since
+Milestone N"/"(Milestone N)" tags from every primary customer page
+(`README.md`, `docs/USAGE_GUIDE.md`, `docs/FEATURE_SUPPORT_MATRIX.md`,
+`docs/METHODOLOGY_NOTES.md`, all 47 `docs/command-reference/*.md` pages)
+-- roughly 100 mentions removed, each replaced with the current-state
+technical fact it was wrapped around (kept) rather than the historical
+narrative of how/when it was built (dropped, since it already lives in
+`CLAUDE.md`/`GOLD_STANDARD_TODO.md`/`CHANGELOG.md`, this project's
+established engineering-history home). `README.md`'s intro paragraph was
+rewritten from a "Milestones 11-30 are complete" chronology into a
+current-state maturity/feature-pointer paragraph, satisfying the "README
+supports installation and a first result without referencing an internal
+milestone" acceptance evidence directly.
+
+PR-303: added `scripts/verify_docs_quality.ps1` (wired into
+`tests/run_source_tests.ps1`/CI), covering the two Work-bullet dimensions
+not already covered by `verify_public_api.ps1` (release metadata,
+procedure/struct coverage) or `verify_docs_consistency.ps1` (documented
+defaults vs. source, PR-301): (1) every `docs/command-reference/*.md`
+page's heading structure -- found and fixed 4 real, pre-existing
+deviations (`## Example` instead of the standard `## Examples`) while
+building this check, before it ever ran as an automated gate; (2)
+internal markdown link and `#anchor` integrity across every doc page,
+using GitHub's own heading-to-anchor slug algorithm (verified against 4
+already-in-use anchors in this doc set before trusting it); (3)
+keyword-argument spelling in every ```gauss code fence, cross-checked
+against each called procedure's actual declared parameter list in
+`src/`. Verified all three checks by deliberately reintroducing each class
+of error in turn (a renamed heading, a broken file link, a broken
+anchor, a typo'd keyword argument) and confirming the script fails
+before confirming the corrected state passes clean.
+
 ### PR-302 — Separate customer guidance from engineering history
 
 - **Priority / effort:** P1 / M

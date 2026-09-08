@@ -43,7 +43,7 @@ propagation.
 The transformation changes standard errors only. Point estimates remain
 `qOut.bestB`.
 
-## Example
+## Examples
 
 ```gauss
 qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);

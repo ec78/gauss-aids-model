@@ -55,8 +55,8 @@ identities to floating-point precision:
 - Elasticity homogeneity: `sum_j(ep_ij) + er_i = 0`, for each good `i`
 
 where `w` is the **model-implied** share at the evaluation point, not a
-noisy observed share -- [quaidsSharesFit](quaidsSharesFit.md) (Milestone
-16) computes exactly this share vector directly; see
+noisy observed share -- [quaidsSharesFit](quaidsSharesFit.md) computes
+exactly this share vector directly; see
 `tests/quaids_elasticities_test.e` for a worked example using it to check
 all three identities.
 

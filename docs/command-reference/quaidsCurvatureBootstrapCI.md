@@ -46,19 +46,6 @@ correspondingly wide, noisy intervals here, not a false sense of
 precision. No minimum-`B` error is enforced; the caller is trusted to
 weigh this tradeoff, same as the `B` choice itself.
 
-**A real bug found while building this, now fixed everywhere it
-occurred**: GAUSS's `reshape()` fills row-major, not column-major like
-`vec()` -- confirmed empirically (`reshape(vec(X), rows(X), cols(X))`
-does **not** recover `X` in general). Building this proc's own ground-
-truth cross-check surfaced that `quaidsCurvatureFit()`'s `cOut.se` and
-`quaidsCurvatureBootstrapFit()`'s `bootOut.seBoot` had exactly this bug
-since Milestone 10/15 respectively -- their individual cells were
-silently scrambled relative to `cOut.b`/`bootOut.b`, invisible to the
-shape/sign/finiteness checks already in place (those properties are
-permutation-invariant). Both were fixed alongside this proc's own
-(previously unshipped) correct implementation. See
-`GOLD_STANDARD_TODO.md`'s Milestone 18 section.
-
 ## Examples
 
 ```gauss
