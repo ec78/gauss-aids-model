@@ -194,6 +194,43 @@ this is the first version with any public compatibility promise at all.
   instance of its target error class and confirming the script fails
   before confirming the corrected state passes clean.
 
+### Changed (recommended workflow quick start, PR-401)
+
+- README's Quick Start now leads with `quaidsWorkflowFit()` -- one call
+  bundling preflight diagnostics, estimation, a convergence check,
+  mean-point predicted shares, elasticities, and heteroskedasticity-/
+  cluster-robust standard errors -- instead of five separately chained
+  calls. The manual step-by-step version and the legacy `quaids()`
+  wrapper moved to a new "Advanced and Compatibility Usage" section.
+
+### Added (real-data example, PR-402)
+
+- Added `examples/00_real_data_quickstart.e`: loads the published
+  Blanciforti86 food-consumption dataset via `loadd()`, preflights, fits
+  the stable LA-AIDS baseline, interprets the symmetry test, prints a
+  comparison against the independent R reference already asserted by
+  `tests/quaids_published_validation_test.e`, computes elasticities, and
+  exports a plain-text results table -- no optional package required.
+
+### Fixed (real bugs found while building the real-data example)
+
+- `printQuaids()` crashed with `error G0058: Index out of range` on any
+  fit with zero extra intercept shifters (`nint==0`) -- real published
+  data with no demographic variables hits this immediately. Fixed in
+  `src/quaids.src` (two call sites, IV and homogeneity-constrained
+  blocks).
+- Eight printer procs across six files (`printQuaidsElas`,
+  `printQuaidsShares`, `printQuaidsRobust`/`printQuaidsRobustBootstrap`,
+  `printQuaidsReplicateWeight`, `printQuaidsZero`,
+  `printQuaidsCurvature`/`printQuaidsCurvatureBootstrap`) set GAUSS's
+  *global* print `format` state for their own tables and never restored
+  it, so a plain `print` statement anywhere later in a calling script
+  silently rounded its output (a fitted coefficient like `-0.3465`
+  printed as `0`) -- invisible to this project's own `check()`-based
+  test harness, which compares stored values, never printed text. Added
+  `tests/quaids_print_format_test.e` as a regression guard (verified to
+  fail when the fix is reverted), covering both bugs.
+
 The three release-packaging fixes and the Milestone 31 example suite
 below predate the public-release effort and were originally recorded
 under an "Unreleased" heading with no version bump of their own (no

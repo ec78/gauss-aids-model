@@ -270,6 +270,12 @@ proc 0 = printQuaidsElas(struct quaidsElasOut elasOut);
     call printfm(omat, mask, fmt);
     print;
 
+    /* Restore the default print format -- the format /rd 7, 0 calls above
+       (needed only to control the string-array header rows' column width)
+       otherwise leak into the caller's own subsequent print statements,
+       silently rounding any plain numeric print to the nearest integer. */
+    format /rd 16, 8;
+
 endp;
 
 

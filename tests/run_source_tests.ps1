@@ -89,7 +89,8 @@ $gaussTests = @(
     "quaids_survey_workflow_test.e",
     "quaids_survey_test.e",
     "quaids_replicate_test.e",
-    "quaids_compatibility_test.e"
+    "quaids_compatibility_test.e",
+    "quaids_print_format_test.e"
 )
 
 if (-not $SkipPubtable) {

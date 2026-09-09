@@ -336,4 +336,8 @@ proc 0 = printQuaidsReplicateWeight(struct quaidsReplicateOut rOut);
     endo;
     print;
 
+    /* Restore the default print format -- see printQuaidsElas()'s
+       identical fix/comment in src/quaidselas.src for why this is needed. */
+    format /rd 16, 8;
+
 endp;

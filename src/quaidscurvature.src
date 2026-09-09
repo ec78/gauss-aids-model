@@ -633,6 +633,10 @@ proc 0 = printQuaidsCurvature(struct quaidsCurvOut cOut);
     print cOut.eigenvalues';
     print;
 
+    /* Restore the default print format -- see printQuaidsElas()'s
+       identical fix/comment in src/quaidselas.src for why this is needed. */
+    format /rd 16, 8;
+
 endp;
 
 /*
@@ -892,6 +896,10 @@ proc 0 = printQuaidsCurvatureBootstrap(struct quaidsCurvBootOut bootOut);
         i = i + 1;
     endo;
     print;
+
+    /* Restore the default print format -- see printQuaidsElas()'s
+       identical fix/comment in src/quaidselas.src for why this is needed. */
+    format /rd 16, 8;
 
 endp;
 

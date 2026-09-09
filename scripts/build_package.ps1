@@ -88,13 +88,17 @@ try {
         "tests\pubtable_test_coef.md",
         "tests\pubtable_test_coef.csv",
         "tests\schema_test_quaids_wrapper_out",
+        "tests\print_format_probe_elas.txt",
+        "tests\print_format_probe_shares.txt",
+        "tests\print_format_probe_noint.txt",
         "examples\quaids_coefficients.tex",
         "examples\quaids_coefficients.md",
         "examples\quaids_coefficients.csv",
         "examples\quaids_income_elasticities.md",
         "examples\quaids_uncompensated_elasticities.tex",
         "examples\quaids_compensated_elasticities.csv",
-        "examples\quaids_workflow"
+        "examples\quaids_workflow",
+        "examples\blanciforti_results.txt"
     )
     foreach ($relPath in $generatedTestFiles) {
         $fullPath = Join-Path $stageRoot $relPath

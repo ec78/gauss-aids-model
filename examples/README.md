@@ -2,22 +2,27 @@
 
 A numbered, read-in-order suite of runnable GAUSS programs, one per major
 feature area. Each is a focused, standalone script -- read it top to
-bottom, then run it and compare the printed output. All 13 share one
-small, well-commented synthetic dataset generator
+bottom, then run it and compare the printed output.
+[`00_real_data_quickstart.e`](00_real_data_quickstart.e) is a complete,
+real-published-data walkthrough (load a CSV, preflight, fit, interpret,
+compare against an independent reference, compute elasticities, export a
+table) and the best starting point if you want to see the whole pipeline
+against real numbers before touching synthetic data. Examples 01-13 share
+one small, well-commented synthetic dataset generator
 ([`example_data.src`](example_data.src)): a simulated household budget
 survey with 5 spending categories (Food, Housing, Transportation,
 Recreation, Other), a household-size demographic shifter, and log total
-expenditure instrumented by a log wage-income variable. See that file's
-own header comment for a real, honest caveat about this synthetic data
-(individual budget shares can fall outside [0,1], even though they
-always sum to exactly 1 -- explained there, and in
-[`01_basic_estimation.e`](01_basic_estimation.e)).
+expenditure instrumented by a log wage-income variable, each isolating
+one feature area at a time. See that file's own header comment for a
+real, honest caveat about this synthetic data (individual budget shares
+can fall outside [0,1], even though they always sum to exactly 1 --
+explained there, and in [`01_basic_estimation.e`](01_basic_estimation.e)).
 
 Run each example from this directory:
 
 ```powershell
 cd examples
-tgauss -b -x 01_basic_estimation.e
+tgauss -b -x 00_real_data_quickstart.e
 ```
 
 (`10_curvature_imposition.e` and `13_pubtable_reporting.e` need the
@@ -28,6 +33,7 @@ in their own header comments.)
 
 | # | File | Demonstrates | Requires |
 | --- | --- | --- | --- |
+| 00 | [`00_real_data_quickstart.e`](00_real_data_quickstart.e) | `loadd()`, `quaidsPreflight`, `quaidsFit`/`printQuaids`, `quaidsElasFit`, a real published-data comparison against an independent R reference, and a plain-text results export -- all against real Blanciforti86 food-consumption data | -- |
 | 01 | [`01_basic_estimation.e`](01_basic_estimation.e) | `quaidsControlCreate`, `quaidsFit`/`printQuaids`, `quaids()`, the LA-AIDS/iterated-AIDS/QUAIDS model switch | -- |
 | 02 | [`02_dataframe_input.e`](02_dataframe_input.e) | `quaidsFull()` -- selecting columns from a named-column dataframe instead of assembling matrices by hand | -- |
 | 03 | [`03_preflight_diagnostics.e`](03_preflight_diagnostics.e) | `quaidsPreflight`/`printQuaidsPreflight` -- a warning, a second warning, and a hard failure | -- |

@@ -787,7 +787,14 @@ proc 0 = printQuaids(struct quaidsOut qOut);
 
         print "                     Intercept variables";
         omat = qOut.xnam~qOut.ivB[1:1+qOut.nint, i]~qOut.ivSE[1:1+qOut.nint, i]~qOut.ivT[1:1+qOut.nint, i]~qOut.ivPvt[1:1+qOut.nint, i];
-        omat = omat~(mss|qOut.ivCor[1:qOut.nint, i]);
+        if qOut.nint > 0;
+            omat = omat~(mss|qOut.ivCor[1:qOut.nint, i]);
+        else;
+            /* qOut.nint==0 (no extra intercept shifters): qOut.ivCor[1:0, i]
+               is an invalid GAUSS range, not an empty matrix -- only the
+               constant's own "N/A" correlation row applies. */
+            omat = omat~mss;
+        endif;
         call printfm(omat, mask, fmt);
 
 
@@ -877,7 +884,12 @@ proc 0 = printQuaids(struct quaidsOut qOut);
 
         print "                     Intercept variables";
         omat = qOut.xnam~qOut.homogB[1:1+qOut.nint, i]~qOut.homogSE[1:1+qOut.nint, i]~qOut.homogT[1:1+qOut.nint, i]~qOut.homogPvt[1:1+qOut.nint, i];
-        omat = omat~(mss|qOut.homogCor[1:qOut.nint, i]);
+        if qOut.nint > 0;
+            omat = omat~(mss|qOut.homogCor[1:qOut.nint, i]);
+        else;
+            /* qOut.nint==0: see the identical guard above in the IV block. */
+            omat = omat~mss;
+        endif;
         call printfm(omat, mask, fmt);
 
         print "                      Relative prices";

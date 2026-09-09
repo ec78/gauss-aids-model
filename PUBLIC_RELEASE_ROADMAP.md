@@ -375,6 +375,47 @@ before confirming the corrected state passes clean.
 
 ## Phase 4: Build the Customer Implementation Path
 
+**Status: PR-401 and PR-402 complete.** PR-401: README's Quick Start now
+leads with `quaidsWorkflowFit()` -- one call bundling preflight
+diagnostics, estimation, a convergence check, mean-point predicted
+shares, elasticities, and heteroskedasticity-/cluster-robust standard
+errors -- instead of five separately chained calls. The manual
+step-by-step version and the legacy `quaids()` wrapper moved to a new
+"Advanced and Compatibility Usage" section.
+
+PR-402: added `examples/00_real_data_quickstart.e`, a complete real-data
+walkthrough against the published Blanciforti86 food-consumption dataset
+(`tests/fixtures/published/`, already license-cleared) -- `loadd()`,
+column mapping, preflight, the stable LA-AIDS baseline, interpretation of
+the symmetry test, a printed comparison against the independent R
+reference (with the documented tolerance), elasticities, and a
+dependency-free plain-text table export. Needs no optional package, so it
+satisfies "runs from the distributed artifact in a clean installation"
+directly -- confirmed by building the release zip and unzipping it to
+verify both the example and its CSV fixture ship. A companion automated
+test was **not** required separately since
+`tests/quaids_published_validation_test.e` already asserts this exact
+comparison as part of the automated suite; the example's own printed
+comparison mirrors it for a human reader.
+
+Building and actually running this example (this project's standing
+"never trust a derived script without running it" discipline) surfaced
+two real, previously-undetected bugs in already-shipped code, both fixed
+with regression tests in the new `tests/quaids_print_format_test.e`: (1)
+`printQuaids()` crashed with `error G0058` on any fit with zero extra
+intercept shifters (`nint==0`) -- a real edge case real published data
+with no demographic variables hits immediately (`src/quaids.src`, two
+call sites); (2) eight printer procs across six files
+(`printQuaidsElas`, `printQuaidsShares`, `printQuaidsRobust`/Bootstrap,
+`printQuaidsReplicateWeight`, `printQuaidsZero`, `printQuaidsCurvature`/
+Bootstrap) set GAUSS's *global* print `format` state for their own
+tables and never restored it, so a plain `print` statement anywhere
+later in a calling script silently rounded its output (a fitted
+coefficient like `-0.3465` printed as `0`) -- invisible to this
+project's own `check()`-based test harness, which compares stored
+values, never printed text. Both regression tests verified to actually
+fail when their fixes are reverted.
+
 ### PR-401 — Replace the quick start with the recommended workflow
 
 - **Priority / effort:** P1 / S

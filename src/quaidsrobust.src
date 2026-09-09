@@ -583,6 +583,10 @@ proc 0 = printQuaidsRobust(struct quaidsRobustOut rOut);
     endo;
     print;
 
+    /* Restore the default print format -- see printQuaidsElas()'s
+       identical fix/comment in src/quaidselas.src for why this is needed. */
+    format /rd 16, 8;
+
 endp;
 
 /*
@@ -888,5 +892,9 @@ proc 0 = printQuaidsRobustBootstrap(struct quaidsRobustBootOut rbOut);
         i = i + 1;
     endo;
     print;
+
+    /* Restore the default print format -- see printQuaidsElas()'s
+       identical fix/comment in src/quaidselas.src for why this is needed. */
+    format /rd 16, 8;
 
 endp;

@@ -68,10 +68,13 @@ for options.
 
 ## Quick Start
 
-This example uses LA-AIDS (`aCtl.maxiter = 1`), the **stable** baseline
-model -- see [Model & Feature Support Tiers](#model--feature-support-tiers)
-below before switching to iterated AIDS or QUAIDS, both of which are
-experimental and require checking `qOut.converged`.
+This is the shortest supported path from raw data to a validated result:
+preflight diagnostics, estimation, a convergence check, predicted shares,
+elasticities, and robust standard errors, in one call. It uses LA-AIDS
+(`aCtl.maxiter = 1`), the **stable** baseline model -- see
+[Model & Feature Support Tiers](#model--feature-support-tiers) below
+before switching to iterated AIDS or QUAIDS, both of which are
+experimental and require checking `wfOut.converged`.
 
 ```gauss
 library quaids;
@@ -80,55 +83,51 @@ library quaids;
 // total expenditure (treated as endogenous). instr: TxH instruments.
 // intcpt: TxK extra intercept-shifter variables, or 0 for none.
 aCtl = quaidsControlCreate();
-aCtl.linear = 1;          // 1 = AIDS/LA-AIDS (stable), 0 = QUAIDS (experimental)
-aCtl.maxiter = 1;         // 1 = one-step Stone-index LA-AIDS (stable, no
-                          // iteration to fail); >1 iterates -- see the
-                          // support tiers section before raising this
-aCtl = quaidsSetHomogeneity(aCtl, 1); // impose homogeneity and test/report symmetry
+aCtl.linear = 1;   // 1 = AIDS/LA-AIDS (stable), 0 = QUAIDS (experimental)
+aCtl.maxiter = 1;  // 1 = one-step Stone-index LA-AIDS (stable, no
+                   // iteration to fail); see the support tiers section
+                   // below before raising this
+aCtl = quaidsSetHomogeneity(aCtl, 1);
 
-pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
-if not pOut.ok;
-    call printQuaidsPreflight(pOut);
+wfOut = quaidsWorkflowFit(w, intcpt, prices, totexp, instr, aCtl);
+
+if not wfOut.preflightOk;
+    // Non-gating by design -- wfOut.preflightWarnings/preflightErrors
+    // summarize what preflight found. For the full diagnostic report,
+    // call quaidsPreflight()/printQuaidsPreflight() directly.
+    print "Preflight found data/design problems -- see wfOut.preflightWarnings.";
+endif;
+
+if not wfOut.converged;
+    // qOut.converged==1 means the iteration's tolerance check passed,
+    // not that the fit is correct -- see the support tiers section.
+    print "quaidsFit did not converge -- see wfOut.iterations/wfOut.finalErr.";
     end;
 endif;
 
-qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
-if not qOut.converged;
-    // Always check this -- trivially true for LA-AIDS (maxiter=1), but a
-    // real, frequent failure mode once aCtl.maxiter > 1. See the support
-    // tiers section: qOut.converged==1 means the iteration's tolerance
-    // check passed, not that the fit is correct.
-    print "quaidsFit did not converge -- see qOut.iterations/qOut.finalErr.";
-    end;
+if wfOut.postValid;
+    print "predicted budget shares at the sample mean:" wfOut.shares;
+    print "income elasticities:" wfOut.incomeElas;
 endif;
-
-n = qOut.n;
-nint = qOut.nint;
-m_ = meanc(qOut.intcptFull~prices~totexp);
-intcptPt = m_[1:1+nint];
-pricesPt = m_[1+nint+1:1+nint+n];
-totexpPt = m_[1+nint+n+1];
-
-elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
-call printQuaidsElas(elasOut);
-
-call quaidsSlutzky(qOut.bestB, qOut.intcptFull, prices, totexp, aCtl);
+if wfOut.postRobustValid;
+    print "income elasticities, heteroskedasticity-robust SE:" wfOut.incomeElasRobustSE;
+endif;
 ```
 
-`quaidsFit()` is silent (no console output) and returns a `quaidsOut`
-struct. For the original console-report behavior in one call, use the
-backward-compatible wrapper instead:
+This one call ([quaidsWorkflowFit](docs/command-reference/quaidsWorkflowFit.md))
+bundles a compact preflight summary, `quaidsFit`, mean-point predicted
+shares, elasticities, and heteroskedasticity- or cluster-robust standard
+errors (pass `clusterId=` for the latter). Add
+[quaidsWorkflowScenarioFit](docs/command-reference/quaidsWorkflowScenarioFit.md)
+for exact welfare (CV/EV) measures under a price-change scenario. For a
+full walkthrough against real published data, including loading a CSV
+with `loadd()` and interpreting every diagnostic, see
+[examples/00_real_data_quickstart.e](examples/00_real_data_quickstart.e).
 
-```gauss
-{ b1, v1, b2, v2 } = quaids(w, intcpt, prices, totexp, instr, aCtl);
-```
-
-Named GAUSS dataframes can be used instead of assembling matrices by hand:
-
-```gauss
-data = loadd("mydata.csv");
-qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl);
-```
+For direct control over each individual step instead of the bundled
+workflow, or for the original console-report/legacy-wrapper behavior, see
+[Advanced and Compatibility Usage](#advanced-and-compatibility-usage)
+below.
 
 ## Model & Feature Support Tiers
 
@@ -233,6 +232,62 @@ entire `0.x` series, but new code should use
 correctly spelled `homogeneous` field and retain `homogenous` as a deprecated
 read alias. The compatibility-only `quaidsElas_()` procedure is also retained
 through `0.x`; use `quaidsElasFit()` for supported application code.
+
+## Advanced and Compatibility Usage
+
+Most applications should use [quaidsWorkflowFit](docs/command-reference/quaidsWorkflowFit.md)
+(the [Quick Start](#quick-start) above). Call the individual procedures
+directly when you need control over one step -- e.g. a custom evaluation
+point for elasticities, or a Slutzky check at every sample observation
+rather than just the mean:
+
+```gauss
+library quaids;
+
+aCtl = quaidsControlCreate();
+aCtl.linear = 1;
+aCtl.maxiter = 1;
+aCtl = quaidsSetHomogeneity(aCtl, 1);
+
+pOut = quaidsPreflight(w, intcpt, prices, totexp, instr, aCtl);
+if not pOut.ok;
+    call printQuaidsPreflight(pOut);
+    end;
+endif;
+
+qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
+if not qOut.converged;
+    print "quaidsFit did not converge -- see qOut.iterations/qOut.finalErr.";
+    end;
+endif;
+
+n = qOut.n;
+nint = qOut.nint;
+m_ = meanc(qOut.intcptFull~prices~totexp);
+intcptPt = m_[1:1+nint];
+pricesPt = m_[1+nint+1:1+nint+n];
+totexpPt = m_[1+nint+n+1];
+
+elasOut = quaidsElasFit(qOut.bestB, qOut.bestV, intcptPt, pricesPt, totexpPt, aCtl);
+call printQuaidsElas(elasOut);
+
+call quaidsSlutzky(qOut.bestB, qOut.intcptFull, prices, totexp, aCtl);
+```
+
+`quaidsFit()` is silent (no console output) and returns a `quaidsOut`
+struct. For the original console-report behavior in one call, use the
+backward-compatible wrapper instead:
+
+```gauss
+{ b1, v1, b2, v2 } = quaids(w, intcpt, prices, totexp, instr, aCtl);
+```
+
+Named GAUSS dataframes can be used instead of assembling matrices by hand:
+
+```gauss
+data = loadd("mydata.csv");
+qOut = quaidsFull(data, shareVars, priceVars, "totexp", "instr", extraVars, aCtl);
+```
 
 ## Curvature Imposition (optional, `optmt`)
 
