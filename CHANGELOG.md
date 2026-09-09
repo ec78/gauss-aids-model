@@ -285,6 +285,76 @@ this is the first version with any public compatibility promise at all.
   in sync by hand with `build_package.ps1`'s and the new runner's own
   cleanup lists.
 
+### Fixed (self-contained release artifact, PR-103)
+
+- Removed 8 dangling references to `CLAUDE.md`/`GOLD_STANDARD_TODO.md`
+  from `README.md` and 6 `docs/**/*.md` pages -- neither file is shipped
+  in the release archive (confirmed against `build_package.ps1`'s own
+  `$rootFiles` list), so every one was a dead link in the actual
+  distributed artifact despite resolving fine against the git working
+  tree. Most were removed outright (optional elaboration, not
+  operational guidance); one redirected to an already-shipped file
+  covering the same ground
+  (`tests/fixtures/published/python_reference_check.py`); one redirected
+  to an already-shipped `README.md` section. Removed README's own direct
+  link to `CLAUDE.md` from its `## Documentation` list (contributor/
+  AI-agent-facing content that never ships, not customer documentation).
+- Added an archive-level local-link check to
+  `scripts/verify_release_artifact.ps1`: it now opens the built `.zip`
+  itself and resolves every markdown link and `#anchor` in every shipped
+  `README.md`/`docs/**/*.md` entry against the archive's own contents,
+  not the filesystem -- a genuinely different, stricter data source than
+  `scripts/verify_docs_quality.ps1`'s existing repo-level check, which
+  would have missed every one of the 8 references above. Verified it
+  catches both a missing-entry reference and a broken-anchor reference by
+  deliberately reintroducing each and confirming the release build fails
+  with the correct diagnostic.
+
+### Added (support and contributor guidance, PR-501/PR-502)
+
+- Added `SUPPORT.md` (supported environment, where to report a problem,
+  what to include in a bug report, this project's actual support
+  boundaries) and `.github/ISSUE_TEMPLATE/bug_report.yml` (a structured
+  issue form capturing package version, GAUSS version, OS, model
+  controls, convergence/diagnostic fields, and a minimal reproduction as
+  required fields), plus `.github/ISSUE_TEMPLATE/config.yml`. Linked from
+  a new README `## Support` section.
+- Added `CONTRIBUTING.md`: test commands, a self-contained style summary
+  of this codebase's established conventions, the full release-
+  verification workflow, how release artifacts and tags are produced,
+  and a security/private-reporting section scoped honestly to a local-
+  data numerical research library's actual attack surface.
+- `SUPPORT.md`/`CONTRIBUTING.md` added to `build_package.ps1`'s
+  `$rootFiles` and `verify_release_artifact.ps1`'s required-entries list
+  (README, which ships, now links to both); also added
+  `docs/DATA_PREPARATION_GUIDE.md`/`docs/TROUBLESHOOTING_GUIDE.md` to
+  that same list, a real gap left over from PR-403/PR-404. Extended both
+  `scripts/verify_docs_quality.ps1` and
+  `scripts/verify_release_artifact.ps1`'s archive-level check to scan
+  the two new root-level docs.
+
+### Added (single go/no-go release gate, PR-601)
+
+- Added `scripts/run_release_gate.ps1`: a thin orchestrator around the
+  already-existing `scripts/run_release_verification.ps1` pipeline
+  (manifest/API/documentation checks, the full source-tree suite
+  including bootstrap tests, artifact build and self-verification, clean
+  install, installed-package API test, all example smoke tests), adding
+  a clean-worktree check, the 200-seed convergence sweep (captured in the
+  release record, not gated -- no predeclared numeric threshold exists at
+  the public-alpha tier), a SHA256 artifact checksum, and release notes
+  extracted from `CHANGELOG.md`. Exits nonzero on the first failed gate
+  and writes a structured JSON release record (`release_records/`,
+  gitignored) capturing tool versions, the source commit, the
+  convergence-sweep summary, and the artifact checksum either way.
+  Verified end to end: a correct `NO-GO` with a written record against a
+  genuinely dirty worktree, then a full, real `GO` run producing a
+  complete release record -- found and fixed three real bugs along the
+  way (a `2>&1`-plus-`$ErrorActionPreference` PowerShell native-command
+  gotcha, hashtable splatting not surviving a `powershell -File`
+  subprocess boundary, and a convergence-sweep summary regex that didn't
+  account for the model name itself containing spaces and parentheses).
+
 The three release-packaging fixes and the Milestone 31 example suite
 below predate the public-release effort and were originally recorded
 under an "Unreleased" heading with no version bump of their own (no

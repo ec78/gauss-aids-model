@@ -62,7 +62,7 @@ handled via the same lag-then-solve trick
 [quaidsFit](quaidsFit.md)'s own iteration already uses for its `beta`/
 `lambda` coefficients: they're profiled out by OLS every outer round
 rather than joining `optmt`'s search, which stays `vech(A)`-only,
-unchanged in size. See `GOLD_STANDARD_TODO.md` for the full derivation.
+unchanged in size.
 
 **QUAIDS needs `aCtl.relax`**: QUAIDS's curvature outer loop is
 measurably less stable than AIDS's own two-block version -- undamped

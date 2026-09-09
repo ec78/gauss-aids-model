@@ -52,7 +52,9 @@ try {
         "CITATION.cff",
         "CITATION.md",
         "LICENSE",
-        "llms.txt"
+        "llms.txt",
+        "SUPPORT.md",
+        "CONTRIBUTING.md"
     )
 
     foreach ($file in $rootFiles) {

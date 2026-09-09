@@ -24,3 +24,4 @@ tests/print_format_probe_elas.txt
 tests/print_format_probe_shares.txt
 tests/print_format_probe_noint.txt
 examples/blanciforti_results.txt
+release_records/

@@ -1,0 +1,81 @@
+name: Bug report
+description: Report a problem with the GAUSS QUAIDS library
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, check the [Troubleshooting Guide](https://github.com/ec78/gauss-aids-model/blob/master/docs/TROUBLESHOOTING_GUIDE.md)
+        and [Data Preparation Guide](https://github.com/ec78/gauss-aids-model/blob/master/docs/DATA_PREPARATION_GUIDE.md) --
+        many common symptoms already have a documented cause and recommended
+        action there. See [SUPPORT.md](https://github.com/ec78/gauss-aids-model/blob/master/SUPPORT.md)
+        for the full support policy.
+  - type: input
+    id: package-version
+    attributes:
+      label: Package version
+      description: package.json's "version" field, or the installed package's own package.json
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: gauss-version
+    attributes:
+      label: GAUSS version
+      description: Printed at the top of every batch run
+      placeholder: "GAUSS 26.1.4"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Windows 11"
+    validations:
+      required: true
+  - type: textarea
+    id: model-controls
+    attributes:
+      label: Model controls (aCtl fields)
+      description: >-
+        Every non-default quaidsControl field you set (linear, maxiter,
+        homogenous, relax, alpha0, err), plus any weight/clusterId/
+        replicateWeights/scaleFactor arguments passed to the procedure you
+        called.
+      placeholder: |
+        aCtl.linear = 0;
+        aCtl.maxiter = 100;
+        aCtl.homogenous = 1;
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic-fields
+    attributes:
+      label: Convergence/diagnostic fields (if applicable)
+      description: >-
+        qOut.converged/iterations/finalErr, or the equivalent fields on
+        whichever struct/proc you used (zOut/cOut/wfOut all carry their
+        own) -- required for any non-convergence or unexpected-result
+        report.
+      placeholder: |
+        qOut.converged = 0
+        qOut.iterations = 100
+        qOut.finalErr = 0.0234
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: >-
+        A short, runnable GAUSS script that reproduces the problem.
+        Prefer synthetic data (see examples/example_data.src) over real
+        data; if real data is required, describe its shape (rows, goods,
+        whether zero shares/missing values are present) rather than
+        attaching it.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected vs. actual behavior
+    validations:
+      required: true

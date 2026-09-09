@@ -24,9 +24,7 @@ robust/cluster/bootstrap/replicate-weight inference, sampling-weighted
 estimation, curvature imposition, and the applied workflow layer -- is
 covered in [Main Features](#main-features) below. Remaining caveats are
 documented validation and convergence limits -- see
-[Model & Feature Support Tiers](#model--feature-support-tiers) below and
-`GOLD_STANDARD_TODO.md` for internal development history and the project
-roadmap.
+[Model & Feature Support Tiers](#model--feature-support-tiers) below.
 
 ## Requirements
 
@@ -222,9 +220,6 @@ Guide](docs/USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids).
 - [Feature support matrix](docs/FEATURE_SUPPORT_MATRIX.md): LA-AIDS vs.
   iterated AIDS vs. QUAIDS support for IV, hypothesis tests, elasticities,
   diagnostics, and export.
-- [CLAUDE.md](CLAUDE.md): detailed context file for AI coding assistants
-  (and human contributors) working on this repository -- design decisions,
-  real bugs found and fixed, GAUSS-specific gotchas.
 
 ## Compatibility Policy
 
@@ -382,6 +377,12 @@ package directory:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\run_release_verification.ps1 -InstallArtifact
 ```
+
+## Support
+
+See [SUPPORT.md](SUPPORT.md) for the supported environment, where to
+report a problem, and what to include in a bug report. Contributing?
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Citation
 

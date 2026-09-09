@@ -86,7 +86,11 @@ try {
         "docs/COMMAND_REFERENCE.md",
         "docs/USAGE_GUIDE.md",
         "docs/METHODOLOGY_NOTES.md",
-        "docs/FEATURE_SUPPORT_MATRIX.md"
+        "docs/FEATURE_SUPPORT_MATRIX.md",
+        "docs/DATA_PREPARATION_GUIDE.md",
+        "docs/TROUBLESHOOTING_GUIDE.md",
+        "SUPPORT.md",
+        "CONTRIBUTING.md"
     )
 
     $missingEntries = $requiredEntries | Where-Object { $entryNames -notcontains $_ }
@@ -136,6 +140,127 @@ try {
             throw "release artifact is missing source file listed in package.json: $entryPath"
         }
     }
+
+    # PR-103: an archive-level link check, distinct from and not replaced
+    # by scripts/verify_docs_quality.ps1's own repo-level one. The
+    # working tree has files (CLAUDE.md, GOLD_STANDARD_TODO.md,
+    # PUBLIC_RELEASE_ROADMAP.md, .github/) the shipped archive does not
+    # (see $rootFiles/$dirs in build_package.ps1) -- a link that resolves
+    # fine against the git repo can still be a dead link once a customer
+    # actually installs this artifact standalone. This check resolves
+    # every relative markdown link and #anchor found in the archive's own
+    # README.md/docs/**/*.md entries against the archive's own entry list
+    # and each target entry's own headings -- not the filesystem.
+    function ConvertTo-ArchiveSlug {
+        param([string]$Heading)
+        $s = $Heading.ToLowerInvariant()
+        $s = $s -replace '[^a-z0-9 \-]', ''
+        $s = $s -replace ' ', '-'
+        return $s
+    }
+
+    function Get-ArchiveHeadings {
+        param([string]$Text)
+        $matches_ = [regex]::Matches($Text, '(?m)^#{1,6}\s+(.+?)\s*$')
+        $slugs = @{}
+        $result = New-Object System.Collections.Generic.List[string]
+        foreach ($m in $matches_) {
+            $slug = ConvertTo-ArchiveSlug -Heading $m.Groups[1].Value
+            if ($slugs.ContainsKey($slug)) {
+                $slugs[$slug] += 1
+                $slug = "$slug-$($slugs[$slug])"
+            } else {
+                $slugs[$slug] = 0
+            }
+            $result.Add($slug)
+        }
+        return $result
+    }
+
+    function Resolve-ArchivePath {
+        # Pure string-based resolution of a relative link against the
+        # zip-entry (forward-slash, virtual) namespace -- these are not
+        # real filesystem paths, so .NET's Path/Join-Path helpers (which
+        # need an actual drive to resolve against) don't apply here.
+        param([string]$FromEntry, [string]$RelativePath)
+        $fromSegments = @($FromEntry -split '/')
+        $dirSegments = if ($fromSegments.Count -gt 1) { $fromSegments[0..($fromSegments.Count - 2)] } else { @() }
+        $relSegments = @($RelativePath -split '/')
+        $combined = @($dirSegments) + @($relSegments)
+
+        $stack = New-Object System.Collections.Generic.List[string]
+        foreach ($seg in $combined) {
+            if ($seg -eq '' -or $seg -eq '.') { continue }
+            if ($seg -eq '..') {
+                if ($stack.Count -gt 0) { $stack.RemoveAt($stack.Count - 1) }
+                continue
+            }
+            $stack.Add($seg)
+        }
+        return ($stack -join '/')
+    }
+
+    $mdEntries = @($entryNames | Where-Object {
+        $_ -eq "README.md" -or $_ -eq "SUPPORT.md" -or $_ -eq "CONTRIBUTING.md" -or $_ -match "^docs/.*\.md$"
+    })
+    $entryTextCache = @{}
+    function Get-ArchiveEntryText {
+        param([string]$EntryPath)
+        if (-not $entryTextCache.ContainsKey($EntryPath)) {
+            $e = $zip.GetEntry($EntryPath)
+            if ($null -eq $e) {
+                $entryTextCache[$EntryPath] = $null
+            } else {
+                $r = [System.IO.StreamReader]::new($e.Open())
+                try {
+                    $entryTextCache[$EntryPath] = $r.ReadToEnd()
+                } finally {
+                    $r.Dispose()
+                }
+            }
+        }
+        return $entryTextCache[$EntryPath]
+    }
+
+    $archiveLinkErrors = @()
+    foreach ($mdEntry in $mdEntries) {
+        $text = Get-ArchiveEntryText -EntryPath $mdEntry
+        $linkMatches = [regex]::Matches($text, '\[[^\]]+\]\(([^)]+)\)')
+        foreach ($lm in $linkMatches) {
+            $target = $lm.Groups[1].Value.Trim()
+            if ($target -match '^(https?:|mailto:)') { continue }
+
+            $pathPart = $target
+            $anchor = $null
+            $hashIdx = $target.IndexOf('#')
+            if ($hashIdx -ge 0) {
+                $pathPart = $target.Substring(0, $hashIdx)
+                $anchor = $target.Substring($hashIdx + 1)
+            }
+
+            if ([string]::IsNullOrEmpty($pathPart)) {
+                $targetEntry = $mdEntry
+            } else {
+                $targetEntry = Resolve-ArchivePath -FromEntry $mdEntry -RelativePath $pathPart
+                if ($entryNames -notcontains $targetEntry) {
+                    $archiveLinkErrors += "$mdEntry -> '$target': no such entry in the archive ($targetEntry)"
+                    continue
+                }
+            }
+
+            if ($anchor -and $targetEntry -match "\.md$") {
+                $targetText = Get-ArchiveEntryText -EntryPath $targetEntry
+                $headings = Get-ArchiveHeadings -Text $targetText
+                if ($headings -notcontains $anchor) {
+                    $archiveLinkErrors += "$mdEntry -> '$target': anchor '#$anchor' not found in $targetEntry (as shipped)"
+                }
+            }
+        }
+    }
+    if ($archiveLinkErrors.Count -gt 0) {
+        throw "archive-level link check failed:`n$($archiveLinkErrors -join "`n")"
+    }
+    Write-Host "verify_release_artifact.ps1: $($mdEntries.Count) shipped doc pages, all internal links/anchors resolve inside the archive"
 } finally {
     $zip.Dispose()
 }

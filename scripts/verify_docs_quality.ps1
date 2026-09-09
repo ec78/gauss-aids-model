@@ -90,6 +90,12 @@ Write-Host "verify_docs_quality.ps1: all $($cmdRefFiles.Count) command-reference
 # --- 2. Internal link and anchor integrity ---
 
 $docFiles = @(Get-Item -LiteralPath (Join-Path $RepoRoot "README.md"))
+foreach ($rootDoc in @("SUPPORT.md", "CONTRIBUTING.md")) {
+    $rootDocPath = Join-Path $RepoRoot $rootDoc
+    if (Test-Path -LiteralPath $rootDocPath) {
+        $docFiles += Get-Item -LiteralPath $rootDocPath
+    }
+}
 $docFiles += @(Get-ChildItem -LiteralPath $docsDir -Filter "*.md" -File)
 $docFiles += $cmdRefFiles
 

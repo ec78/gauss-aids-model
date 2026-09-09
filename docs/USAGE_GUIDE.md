@@ -216,8 +216,7 @@ zero-share correction, and every bootstrap/replicate-weight procedure
 Summary](FEATURE_SUPPORT_MATRIX.md#support-tier-summary) for the complete,
 component-by-component tier list (LA-AIDS, iterated AIDS, QUAIDS,
 zero-share correction, curvature imposition, and bootstrap/replicate
-procedures). See also `GOLD_STANDARD_TODO.md` for the full sweep
-methodology and development history.
+procedures).
 
 ## Instrumental Variables Are Always Required
 

@@ -170,6 +170,48 @@ themselves. Suggested checklist for that pass:
   - The installed-package public API test passes against the newly installed
     artifact, not a pre-existing development installation.
 
+**Status: PR-103 complete.** Deferred to the documentation phase per an
+earlier explicit decision; picked back up once Phase 3/4 made "the
+documentation phase" a completed precondition, and because it turned out
+to be genuinely required for the First Public Alpha Exit Criteria's own
+"PR-101 through PR-103 are complete" line, not optional. A direct check
+of `scripts/build_package.ps1`'s `$rootFiles` list confirmed `CLAUDE.md`,
+`GOLD_STANDARD_TODO.md`, and `PUBLIC_RELEASE_ROADMAP.md` are not shipped
+in the release archive; a repo-wide search then found 8 real, dangling
+references to them across `README.md` and 6 `docs/**/*.md` pages -- most
+added during PR-302's own pass, which correctly kept engineering-history
+narrative out of customer docs but, in this session's own oversight,
+routed several of those pointers to a file that never actually ships.
+Each was fixed in place: some removed outright (the pointed-to content
+was optional elaboration, not operational guidance), one redirected to
+an already-shipped file that covers the same ground
+(`tests/fixtures/published/python_reference_check.py` instead of a
+`GOLD_STANDARD_TODO.md` narrative about it), one redirected to an
+already-shipped section of `README.md` itself. README's own
+`## Documentation` list also linked directly to `CLAUDE.md` as if it were
+a customer-facing doc; removed (it is contributor/AI-agent-facing
+content that never ships, not customer documentation -- a future
+`CONTRIBUTING.md`, PR-502, is the right place for an equivalent
+contributor-facing pointer, not a redirect to `CLAUDE.md` itself).
+
+Added the archive-level local-link check the Work bullet calls for:
+`scripts/verify_release_artifact.ps1` now opens the built `.zip` itself,
+scans every shipped `README.md`/`docs/**/*.md` entry for markdown links,
+and resolves each one -- file existence and `#anchor` validity alike --
+against the archive's own entry list and each target entry's own
+headings, not the filesystem. This is a genuinely different data source
+from `scripts/verify_docs_quality.ps1`'s existing repo-level check (which
+would have missed every one of the 8 dangling references above, since
+all 8 resolved fine against the git working tree, where these files
+still exist). Verified it actually catches both failure classes -- a
+missing-entry reference and a broken-anchor reference -- by deliberately
+reintroducing each into `README.md`, rebuilding, and confirming the
+release build fails with the correct diagnostic, before reverting and
+confirming a clean rebuild passes. Full `run_release_verification.ps1
+-BuildArtifact -ForceArtifact -InstallArtifact` pipeline re-run
+afterward, including all 14 example smoke tests against the freshly
+installed package.
+
 ### PR-103 — Make the release artifact self-contained
 
 - **Priority / effort:** P0 / S
@@ -596,6 +638,48 @@ hand with `build_package.ps1`'s and the new runner's own cleanup lists.
 
 ## Phase 5: Add Support and Project Operations
 
+**Status: PR-501 and PR-502 complete.** Added `SUPPORT.md` (supported
+environment table, where to report a problem, what to include in a bug
+report -- package version, GAUSS version, OS, model controls, convergence
+fields, minimal reproduction -- and this project's actual support
+boundaries: a single-author public alpha, best-effort, no SLA) and a
+GitHub issue form (`.github/ISSUE_TEMPLATE/bug_report.yml`) that captures
+exactly that information as required fields, plus a `config.yml` pointing
+to `SUPPORT.md` from the issue picker. Linked from a new README `##
+Support` section, satisfying the acceptance evidence directly.
+
+Added `CONTRIBUTING.md`: test commands (the fast source-tree suite and
+its skip flags, the example smoke-test runner), a self-contained style
+summary extracted from this codebase's own established conventions
+(variable naming, struct-return declaration for caller-side inference,
+loop style, character-matrix vs. native-string-array struct fields,
+comment philosophy, the "never trust a derived fix without running it"
+testing discipline) -- deliberately not just "see CLAUDE.md," since that
+file is never shipped and PR-502's own acceptance evidence requires a new
+contributor to understand the release gate without consulting it -- the
+full release-verification workflow, how release artifacts and tags are
+produced (including the honest note that no tagged release has shipped
+yet), and a security section scoped honestly to what a local-data
+numerical research library's actual attack surface is (no network
+surface, no auth/credentials; malformed local input and artifact
+integrity are the realistic concerns), with a private-reporting email
+matching this repo's own already-public maintainer contact.
+
+Since `README.md` (which ships) now links to both new files, added them
+to `build_package.ps1`'s own `$rootFiles` list and to
+`verify_release_artifact.ps1`'s required-entries list -- the same
+PR-103 principle applied to this phase's own new files, caught before
+it could become the next round of dangling references. Also found and
+fixed two required-entries gaps left over from Phase 4:
+`docs/DATA_PREPARATION_GUIDE.md` and `docs/TROUBLESHOOTING_GUIDE.md`
+(PR-403/PR-404) were never added to that list. Extended both
+`scripts/verify_docs_quality.ps1` (repo-level) and
+`scripts/verify_release_artifact.ps1` (archive-level) to scan the two
+new root-level docs alongside `README.md`/`docs/**/*.md` -- verified by
+deliberately breaking the `SUPPORT.md` -> `CONTRIBUTING.md` cross-link
+and confirming the repo-level check catches it, then restoring it and
+confirming a clean rebuild.
+
 ### PR-501 — Publish customer support expectations
 
 - **Priority / effort:** P1 / S
@@ -624,6 +708,65 @@ hand with `build_package.ps1`'s and the new runner's own cleanup lists.
 
 ## Phase 6: Release Candidate Gate
 
+**Status: PR-601 complete.** Added `scripts/run_release_gate.ps1`, a
+thin orchestrator, not a reimplementation: `scripts/run_release_verification.ps1
+-BuildArtifact -ForceArtifact -InstallArtifact` (no `-SkipInstalledPackageTest`)
+already chains the manifest/public-API/documentation-consistency/
+documentation-quality checks, the full source-tree suite *including*
+bootstrap tests (no `-SkipBootstrap` anywhere in this file), the artifact
+build and its own self-verification (name/version/CHANGELOG entry/
+required entries/forbidden generated artifacts/archive-level link check),
+a clean install into a real GAUSS package directory, the installed-
+package public API test, and all 14 example smoke tests -- covering
+Work-list items 2 through 8 in one call. The new script adds only what
+nothing else did: item 1 (a clean-worktree check, since a release must
+correspond to an actual committed, taggable state), item 9 (the
+200-seed convergence sweep, run and its per-model summary captured in
+the release record -- deliberately *captured, not gated*, since there is
+still no predeclared numeric threshold to gate on at the public-alpha
+tier; that is the Production-Readiness Exit Criteria's own explicit
+addition, not this one's), and item 10 (a SHA256 artifact checksum and
+the release notes extracted directly from `CHANGELOG.md`'s current
+version heading).
+
+Building this surfaced three real bugs, each found only by actually
+running the script end to end and fixed before moving on, not assumed
+correct from reading the code -- this project's own standing testing
+discipline applied to itself:
+
+1. `$ErrorActionPreference = "Stop"` combined with `2>&1` on a native
+   executable call (`tgauss.exe`, to probe the GAUSS version for the
+   record) turns *any* stderr line into a PowerShell terminating error,
+   even from a genuinely successful run -- failed the very first attempt.
+   Fixed by using a real `System.Diagnostics.Process` object (reading
+   stdout/stderr as plain data) instead, matching every other GAUSS
+   subprocess call already in this repo's own scripts.
+2. Hashtable splatting (`@verificationArgs`) does not survive crossing a
+   `powershell -File` subprocess boundary -- `-BuildArtifact` arrived at
+   the child process as the literal string `"True"`, which its own
+   switch-parameter binder correctly rejected. Fixed by building a plain
+   string argument array instead.
+3. The convergence sweep's real printed summary format
+   (`SUMMARY:Iterated AIDS (linear)  (       200.00000 seeds, ...)`,
+   confirmed by reading an actual generated report, not assumed from the
+   `.e` file's own `print` statements) has no space after `SUMMARY:` and
+   a model name that itself contains spaces and parentheses -- broke a
+   first-draft regex that assumed a single-token model name, silently
+   producing an empty summary in the release record with no error. Fixed
+   by anchoring the model-name capture on the first run of 2+ spaces
+   before the seed-count parenthesis, verified against the real report
+   both models now correctly extract (39%/19%/42% for iterated AIDS,
+   54.5%/21.5%/24% for QUAIDS -- matching every other place these numbers
+   are already documented in this repo).
+
+Verified the full go/no-go behavior directly, not just that it runs:
+confirmed `NO-GO` with the correct diagnostic and a written "no-go"
+release record on a genuinely dirty worktree (this session's own
+in-progress changes), then a full, real, end-to-end `GO` run
+(`-AllowDirtyWorktree`, ~131 seconds) producing a complete release record
+with tool versions, the source commit, the full convergence-sweep
+summary, and the artifact's SHA256 checksum and extracted release notes.
+
 ### PR-601 — Automate a single go/no-go command
 
 - **Priority / effort:** P0 / M
@@ -644,6 +787,17 @@ hand with `build_package.ps1`'s and the new runner's own cleanup lists.
     artifact checksum, and the source commit.
 
 ## First Public Alpha Exit Criteria
+
+**Status: all criteria satisfied as of `scripts/run_release_gate.ps1`'s
+real, end-to-end `GO` run** (see PR-601's own status note above for the
+full run detail -- tool versions, source commit, convergence-sweep
+summary, and artifact checksum all captured in the resulting release
+record). PR-202 remains incomplete by explicit, confirmed decision (not
+an oversight); the fallback condition in the last bullet below is what
+this alpha actually ships under -- see PR-201/PR-401's own status notes
+for exactly where each of "explicitly experimental," "quick start uses
+the stable baseline," and "limitations explain why a converged flag
+alone is insufficient" was implemented.
 
 All of the following must be true:
 

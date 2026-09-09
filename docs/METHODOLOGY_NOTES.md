@@ -96,8 +96,9 @@ coefficient estimates.
    falls below `aCtl.err` or `aCtl.maxiter` is reached. Each step is a
    plain fixed-point update (`b_new = relax*b + (1-relax)*b_old`,
    `aCtl.relax` default `1` = no damping); this has no global-convergence
-   guarantee -- see `GOLD_STANDARD_TODO.md` for a measured failure-rate
-   characterization and `aCtl.relax`'s effect.
+   guarantee -- see the [README's Model & Feature Support
+   Tiers](../README.md#model--feature-support-tiers) for a measured
+   failure-rate characterization and `aCtl.relax`'s effect.
 4. **Overidentification test**, if `ninst > nu`.
 5. **Symmetry test given homogeneity**, and a **symmetry-constrained
    re-estimation** via minimum distance, if `aCtl.homogenous == 1`.

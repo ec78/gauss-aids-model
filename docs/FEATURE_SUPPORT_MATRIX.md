@@ -90,8 +90,7 @@ to fail) and this caveat does not apply.
   QUAIDS to 26.5%), but more aggressive damping (`.5`, `.3`) does not help
   further and often makes things worse. This is a modest, evidence-backed
   mitigation, not a solved problem -- see
-  [Usage guide](USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids)
-  and `GOLD_STANDARD_TODO.md` for the full grid.
+  [Usage guide](USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids).
 - "Always (control-function)" means `instr` is a required argument to
   every estimator entry point -- there is no exogenous-total-expenditure
   estimation mode in this library.
@@ -153,8 +152,10 @@ to fail) and this caveat does not apply.
   algorithm *and* an IV-vs-no-IV difference. **QUAIDS has no independent
   reference implementation available**: `micEconAids` does not implement a
   quadratic log-expenditure term at all, and no other comparably-established
-  QUAIDS implementation was found (see `GOLD_STANDARD_TODO.md` on the
-  Python from-scratch replica, kept as supplementary evidence only).
+  QUAIDS implementation was found. A from-scratch Python replica
+  (`tests/fixtures/published/python_reference_check.py`) exists as
+  supplementary evidence only, not a pass/fail assertion source -- see
+  that script's own header comment for why.
   QUAIDS's validation is therefore the known-true synthetic-DGP recovery
   in `tests/quaids_synthetic_validation_test.e` -- a real, non-circular
   check (independently-generated data with known-true parameters, not
@@ -194,8 +195,7 @@ to fail) and this caveat does not apply.
   shape rather than "recovers a known true curvature-consistent gamma" the
   way the AIDS block does -- a deliberately weaker (but still real) tier
   of evidence, documented as such rather than silently equated with AIDS's.
-  See [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales)
-  and `GOLD_STANDARD_TODO.md` for the full history.
+  See [Methodology Notes](METHODOLOGY_NOTES.md#curvature-imposition-diewert-wales).
 
 - Zero budget share correction (Shonkwiler-Yen, `quaidsZeroFit`)
   addresses real survey/microdata's corner solutions (zero-expenditure

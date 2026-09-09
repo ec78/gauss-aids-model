@@ -85,8 +85,7 @@ codebase's established `trap`/`scalmiss` guard (the same idiom
 [quaidsFit](quaidsFit.md) uses), and `quaidsCurvatureFit()` itself has
 additional pre-call finiteness checks around its internal
 eigendecomposition calls, since a sufficiently degenerate resample can
-otherwise crash the whole run rather than just failing one replication
-(see `GOLD_STANDARD_TODO.md` for the full derivation).
+otherwise crash the whole run rather than just failing one replication.
 
 **Silent during the loop**: no progress printing, even on a long-running
 QUAIDS bootstrap -- matches this codebase's own silent-Fit-proc convention.

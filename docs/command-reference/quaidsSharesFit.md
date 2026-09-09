@@ -67,9 +67,10 @@ covariance rather than only marginal SEs.
 `quaidsElas_()` (`src/quaidselas.src`) as an intermediate step toward
 elasticities, and was independently duplicated in
 `tests/quaids_elasticities_test.e`'s test-only `modelShareAt()` helper
-(now replaced by a direct call to this proc). This is a third,
-deliberately independent implementation of the same formula rather than a
-refactor of `quaidsElas_()` -- see `GOLD_STANDARD_TODO.md` for why.
+(now replaced by a direct call to this proc). This is a deliberately
+independent implementation of the same formula, matching this codebase's
+established preference against modifying already-shipped, tested code
+without a strong reason.
 
 ## Examples
 
