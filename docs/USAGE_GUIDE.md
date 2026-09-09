@@ -1,7 +1,14 @@
 # QUAIDS Usage Guide
 
 This guide summarizes the main API choices, model-selection switches, and
-output conventions for the GAUSS QUAIDS package.
+output conventions for the GAUSS QUAIDS package. For getting your own raw
+data into the shape this library expects (shares, log transforms, column
+ordering, instruments, weights), see the
+[Data Preparation Guide](DATA_PREPARATION_GUIDE.md) instead -- this guide
+assumes `w`/`intcpt`/`prices`/`totexp`/`instr` are already correctly
+constructed. If you hit an error message or an unexpected result instead
+of a data-construction question, see the [Troubleshooting and
+Interpretation Guide](TROUBLESHOOTING_GUIDE.md).
 
 ## Choosing An API
 
@@ -565,6 +572,10 @@ for each adapter proc, and `examples/13_pubtable_reporting.e` for a full
 runnable example.
 
 ## Limitations
+
+See the [Troubleshooting and Interpretation Guide](TROUBLESHOOTING_GUIDE.md)
+for which result fields establish validity for each proc below, and for
+a symptom-to-action table covering errors this section doesn't.
 
 - Curvature **imposition** ([quaidsCurvatureFit](command-reference/quaidsCurvatureFit.md))
   is available for LA-AIDS/AIDS and QUAIDS, at the sample mean, and its

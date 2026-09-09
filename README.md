@@ -207,6 +207,14 @@ Guide](docs/USAGE_GUIDE.md#choosing-a-model-la-aids-vs-iterated-aids-vs-quaids).
 - [Usage guide](docs/USAGE_GUIDE.md): choosing an API, model-choice
   switches, IV requirements, workflow/post-estimation helpers,
   elasticities/diagnostics workflow, `pubtable` export.
+- [Data preparation guide](docs/DATA_PREPARATION_GUIDE.md): getting raw
+  data into this library's expected shape -- shares, transformations,
+  column ordering, missing/zero values, instruments, weights/clusters,
+  and a final input-contract checklist.
+- [Troubleshooting and interpretation guide](docs/TROUBLESHOOTING_GUIDE.md):
+  a symptom-to-action table for installation/include/shape/convergence
+  problems, which result fields establish validity before trusting
+  output, and the robust-sandwich-vs-bootstrap tradeoff.
 - [Methodology notes](docs/METHODOLOGY_NOTES.md): the estimator itself --
   iterated linearized/nonlinear FGLS with cross-equation homogeneity/
   symmetry restrictions via minimum distance, citing Deaton & Muellbauer

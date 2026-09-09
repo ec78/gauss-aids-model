@@ -8,6 +8,8 @@ sections.
 ## User Guides
 
 - [Usage guide](USAGE_GUIDE.md)
+- [Data preparation guide](DATA_PREPARATION_GUIDE.md)
+- [Troubleshooting and interpretation guide](TROUBLESHOOTING_GUIDE.md)
 - [Methodology notes](METHODOLOGY_NOTES.md)
 - [Feature support matrix](FEATURE_SUPPORT_MATRIX.md)
 

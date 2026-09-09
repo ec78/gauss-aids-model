@@ -231,6 +231,60 @@ this is the first version with any public compatibility promise at all.
   `tests/quaids_print_format_test.e` as a regression guard (verified to
   fail when the fix is reverted), covering both bugs.
 
+### Added (data preparation guide, PR-403)
+
+- Added `docs/DATA_PREPARATION_GUIDE.md`: budget shares/total-expenditure
+  construction, price/expenditure transformations and unit consistency,
+  good/category ordering, missing/zero values and corner solutions,
+  instrument selection and weak-IV diagnostics, demographic intercept
+  shifters, sampling weights/clusters/replicate weights/strata, and
+  minimum sample/design-size considerations via `quaidsPreflight`, ending
+  with a final input-contract checklist. `examples/00_real_data_quickstart.e`
+  now links to the specific guide section at each real preparation
+  decision it makes.
+
+### Added (troubleshooting and interpretation guide, PR-404)
+
+- Added `docs/TROUBLESHOOTING_GUIDE.md`: a 16-row symptom-to-action table
+  (installation failures, undefined structs, missing includes,
+  dataframe/shape mismatches, every existing named input-validation guard
+  message, weak instruments, invalid shares, non-convergence, the
+  distinct "converged-but-wrong" multiple-solutions failure mode, failed
+  bootstrap/replicate-weight completions, and optional-package errors),
+  each with one recommended action and a command-page link; a "What
+  Establishes a Result's Validity" section covering every output struct's
+  own validity fields; and a "Robust Sandwich vs. Bootstrap" section
+  explaining that tradeoff plainly.
+
+### Changed (location-independent, smoke-tested examples, PR-405)
+
+- `examples/10_curvature_imposition.e` and
+  `examples/13_pubtable_reporting.e` changed from `#include
+  ../src/quaidscurvature.src`/`#include ../src/pubtable_quaids.src`
+  (source-tree-relative, only resolves when the working directory happens
+  to already be `examples/`) to bare `#include
+  quaidscurvature.src`/`#include pubtable_quaids.src` (matching README's
+  own documented pattern) -- confirmed, via direct testing from an
+  unrelated directory and via an absolute script path, to now resolve
+  location-independently through the installed package's own search
+  path. `examples/00_real_data_quickstart.e`'s `loadd()` call remains
+  genuinely working-directory-dependent, a real GAUSS/OS file-I/O
+  limitation with no package-search fallback (confirmed directly, not
+  assumed) -- documented honestly in that example's own header rather
+  than silently claimed as fixed.
+- Added `tests/run_examples_smoke.ps1`, smoke-testing all 14 examples
+  (each via its own process `WorkingDirectory`, checking for a GAUSS
+  compile/execute error, cleaning up generated exports afterward).
+  Verified it actually catches a failure by deliberately breaking one
+  example and confirming it fails before restoring it. Wired into CI
+  (`-SkipCurvature`, mirroring the existing `-SkipBootstrap` rationale)
+  and the release gate (unskipped, confirmed via a full build/install
+  run).
+- Extended `scripts/verify_release_artifact.ps1`'s forbidden-generated-
+  artifacts check to also cover every file an example can generate, kept
+  in sync by hand with `build_package.ps1`'s and the new runner's own
+  cleanup lists.
+
 The three release-packaging fixes and the Milestone 31 example suite
 below predate the public-release effort and were originally recorded
 under an "Unreleased" heading with no version bump of their own (no

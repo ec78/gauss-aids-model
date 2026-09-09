@@ -5,23 +5,29 @@
 ** semidefiniteness, the demand-theory condition for a well-behaved
 ** consumer) but never imposes it. quaidsCurvatureFit() can impose it
 ** locally, at the sample mean, via the Diewert-Wales (1987) Cholesky
-** reparametrization -- for LA-AIDS/AIDS and (since Milestone 13) QUAIDS.
-** Requires the optmt package. See docs/USAGE_GUIDE.md's "Imposing
-** Curvature (Diewert-Wales)" section.
+** reparametrization -- for both LA-AIDS/AIDS and QUAIDS. Requires the
+** optmt package. See docs/USAGE_GUIDE.md's "Imposing Curvature
+** (Diewert-Wales)" section.
 **
-** src/quaidscurvature.src is NOT loaded by `library quaids;` alone -- it
-** is an optional, opt-in adapter (like the pubtable reporting adapter),
+** quaidscurvature.src is NOT loaded by `library quaids;` alone -- it is
+** an optional, opt-in adapter (like the pubtable reporting adapter),
 ** since it has a hard compile-time dependency on optmt's struct types
 ** and core estimation needs no external package at all. See
 ** docs/public-api.json's "optional_modules" entry.
 **
-** Run from the examples/ directory:
-**   tgauss -b -x 10_curvature_imposition.e
+** Location-independent: `#include quaidscurvature.src` (a bare filename,
+** no path) resolves via the installed package's own search path once
+** `library optmt, quaids;` has run -- confirmed to work from any working
+** directory, not just examples/, as long as the quaids package is
+** installed. Only quaidsExampleData() below (from example_data.src, also
+** a bare include) needs no special cwd either, for the same reason. Run
+** via `cd examples; tgauss -b -x 10_curvature_imposition.e`, or from any
+** other directory using an absolute path to this file.
 */
 
 new;
 library optmt, quaids;
-#include ../src/quaidscurvature.src
+#include quaidscurvature.src
 #include example_data.src
 
 /* ---------------------------------------------------------------------

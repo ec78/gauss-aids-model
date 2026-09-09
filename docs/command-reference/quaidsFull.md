@@ -69,4 +69,5 @@ qOut = quaidsFull(data, shareVars, priceVars, "TOTEXP", "Z1", 0, aCtl);
 
 ## See Also
 
-[quaidsFit](quaidsFit.md), [quaidsControlCreate](quaidsControlCreate.md)
+[quaidsFit](quaidsFit.md), [quaidsControlCreate](quaidsControlCreate.md),
+[Data Preparation Guide](../DATA_PREPARATION_GUIDE.md)

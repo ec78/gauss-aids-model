@@ -375,6 +375,9 @@ before confirming the corrected state passes clean.
 
 ## Phase 4: Build the Customer Implementation Path
 
+**Status: complete (PR-401 through PR-405).** See each PR's own status
+note below for full detail.
+
 **Status: PR-401 and PR-402 complete.** PR-401: README's Quick Start now
 leads with `quaidsWorkflowFit()` -- one call bundling preflight
 diagnostics, estimation, a convergence check, mean-point predicted
@@ -446,6 +449,28 @@ fail when their fixes are reverted.
   - The example runs from the distributed artifact in a clean installation.
   - Its expected results are asserted in automated tests.
 
+**Status: PR-403 complete.** Added `docs/DATA_PREPARATION_GUIDE.md`,
+covering all eight required topics (shares/total-expenditure
+construction, transformations/unit consistency, good/category ordering,
+missing/zero values and corner solutions, instrument selection and
+weak-IV diagnostics, demographic intercept shifters, sampling
+weights/clusters/replicate weights/strata, and minimum sample/design-size
+considerations via `quaidsPreflight()`), ending with a final
+input-contract checklist. Linked from README.md's Documentation list,
+`docs/USAGE_GUIDE.md`'s intro, `docs/COMMAND_REFERENCE.md`'s User
+Guides list, and the `quaidsPreflight`/`quaidsFull` command-reference
+pages' See Also sections.
+`examples/00_real_data_quickstart.e` (PR-402) now links back to the
+specific guide section at each real preparation decision it makes
+(share renormalization, transformations, column ordering, instrument
+choice, preflight interpretation), satisfying the "real-data example
+links to each relevant preparation decision" acceptance evidence
+directly. Verified every new cross-link and anchor with
+`scripts/verify_docs_quality.ps1` -- caught and fixed a real anchor-slug
+mistake in the process (assumed `/` slugifies to a hyphen; it is simply
+dropped, so "Sample/Design" becomes "sampledesign" with no separator),
+exactly the class of error this script exists to catch.
+
 ### PR-403 — Add a data-preparation guide
 
 - **Priority / effort:** P1 / M
@@ -463,6 +488,29 @@ fail when their fixes are reverted.
   - The real-data example links to each relevant preparation decision.
   - The guide contains a final input-contract checklist.
 
+**Status: PR-404 complete.** Added `docs/TROUBLESHOOTING_GUIDE.md`: a
+16-row symptom-to-action table (installation failures, undefined
+structs, missing includes, dataframe/shape mismatches, the eight
+existing named input-validation guard messages, weak instruments,
+invalid shares, non-convergence, the distinct "converged-but-wrong"
+multiple-solutions failure mode, failed bootstrap/replicate-weight
+completions, and optional-package errors), each with one recommended
+action and a link to the relevant command page -- satisfying the
+acceptance evidence directly. A "What Establishes a Result's Validity"
+section walks every output struct's own validity fields (`qOut.converged`/
+`symValid`, `pOut.ok`, `wfOut.postValid`/`robustValid`/`postRobustValid`/
+`welfareValid`, `cOut.converged`, `zOut.converged`/`probitConverged`/
+`symValid`, bootstrap/replicate `nCompleted`), confirmed against
+`src/quaids.sdf`'s actual field definitions rather than assumed. A
+"Robust Sandwich vs. Bootstrap" section explains the tradeoff plainly
+(the sandwich's simplified bread makes it far more conservative; the
+bootstrap resamples the real estimator but costs real runtime) without
+requiring the reader to reconstruct it from the methodology notes.
+Linked from README.md, `docs/COMMAND_REFERENCE.md`, `docs/USAGE_GUIDE.md`
+(intro and Limitations section), and the two robust-inference
+command-reference pages. Verified with
+`scripts/verify_docs_quality.ps1` -- clean on the first pass this time.
+
 ### PR-404 — Add a troubleshooting and interpretation guide
 
 - **Priority / effort:** P1 / M
@@ -478,6 +526,57 @@ fail when their fixes are reverted.
 - **Acceptance evidence:**
   - Each known customer-visible failure mode has one recommended next action and a
     link to the relevant command page.
+
+**Status: PR-405 complete.** Empirically confirmed (not assumed) two hard
+GAUSS constraints before designing anything: a runtime `chdir` placed
+before an `#include` in the same file has no effect on that #include's
+resolution (GAUSS resolves every #include in a full compile pass before
+any runtime statement executes, even one textually earlier in the file),
+and `tgauss -b -x <absolutePath>` does not auto-`chdir` to the script's
+own directory -- both confirmed with isolated probe scripts, one
+reproducing the exact `error G0014` pattern already documented earlier in
+this file's own history. But a bare `#include filename` (no path prefix)
+**does** resolve location-independently, via `gauss.cfg`'s `src_path`
+wildcard search (`$(PACKAGEDIR)\*\src;$(PACKAGEDIR)\*\examples` across
+every installed package) -- confirmed directly by running an unmodified
+example from a completely unrelated directory, both with a relative
+filename and via an absolute script path from elsewhere, both times
+succeeding. `examples/10_curvature_imposition.e` and
+`examples/13_pubtable_reporting.e` were changed from `#include
+../src/quaidscurvature.src`/`#include ../src/pubtable_quaids.src`
+(source-tree-relative, only resolves when cwd happens to already be
+`examples/`) to bare `#include quaidscurvature.src`/`#include
+pubtable_quaids.src` (matching README's own already-documented pattern),
+now confirmed to work from `examples/`, from an unrelated directory via
+absolute path, and therefore from the GAUSS GUI too. The one honest
+exception is `examples/00_real_data_quickstart.e`'s `loadd()` call: GAUSS
+file I/O has no package-search fallback the way `#include` does (also
+confirmed directly, not assumed -- a bare-filename `loadd()` call from an
+unrelated directory failed), so that one example genuinely needs
+`examples/` as the working directory, documented honestly in its own
+header rather than silently claimed as fixed.
+
+Added `tests/run_examples_smoke.ps1` (adapted from the sibling
+`gauss-qardl` repo's own already-proven `run_examples_smoke.ps1`, reusing
+this repo's own more robust async-stream-draining `Invoke-GaussBatch`
+rather than that sibling's simpler synchronous version, since
+`10_curvature_imposition.e`'s bootstrap block can print enough to both
+stdout/stderr to risk the exact deadlock Milestone 15 already found and
+fixed elsewhere in this repo) -- smoke-tests all 14 examples via each
+child process's own `WorkingDirectory` (not a GAUSS-level `chdir`),
+checks for a GAUSS compile/execute error, and cleans up every known
+generated export file afterward. Verified it actually catches a failure
+by deliberately breaking one example and confirming `FAIL`/exit code 1,
+then restoring it. Wired into CI (`.github/workflows/tests.yml`, with
+`-SkipCurvature` for the one bootstrap-heavy example, mirroring
+`-SkipBootstrap`'s existing rationale) and the release gate
+(`scripts/run_release_verification.ps1`, unskipped) -- confirmed via a
+full `-BuildArtifact -ForceArtifact -InstallArtifact` run that all 14
+examples pass as part of the release pipeline itself. Extended
+`scripts/verify_release_artifact.ps1`'s existing forbidden-generated-
+artifacts check to also cover every file an example can generate
+(previously only covered `tests/`'s own generated files), kept in sync by
+hand with `build_package.ps1`'s and the new runner's own cleanup lists.
 
 ### PR-405 — Make every example location-independent and smoke-tested
 

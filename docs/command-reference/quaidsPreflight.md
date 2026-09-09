@@ -93,4 +93,5 @@ qOut = quaidsFit(w, intcpt, prices, totexp, instr, aCtl);
 
 [printQuaidsPreflight](printQuaidsPreflight.md),
 [quaidsFit](quaidsFit.md), [quaidsWorkflowFit](quaidsWorkflowFit.md),
-[quaidsRobustFit](quaidsRobustFit.md)
+[quaidsRobustFit](quaidsRobustFit.md), [Data Preparation
+Guide](../DATA_PREPARATION_GUIDE.md#8-minimum-sampledesign-size-and-recommended-preflight-checks)

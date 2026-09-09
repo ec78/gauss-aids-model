@@ -168,5 +168,16 @@ if (-not $SkipInstalledPackageTest) {
     }
 }
 
+if (-not $SkipInstalledPackageTest) {
+    Invoke-Step "Example smoke tests" {
+        # PR-405: every example runs against `library quaids;` (and, for
+        # 10/13, the optional optmt/pubtable adapters), so this only means
+        # something once the package is actually installed -- gated behind
+        # the same -SkipInstalledPackageTest flag as the step above, not a
+        # separate switch.
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $testsDir "run_examples_smoke.ps1") -RepoRoot $RepoRoot -GaussExe $GaussExe
+    }
+}
+
 Write-Host ""
 Write-Host "run_release_verification.ps1: PASS"

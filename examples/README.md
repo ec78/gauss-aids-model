@@ -7,7 +7,9 @@ bottom, then run it and compare the printed output.
 real-published-data walkthrough (load a CSV, preflight, fit, interpret,
 compare against an independent reference, compute elasticities, export a
 table) and the best starting point if you want to see the whole pipeline
-against real numbers before touching synthetic data. Examples 01-13 share
+against real numbers before touching synthetic data -- its own comments
+link back to [../docs/DATA_PREPARATION_GUIDE.md](../docs/DATA_PREPARATION_GUIDE.md)
+at each data-preparation decision it makes. Examples 01-13 share
 one small, well-commented synthetic dataset generator
 ([`example_data.src`](example_data.src)): a simulated household budget
 survey with 5 spending categories (Food, Housing, Transportation,
@@ -24,6 +26,21 @@ Run each example from this directory:
 cd examples
 tgauss -b -x 00_real_data_quickstart.e
 ```
+
+Every example except `00_real_data_quickstart.e` is confirmed to work
+launched from any working directory (or via an absolute path, or from the
+GAUSS GUI) once `quaids` is installed, since every `#include` in this
+suite is now a bare filename resolving via GAUSS's own installed-package
+search path -- `cd examples` is the simplest, always-correct instruction,
+not a strict requirement for those 13. `00_real_data_quickstart.e` is the
+one exception: its `loadd()` call reads a real CSV by a `../tests/`-
+relative path, and GAUSS's file I/O has no package-search fallback the
+way `#include` does, so it genuinely needs `examples/` as the working
+directory. To smoke-test the whole suite from any starting directory in
+one shot, use `tests/run_examples_smoke.ps1` (sets each example's own
+working directory correctly regardless of where it is itself invoked
+from) -- see that script's own header for the full technical finding
+behind this section.
 
 (`10_curvature_imposition.e` and `13_pubtable_reporting.e` need the
 optional `optmt`/`pubtable` packages installed and loaded first, noted

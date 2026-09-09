@@ -21,6 +21,12 @@ name: Test suite
 # push-triggered run. It stays available for manual/release-verification
 # runs (run_source_tests.ps1 without this flag) but opted out of the
 # automatic per-push run to keep CI fast.
+#
+# PR-405: also runs tests/run_examples_smoke.ps1 -SkipCurvature, the same
+# rationale as -SkipBootstrap above -- 10_curvature_imposition.e's own
+# QUAIDS curvature bootstrap block is the one example with meaningfully
+# non-trivial runtime; the other 13 (including 13_pubtable_reporting.e,
+# left unskipped -- no bootstrap, genuinely fast) run every push.
 
 on:
   push:
@@ -45,3 +51,6 @@ jobs:
         # execution policy blocks running any .ps1 file at all.
         shell: cmd
         run: powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1 -SkipBootstrap
+      - name: Run example smoke tests
+        shell: cmd
+        run: powershell -ExecutionPolicy Bypass -File tests\run_examples_smoke.ps1 -SkipCurvature

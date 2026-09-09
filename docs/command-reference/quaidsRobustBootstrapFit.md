@@ -117,4 +117,5 @@ sharesB = quaidsSharesFit(bB, vB, intcptPt, pricesPt, totexpPt, aCtl);
 [quaidsRobustBootstrapCovariance](quaidsRobustBootstrapCovariance.md),
 [quaidsRobustFit](quaidsRobustFit.md), [quaidsFit](quaidsFit.md),
 [quaidsCurvatureBootstrapFit](quaidsCurvatureBootstrapFit.md) (the
-sibling bootstrap this proc's design mirrors)
+sibling bootstrap this proc's design mirrors),
+[Troubleshooting Guide](../TROUBLESHOOTING_GUIDE.md#robust-sandwich-vs-bootstrap-which-should-i-use)

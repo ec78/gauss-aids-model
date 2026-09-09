@@ -94,7 +94,18 @@ try {
         throw "release artifact is missing required entries: $($missingEntries -join ', ')"
     }
 
-    $badTempEntries = $entryNames | Where-Object { $_ -match "^tests/(pubtable_test_coef\.(tex|md|csv)|.*\.log)$" }
+    # PR-405: this pattern is the authoritative "must never ship" list --
+    # kept in sync by hand with build_package.ps1's own $generatedTestFiles
+    # cleanup list (which removes these from the staging directory before
+    # zipping) and tests/run_examples_smoke.ps1's own post-run cleanup
+    # (which removes them from the repo working tree after a local smoke
+    # run). This check is the actual gate; the other two are best-effort
+    # prevention -- this is what fails a release if either one is ever
+    # incomplete.
+    $badTempEntries = $entryNames | Where-Object {
+        $_ -match "^tests/(pubtable_test_coef\.(tex|md|csv)|schema_test_quaids_wrapper_out|print_format_probe_(elas|shares|noint)\.txt|.*\.log)$" -or
+        $_ -match "^examples/(quaids_coefficients\.(tex|md|csv)|quaids_income_elasticities\.md|quaids_uncompensated_elasticities\.tex|quaids_compensated_elasticities\.csv|quaids_workflow.*|blanciforti_results\.txt)$"
+    }
     if ($badTempEntries.Count -gt 0) {
         throw "release artifact includes generated test-run artifacts: $($badTempEntries -join ', ')"
     }

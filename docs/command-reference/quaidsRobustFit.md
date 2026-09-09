@@ -142,4 +142,5 @@ elasR = quaidsElasFit(bR, vR, intcptPt, pricesPt, totexpPt, aCtl);
 [printQuaidsRobust](printQuaidsRobust.md), [quaidsFit](quaidsFit.md),
 [quaidsRobustCovariance](quaidsRobustCovariance.md),
 [quaidsRobustBootstrapFit](quaidsRobustBootstrapFit.md) (a bootstrap
-alternative that does not share this proc's conservative-bread property)
+alternative that does not share this proc's conservative-bread property),
+[Troubleshooting Guide](../TROUBLESHOOTING_GUIDE.md#robust-sandwich-vs-bootstrap-which-should-i-use)

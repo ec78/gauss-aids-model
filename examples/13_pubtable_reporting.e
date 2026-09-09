@@ -2,21 +2,25 @@
 ** 13_pubtable_reporting.e
 **
 ** Publication-quality LaTeX/Markdown/CSV/RTF/HTML/XLSX table export via
-** the optional pubtable adapter (src/pubtable_quaids.src). This adapter
-** is NOT part of the installed quaids package (it has a hard compile-
-** time dependency on pubtable's own struct types), so it is #included
-** from the source tree directly, after both quaids and pubtable are
-** loaded -- see docs/USAGE_GUIDE.md's "Reporting (pubtable)" section.
+** the optional pubtable adapter (pubtable_quaids.src). This adapter
+** ships physically inside the installed quaids package but is not part
+** of its lazy-load catalog (a hard compile-time dependency on pubtable's
+** own struct types), so it needs an explicit #include after both quaids
+** and pubtable are loaded -- see docs/USAGE_GUIDE.md's "Reporting
+** (pubtable)" section.
 **
-** Requires the pubtable package installed. Run from the examples/
-** directory (needed for the ../src/ relative #include below):
-**   tgauss -b -x 13_pubtable_reporting.e
+** Requires the pubtable package installed. Location-independent: every
+** #include below is a bare filename, resolving via the installed
+** package's own search path regardless of working directory -- confirmed
+** to work launched from the examples/ directory, from any other
+** directory via an absolute path, or from the GAUSS GUI. Run via
+** `cd examples; tgauss -b -x 13_pubtable_reporting.e`.
 */
 
 new;
 library pubtable, quaids;
 #include quaids.sdf
-#include ../src/pubtable_quaids.src
+#include pubtable_quaids.src
 #include example_data.src
 
 { w, intcpt, prices, totexp, instr } = quaidsExampleData(3000, 204);

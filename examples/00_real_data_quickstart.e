@@ -20,6 +20,25 @@
 ** below only prints -- run it yourself with
 ** `tgauss -b -x quaids_published_validation_test.e` from tests/.
 **
+** Every data-preparation decision this script makes (share/total-
+** expenditure construction, log transforms, column ordering, the
+** renormalization fix, instrument choice, preflight checks) is explained
+** in full in docs/DATA_PREPARATION_GUIDE.md -- this file's own comments
+** point to the specific section at each such decision below.
+**
+** Unlike every other example, this one genuinely needs `examples/` as
+** the working directory: its loadd() call below reads a real CSV file
+** by a `../tests/`-relative path, and GAUSS's loadd()/plain file I/O has
+** no package-search fallback the way #include does (confirmed directly --
+** #include example_data.src above resolves via the installed package
+** from any working directory once library quaids; has run, but a
+** relative loadd() path does not; see tests/run_examples_smoke.ps1's own
+** header comment for the empirical test that established this GAUSS
+** behavior). Run via `cd examples; tgauss -b -x
+** 00_real_data_quickstart.e`, or via tests/run_examples_smoke.ps1, which
+** sets the working directory correctly regardless of where it is itself
+** invoked from.
+**
 ** Run from the examples/ directory:
 **   tgauss -b -x 00_real_data_quickstart.e
 */
@@ -32,10 +51,12 @@ library quaids;
 **
 ** loadd() reads a CSV into a GAUSS dataframe; selecting columns by name
 ** avoids assembling matrices by hand and avoids share/price columns
-** silently getting out of order. quaidsFit() requires LOG prices and
-** LOG total expenditure, not raw levels -- the CSV's price and
-** expenditure columns are levels, so ln() them before fitting. This is
-** a common, easy-to-miss data-preparation step.
+** silently getting out of order (column ordering:
+** docs/DATA_PREPARATION_GUIDE.md#3-goodcategory-ordering-across-shares-and-prices).
+** quaidsFit() requires LOG prices and LOG total expenditure, not raw
+** levels -- the CSV's price and expenditure columns are levels, so ln()
+** them before fitting. This is a common, easy-to-miss data-preparation
+** step -- see docs/DATA_PREPARATION_GUIDE.md#2-price-and-expenditure-transformations-and-unit-consistency.
 ** --------------------------------------------------------------------- */
 
 data = loadd("../tests/fixtures/published/blanciforti86_food32.csv");
@@ -51,7 +72,9 @@ instr = ln(data[., "xAgg"]);          // total expenditure across all 11
                                       // commodity groups in the original
                                       // source -- a strong instrument
                                       // for xFood (correlation ~0.97 in
-                                      // logs, first-stage R^2 ~0.998)
+                                      // logs, first-stage R^2 ~0.998).
+                                      // Instrument selection:
+                                      // docs/DATA_PREPARATION_GUIDE.md#5-instrument-selection-and-weak-instrument-diagnostics
 
 print "Observations:" rows(w) "years, " cols(w) "food categories:" goodNames';
 
@@ -64,11 +87,15 @@ print "Observations:" rows(w) "years, " cols(w) "food categories:" goodNames';
    missing or duplicated category). Row-normalizing is the standard fix
    for real, rounded data: dividing each share by its own row's sum
    forces exact adding-up while barely perturbing values that were
-   already within 0.1% of summing to 1. */
+   already within 0.1% of summing to 1. See
+   docs/DATA_PREPARATION_GUIDE.md#1-budget-shares-and-total-expenditure. */
 w = w./sumc(w');
 
 /* ---------------------------------------------------------------------
 ** 2. Preflight: screen the data before spending time fitting
+**
+** See docs/DATA_PREPARATION_GUIDE.md#8-minimum-sampledesign-size-and-recommended-preflight-checks
+** for what every field below means and when it's worth acting on.
 ** --------------------------------------------------------------------- */
 
 aCtl = quaidsControlCreate();
