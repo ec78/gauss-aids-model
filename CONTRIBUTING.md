@@ -2,9 +2,9 @@
 
 Everything a new contributor needs to run the test suite and understand
 the release gate, without consulting any internal AI-assistant context
-file (`CLAUDE.md`, `GOLD_STANDARD_TODO.md`) -- those exist for AI coding
-assistants working session-to-session on this repo, not as a contributor
-prerequisite.
+file (`CLAUDE.md`, `dev/GOLD_STANDARD_TODO.md`) -- those exist for AI
+coding assistants working session-to-session on this repo, not as a
+contributor prerequisite.
 
 ## Prerequisites
 
@@ -109,8 +109,8 @@ strips known generated test/example artifacts, and self-verifies the
 result via `scripts\verify_release_artifact.ps1` -- including an
 archive-level check that every relative doc link and `#anchor` resolves
 *inside the built archive itself*, not just the git working tree, since
-a few maintainer-only files (`CLAUDE.md`, `GOLD_STANDARD_TODO.md`,
-`PUBLIC_RELEASE_ROADMAP.md`) are never shipped), installs the artifact
+a few maintainer-only files (`CLAUDE.md`, `dev/GOLD_STANDARD_TODO.md`,
+`dev/PUBLIC_RELEASE_ROADMAP.md`) are never shipped), installs the artifact
 into a real GAUSS package directory (`<GaussHome>\pkgs\quaids` by
 default), then runs the installed-package public API test and the
 example smoke tests against that exact installed copy.

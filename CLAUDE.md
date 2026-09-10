@@ -15,8 +15,12 @@ welfare analysis, elasticity calculation, testing demand-theory restrictions.
 
 The library is **pre-alpha** (package version `0.24.0`) and is packaged as an
 installable GAUSS application package (`library quaids;`). See
-`GOLD_STANDARD_TODO.md` for the full roadmap — this file is the
+`dev/GOLD_STANDARD_TODO.md` for the full roadmap — this file is the
 quick-orientation companion to it, and should be kept synchronized with it.
+Maintainer-only planning documents (this file, `dev/GOLD_STANDARD_TODO.md`,
+`dev/PUBLIC_RELEASE_ROADMAP.md`) live under `dev/` except for `CLAUDE.md`
+itself, which stays at the repo root since Claude Code auto-loads project
+context files from there.
 
 **Naming**: the package and its public procs use a `quaids` prefix (decided
 at Milestone 0), even though the estimator also covers plain linear AIDS —
@@ -728,9 +732,14 @@ README.md         # Milestone 8: front door -- install (Tools > Install
                   #   commands.
 .gitignore        # Compiled .gcg artifacts, tmp/, .claude/, packaged zips,
                   #   generated `output file=...` run artifacts.
-GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
+dev/GOLD_STANDARD_TODO.md  # Living roadmap: release blockers, milestones,
                   #   definition of done. Read this before any nontrivial
-                  #   change and update it as milestones close.
+                  #   change and update it as milestones close. Moved into
+                  #   dev/ alongside PUBLIC_RELEASE_ROADMAP.md (a repo-
+                  #   hygiene cleanup, no version bump) to separate
+                  #   maintainer-only planning docs from the shipped/
+                  #   customer-facing root; CLAUDE.md itself stays at the
+                  #   repo root since Claude Code auto-loads it from there.
 ```
 
 The original ten-milestone roadmap is complete, plus Milestones 11-31:

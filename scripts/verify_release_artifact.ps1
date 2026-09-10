@@ -143,8 +143,8 @@ try {
 
     # PR-103: an archive-level link check, distinct from and not replaced
     # by scripts/verify_docs_quality.ps1's own repo-level one. The
-    # working tree has files (CLAUDE.md, GOLD_STANDARD_TODO.md,
-    # PUBLIC_RELEASE_ROADMAP.md, .github/) the shipped archive does not
+    # working tree has files (CLAUDE.md, dev/GOLD_STANDARD_TODO.md,
+    # dev/PUBLIC_RELEASE_ROADMAP.md, .github/) the shipped archive does not
     # (see $rootFiles/$dirs in build_package.ps1) -- a link that resolves
     # fine against the git repo can still be a dead link once a customer
     # actually installs this artifact standalone. This check resolves

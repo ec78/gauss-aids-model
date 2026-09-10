@@ -4,6 +4,17 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
+## Unreleased
+
+### Changed
+
+- Repo hygiene: moved the maintainer-only planning documents
+  `GOLD_STANDARD_TODO.md` and `PUBLIC_RELEASE_ROADMAP.md` into a new
+  `dev/` directory, separating them from the shipped/customer-facing
+  repo root. `CLAUDE.md` stays at the repo root (Claude Code auto-loads
+  it from there). No package/public-API surface changed -- no version
+  bump.
+
 ## 0.1.0 - 2026-09-10
 
 First public alpha, completing every phase of `PUBLIC_RELEASE_ROADMAP.md`
