@@ -4,14 +4,21 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
-## 0.1.0 - Unreleased
+## 0.1.0 - 2026-09-10
 
-First public alpha, closing Phase 0 ("Define the Public Contract") of
-`PUBLIC_RELEASE_ROADMAP.md` (PR-001/PR-002/PR-003). The release date will
-be added here and to `CITATION.cff` when the release commit is tagged;
-everything below this point, including internal-milestone-numbered work
-that predates the public-release effort, ships as part of `0.1.0` since
-this is the first version with any public compatibility promise at all.
+First public alpha, completing every phase of `PUBLIC_RELEASE_ROADMAP.md`
+(PR-001 through PR-601, with PR-202 explicitly deferred and PR-203 handled
+as a documentation-only fix -- see the roadmap's own First Public Alpha
+Exit Criteria and each PR's status note for the full detail): the public
+API contract, a reproducible `optmt`-free installation, an honest
+numerical-reliability posture, corrected and reorganized documentation,
+a complete customer implementation path (recommended workflow, a
+real-data example, data-preparation and troubleshooting guides,
+location-independent smoke-tested examples), support/contributor
+guidance, and a single automated release gate. Everything below this
+point, including internal-milestone-numbered work that predates the
+public-release effort, ships as part of `0.1.0` since this is the first
+version with any public compatibility promise at all.
 
 ### Public release contract
 

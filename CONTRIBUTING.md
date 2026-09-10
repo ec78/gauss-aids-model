@@ -143,22 +143,25 @@ sanity-checking only, not before an actual release) or
 
 ## How release artifacts and tags are produced
 
-1. Bump `package.json`'s `"version"`, `CITATION.cff`'s `version:`, and
-   `docs/public-api.json`'s `"version"` together, and add a matching
-   `## <version>` heading to `CHANGELOG.md` -- `scripts/verify_public_api.ps1`
+1. Bump `package.json`'s `"version"`, `CITATION.cff`'s `version:`
+   (plus `date-released:`), and `docs/public-api.json`'s `"version"`
+   together, and give `CHANGELOG.md`'s top entry a matching
+   `## <version> - <date>` heading -- `scripts/verify_public_api.ps1`
    enforces all four stay in sync.
-2. Run the full release verification workflow above and confirm it
-   passes clean.
-3. Commit the version bump.
+2. Commit the version bump. `scripts\run_release_gate.ps1` (see above)
+   requires a clean worktree as its own first check, so this has to
+   happen *before* the gate runs, not after.
+3. Run the release gate (`powershell -ExecutionPolicy Bypass -File
+   scripts\run_release_gate.ps1`) against that clean, committed state and
+   confirm it reports `GO`.
 4. Tag the release commit (`git tag v<version>`, e.g. `git tag v0.1.0`)
    and push the tag (`git push origin v<version>`).
 5. Create a GitHub release from that tag (`gh release create v<version>
    "quaids <version>.zip" --notes-file <changelog excerpt>`), attaching
-   the built `.zip` as a release asset.
-
-As of this writing this project has not yet cut its first tagged
-release -- `0.1.0` is the intended first public alpha tag once the
-release gate passes end to end.
+   the built `.zip` as a release asset. The release record the gate wrote
+   to `release_records/` has the artifact's SHA256 checksum, tool
+   versions, and convergence-sweep results worth carrying into the
+   release notes or keeping alongside the tag.
 
 ## Security
 

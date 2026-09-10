@@ -6,6 +6,7 @@ authors:
   - family-names: Clower
     given-names: Eric
 version: 0.1.0
+date-released: 2026-09-10
 repository-code: "https://github.com/ec78/gauss-aids-model"
 url: "https://github.com/ec78/gauss-aids-model"
 abstract: "GAUSS library for estimating linearized AIDS, iterated (nonlinear price index) AIDS, and QUAIDS demand systems, with instrumental-variables treatment of total expenditure, homogeneity/symmetry restriction testing, elasticities, and Slutzky negativity diagnostics."
