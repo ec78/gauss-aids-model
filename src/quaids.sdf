@@ -548,4 +548,39 @@ struct quaidsReplicateOut {
     matrix nFailed;      // replicates dropped (did not converge, or non-finite)
 };
 
+/*
+** quaidsTrendOut -- struct returned by quaidsTrendFit(): a cheap, one-shot
+** screening diagnostic for whether an AIDS demand system's coefficients
+** show a linear trend over time. NOT genuine time-varying-parameter
+** estimation (see the planned quaidsTVPFit()) -- this is the fast first
+** check of whether that much larger estimation effort is even warranted
+** on a given dataset. See quaidstrend.src's own header for the full
+** design rationale (why LA-AIDS/Stone-index only, why homogeneity is
+** required, why the covariance is a simplified Kronecker sandwich).
+*/
+struct quaidsTrendOut {
+    matrix n;            // number of goods
+    matrix nobs;
+    matrix nint;         // number of extra intercept-shifter variables
+    matrix n1;           // n - 1 (homogeneity always imposed)
+    matrix ng;           // level-block row count: 1+nint+n1+1(lx)+nu
+    matrix ngTrend;      // trend-block row count: 1(t)+n1+1(t*lx)
+    matrix xnam;         // legacy character matrix of intercept-block names
+    matrix wnam;         // legacy character matrix of good names
+    matrix unam;         // legacy character matrix of IV-residual names
+    matrix intcptFull;   // intcpt with the constant column prepended
+    matrix u;            // first-stage IV residuals (informational, as qOut.u)
+    matrix b0;           // level-block coefficients: intcpt | prices[.,1:n1] | lx | u,  ng x n
+    matrix se0;
+    matrix t0;
+    matrix pvt0;
+    matrix b1;           // trend-block coefficients: t | t.*prices[.,1:n1] | t.*lx,  ngTrend x n
+    matrix se1;
+    matrix t1;
+    matrix pvt1;
+    matrix trendStat;    // joint Wald test: is the entire trend block zero?
+    matrix trendPval;
+    matrix trendDf;
+};
+
 #endif

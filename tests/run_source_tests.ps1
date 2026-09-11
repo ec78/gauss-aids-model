@@ -90,7 +90,8 @@ $gaussTests = @(
     "quaids_survey_test.e",
     "quaids_replicate_test.e",
     "quaids_compatibility_test.e",
-    "quaids_print_format_test.e"
+    "quaids_print_format_test.e",
+    "quaidstrend_test.e"
 )
 
 if (-not $SkipPubtable) {
@@ -227,6 +228,10 @@ $guardTests = @(
     [pscustomobject]@{
         Script = "guard_error_cases\quaids_set_homogeneity_invalid.e"
         Expected = "quaidsSetHomogeneity: homogeneous must be scalar 0 or 1."
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\trend_requires_homogenous.e"
+        Expected = "quaidsTrendFit: requires aCtl.homogenous == 1"
     }
 )
 

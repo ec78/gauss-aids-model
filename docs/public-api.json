@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "package": "quaids",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "maturity": "public-alpha",
   "compatibility_policy": {
     "starts_at": "0.1.0",
@@ -20,6 +20,7 @@
     "printQuaidsRobust",
     "printQuaidsRobustBootstrap",
     "printQuaidsShares",
+    "printQuaidsTrend",
     "printQuaidsWelfare",
     "printQuaidsZero",
     "ptFromQuaids",
@@ -52,6 +53,7 @@
     "quaidsSharesFit",
     "quaidsSlutzky",
     "quaidsSurveyWorkflowFit",
+    "quaidsTrendFit",
     "quaidsWelfareFit",
     "quaidsWorkflowFit",
     "quaidsWorkflowScenarioFit",
@@ -114,7 +116,8 @@
       "quaidsRobustBootOut",
       "quaidsPreflightOut",
       "quaidsWorkflowOut",
-      "quaidsReplicateOut"
+      "quaidsReplicateOut",
+      "quaidsTrendOut"
     ]
   },
   "deprecated_fields": [

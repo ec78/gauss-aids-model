@@ -3531,3 +3531,43 @@ specialized fixture matching the already-validated one in
 `tests/quaidsfixtures.src`). No estimation math changed, no version
 bump (pure examples/documentation work, matching Milestone 8's
 precedent).
+
+## TVP-AIDS initiative (in progress)
+
+Requested by the repo owner: extend this library to support genuine
+time-varying-parameter (TVP) AIDS -- coefficients evolving over time via
+a state-space/Kalman-filter treatment, explicitly distinct from ordinary
+fixed-coefficient AIDS's already-existing observation-specific
+elasticities. A full research/design report (repo architecture, an
+econometric literature review centered on Leybourne 1993, Mazzocchi
+2003, and Barnett & Kalonda-Kanyama 2012, and a GAUSS implementation
+strategy) was produced and approved before any code was written, per the
+repo owner's explicit instruction. See CLAUDE.md's own "TVP-AIDS
+initiative" section for the full account, including the major finding
+that GAUSS already ships a purpose-built TVP-native state-space package
+(`sslib`) that the planned `quaidsTVPFit()` will build on rather than
+hand-rolling a Kalman filter, missing only a period-varying smoother.
+
+- [x] **Stage 0**: `quaidsTrendFit()`/`printQuaidsTrend()`
+  (`src/quaidstrend.src`) -- a cheap, one-shot LA-AIDS-based screening
+  diagnostic for linear coefficient drift, ahead of the much larger
+  Kalman-filter effort. Verified, not just asserted, that adding-up and
+  homogeneity hold exactly on both the level and trend-slope coefficient
+  blocks with no separate restriction-imposition step -- a direct
+  consequence of the shared-design-matrix GLS mechanism every AIDS
+  estimate here already uses. New struct `quaidsTrendOut`; new fixture
+  `_quaidsTrendSyntheticDGP()`; 21-check test file plus one guard-error
+  case. Version bump to `0.2.0` (new required public API surface).
+- [ ] **Stage 1**: reduced state-vector plumbing (relative-price
+  homogeneity, unique-`γ` symmetry, equation-`n` recovery) with a
+  caller-supplied `Q`/`H` -- no Kalman filter/MLE yet. Completion
+  criterion: `Q=0` forced exactly reproduces `quaidsFit()`'s `qOut.bestB`.
+- [ ] **Stage 2**: wire `sslib`'s `kalmanFilterTVP`/`kalmanFilterDiffuseTVP`
+  with fixed `Q`/`H`.
+- [ ] **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP`/`cmlmt` --
+  `quaidsTVPFit()` becomes real.
+- [ ] **Stage 4**: `ssKalmanSmoothTVP` -- the one genuinely new numerical
+  component (`sslib`'s own smoother is time-invariant only).
+- [ ] **Stage 5**: `quaidsTVPElasFit()`, reusing `_quaidsElas()` per period.
+- [ ] **Stage 6**: printer, docs, example, `sslib` package dependency,
+  version bump.

@@ -32,7 +32,8 @@
         "quaidsdiagnostics.src",
         "quaidsworkflow.src",
         "quaidssurvey.src",
-        "quaidsreplicate.src"
+        "quaidsreplicate.src",
+        "quaidstrend.src"
     ],
-    "version": "0.1.0"
+    "version": "0.2.0"
 }

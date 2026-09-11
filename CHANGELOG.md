@@ -4,7 +4,29 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
-## Unreleased
+## 0.2.0 - 2026-09-11
+
+### Added
+
+- `quaidsTrendFit()`/`printQuaidsTrend()` (`src/quaidstrend.src`) --
+  TVP-AIDS initiative, Stage 0: a cheap, one-shot LA-AIDS/Stone-index
+  screening diagnostic for whether a demand system's coefficients show a
+  linear trend over time, ahead of the much larger Kalman-filter-based
+  genuine time-varying-parameter estimator (`quaidsTVPFit()`, planned,
+  not yet implemented -- see the project's TVP design report). Widens
+  the shared GLS design matrix with trend-interacted price/expenditure
+  regressors and returns a joint Wald test of whether the whole trend
+  block is zero, plus the individual trend-slope coefficients and SEs
+  for inspection. Requires `aCtl.homogenous == 1` -- the exact (to
+  floating-point precision) adding-up/homogeneity guarantee on both the
+  level and trend-slope coefficient blocks falls directly out of the
+  same shared-design-matrix GLS mechanism every AIDS estimate in this
+  library already relies on, verified directly against both a
+  no-true-trend and a genuine-trend synthetic fixture, not just asserted.
+  Uses a simplified covariance (no generated-regressor correction for the
+  IV first stage's own sampling variability), the same class of
+  documented simplification `quaidsRobustFit()`/`quaidsZeroFit()` already
+  ship. New struct `quaidsTrendOut`.
 
 ### Changed
 
@@ -12,8 +34,7 @@ as internal milestone history and were never public compatibility promises.
   `GOLD_STANDARD_TODO.md` and `PUBLIC_RELEASE_ROADMAP.md` into a new
   `dev/` directory, separating them from the shipped/customer-facing
   repo root. `CLAUDE.md` stays at the repo root (Claude Code auto-loads
-  it from there). No package/public-API surface changed -- no version
-  bump.
+  it from there).
 
 ## 0.1.0 - 2026-09-10
 

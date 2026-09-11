@@ -1,0 +1,289 @@
+#include quaids.sdf
+
+/*
+** quaidstrend.src
+**
+** quaidsTrendFit() -- a cheap, one-shot screening diagnostic for whether
+** an AIDS demand system's coefficients show a linear trend over time.
+**
+** This is deliberately NOT genuine time-varying-parameter estimation --
+** see the project's TVP design report for quaidsTVPFit(), a planned
+** Kalman-filter-based random-walk-coefficient model. This proc exists as
+** the fast, near-free first step before committing to that much larger
+** estimation effort: does the data even show evidence of coefficient
+** drift, using a single widened GLS solve on the Stone-index (LA-AIDS)
+** specification -- no iteration, no state-space model, no new package
+** dependency.
+**
+** Design decisions, made explicit (see the TVP design report's Stage 0
+** scoping for the full reasoning):
+**
+**   - Always uses the LA-AIDS/Stone-index specification internally,
+**     regardless of aCtl.linear/aCtl.maxiter (this proc does not read
+**     either field). A screening diagnostic does not need the nonlinear
+**     translog price index's own iteration -- that iteration exists in
+**     quaidsFit() to get the best possible point estimate; here the
+**     question is only "is there a hint of drift worth investigating
+**     further," and the well-documented approximation bias of the Stone
+**     index (see quaids.src's own Milestone 3 history) is a much smaller
+**     concern for a screening test than for a reported final estimate.
+**
+**   - Requires aCtl.homogenous == 1. The exact (to floating-point
+**     precision) adding-up/homogeneity guarantee this proc relies on --
+**     see Remarks below -- only holds cleanly when the reference good's
+**     own price is dropped from the shared design, exactly as
+**     quaidsFit()'s own homogeneous branch already does. An unconstrained
+**     version is a real, separate extension, not attempted here.
+**
+**   - Only a bare linear trend (a mean-centered t = 1..T) is interacted
+**     with relative prices and log expenditure; existing intcpt shifters
+**     are NOT separately trended. Whether a demographic shifter's own
+**     effect drifts over time is a bigger, separate question than this
+**     quick screen is meant to answer.
+**
+**   - The IV control-function term u is NOT trended, matching the same
+**     design decision documented for the full TVP model: total-
+**     expenditure endogeneity is treated once (one first-stage
+**     regression), not as itself evolving over time.
+**
+**   - Standard errors use a SIMPLIFIED covariance that omits the
+**     generated-regressor correction for u's own first-stage sampling
+**     variability (the O.*.(D*zzi*D') term in quaidsFit()'s full
+**     covariance) -- the same class of documented simplification this
+**     library already ships in quaidsRobustFit()'s "simplified bread"
+**     and quaidsZeroFit()'s own covariance. With that term omitted, the
+**     sandwich collapses to the textbook SUR-with-shared-regressors form
+**     v = S[1:n-1,1:n-1].*.inv(gg) -- verified by hand (Kronecker
+**     algebra: Ji'*(S.*.gg)*Ji reduces to S.*.inv(gg) exactly when
+**     J = eye(n-1).*.gg), not just asserted.
+**
+** Remarks: adding-up and homogeneity hold EXACTLY (to floating-point
+**          precision, not approximately, and not because this proc
+**          separately imposes them) on BOTH the level (b0) and
+**          trend-slope (b1) coefficient blocks. This falls directly out
+**          of the shared-design-matrix GLS mechanism every AIDS estimate
+**          in this library already uses: budget shares sum to 1
+**          identically, and every equation is fit against the IDENTICAL
+**          regressor set, so b's own column-sum for any regressor OTHER
+**          than the bare constant is forced to exactly 0 (and the
+**          constant's own column-sum is forced to exactly 1) -- a pure
+**          linear-algebra consequence of OLS/GLS on data satisfying a
+**          linear identity (if y = X*bcol + e and y is itself one of
+**          X's own columns exactly, the OLS fit is bcol = that column's
+**          indicator vector, with zero residual, regardless of what the
+**          other columns are). This extends unchanged to the added
+**          trend-interaction columns -- nothing new has to be derived or
+**          separately enforced for them. tests/quaidstrend_test.e checks
+**          this directly as an exact-identity regression guard, on both
+**          a no-true-trend and a genuine-trend synthetic fixture.
+**
+** Format:     struct quaidsTrendOut tOut = quaidsTrendFit(w, intcpt, prices, totexp, instr, aCtl);
+**
+** Input:      as quaidsFit() -- w (TxN shares), intcpt (TxK or scalar 0),
+**             prices (TxN absolute log prices), totexp (Tx1 log total
+**             expenditure), instr (TxH instruments), aCtl (quaidsControl;
+**             only aCtl.homogenous/aCtl.othnam are read).
+**
+** Output:     struct quaidsTrendOut -- see quaids.sdf.
+**
+*******************************************************************************/
+
+proc (struct quaidsTrendOut) = quaidsTrendFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
+
+    local nobs, n, n1, nint, xnam, wnam, unam, u, zzi, m1, nz, nu, enam,
+        stderr, t, pvt, cor, tv, df, rsq, rbsq, sse, stdest, fstat, pvf,
+        stone, lx, tt, m, ng, ngTrend, ngAll, gg, gw, b, iw, ww, S, v,
+        b0, b1, se0, se1, t0, t1, pvt0, pvt1, trendIdx, vi, b1vec,
+        trendStat, trendPval, trendDf, weight, ii;
+    struct quaidsTrendOut tOut;
+
+    if aCtl.homogenous /= 1;
+        errorlog "quaidsTrendFit: requires aCtl.homogenous == 1 -- see the proc header's Remarks for why the exact adding-up/homogeneity guarantee this diagnostic relies on needs the reference good's price dropped from the shared design.";
+        end;
+    endif;
+
+    nobs = rows(w);
+    n = cols(prices);
+    n1 = n - 1;
+    weight = ones(nobs, 1);
+
+    if intcpt == 0;
+        intcpt = ones(nobs, 1);
+        nint = 0;
+        xnam = 0$+"CONSTANT";
+    else;
+        nint = cols(intcpt);
+        intcpt = ones(nobs, 1)~intcpt;
+        if aCtl.othnam $== 0;
+            xnam=0$+"X"$+ftocv(seqa(1, 1, nint), __vpad*(floor(log(nint)+1), 0));
+        else;
+            xnam = aCtl.othnam[1:nint];
+        endif;
+        xnam = "CONSTANT"|xnam;
+    endif;
+
+    if aCtl.othnam $== 0;
+        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+    else;
+        wnam = aCtl.othnam[nint+1:nint+n];
+    endif;
+
+    { prices, u, zzi, m1, nz, nu, enam,
+        b, stderr, t, pvt, cor, tv, df, rsq, rbsq, sse, stdest, fstat, pvf }
+        = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n, weight);
+
+    unam = 0$+"U"$+ftocv(seqa(1, 1, nu), __vpad*(floor(log(nu)+1), 0));
+
+    /* Stone price index -- absolute prices needed. Same formula, and the
+       same Milestone 3 bugfix, as quaids.src's own STARTING VALUE block:
+       reconstruct absolute prices before weighting by mean shares. */
+    stone = (prices[., 1:n-1] + prices[., n])~prices[., n];
+    stone = stone*meanc(w);
+    lx = totexp - stone;
+
+    /* Mean-centered linear trend -- centering keeps t close to orthogonal
+       to the constant, the standard practical reason to center a trend
+       regressor before interacting it with anything else. */
+    tt = seqa(1, 1, nobs);
+    tt = tt - meanc(tt);
+
+    /* Row order matches the rest of this codebase's b convention
+       (intcpt | prices | lx | [lx2] | u -- see quaidselas.src's own
+       docstring), with no lx2 row since this proc is always LA-AIDS,
+       followed by the new trend block. */
+    ng = 1+nint+n1+1+nu;
+    ngTrend = 1+n1+1;
+    ngAll = ng+ngTrend;
+
+    m = moment(intcpt~prices[., 1:n1]~lx~u~tt~(tt.*prices[., 1:n1])~(tt.*lx)~w, 0);
+    gg = m[1:ngAll, 1:ngAll];
+    gw = m[1:ngAll, ngAll+1:ngAll+n];
+    b = solpd(gw, gg);
+
+    iw = seqa(ngAll+1, 1, n);
+    ww = m[iw, iw];
+    sse = ww-b'gw;
+    S = sse/nobs;
+
+    /* Simplified covariance -- see the header's Design decisions for the
+       Kronecker-algebra derivation showing this is exactly (not
+       approximately) equal to Ji'*(S[1:n-1,1:n-1].*.gg)*Ji when the
+       generated-regressor correction term is omitted. */
+    v = S[1:n-1, 1:n-1].*.invpd(gg);
+
+    ii = -ones(1, n-1).*.eye(ngAll);
+    v = (v|ii*v)~(v*ii'|ii*v*ii');
+
+    b0 = b[1:ng, .];
+    b1 = b[ng+1:ngAll, .];
+    stderr = sqrt(diag(v));
+    stderr = reshape(stderr, n, ngAll)';
+    se0 = stderr[1:ng, .];
+    se1 = stderr[ng+1:ngAll, .];
+    t0 = b0./miss(se0, 0);
+    t1 = b1./miss(se1, 0);
+    pvt0 = 2*cdftc(abs(t0), nobs-ngAll);
+    pvt1 = 2*cdftc(abs(t1), nobs-ngAll);
+
+    /* Joint Wald test: is the entire trend block (across the n-1
+       independently-estimated equations -- equation n's trend
+       coefficients are a redundant linear combination of the others,
+       same reasoning as quaidsHomogeneityTest()'s own df) jointly zero? */
+    trendIdx = vec(seqa(ng+1, 1, ngTrend) + seqa(0, ngAll, n-1)');
+    vi = invpd(v[trendIdx, trendIdx]);
+    b1vec = vec(b[ng+1:ngAll, 1:n-1]);
+    trendStat = b1vec'*vi*b1vec;
+    trendDf = ngTrend*(n-1);
+    trendPval = cdfchic(trendStat, trendDf);
+
+    tOut.n = n;
+    tOut.nobs = nobs;
+    tOut.nint = nint;
+    tOut.n1 = n1;
+    tOut.ng = ng;
+    tOut.ngTrend = ngTrend;
+    tOut.xnam = xnam;
+    tOut.wnam = wnam;
+    tOut.unam = unam;
+    tOut.intcptFull = intcpt;
+    tOut.u = u;
+    tOut.b0 = b0;
+    tOut.se0 = se0;
+    tOut.t0 = t0;
+    tOut.pvt0 = pvt0;
+    tOut.b1 = b1;
+    tOut.se1 = se1;
+    tOut.t1 = t1;
+    tOut.pvt1 = pvt1;
+    tOut.trendStat = trendStat;
+    tOut.trendPval = trendPval;
+    tOut.trendDf = trendDf;
+
+    retp(tOut);
+endp;
+
+
+/*******************************************************************************
+**
+** PRINTQUAIDSTREND
+**
+** Purpose: print the report captured in a quaidsTrendOut struct -- the
+**          headline joint trend test, then the trend-slope coefficient
+**          table (so a user can see which specific price/income
+**          responses show a hint of drift, not just whether one exists
+**          anywhere in the system).
+**
+** Format:     call printQuaidsTrend(tOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsTrend(struct quaidsTrendOut tOut);
+
+    local str, omat, mask, fmt, fmtVal, rlab, i;
+
+    print "QUAIDS TREND SCREENING DIAGNOSTIC (LA-AIDS/Stone index, homogeneity imposed)";
+    print "This is NOT time-varying-parameter estimation -- see quaidsTVPFit() for that.";
+    print "It only tests whether a bare linear trend in prices/expenditure coefficients";
+    print "is jointly different from zero, as a cheap first screen.";
+    print;
+    print "JOINT TEST: is the entire trend block zero?";
+    str = ftos(tOut.trendDf, "chi2(%*.*lf)", 1, 0);
+    str = strsect(str, 1, 15) $+ ftos(tOut.trendStat, "%*.*lf", 19, 8);
+    print str;;
+    print ftos(tOut.trendPval, "                    p-value:  %*.*lf", 20, 3);
+    print;
+
+    if tOut.trendPval < .05;
+        print "p < .05: some evidence of coefficient drift -- a full TVP-AIDS fit may be worthwhile.";
+    else;
+        print "p >= .05: no strong evidence of coefficient drift in this sample.";
+    endif;
+    print;
+
+    print "TREND-SLOPE COEFFICIENTS (row 1 = linear trend in the intercept, remaining";
+    print "rows = trend interacted with each relative price, then with log expenditure)";
+    print;
+    print$ "row"~tOut.wnam';
+    print "------------------------------------------------------------------------";
+    /* Coefficient and (SE) go on separate rows, each cell under GAUSS's
+       8-character legacy-character-matrix cell limit -- the same pattern
+       printQuaidsElas.src uses for exactly this reason (a "coef (se)"
+       single-cell string silently truncates at 8 characters via $+). */
+    mask = zeros(1, tOut.n+1);
+    let fmt[1, 3] = "-*.*s" 4 4;
+    let fmtVal[1, 3] = "*.*s" 8 8;
+    fmt = fmt|(ones(tOut.n, 1).*fmtVal);
+    rlab = 0$+ftocv(1, 1, 0);
+    omat = rlab~ftocv(tOut.b1[1, .], 0, 4)
+        | ""~(0$+"("$+ftocv(tOut.se1[1, .], 0, 4)$+")");
+    i = 2;
+    do while i<=rows(tOut.b1);
+        rlab = 0$+ftocv(i, 1, 0);
+        omat = omat|(rlab~ftocv(tOut.b1[i, .], 0, 4))
+            |(""~(0$+"("$+ftocv(tOut.se1[i, .], 0, 4)$+")"));
+        i = i+1;
+    endo;
+    call printfm(omat, mask, fmt);
+    print;
+
+endp;

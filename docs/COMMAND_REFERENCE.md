@@ -36,6 +36,17 @@ sections.
 - [quaidsJointTest](command-reference/quaidsJointTest.md)
 - [quaidsQuadraticTest](command-reference/quaidsQuadraticTest.md)
 
+## Time-Varying-Parameter Screening
+
+A cheap, one-shot diagnostic for whether a fitted demand system's
+coefficients show a linear trend over time -- **not** genuine time-varying-
+parameter estimation (a planned Kalman-filter-based extension). Useful as
+a first, near-free check before investing in that much larger estimation
+effort.
+
+- [quaidsTrendFit](command-reference/quaidsTrendFit.md)
+- [printQuaidsTrend](command-reference/printQuaidsTrend.md)
+
 ## Elasticities and Diagnostics
 
 - [quaidsPreflight](command-reference/quaidsPreflight.md)

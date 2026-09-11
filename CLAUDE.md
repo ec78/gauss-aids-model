@@ -4311,6 +4311,141 @@ freshly-installed copy, not a stale development install) -- the real-GUI-
 specific acceptance evidence remains open pending the repo owner's own
 manual pass.
 
+## TVP-AIDS initiative
+
+The repo owner asked for research into extending this library to support
+time-varying-parameter (TVP) demand models — coefficients (and therefore
+elasticities) that genuinely evolve over time via a state-space/Kalman-
+filter treatment, explicitly distinguished from the already-existing
+"fixed coefficients, observation-specific elasticities" behavior
+(`quaidsElasFit()` called at different points already does that; it is
+not TVP). A full research/design report was produced first (repository
+inspection, an econometric literature review — primary sources: Leybourne
+1993, Mazzocchi 2003, Barnett & Kalonda-Kanyama 2012, with Li/Song/Witt
+2006 and Deschamps 2003 as supporting/contrasting references — and a
+mapping onto this GAUSS environment) before any code was written, per the
+repo owner's explicit "do not implement until approved" instruction.
+
+**A major, unanticipated finding from that research**: `c:\gauss26\pkgs\`
+already has a purpose-built, TVP-native state-space/Kalman-filter package,
+`sslib` ("State Space Modeling for GAUSS", Aptech-licensed) — a
+first-pass ecosystem survey missed it (found `tsmt`'s own
+`kalmanFilter()`, time-invariant only, no smoother anywhere) until a
+direct check of every installed package by name turned it up. `sslib`
+provides `kalmanFilterTVP()`/`kalmanFilterDiffuseTVP()` (native
+period-varying `Z/d/H/T/c/R/Q` support, exact-diffuse initialization per
+Koopman 1997) and `ssFitTVP()` (a complete Kalman-filter-likelihood MLE
+workflow via `cmlmt`, with `covPar`). The one confirmed real gap: its
+Kalman smoother (`ssKalmanSmooth`) is time-invariant only — a genuine new
+proc (`ssKalmanSmoothTVP`, a direct generalization of the existing one)
+would be needed for smoothed (not just filtered) coefficient paths. This
+reshaped the planned implementation strategy substantially: build on
+`sslib` directly (the same "write the domain-specific piece, delegate the
+generic numerical machinery to an installed package" pattern this
+library already uses for `optmt` in `quaidscurvature.src`) rather than
+hand-rolling a Kalman filter.
+
+**Recommended first implementation** (approved by the repo owner, work in
+progress, staged): TVP-AIDS (not TVP-LA-AIDS — Barnett & Kalonda-Kanyama's
+own Monte Carlo evidence is a direct warning that the Stone-index
+linearization is the worst-performing base for TVP work; not TVP-QUAIDS —
+no literature precedent exists, and the translog price index's quadratic-
+in-state term breaks the linear measurement equation a standard Kalman
+filter needs), Random Walk Model (the specification every primary source
+actually implements), homogeneity+symmetry imposed via **state-vector
+reparametrization** (relative prices for homogeneity, unique-`γ_ij`-only
+state for symmetry — a direct parallel to `quaidsFit()`'s own existing
+`n1 = n - aCtl.homogenous` trick and `vech`-based symmetry selection
+matrix, not a period-by-period Wald test and not Doran/Doran-Rambaldi's
+augmented-measurement-equation alternative), adding-up handled by
+dropping one equation (Barten 1969 — again mirroring `quaidsFit()`'s own
+convention exactly). Elasticities need no new formula at all — confirmed
+directly from `quaidselas.src`'s own `_quaidsElas()`, which already takes
+coefficients and an evaluation point as independent arguments — just a
+per-period loop.
+
+Implementation is staged (see the full design report for the complete
+roadmap); a genuinely free **Stage 0** was built first, ahead of the much
+larger Kalman-filter effort:
+
+### Stage 0: `quaidsTrendFit()` — a deterministic-trend screening diagnostic (complete)
+
+`src/quaidstrend.src` (new). A cheap, one-shot LA-AIDS/Stone-index
+diagnostic answering "does this data even show hints of coefficient
+drift, before paying for the full TVP estimation effort" — explicitly
+**not** TVP estimation itself. Widens the same shared GLS design matrix
+`quaidsFit()` already builds with mean-centered trend-interaction columns
+(`t`, `t.*prices[.,1:n1]`, `t.*lx`) and solves once (no iteration, since
+LA-AIDS's Stone index doesn't depend on the coefficients being
+estimated), returning both the level-block coefficients and the
+trend-slope block, plus a joint Wald test of whether the whole trend
+block is zero.
+
+**A genuinely elegant, verified-not-assumed finding drove the whole
+design**: because every equation shares an *identical* design matrix and
+budget shares sum to 1 identically, adding-up and homogeneity hold
+*exactly* (to floating-point precision) on **both** the level and
+trend-slope coefficient blocks automatically — a pure linear-algebra
+consequence of OLS/GLS on data satisfying a linear identity (if
+`y = X*b + e` and `y` is itself one of `X`'s own columns, the fit is
+`b` = that column's indicator vector, with zero residual, regardless of
+what the other columns are), requiring **no separate restriction-
+imposition step** for the new trend columns. First verified empirically
+against real published data (`Blanciforti86`) and found to hold only
+*approximately* (~1e-3 deviations) — traced directly (not assumed) to the
+real 1940s-70s data's own few-decimal rounding, not a bug — then
+confirmed to hold to ~1e-16 precision on synthetic data built with exact
+adding-up, closing the loop on which explanation was correct.
+
+Covariance is a documented simplification (omits the IV first-stage
+generated-regressor correction `quaidsFit()`'s full covariance includes —
+the same class of simplification already shipped in `quaidsRobustFit()`'s
+"simplified bread" and `quaidsZeroFit()`'s covariance), which collapses
+by Kronecker algebra (verified by hand, not just asserted) to the
+textbook SUR-with-shared-regressors form `v = S[1:n-1,1:n-1].*.inv(gg)`.
+
+**A real GAUSS printing quirk found and fixed while building the
+printer**: legacy character-matrix `$+` concatenation silently truncates
+each cell to 8 characters (confirmed via an isolated `printfm` probe, not
+assumed) — a `"coef (se)"`-style single-cell string got cut mid-value.
+Fixed by following `printQuaidsElas.src`'s own established pattern
+exactly: coefficient and `(SE)` on separate printed rows, each cell
+staying under the 8-character limit — worth remembering generally, not
+just here, alongside this project's existing documented GAUSS lexer
+quirks (unbalanced `"` inside `/* */` comments; and, found in this same
+pass, a `/*`-like substring inside a *comment's own text* — e.g. a file
+path containing a bare `*` right after `/`, such as
+`guard_error_cases/*.e` — can itself confuse the comment lexer into
+reporting a spurious "Open /* */ comment" error; fixed by rewording, not
+by finding a deeper cause).
+
+New struct `quaidsTrendOut` (`quaids.sdf`). New fixture
+`_quaidsTrendSyntheticDGP(tobs, seed, trueTrend)`
+(`tests/quaidsfixtures.src`) — builds exact adding-up by construction
+(`w`'s last column = 1 minus the others, not independently drawn), with a
+`trueTrend` switch for SIZE (0) vs. POWER (1) checks. Tested in
+`tests/quaidstrend_test.e` (21 checks: exact-identity guards on both
+blocks under both no-trend and genuine-trend data, SIZE, POWER, shape/
+metadata checks, printer smoke test) plus
+`tests/guard_error_cases/trend_requires_homogenous.e` (the
+`aCtl.homogenous /= 1` guard). Wired into `tests/run_source_tests.ps1`'s
+default (unskipped) list — fast, no iteration, no reason to gate it.
+Documented: `docs/command-reference/quaidsTrendFit.md`,
+`docs/command-reference/printQuaidsTrend.md`, a new "Time-Varying-
+Parameter Screening" section in `docs/COMMAND_REFERENCE.md`,
+`docs/public-api.json` (new procs + `quaidsTrendOut` struct).
+
+**Version bump to `0.2.0`**: new required public procs
+(`quaidsTrendFit`, `printQuaidsTrend`) and a new required public struct
+(`quaidsTrendOut`), matching this project's established policy of
+bumping on real new public API surface. `sslib` is not yet a dependency —
+Stage 0 needed none; it will become one once the Kalman-filter-based
+`quaidsTVPFit()` work begins.
+
+**Not yet built** (later stages, per the design report's roadmap): the
+actual Kalman-filter-based `quaidsTVPFit()`/`quaidsTVPElasFit()`, the new
+`ssKalmanSmoothTVP` proc, and the associated documentation/example.
+
 ## What GAUSS already provides — do not duplicate
 
 Full detail and evaluation status is in `GOLD_STANDARD_TODO.md` under "What

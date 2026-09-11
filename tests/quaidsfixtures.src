@@ -442,3 +442,49 @@ proc (7) = _quaidsSurveyWeightedDGP(nPop, seed);
 
     retp(w, intcpt, prices, totexp, instr, weight, trueParams);
 endp;
+
+/*
+** _quaidsTrendSyntheticDGP: TVP-AIDS initiative, Stage 0. A 4-good
+** dataset for quaidsTrendFit()'s size/power checks, deliberately built
+** so adding-up holds EXACTLY (w's n-th column is 1 minus the sum of the
+** others, not independently drawn) -- required for
+** quaidsTrendFit()'s own exact-identity guarantee (see quaidstrend.src's
+** Remarks) to hold to floating-point precision rather than only
+** approximately. Real published data (e.g. Blanciforti86, rounded to a
+** few decimals in the original source) does NOT satisfy this exactly --
+** confirmed directly, not assumed, by running quaidsTrendFit() against
+** it and finding ~1e-3 deviations traceable to the published shares'
+** own rounding, not a bug in this proc's math (see the TVP design
+** report's Stage 0 verification for the full account).
+**
+** `trueTrend`: 0 builds a dataset with NO true coefficient drift (for
+** the test's SIZE check -- quaidsTrendFit()'s joint Wald test should
+** fail to reject); 1 adds a genuine linear-in-t component to the share
+** formula (for the POWER check -- the test should reject). The trend
+** magnitude (.0004 per period, screened against tobs=400 to give a
+** clearly-rejectable but not degenerate chi2 statistic -- confirmed
+** directly by running both the size and power cases, not guessed) is
+** deliberately not returned as a "true trueParams" vector for exact
+** recovery checking, since detecting drift (not recovering its precise
+** magnitude from a one-shot linear-in-t approximation) is this
+** diagnostic's actual job.
+*/
+proc (5) = _quaidsTrendSyntheticDGP(tobs, seed, trueTrend);
+
+    local n, prices, instr, totexp, tt, w;
+
+    n = 4;
+    rndseed seed;
+
+    prices = .1*rndn(tobs, n);
+    instr = rndn(tobs, 2);
+    totexp = .8*instr[., 1] + .1*rndn(tobs, 1);
+
+    tt = seqa(1, 1, tobs) - meanc(seqa(1, 1, tobs));
+
+    w = 0.2*ones(tobs, n-1) + .01*prices[., 1:n-1] + .02*totexp.*ones(tobs, n-1)
+        + trueTrend*.0004*tt.*ones(tobs, n-1) + .01*rndn(tobs, n-1);
+    w = w~(1 - sumc(w'));
+
+    retp(w, 0, prices, totexp, instr);
+endp;
