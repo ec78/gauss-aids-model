@@ -1,0 +1,260 @@
+#include quaids.sdf
+
+/*
+** quaidstvp.src
+**
+** TVP-AIDS initiative, Stage 1: reduced state-vector plumbing for
+** quaidsTVPFit() -- builds the homogeneity/symmetry-respecting
+** state-space representation of the AIDS share system, with NO Kalman
+** filter or MLE yet (that's Stages 2-3). This file exists to get the
+** state-vector CONSTRUCTION itself right and independently verified
+** before any state-space machinery is layered on top of it.
+**
+** Design decisions, made explicit (see the project's TVP design report,
+** and its Stage-1 course correction, for the full reasoning):
+**
+**   - Uses the STONE price index (fixed, computed once from mean
+**     shares), not the full translog index. The translog index a(p) is
+**     linear in (alpha, gamma) individually, but the share equation's
+**     own beta_i*(ln(x)-a(p)) term is a PRODUCT of two state elements
+**     (beta_i and the alpha/gamma inside a(p)) once alpha/gamma/beta are
+**     all genuinely time-varying -- a real bilinear-in-the-state term
+**     that breaks the linear-Gaussian measurement equation a standard
+**     Kalman filter requires. The Stone index is a fixed, sample-mean-
+**     weighted deflator computed once from data, so it introduces no
+**     such feedback: Z_t depends only on observed prices/expenditure,
+**     never on the state itself. This is a deliberate, documented
+**     downgrade from the original design report's "full AIDS, not
+**     LA-AIDS" recommendation -- LA-AIDS/Stone is the weaker performer
+**     in the literature's own Monte Carlo evidence, but a correctly-
+**     specified linear model beats a misspecified nonlinear one. A
+**     relinearized full-AIDS version (mirroring quaidsFit()'s own
+**     lag-gamma-by-one-round trick, generalized to an outer relinearize-
+**     refilter loop) is legitimate future work, not attempted here.
+**
+**   - Homogeneity: only n1 = n-1 relative prices (price_j - price_n) are
+**     used as regressors, exactly as quaidsFit()'s own homogeneous
+**     branch does -- the reference good's own price coefficient is
+**     never a free parameter, by construction, not by a separate test.
+**
+**   - Symmetry: gamma_ij and gamma_ji (i,j = 1..n1) are the SAME state
+**     element, not two separately-estimated ones later reconciled --
+**     the state vector carries only the n1*(n1+1)/2 unique entries of
+**     the symmetric n1 x n1 gamma sub-block. Equation i's own row of Z_t
+**     places that shared state's coefficient (the relevant relative
+**     price) in whichever of the two positions (i=j or i=k) applies.
+**
+**   - Adding-up: only n1 equations are directly part of the state-space
+**     system at all; equation n's coefficients are recovered afterward
+**     from the SAME identities quaidsFit()/quaidsZeroFit() already use
+**     (alpha_n = 1 - sum(other alphas); gamma's redundant row/column via
+**     homogeneity's own row-sum-zero identity) -- see
+**     _quaidsTVPRecoverFull().
+**
+** State vector layout (k_states = 2*n1 + n1*(n1+1)/2), no extra
+** intercept shifters in this first pass (nint=0 -- a real, documented
+** scope limitation, not an oversight; see Remarks):
+**
+**     [ alpha_1 .. alpha_n1 | gamma_11, gamma_12, .., gamma_1n1,
+**       gamma_22, .., gamma_2n1, .., gamma_n1n1 | beta_1 .. beta_n1 ]
+**
+** the gamma block in row-major upper-triangular order (see
+** _quaidsTVPGammaIndex()).
+*/
+
+
+/*
+** _quaidsTVPGammaIndex
+**
+** Purpose: builds the (i,j) -> flat-state-index lookup for the unique
+**          (symmetric) gamma sub-block's n1*(n1+1)/2 free elements, in
+**          row-major upper-triangular order (gamma_11, gamma_12, ...,
+**          gamma_1n1, gamma_22, ..., gamma_2n1, ..., gamma_n1n1).
+**
+** Format:     gidx = _quaidsTVPGammaIndex(n1);
+**
+** Input:      n1 -- number of independently-estimated equations
+**                    (n1 = n - 1, homogeneity always imposed).
+**
+** Output:     gidx -- n1 x n1 matrix; gidx[i,j] == gidx[j,i] holds the
+**                     flat index (1..n1*(n1+1)/2) of the single state
+**                     element representing BOTH gamma_ij and gamma_ji.
+*/
+proc (1) = _quaidsTVPGammaIndex(n1);
+    local gidx, cnt, i, j;
+
+    gidx = zeros(n1, n1);
+    cnt = 1;
+    i = 1;
+    do while i <= n1;
+        j = i;
+        do while j <= n1;
+            gidx[i, j] = cnt;
+            gidx[j, i] = cnt;
+            cnt = cnt + 1;
+            j = j + 1;
+        endo;
+        i = i + 1;
+    endo;
+
+    retp(gidx);
+endp;
+
+
+/*
+** _quaidsTVPBuildZ
+**
+** Purpose: builds the per-period observation (design) matrix Z_t for
+**          the reduced, homogeneity+symmetry-respecting AIDS state
+**          space, as a genuine nobs-page array (sslib's tvpModel.Z
+**          convention -- see gauss-state-space's CLAUDE.md on why a
+**          single-page wrap does not work for a genuinely time-varying
+**          field, and why even a CONSTANT field must still be a full
+**          nobs-page array of identical pages, not a bare scalar/matrix,
+**          once nobs>1 periods are actually being processed).
+**
+** Format:     Zarr = _quaidsTVPBuildZ(pricesRel, lx, n1);
+**
+** Input:      pricesRel -- Tx n1 matrix, relative log prices
+**                          (price_j - price_n for j = 1..n1).
+**             lx        -- Tx1 vector, Stone-deflated log expenditure
+**                          (ln(x) - StoneIndex -- see
+**                          _quaidsTVPStoneIndex()).
+**             n1        -- number of independently-estimated equations.
+**
+** Output:     Zarr -- nobs-page array, each page n1 x k_states
+**                     (k_states = 2*n1 + n1*(n1+1)/2), suitable for
+**                     direct assignment to a tvpModel's Z field.
+*/
+proc (1) = _quaidsTVPBuildZ(pricesRel, lx, n1);
+    local nobs, gidx, ngamma, k_states, Zarr, t, Zt, i, j, col;
+
+    nobs = rows(pricesRel);
+    gidx = _quaidsTVPGammaIndex(n1);
+    ngamma = n1*(n1+1)/2;
+    k_states = n1 + ngamma + n1;
+
+    Zarr = arrayinit(nobs|n1|k_states, 0);
+
+    t = 1;
+    do while t <= nobs;
+        Zt = zeros(n1, k_states);
+        i = 1;
+        do while i <= n1;
+            Zt[i, i] = 1;                    /* alpha_i */
+            j = 1;
+            do while j <= n1;
+                col = n1 + gidx[i, j];
+                Zt[i, col] = Zt[i, col] + pricesRel[t, j];
+                j = j + 1;
+            endo;
+            Zt[i, n1 + ngamma + i] = lx[t];  /* beta_i */
+            i = i + 1;
+        endo;
+        Zarr[t, ., .] = Zt;
+        t = t + 1;
+    endo;
+
+    retp(Zarr);
+endp;
+
+
+/*
+** _quaidsTVPStoneIndex
+**
+** Purpose: the fixed Stone price index deflator, computed once from
+**          sample mean shares -- identical formula (and identical
+**          Milestone-3 bugfix: reconstruct absolute prices before
+**          weighting by mean shares) to quaidsFit()'s own STARTING
+**          VALUE block and quaidsTrendFit()'s own Stone-index block.
+**
+** Format:     lx = _quaidsTVPStoneIndex(w, prices, totexp, n);
+**
+** Input:      w      -- TxN budget shares.
+**             prices -- TxN ABSOLUTE log prices (not yet converted to
+**                       relative form).
+**             totexp -- Tx1 log total expenditure.
+**             n      -- number of goods.
+**
+** Output:     lx -- Tx1 vector, totexp minus the Stone index.
+*/
+proc (1) = _quaidsTVPStoneIndex(w, prices, totexp, n);
+    local stone;
+
+    /* prices here are genuinely ABSOLUTE (this proc's own contract,
+       unlike quaidsFit()'s internal STARTING VALUE block, which runs
+       AFTER _quaidsIVFirstStage() has already mutated its own `prices`
+       local into relative form -- reusing that formula verbatim here
+       without accounting for that difference silently double-counted
+       the reference good's price. Confirmed by direct comparison
+       against quaidsFit()'s own qOut.homogB on real data before fixing,
+       not assumed. */
+    stone = prices*meanc(w);
+
+    retp(totexp - stone);
+endp;
+
+
+/*
+** _quaidsTVPStateToB
+**
+** Purpose: unpacks one period's reduced state vector into the same
+**          (1+n1) x n1 "b0-style" coefficient matrix layout
+**          quaidsTrendFit() itself uses for its level block (intercept
+**          | gamma | beta rows, one column per INDEPENDENTLY-ESTIMATED
+**          equation -- n1 columns, NOT yet n) -- i.e. this recovers the
+**          FULL symmetric n1 x n1 gamma sub-block (both gamma_ij and
+**          gamma_ji populated from the same shared state) but does not
+**          yet recover equation n's own (redundant, adding-up-implied)
+**          column. That further recovery step (equation n's columns,
+**          and the relative-to-absolute-price gamma conversion) is
+**          needed before elasticities can be computed (a later stage)
+**          but is not required to validate the state-vector
+**          construction itself, so it is deliberately deferred here.
+**
+** Format:     b0 = _quaidsTVPStateToB(state, n1);
+**
+** Input:      state -- k_states x 1 vector (one period's state).
+**             n1    -- number of independently-estimated equations.
+**
+** Output:     b0 -- (n1+2) x n1 matrix: intercept (1 row) | gamma (n1
+**                   rows, the n1 relative-price coefficients) | beta
+**                   (1 row), one column per equation. Row 1 is a single
+**                   shared intercept row
+**                   with only ONE nonzero entry per column (equation
+**                   i's own alpha_i) -- i.e. this is NOT the b0 that
+**                   would come out of a shared-single-column-per-
+**                   variable design (there is no such shared design
+**                   here; alpha_i is genuinely equation-i-specific) --
+**                   see Remarks for why this shape was chosen anyway.
+**
+** Remarks: Shaped to match quaidsTrendFit()'s own b0 layout purely for
+**          familiarity when reading test code side by side; the TVP
+**          state itself has no shared "intercept row" the way a pooled
+**          GLS design matrix would -- alpha_i is its own free state
+**          element per equation, not a single shared regressor's
+**          coefficient. beta is appended as its own trailing row.
+*/
+proc (1) = _quaidsTVPStateToB(state, n1);
+    local gidx, ngamma, alpha, gmat, beta, b0, i, j;
+
+    gidx = _quaidsTVPGammaIndex(n1);
+    ngamma = n1*(n1+1)/2;
+
+    alpha = state[1:n1];
+    beta = state[n1+ngamma+1:n1+ngamma+n1];
+
+    gmat = zeros(n1, n1);
+    i = 1;
+    do while i <= n1;
+        j = 1;
+        do while j <= n1;
+            gmat[i, j] = state[n1 + gidx[i, j]];
+            j = j + 1;
+        endo;
+        i = i + 1;
+    endo;
+
+    b0 = (alpha')|gmat|(beta');
+    retp(b0);
+endp;

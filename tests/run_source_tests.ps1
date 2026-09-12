@@ -91,7 +91,8 @@ $gaussTests = @(
     "quaids_replicate_test.e",
     "quaids_compatibility_test.e",
     "quaids_print_format_test.e",
-    "quaidstrend_test.e"
+    "quaidstrend_test.e",
+    "quaidstvp_test.e"
 )
 
 if (-not $SkipPubtable) {

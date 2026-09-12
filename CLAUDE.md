@@ -4442,9 +4442,122 @@ bumping on real new public API surface. `sslib` is not yet a dependency —
 Stage 0 needed none; it will become one once the Kalman-filter-based
 `quaidsTVPFit()` work begins.
 
-**Not yet built** (later stages, per the design report's roadmap): the
-actual Kalman-filter-based `quaidsTVPFit()`/`quaidsTVPElasFit()`, the new
-`ssKalmanSmoothTVP` proc, and the associated documentation/example.
+### Stage 1: reduced state-vector plumbing (complete)
+
+`src/quaidstvp.src` (new, not yet in `package.json`'s `src` array —
+every proc here is a private, leading-underscore internal helper with no
+public API yet, so it is listed in `tests/verify_package_manifest.ps1`'s
+`intentionallyUnlisted` allowlist alongside `pubtable_quaids.src`/
+`quaidscurvature.src`, not added to `package.json`). Builds the
+homogeneity+symmetry-respecting state-vector representation itself,
+independently of any Kalman-filter machinery (Stage 2): `_quaidsTVPGammaIndex(n1)`
+(the row-major upper-triangular (i,j)->flat-index lookup for the
+symmetric gamma sub-block's `n1*(n1+1)/2` unique elements),
+`_quaidsTVPBuildZ(pricesRel, lx, n1)` (the per-period observation matrix
+`Z_t`, as a genuine nobs-page array matching `sslib`'s own `tvpModel.Z`
+convention), `_quaidsTVPStoneIndex(w, prices, totexp, n)`, and
+`_quaidsTVPStateToB(state, n1)` (unpacks one period's state into a
+`quaidsTrendFit()`-style intercept|gamma|beta coefficient matrix).
+
+**A real, deliberate course correction from the original design report,
+found and disclosed before writing this stage's code, not silently
+reworked**: the report's own "Recommended first implementation"
+specified TVP-AIDS using the full translog price index, not TVP-LA-AIDS.
+Building the state vector out found that this breaks the linear-Gaussian
+measurement-equation requirement a standard Kalman filter needs — the
+translog index `a(p)` is linear in `(alpha, gamma)` individually, but the
+share equation's own `beta_i*(ln(x)-a(p))` term is a PRODUCT of two state
+elements (`beta_i` and the `alpha`/`gamma` inside `a(p)`) once all three
+are genuinely time-varying, i.e. a real bilinear-in-the-state term.
+Flagged directly to the repo owner (not silently downgraded), who chose
+the Stone price index (fixed, computed once from sample mean shares —
+the same deflator `quaidsTrendFit()`/`quaidsFit()`'s own LA-AIDS mode
+already use) for this first pass, deferring a relinearized full-AIDS
+version (mirroring `quaidsFit()`'s own lag-gamma-by-one-round trick,
+generalized to an outer relinearize-refilter loop) as legitimate future
+work. See `src/quaidstvp.src`'s own header for the full reasoning.
+
+**Symmetry is imposed as a hard shared-parameter constraint, not a
+projection**: `gamma_ij` and `gamma_ji` are literally the same state
+element (the same `_quaidsTVPGammaIndex()` flat index), not two
+independently-estimated coefficients later reconciled via minimum
+distance the way `quaidsFit()`'s own `bestB` imposes it. **A real,
+non-obvious finding, confirmed empirically via a noiseless synthetic-
+recovery test, not assumed**: these are two different, both legitimate,
+ways to impose the same restriction, and are NOT expected to match
+exactly on real (noisy) data — a real-data comparison against
+`quaidsFit()`'s `bestB` on Blanciforti86 initially looked like it might
+indicate a bug (max diff 0.167-0.282), but building an independent
+noiseless-recovery fixture (`_quaidsTVPStaticSyntheticDGP()`,
+`tests/quaidsfixtures.src`) confirmed the state construction itself is
+exactly correct (diff ~6.9e-17) — proving the real-data gap is a genuine
+methodological divergence (hard-constrained-symmetric OLS vs.
+`quaidsFit()`'s GLS-weighted minimum-distance projection), not a bug.
+
+**Two real bugs found and fixed while building this, both by direct
+empirical testing, not algebra alone**:
+1. A first draft of `_quaidsTVPStoneIndex()` copied `quaidsFit()`'s own
+   STARTING VALUE Stone-index formula verbatim
+   (`stone = (prices[.,1:n-1]+prices[.,n])~prices[.,n]; stone=stone*meanc(w);`),
+   but that formula assumes `prices` has ALREADY been mutated into
+   relative form by `_quaidsIVFirstStage()` by the time it runs inside
+   `quaidsFit()` — this proc's own contract takes genuinely absolute
+   prices, so the "reconstruct absolute from relative" step
+   double-counted the reference price. Found via a large (0.64 max diff,
+   wrong signs) discrepancy against `quaidsFit()`'s real output; fixed to
+   `stone = prices*meanc(w);` directly.
+2. `gamma` is a GAUSS reserved word (the gamma function) and cannot be
+   used as a local variable name — threw `error G0276`/`G0064`/`G0008`
+   inside `_quaidsTVPStateToB()`; renamed to `gmat`.
+
+**A real test-fixture bug, not a library bug, found by comparing two
+independently-passing checks against each other**: `_quaidsTVPStaticSyntheticDGP()`'s
+first draft built its true state's gamma portion via
+`vech(trueGammaFull)` directly, assuming `vech()`'s column-major-lower-
+triangular ordering coincides with `_quaidsTVPGammaIndex()`'s row-major-
+upper-triangular ordering for a symmetric matrix — a reasonable-looking
+but wrong assumption. Caught because "stateHat matches trueState
+exactly" failed while "`_quaidsTVPStateToB()` unpacks stateHat to match
+the true b0 layout exactly" passed on the same run — proving the library
+code was correct and only the fixture's `vech()`-based construction had
+the wrong permutation. Fixed by building the fixture's true gamma vector
+via the identical row-major upper-triangular loop
+`_quaidsTVPGammaIndex()` itself uses, inlined directly in the fixture
+rather than calling that proc (`tests/quaidsfixtures.src` is `#include`d
+by dozens of otherwise-unrelated test files with no reason to also
+`#include ../src/quaidstvp.src` — confirmed directly: adding the call
+broke every `guard_error_cases/*.e` script with
+`error G0025: Undefined symbol: '_quaidsTVPGammaIndex'` on the very next
+full-suite run, since none of them load `quaidstvp.src`; fixed by
+inlining the index-building loop into the fixture instead of adding that
+new coupling to every caller).
+
+**Testing**: `tests/quaidstvp_test.e` (new, 56 checks) — (1) noiseless
+synthetic recovery: a plain pooled OLS across the shared per-period
+design must recover a known true state to floating-point precision
+(<1e-8), isolating "is the state-vector construction correct" from any
+symmetry-imposition-methodology question, plus an exact-symmetry
+regression guard on the recovered gamma sub-block; (2) a loose-tolerance
+real-data plausibility check against `quaidsFit()`'s own `bestB`
+(Blanciforti86), documented as confirming only "same broad neighborhood,"
+not exact agreement, for the reasons above. Wired into
+`tests/run_source_tests.ps1`'s default (unskipped) list (fast — pure GLS
+solves, no filter/MLE yet).
+
+**No version bump**: every proc in `src/quaidstvp.src` is a private
+(leading-underscore) internal helper with no public API surface yet —
+matching this project's established policy of bumping only on real new
+*public* API surface.
+
+**Not yet built** (later stages, per the design report's roadmap):
+Stage 2 (wiring `sslib`'s `kalmanFilterTVP()`/`kalmanFilterDiffuseTVP()`
+into this construction with a caller-supplied `Q`/`H`), Stage 3
+(hyperparameter MLE via `ssFitTVP()`), Stage 4 (the TVP smoother, reusing
+the now-complete `ssKalmanSmoothTVP()` in `gauss-state-space`), Stage 5
+(`quaidsTVPElasFit()`), and Stage 6 (printer/docs/example/packaging,
+including establishing `sslib`/`gauss-state-space` as a real
+`package.json` dependency and deciding how to pin it to a specific
+commit/tag — not yet designed).
 
 ## What GAUSS already provides — do not duplicate
 

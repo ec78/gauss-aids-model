@@ -488,3 +488,87 @@ proc (5) = _quaidsTrendSyntheticDGP(tobs, seed, trueTrend);
 
     retp(w, 0, prices, totexp, instr);
 endp;
+
+/*
+** _quaidsTVPStaticSyntheticDGP: TVP-AIDS initiative, Stage 1. A
+** noiseless (exact) n1-good conditional demand system generated directly
+** from KNOWN true alpha/gamma(symmetric)/beta values and a mean-centered
+** relative-price + Stone-deflated-expenditure regressor set -- built to
+** validate quaidstvp.src's own reduced (homogeneity+symmetry-respecting)
+** state-vector construction independently of any question about WHICH
+** method is used to impose symmetry: this fixture is deliberately
+** noiseless, so a plain pooled OLS across the shared design must recover
+** the true state to floating-point precision, with no room for an OLS-
+** vs-GLS-projection methodology difference to matter at all. Returns
+** the true state directly (not stacked into a b matrix, since the
+** reduced-state row order does not match quaidsFit()'s own qOut.bestB
+** layout -- see quaidstvp.src's own header for why these are two
+** different, both legitimate, ways to impose symmetry, confirmed to
+** diverge on real data by a nontrivial amount that is NOT a bug -- see
+** tests/quaidstvp_test.e's own separate, loose-tolerance real-data
+** plausibility check for that comparison).
+*/
+proc (5) = _quaidsTVPStaticSyntheticDGP(tobs, seed, n1);
+
+    local pricesRel, lx, trueAlpha, trueGammaFull, trueBeta, trueState,
+        ngamma, trueGammaVec, w, t, i, j, cnt;
+
+    rndseed seed;
+
+    trueAlpha = .1*round(rndn(n1, 1)*10)/10 + .1;
+    trueBeta = .05*round(rndn(n1, 1)*10)/10;
+
+    /* A random symmetric matrix, built via the same xpnd(vech(...))
+       idiom this codebase already uses elsewhere for symmetric-matrix
+       construction. */
+    trueGammaFull = .1*round(rndn(n1, n1)*10)/10;
+    trueGammaFull = xpnd(vech(trueGammaFull));
+
+    pricesRel = .1*rndn(tobs, n1);
+    lx = .2*rndn(tobs, 1);
+
+    w = zeros(tobs, n1);
+    t = 1;
+    do while t <= tobs;
+        i = 1;
+        do while i <= n1;
+            w[t, i] = trueAlpha[i] + pricesRel[t, .]*trueGammaFull[i, .]' + trueBeta[i]*lx[t];
+            i = i + 1;
+        endo;
+        t = t + 1;
+    endo;
+
+    /* Build the gamma portion of trueState via the SAME row-major
+       upper-triangular ordering src/quaidstvp.src's own
+       _quaidsTVPGammaIndex() uses, inlined here directly rather than
+       calling that proc -- this file (tests/quaidsfixtures.src) is
+       #include-d by dozens of otherwise-unrelated test files that have
+       no reason to also #include ../src/quaidstvp.src, so depending on
+       it here would force a new coupling onto every one of them.
+       Confirmed empirically (not assumed) that this ordering does NOT
+       coincide with plain vech(): an earlier version of this fixture
+       used vech(trueGammaFull) directly and the resulting trueState
+       failed to match a correctly-recovered stateHat exactly, even
+       though the recovered b0 (unpacked via _quaidsTVPStateToB, the
+       library's own inverse of this ordering) matched perfectly -- i.e.
+       the library code was already correct and internally consistent;
+       only this fixture's independent vech()-based construction had the
+       wrong permutation. */
+    ngamma = n1*(n1+1)/2;
+    trueGammaVec = zeros(ngamma, 1);
+    cnt = 1;
+    i = 1;
+    do while i <= n1;
+        j = i;
+        do while j <= n1;
+            trueGammaVec[cnt] = trueGammaFull[i, j];
+            cnt = cnt + 1;
+            j = j + 1;
+        endo;
+        i = i + 1;
+    endo;
+
+    trueState = trueAlpha|trueGammaVec|trueBeta;
+
+    retp(w, pricesRel, lx, trueState, trueGammaFull);
+endp;

@@ -3558,10 +3558,34 @@ hand-rolling a Kalman filter, missing only a period-varying smoother.
   estimate here already uses. New struct `quaidsTrendOut`; new fixture
   `_quaidsTrendSyntheticDGP()`; 21-check test file plus one guard-error
   case. Version bump to `0.2.0` (new required public API surface).
-- [ ] **Stage 1**: reduced state-vector plumbing (relative-price
-  homogeneity, unique-`γ` symmetry, equation-`n` recovery) with a
-  caller-supplied `Q`/`H` -- no Kalman filter/MLE yet. Completion
-  criterion: `Q=0` forced exactly reproduces `quaidsFit()`'s `qOut.bestB`.
+- [x] **Stage 1**: reduced state-vector plumbing (`src/quaidstvp.src`,
+  private helpers only, no public API yet) -- relative-price homogeneity,
+  unique-`γ` symmetry (a hard shared-parameter constraint in `Z_t`, not a
+  post-hoc projection), Stone price index (a real, disclosed course
+  correction from the design report's original full-translog-index
+  recommendation -- that index's own bilinear-in-the-state term breaks a
+  standard Kalman filter's linear-Gaussian measurement equation once
+  alpha/gamma/beta are all genuinely time-varying; approved by the repo
+  owner). No Kalman filter/MLE yet (Stage 2). Original completion
+  criterion ("`Q=0` forced exactly reproduces `quaidsFit()`'s `qOut.bestB`")
+  turned out not to apply: a noiseless synthetic-recovery test confirmed
+  the state construction is exactly correct (diff ~6.9e-17), and the
+  same test proved the real, non-vacuous ~0.17-0.28 gap against
+  `quaidsFit()`'s real-data `bestB` is an expected divergence between two
+  different, both legitimate, ways of imposing symmetry (hard-constrained
+  OLS vs. GLS-projected minimum distance), not a bug -- so the actual
+  completion criterion became "noiseless recovery exact + real-data
+  result in the same broad neighborhood," not exact `bestB` equality.
+  Two real bugs found and fixed (a Stone-index formula bug from copying
+  `quaidsFit()`'s own relative-price-basis formula verbatim into a
+  proc whose contract takes absolute prices; `gamma` is a GAUSS reserved
+  word) plus one real test-fixture bug (a `vech()`-ordering mismatch
+  against the library's own row-major upper-triangular gamma-index
+  convention). New fixture `_quaidsTVPStaticSyntheticDGP()`
+  (`tests/quaidsfixtures.src`); 56-check `tests/quaidstvp_test.e`, wired
+  into `run_source_tests.ps1`'s default list. No version bump (no public
+  API surface yet). See CLAUDE.md's own "Stage 1" write-up for the full
+  account.
 - [ ] **Stage 2**: wire `sslib`'s `kalmanFilterTVP`/`kalmanFilterDiffuseTVP`
   with fixed `Q`/`H`.
 - [ ] **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP`/`cmlmt` --

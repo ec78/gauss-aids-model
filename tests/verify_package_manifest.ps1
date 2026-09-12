@@ -64,7 +64,7 @@ if ($missing.Count -gt 0) {
 # `#include quaidscurvature.src`, see docs/USAGE_GUIDE.md). Any other
 # .src/.sdf file added to src/ is expected to be a required part of the
 # package and must be listed.
-$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src")
+$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src")
 
 $actualSrc = Get-ChildItem -LiteralPath $srcDir -File |
     Where-Object { $_.Extension -in ".src", ".sdf" } |
