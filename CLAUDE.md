@@ -115,8 +115,21 @@ bump the version, and rebuild/reinstall.
   the release scripts below — not by hand-editing that directory).
 - **`sslib` (gauss-state-space)** — a separate Aptech-licensed
   state-space/Kalman-filter package this project's TVP-AIDS work builds
-  on. Not always installed; check `PROJECT_STATUS.md` for its current
-  location/status before assuming it's available.
+  on, installed at `C:\gauss26\pkgs\sslib`. Sourced from a specific
+  commit of the separate `gauss-state-space` repo (not built by this
+  repo's own scripts) — check `PROJECT_STATUS.md` for which commit and
+  whether it's still present before assuming it's available or current.
+- **`tsmt` package shadowing on this machine**: `gauss.cfg`'s
+  `extra_lib_path` resolves `$(PACKAGEDIR)\*\lib` alphabetically, and
+  `pkgs\timeseries\lib\tsmt.lcg` (an older/incomplete catalog also named
+  `tsmt.lcg`) shadows the real `pkgs\tsmt\lib\tsmt.lcg` — `library tsmt;`
+  (directly, or transitively via `library sslib;`) then fails to resolve
+  real TSMT procs (`cusum`, `constrain_stationary`, etc.) with plain
+  "Undefined symbol" errors that give no hint shadowing is the cause.
+  Fix per-invocation without touching the shared `gauss.cfg`: set env
+  var `GAUSS26_CFG` to a directory holding a copy of `gauss.cfg` whose
+  `extra_lib_path` lists `$(PACKAGEDIR)\tsmt\lib` explicitly before the
+  `*` wildcard.
 - **R 4.5.0** (`C:\Program Files\R\R-4.5.0\bin\Rscript.exe`, package
   `micEconAids`) and **Python 3.12** (numpy/pandas/scipy) are installed
   only to regenerate the published-data cross-validation reference
@@ -230,6 +243,17 @@ A single test file directly: `tgauss -b -x <file>.e` from `tests/` (or
   works fine under `#include`.
 - GAUSS's `run "file.e";` does not return control to the calling script
   — do not chain multiple `run` statements expecting sequential execution.
+- `library`-based lazy loading resolves a plain global-variable
+  declaration (e.g. `struct ssControl _ssActiveCtl;` or a bare top-level
+  assignment) in one file only if *some other symbol from that same
+  file* has already been referenced — a hand-built `.lcg` catalog (e.g.
+  `build_lcg.ps1`) only catalogs `proc`/`struct`-type-definition entries,
+  not plain globals, so a proc in file B that reads a global declared in
+  file A fails with "Undefined symbol" if file A was never independently
+  triggered to load first. Reference a real proc from the defining file
+  before the dependent one, or `#include` both directly, instead of
+  relying on `library` lazy-loading order. Confirmed in `sslib`
+  (`sstvp.src`'s TVP filters depend on globals declared in `ssmain.src`).
 
 ## Testing expectations
 
