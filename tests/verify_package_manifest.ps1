@@ -73,7 +73,7 @@ if ($missing.Count -gt 0) {
 # unlisted too since it has no public API yet (private WIP). Any other
 # .src/.sdf file added to src/ is expected to be a required part of the
 # package and must be listed.
-$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src", "quaidstvpmle.src")
+$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src", "quaidstvpmle.src", "quaidstvpsmooth.src")
 
 $actualSrc = Get-ChildItem -LiteralPath $srcDir -File |
     Where-Object { $_.Extension -in ".src", ".sdf" } |

@@ -290,6 +290,23 @@ A single test file directly: `tgauss -b -x <file>.e` from `tests/` (or
   `ListAgents`/`SendMessage` to check with any concurrent session working
   in `gauss-state-space` before touching or reinstalling the shared
   directory yourself.
+- `print` given a single bare expression that evaluates to a `string`
+  (type 6 -- e.g. from `ftocv()` or a `$+` concatenation) with no string
+  *literal* token in that same `print` statement misformats it as numeric
+  garbage (`+DEN`, or a huge/tiny bogus float) instead of the actual text
+  -- confirmed directly (`print stringVar;` and
+  `print ftocv(x,w,d) $+ "suffix";` both reproduce it). A leading string
+  literal fixes it, even an empty one: `print "" $+ ftocv(x,w,d) $+
+  "suffix";`. A plain string literal assigned directly (`s = "text";
+  print s;`) is unaffected -- GAUSS gives that a different internal type
+  (13, not 6). Found via `tests/quaidstvp_smooth_test.e`'s "N CHECKS
+  FAILED" summary branch (`print ftocv(nfail,1,0) $+ " CHECKS FAILED";`,
+  no leading literal) -- latent across most `tests/quaids*_test.e` files'
+  shared PASS/FAIL idiom since no committed test has actually failed in
+  practice. Confirmed NOT a `run_source_tests.ps1` false-negative risk:
+  its own pass/fail detection keys off the ABSENCE of `"ALL \d+ CHECKS
+  PASSED"`, not the fail-count text, so a garbled count still correctly
+  fails the test -- cosmetic/readability only.
 
 ## Testing expectations
 

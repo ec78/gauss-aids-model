@@ -3649,8 +3649,83 @@ hand-rolling a Kalman filter, missing only a period-varying smoother.
   via `ListAgents`/`SendMessage` rather than guessing, fixed with a
   one-line call-site update in `src/quaidstvpkalman.src`. Committed as
   `a36c7a6` and pushed to `origin/master`; CI confirmed `success`.
-- [ ] **Stage 4**: `ssKalmanSmoothTVP` -- the one genuinely new numerical
-  component (`sslib`'s own smoother is time-invariant only).
+- [x] **Stage 4**: the fixed-interval (Rauch-Tung-Striebel) smoother, via
+  `sslib`'s `ssKalmanSmoothTVP()` -- new file `src/quaidstvpsmooth.src`
+  (`_quaidsTVPSmoothFit()`), turning Stage 2's/Stage 3's filtered
+  (real-time-causal) state path into a full-sample smoothed one. Unlike
+  Stage 3, has NO real proc-level dependency on either prior stage's own
+  procs -- only on `struct tvpModel`/`struct kalmanResult` (sslib) -- so a
+  caller feeds it whichever (tvpm, rslt) pair it has: Stage 2's own
+  `tvpm`/`_quaidsTVPKalmanFit()` result directly, or Stage 3's
+  `sOut.tvpFinal`/`sOut.kfResults` (NOT the pre-fit `tvpm` passed into
+  `_quaidsTVPMLEFit()`, which still holds the STARTING Q). Deliberately
+  does not accept a raw data matrix in place of `rslt` the way
+  `ssKalmanSmoothTVP()` itself optionally does -- that branch re-filters
+  via the ORDINARY (non-diffuse) filter using `tvpm.a_0`/`tvpm.p_0`, which
+  are meaningless zeros defaults under this codebase's diffuse-only design
+  (see Stage 2's own header) -- so it's narrowed to the kalmanResult-only
+  form, which every actual caller already has anyway.
+  - Read `sslib`'s own `ssKalmanSmoothTVP()` source directly
+    (`C:\gauss26\pkgs\sslib\src\sstvp.src`) before writing any code, per
+    the repo owner's explicit instruction, rather than assuming its
+    contract by analogy from Stage 2/3's own conventions -- confirmed its
+    exact signature (`{ a_TS, p_TS } = ssKalmanSmoothTVP(tvpm, rsltOrY)`)
+    and both accepted second-argument forms directly from source.
+  - **Real, empirically-confirmed finding, not assumed**: the RTS
+    "smoothed variance <= filtered variance" tightening property, while
+    holding everywhere in the ordinary (already-de-diffused) regime, can
+    genuinely FAIL by a small amount during the exact-diffuse
+    initialization burn-in (confirmed: one violation, ~0.01 absolute, one
+    state element, at period 3 of a `k_states=7`/`n1=2` model needing
+    `ceil(7/2)=4` periods to fully de-diffuse) -- because
+    `ssKalmanSmoothTVP()` runs the ORDINARY RTS backward recursion
+    throughout (per its own doc comment: "unchanged from
+    `ssKalmanSmooth`"), not a specialized diffuse-smoother algorithm (e.g.
+    de Jong's) a still-diffuse filtered covariance would technically call
+    for. A property of `sslib`'s own implementation, not a bug in this
+    wrapper -- confirmed by locating the exact violating period AND by an
+    independent exact-match check (below) against `sslib`'s own
+    established time-invariant smoother fed the identical input.
+    `tests/quaidstvp_smooth_test.e`'s own tightening-property check is
+    therefore scoped to `period >= ceil(k_states/n1)` (documented
+    reasoning inline), not weakened silently.
+  - New test `tests/quaidstvp_smooth_test.e` (8 checks: dimensions; the
+    exact final-period state/covariance invariant the backward recursion
+    guarantees structurally; the RTS tightening property outside the
+    diffuse burn-in, per the finding above; an EXACT internal-consistency
+    check against `sslib`'s own already-established time-invariant
+    `ssKalmanSmooth()` -- built from page 1 of `_quaidsTVPBuildModel()`'s
+    always-constant array fields, fed the SAME `kalmanResult` so the check
+    isolates the backward-recursion logic alone, independent of the
+    filter -- matching to floating-point precision at every period; and a
+    loose plausibility check that the smoothed path's mean absolute error
+    against the DGP's true state is no worse than the filtered path's
+    own) plus two new guard cases (`tvp_smooth_bad_state_rows.e`/
+    `tvp_smooth_bad_state_cols.e`, a mismatched tvpm/kalmanResult pair),
+    reusing Stage 2's existing `-SkipTVPKalman` flag rather than a new
+    one. No version bump (no public API -- the new proc is private).
+  - **Secondary finding, fixed locally, flagged as a broader latent
+    issue**: GAUSS's `print` statement, given a SINGLE bare expression
+    that is a `string`-typed (type 6, e.g. from `ftocv()`/`$+`
+    concatenation) value with no leading string literal in the same
+    `print` statement, misformats it as raw numeric garbage (e.g.
+    `+DEN`/`1.7771282e+93`) instead of the string's text -- confirmed
+    directly and narrowly (a bare `print stringVar;` or
+    `print ftocv(x,w,d) $+ "suffix";` both reproduce it; prefixing with a
+    literal, even `""`, e.g. `print "" $+ ftocv(...) $+ "suffix";`, fixes
+    it). This affects the "N CHECKS FAILED" branch of the shared
+    PASS/FAIL-summary idiom used across most `tests/quaids*_test.e` files
+    (`print ftocv(nfail, 1, 0) $+ " CHECKS FAILED";`, no leading literal)
+    -- latent because no committed test has actually failed in practice,
+    so this branch has never rendered. Confirmed NOT a false-negative risk
+    for `run_source_tests.ps1` itself: its own pass/fail detection keys
+    off the ABSENCE of `"ALL \d+ CHECKS PASSED"` (plus a separate
+    `hasGaussError`/`hasFailSummary` OR), so a garbled failure count still
+    correctly marks the test failed -- this is a cosmetic/diagnostic-
+    readability bug only, not a harness-reliability one. Fixed in this
+    stage's own new test file; NOT swept across the other ~30 existing
+    test files (out of this stage's scope) -- worth a repo-wide pass if
+    it ever actually bites during real debugging.
 - [ ] **Stage 5**: `quaidsTVPElasFit()`, reusing `_quaidsElas()` per period.
 - [ ] **Stage 6**: printer, docs, example, `sslib` package dependency,
   version bump.

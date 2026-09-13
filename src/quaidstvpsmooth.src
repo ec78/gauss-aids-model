@@ -1,0 +1,110 @@
+/*
+** quaidstvpsmooth.src
+**
+** TVP-AIDS initiative, Stage 4: the fixed-interval (Rauch-Tung-Striebel)
+** smoother, via sslib's ssKalmanSmoothTVP() -- turns Stage 2's/Stage 3's
+** FILTERED (real-time-causal) state path into a full-sample SMOOTHED
+** path, using every period's data to estimate every period's state
+** rather than only data up to and including that period.
+**
+** Depends only on `struct tvpModel`/`struct kalmanResult` (sslib) --
+** unlike Stage 3 (which has a real proc-level dependency on Stage 2's own
+** _quaidsTVPBuildModel()/_quaidsTVPReplicateConstant()), this file calls
+** no proc from quaidstvpkalman.src or quaidstvpmle.src directly. A caller
+** combines them by #include-ing whichever of those files produced the
+** (tvpm, rslt) pair being smoothed, in either order, not by this file
+** #include-ing either. Both Stage 2's and Stage 3's own output feed this
+** proc identically:
+**
+**   - Stage 2 (fixed Q/H, no MLE): the SAME tvpm passed to
+**     _quaidsTVPKalmanFit(tvpm, y, 1) (the tvpm _quaidsTVPBuildModel()
+**     returned), plus that call's own returned rslt.
+**   - Stage 3 (Q via MLE): sOut.tvpFinal (NOT the pre-fit tvpm passed
+**     into _quaidsTVPMLEFit() -- that one still holds the STARTING Q, not
+**     the fitted one) plus sOut.kfResults -- both fields of the same
+**     struct ssOut _quaidsTVPMLEFit() returns.
+**
+** Requires: same as quaidstvpkalman.src/quaidstvpmle.src -- `struct
+**           tvpModel`/`struct kalmanResult` must already be resolvable
+**           (`library cmlmt, tsmt, sslib;`, or an equivalent explicit
+**           #include of sslib's own ss.sdf/tsmt.sdf).
+**
+** Not in package.json's src array, for the same reason
+** quaidstvp.src/quaidstvpkalman.src/quaidstvpmle.src aren't: sslib is a
+** deliberately-optional dependency, not a core-package one (see
+** quaidstvpkalman.src's own header and CLAUDE.md's "Optional modules"
+** section). In verify_package_manifest.ps1's intentionallyUnlisted
+** allowlist alongside the other three TVP-AIDS files.
+*/
+
+
+/*
+** _quaidsTVPSmoothFit
+**
+** Purpose: thin wrapper around sslib's ssKalmanSmoothTVP(), producing
+**          full-sample smoothed state means/covariances from an already
+**          filtered (tvpm, rslt) pair -- see this file's own header for
+**          exactly which (tvpm, rslt) pair to pass depending on whether
+**          the filter came from Stage 2 or Stage 3. Deliberately does
+**          NOT accept a raw data matrix in place of rslt, unlike
+**          ssKalmanSmoothTVP()'s own two-input-type contract: that
+**          second form re-filters via the ORDINARY (non-diffuse)
+**          kalmanFilterTVP using tvpm.a_0/tvpm.p_0 as the prior, but this
+**          codebase's own TVP-AIDS design is diffuse-only (see
+**          quaidstvpkalman.src's header -- a pure random-walk state has
+**          no well-defined proper prior to fall back on), so tvpm.a_0/
+**          tvpm.p_0 are meaningless zeros defaults here. Accepting a raw
+**          y matrix would silently produce a smoothed path built on that
+**          meaningless prior instead of erroring -- restricting to the
+**          kalmanResult-only form means a caller must always have
+**          already run the (diffuse) filter themselves, which every
+**          caller in this codebase does anyway (Stage 2/Stage 3 both
+**          hand back a real kalmanResult already).
+**
+** Format:     { a_TS, p_TS } = _quaidsTVPSmoothFit(tvpm, rslt);
+**
+** Input:      tvpm -- struct tvpModel (sslib) -- the model actually
+**                      filtered to produce rslt (see this file's own
+**                      header for the Stage 2 vs. Stage 3 distinction).
+**             rslt -- struct kalmanResult (sslib) -- from
+**                      _quaidsTVPKalmanFit() (Stage 2) or sOut.kfResults
+**                      (Stage 3); rslt.filtered_state/
+**                      rslt.filtered_state_cov are reused directly, with
+**                      NO refiltering.
+**
+** Output:     a_TS -- k_states x nobs, smoothed state means (column t =
+**                      period t's smoothed estimate, same layout as
+**                      rslt.filtered_state -- feed any column to
+**                      quaidstvp.src's own _quaidsTVPStateToB() to unpack
+**                      it exactly as a filtered column already is).
+**             p_TS -- nobs x k_states x k_states array, smoothed state
+**                      covariances (same page-per-period layout as
+**                      rslt.filtered_state_cov).
+**
+** Remarks: a_TS[., nobs] == rslt.filtered_state[., nobs] exactly, and
+**          every diag(p_TS[t,.,.]) <= diag(rslt.filtered_state_cov[t,.,.])
+**          elementwise -- both are properties of the RTS backward
+**          recursion itself (see ssKalmanSmoothTVP's own doc comment),
+**          not this wrapper's own logic; tests/quaidstvp_smooth_test.e
+**          checks both directly rather than only trusting sslib's own
+**          internal validation.
+**
+** Requires: same as this file's own header -- `struct tvpModel`/
+**           `struct kalmanResult` must already be resolvable.
+*/
+proc (2) = _quaidsTVPSmoothFit(struct tvpModel tvpm, struct kalmanResult rslt);
+    local a_TS, p_TS;
+
+    if rows(rslt.filtered_state) /= tvpm.k_states;
+        errorlog "_quaidsTVPSmoothFit: rslt.filtered_state must have tvpm.k_states rows -- rslt does not match tvpm (wrong filter output passed for this model?).";
+        end;
+    endif;
+    if cols(rslt.filtered_state) /= tvpm.nobs;
+        errorlog "_quaidsTVPSmoothFit: rslt.filtered_state must have tvpm.nobs columns -- rslt does not match tvpm (wrong filter output passed for this model?).";
+        end;
+    endif;
+
+    { a_TS, p_TS } = ssKalmanSmoothTVP(tvpm, rslt);
+
+    retp(a_TS, p_TS);
+endp;

@@ -12,13 +12,17 @@ _Last updated: 2026-09-13_
 Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
 a repo-owner-requested extension beyond the now-largely-complete public
 release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
-"TVP-AIDS initiative" section for the full plan). Stages 0–3 are now
-**complete, committed, and pushed to `origin/master`** (Stages 0–2 as
-`086c97a`/doc-sync `8ed8ea3`; **Stage 3 as `a36c7a6`**, CI confirmed
-`success` via `gh run list`). **Stage 4** (the TVP smoother,
-`ssKalmanSmoothTVP()`) has not been started. Stage 3 is still Q-only MLE
-(H stays caller-fixed) — see Decisions for why, a repo-owner-approved
-scope call made explicitly before Stage 3 was written, not assumed.
+"TVP-AIDS initiative" section for the full plan). Stages 0–4 are now
+**complete**; Stages 0–3 committed and pushed to `origin/master` (Stages
+0–2 as `086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`, CI confirmed
+`success` via `gh run list`). **Stage 4** (the TVP smoother, via
+`sslib`'s `ssKalmanSmoothTVP()`) is done this session — new file
+`src/quaidstvpsmooth.src`, new test `tests/quaidstvp_smooth_test.e` (8
+checks) plus two guard cases — validated locally
+(`run_source_tests.ps1 -SkipBootstrap` passes clean) but **NOT YET
+committed** (see Handoff Notes). Stage 3 is still Q-only MLE (H stays
+caller-fixed) — see Decisions for why, a repo-owner-approved scope call
+made explicitly before Stage 3 was written, not assumed.
 
 ## Completed Work
 
@@ -201,6 +205,88 @@ scope call made explicitly before Stage 3 was written, not assumed.
     completed with `success` (confirmed via `gh run list` from inside
     this session, unlike the prior two commits where that had to wait
     for a follow-up session) -- run id `34784706305`.
+- **TVP-AIDS Stage 4** (`src/quaidstvpsmooth.src`, new private file --
+  `_quaidsTVPSmoothFit()`): the fixed-interval (Rauch-Tung-Striebel)
+  smoother, via `sslib`'s `ssKalmanSmoothTVP()`, turning Stage 2's/Stage
+  3's filtered (real-time-causal) state path into a full-sample smoothed
+  one. Unlike Stage 3, has NO real proc-level dependency on either prior
+  stage's own procs -- only on `struct tvpModel`/`struct kalmanResult`
+  (sslib) -- so a caller feeds it whichever (tvpm, rslt) pair it already
+  has (Stage 2's own tvpm + `_quaidsTVPKalmanFit()` result, or Stage 3's
+  `sOut.tvpFinal`/`sOut.kfResults` -- NOT the pre-fit tvpm, which still
+  holds the STARTING Q). Deliberately does not accept a raw data matrix
+  in place of `rslt` (unlike `ssKalmanSmoothTVP()` itself) -- that branch
+  re-filters via the ordinary non-diffuse filter using tvpm.a_0/tvpm.p_0,
+  meaningless zeros defaults under this codebase's diffuse-only design.
+  - Read `sslib`'s own `ssKalmanSmoothTVP()` source directly from the
+    installed copy (`C:\gauss26\pkgs\sslib\src\sstvp.src`) before writing
+    any code, confirming its exact `{ a_TS, p_TS } =
+    ssKalmanSmoothTVP(tvpm, rsltOrY)` contract and both accepted
+    second-argument forms directly from source, not by analogy from
+    Stage 2/3's own conventions.
+  - **Pre-check before touching the shared install**: noticed
+    `C:\gauss26\pkgs\sslib\src\sskalman.src`/`sstvp.src` had mtimes ~1.5
+    hours newer than the rest of that directory at session start.
+    Messaged `gauss-state-space-ea` (a concurrent session, found via
+    `ListAgents`) to ask before proceeding, per last session's own
+    "coordinate rather than guess" precedent -- no reply received during
+    this session's work, but independently confirmed via a real `tgauss`
+    run that the installed `ssKalmanSmoothTVP()` works exactly as its own
+    doc comment describes, and that `gauss-state-space`'s own working
+    tree is clean at `1b82f62` (the last commit flagged as "not yet
+    confirmed installed" in the prior session's notes) -- consistent with
+    someone having simply refreshed the shared install to `1b82f62`
+    (additive-only, no signature changes per that commit's own message),
+    not with any new drift risk. Check for a reply at the start of the
+    next session.
+  - **Real, empirically-confirmed finding**: the RTS "smoothed variance
+    <= filtered variance" tightening property can genuinely fail by a
+    small amount (~0.01 absolute, one state element, one period) during
+    the exact-diffuse initialization burn-in -- `ssKalmanSmoothTVP()` runs
+    the ordinary RTS backward recursion throughout (per its own doc
+    comment), not a specialized diffuse-smoother algorithm a still-diffuse
+    filtered covariance would technically call for. A property of
+    `sslib`'s own implementation, not a bug in this wrapper -- confirmed
+    by locating the exact violating period (t=3 of a k_states=7/n1=2
+    model needing `ceil(7/2)=4` periods to de-diffuse) and by an
+    independent exact-match check against sslib's own established
+    time-invariant `ssKalmanSmooth()` fed the identical filtered input
+    (matches to floating-point precision, including at the violating
+    period -- confirming the "violation" is inherent to the shared
+    backward-recursion logic, not something specific to the TVP wrapper).
+    `tests/quaidstvp_smooth_test.e`'s own tightening-property check is
+    scoped to `period >= ceil(k_states/n1)` accordingly, documented
+    inline, not silently weakened.
+  - New test `tests/quaidstvp_smooth_test.e` (8 checks -- dimensions; the
+    exact final-period state/covariance invariant; RTS tightening outside
+    the diffuse burn-in; an EXACT internal-consistency check against
+    sslib's own `ssKalmanSmooth()`, matching at every period; a loose
+    mean-absolute-error plausibility check against the DGP's true state)
+    plus two new guard cases (`tvp_smooth_bad_state_rows.e`/
+    `tvp_smooth_bad_state_cols.e`), reusing Stage 2's existing
+    `-SkipTVPKalman` flag. No version bump (no public API -- the new proc
+    is private). `src/quaidstvpsmooth.src` added to
+    `verify_package_manifest.ps1`'s `intentionallyUnlisted` allowlist.
+  - **Secondary finding, fixed locally only**: GAUSS's `print`, given a
+    single bare `string`-typed (type 6) expression with no leading string
+    *literal* in the same statement, misformats it as numeric garbage
+    (confirmed directly: `print stringVar;` and
+    `print ftocv(x,w,d) $+ "suffix";` both reproduce it; a leading literal,
+    even `""`, fixes it). This affects the "N CHECKS FAILED" branch of
+    the shared PASS/FAIL summary idiom used across most
+    `tests/quaids*_test.e` files -- latent because no committed test has
+    actually failed in practice. Confirmed NOT a
+    `run_source_tests.ps1` false-negative risk: its pass/fail detection
+    keys off the ABSENCE of `"ALL \d+ CHECKS PASSED"`, so a garbled count
+    still correctly fails the test -- cosmetic only. Fixed in this
+    stage's own new test file; NOT swept across the ~30 other existing
+    test files (out of scope this session) -- now a durable CLAUDE.md
+    gotcha; worth a repo-wide sweep if it ever actually bites during real
+    debugging.
+  - `run_source_tests.ps1 -SkipBootstrap` (full suite, no TVP flags
+    skipped) re-run clean this session with Stage 4's new test and guard
+    cases included: `run_source_tests.ps1: PASS`.
+  - **NOT YET committed** -- see Handoff Notes.
 
 ## Decisions
 
@@ -366,24 +452,33 @@ scope call made explicitly before Stage 3 was written, not assumed.
    it has now silently drifted at least once without anyone noticing
    until a test broke. Current best reference point if this is tackled:
    `gauss-state-space` `origin/main` was at `7d5ed72` as of 2026-09-13,
-   plus a further additive commit `1b82f62` not yet confirmed installed
-   (see Known Issues).
-2. **Stage 4**: the TVP smoother (`gauss-state-space`'s
-   `ssKalmanSmoothTVP()`, already built in that repo).
+   plus a further additive commit `1b82f62` — this session found the
+   installed `C:\gauss26\pkgs\sslib` copy's `sskalman.src`/`sstvp.src`
+   have mtimes consistent with having been refreshed to `1b82f62`
+   already (not independently confirmed via content diff, and
+   `gauss-state-space-ea` had not replied to a query about it by the end
+   of this session — check for a reply first).
+2. Commit Stage 4's work (see Handoff Notes) — not done yet this session.
 3. **Stage 5**: `quaidsTVPElasFit()`.
 4. **Stage 6**: printer/docs/example/packaging, version bump.
 
 ## Handoff Notes
 
-- Working tree: `master` clean, up to date with `origin/master` at
-  `a36c7a6` (Stage 3, committed and pushed this session at the user's
-  explicit request — three commits ahead of this file's previous note at
-  `086c97a`: `8ed8ea3` doc-sync, then `a36c7a6` Stage 3 itself, bundling
-  `src/quaidstvpmle.src`, the `init_diffTVP` arity fix to
-  `src/quaidstvpkalman.src`, `tests/quaidstvp_mle_test.e`, four new guard
-  cases, the `_quaidsTVPDynamicSyntheticDGP()` fixture,
-  `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring, and two
-  new CLAUDE.md gotchas). Nothing uncommitted.
+- Working tree: `origin/master` is still at `21b729b` (Stage 3 doc-sync)
+  as of this session's start. This session's Stage 4 work is
+  **UNCOMMITTED** as of this file's own update — new files
+  `src/quaidstvpsmooth.src`, `tests/quaidstvp_smooth_test.e`,
+  `tests/guard_error_cases/tvp_smooth_bad_state_rows.e`,
+  `tests/guard_error_cases/tvp_smooth_bad_state_cols.e`; modified files
+  `tests/run_source_tests.ps1` (wires the new test + two guards into the
+  existing `-SkipTVPKalman` group), `tests/verify_package_manifest.ps1`
+  (adds `quaidstvpsmooth.src` to `intentionallyUnlisted`), `CLAUDE.md`
+  (new `print`-of-bare-string gotcha), `dev/GOLD_STANDARD_TODO.md` (Stage
+  4 marked `[x]` with full writeup), and this file. Validated locally
+  (`run_source_tests.ps1 -SkipBootstrap` passes clean, both new guard
+  cases fail with the expected diagnostic) but not yet committed or
+  pushed — commit only when the user explicitly asks, per this repo's
+  own standing constraint.
 - `gh run list` confirmed this session: CI runs for `086c97a`, `8ed8ea3`,
   AND `a36c7a6` all completed with `success`. `086c97a`/`8ed8ea3` (like
   every push so far) ran with `-SkipBootstrap -SkipTVPKalman`, so they

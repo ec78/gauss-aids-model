@@ -69,6 +69,10 @@
 # -SkipTVPKalman flag -- not a new flag, since the underlying reason to
 # skip is identical: sslib's presence isn't guaranteed) and the same
 # GAUSS26_CFG override.
+#
+# TVP-AIDS initiative, Stage 4: quaidstvp_smooth_test.e and its two
+# tvp_smooth_bad_state_*.e guard cases share the same sslib dependency,
+# the same -SkipTVPKalman flag, and the same GAUSS26_CFG override.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -136,6 +140,8 @@ if (-not $SkipTVPKalman) {
     $gaussTests += "quaidstvp_kalman_test.e"
     $sslibTests += "quaidstvp_mle_test.e"
     $gaussTests += "quaidstvp_mle_test.e"
+    $sslibTests += "quaidstvp_smooth_test.e"
+    $gaussTests += "quaidstvp_smooth_test.e"
 }
 
 $gaussCfgOverride = Join-Path $testsDir "gauss26_cfg_override"
@@ -301,6 +307,14 @@ if (-not $SkipTVPKalman) {
         Script = "guard_error_cases\tvp_mle_bad_y_shape.e"
         Expected = "_quaidsTVPMLEFit: y must be nobs x n1"
     }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_smooth_bad_state_rows.e"
+        Expected = "_quaidsTVPSmoothFit: rslt.filtered_state must have tvpm.k_states rows"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_smooth_bad_state_cols.e"
+        Expected = "_quaidsTVPSmoothFit: rslt.filtered_state must have tvpm.nobs columns"
+    }
 }
 
 $sslibGuardScripts = @(
@@ -309,7 +323,9 @@ $sslibGuardScripts = @(
     "guard_error_cases\tvp_mle_bad_q0_shape.e",
     "guard_error_cases\tvp_mle_nonpositive_q0.e",
     "guard_error_cases\tvp_mle_bad_H_shape.e",
-    "guard_error_cases\tvp_mle_bad_y_shape.e"
+    "guard_error_cases\tvp_mle_bad_y_shape.e",
+    "guard_error_cases\tvp_smooth_bad_state_rows.e",
+    "guard_error_cases\tvp_smooth_bad_state_cols.e"
 )
 
 foreach ($guard in $guardTests) {
