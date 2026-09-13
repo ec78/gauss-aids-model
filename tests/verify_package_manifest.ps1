@@ -65,11 +65,15 @@ if ($missing.Count -gt 0) {
 # quaidstvpkalman.src (TVP-AIDS initiative, Stage 2) is excluded for the
 # same hard-compile-time-dependency reason, on sslib's struct types this
 # time (`library cmlmt, tsmt, sslib;` + `#include quaidstvpkalman.src`).
+# quaidstvpmle.src (Stage 3, hyperparameter MLE via ssFitTVP) is excluded
+# for the identical sslib reason, plus a direct proc-level dependency on
+# quaidstvpkalman.src itself (see that file's own header) -- still private
+# WIP, no public API yet.
 # quaidstvp.src (Stage 1) has no such dependency itself, but stays
 # unlisted too since it has no public API yet (private WIP). Any other
 # .src/.sdf file added to src/ is expected to be a required part of the
 # package and must be listed.
-$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src")
+$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src", "quaidstvpmle.src")
 
 $actualSrc = Get-ChildItem -LiteralPath $srcDir -File |
     Where-Object { $_.Extension -in ".src", ".sdf" } |

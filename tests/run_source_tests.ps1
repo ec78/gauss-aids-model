@@ -63,6 +63,12 @@
 # CLAUDE.md (tsmt package-shadowing on this machine) -- this script points
 # GAUSS26_CFG at tests/gauss26_cfg_override for just these invocations, not
 # for any of the others.
+#
+# TVP-AIDS initiative, Stage 3: quaidstvp_mle_test.e and its four
+# tvp_mle_*.e guard cases share this same sslib dependency (and the same
+# -SkipTVPKalman flag -- not a new flag, since the underlying reason to
+# skip is identical: sslib's presence isn't guaranteed) and the same
+# GAUSS26_CFG override.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -128,6 +134,8 @@ $sslibTests = @()
 if (-not $SkipTVPKalman) {
     $sslibTests += "quaidstvp_kalman_test.e"
     $gaussTests += "quaidstvp_kalman_test.e"
+    $sslibTests += "quaidstvp_mle_test.e"
+    $gaussTests += "quaidstvp_mle_test.e"
 }
 
 $gaussCfgOverride = Join-Path $testsDir "gauss26_cfg_override"
@@ -277,9 +285,32 @@ if (-not $SkipTVPKalman) {
         Script = "guard_error_cases\tvp_bad_H_shape.e"
         Expected = "_quaidsTVPBuildModel: H must be n1 x n1."
     }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_mle_bad_q0_shape.e"
+        Expected = "_quaidsTVPMLEFit: q0 must be k_states x 1"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_mle_nonpositive_q0.e"
+        Expected = "_quaidsTVPMLEFit: every element of q0 (starting Q diagonal) must be strictly positive."
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_mle_bad_H_shape.e"
+        Expected = "_quaidsTVPMLEFit: H must be n1 x n1."
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_mle_bad_y_shape.e"
+        Expected = "_quaidsTVPMLEFit: y must be nobs x n1"
+    }
 }
 
-$sslibGuardScripts = @("guard_error_cases\tvp_bad_Q_shape.e", "guard_error_cases\tvp_bad_H_shape.e")
+$sslibGuardScripts = @(
+    "guard_error_cases\tvp_bad_Q_shape.e",
+    "guard_error_cases\tvp_bad_H_shape.e",
+    "guard_error_cases\tvp_mle_bad_q0_shape.e",
+    "guard_error_cases\tvp_mle_nonpositive_q0.e",
+    "guard_error_cases\tvp_mle_bad_H_shape.e",
+    "guard_error_cases\tvp_mle_bad_y_shape.e"
+)
 
 foreach ($guard in $guardTests) {
     Write-Host ""

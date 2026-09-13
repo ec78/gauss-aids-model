@@ -267,6 +267,29 @@ A single test file directly: `tgauss -b -x <file>.e` from `tests/` (or
   before the dependent one, or `#include` both directly, instead of
   relying on `library` lazy-loading order. Confirmed in `sslib`
   (`sstvp.src`'s TVP filters depend on globals declared in `ssmain.src`).
+- `sslib`'s `ssFitTVP()`/`ssFit()` take `y` as **nobs x k_endog** (plain
+  panel/Txn form) and transpose it internally — the OPPOSITE convention
+  from calling `kalmanFilterTVP()`/`kalmanFilterDiffuseTVP()` directly
+  (which want `y` as `k_endog x nobs`, already transposed). Passing the
+  already-transposed form to `ssFitTVP()` compiles fine and fails deep
+  inside the filter with a generic "Matrix dimensions are incompatible"
+  (`kalmanFilterDiffuseTVP`'s own diagonal-`H` check), not an
+  argument-shape guard at the call boundary — confirmed directly
+  (TVP-AIDS Stage 3), not assumed from either proc's own doc comment.
+- A `library`-loaded package's installed copy under `C:\gauss26\pkgs\` is
+  genuinely **shared, mutable state across concurrent sessions on this
+  machine** — not just a slow-changing install. `sslib`'s
+  `init_diffTVP()`/`init_stationaryTVP()` gained a required second
+  parameter (`stationary_states`, for a new "mixed" init mode) via an
+  upstream commit that landed in the installed copy mid-session, breaking
+  already-committed, previously-passing caller code with no local change
+  on this repo's side at all. If a previously-working `library
+  cmlmt, tsmt, sslib;`-dependent test suddenly fails with an arity/
+  undefined-symbol error, check `Get-ChildItem` timestamps under
+  `C:\gauss26\pkgs\sslib\src` before assuming a local regression, and use
+  `ListAgents`/`SendMessage` to check with any concurrent session working
+  in `gauss-state-space` before touching or reinstalling the shared
+  directory yourself.
 
 ## Testing expectations
 

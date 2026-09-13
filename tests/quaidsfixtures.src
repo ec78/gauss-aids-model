@@ -572,3 +572,115 @@ proc (5) = _quaidsTVPStaticSyntheticDGP(tobs, seed, n1);
 
     retp(w, pricesRel, lx, trueState, trueGammaFull);
 endp;
+
+/*
+** _quaidsTVPDynamicSyntheticDGP: TVP-AIDS initiative, Stage 3. A genuine
+** time-varying (random-walk) n1-good conditional demand system, simulated
+** directly from the SAME linear-Gaussian state-space model
+** _quaidsTVPBuildModel()/_quaidsTVPKalmanFit() (Stage 2) and
+** _quaidsTVPMLEFit() (Stage 3) assume: state_t = state_(t-1) + eta_t
+** (eta_t ~ N(0, diag(trueQdiag)), matching _quaidsTVPBuildModel()'s
+** hard-coded T=I/c=0/R=I random walk exactly) and
+** w_t = Z_t*state_t + eps_t (eps_t ~ N(0, trueH)). Unlike
+** _quaidsTVPStaticSyntheticDGP (Stage 1, noiseless, time-INVARIANT
+** state), this fixture is the correctly-specified DGP Stage 3's Q-MLE is
+** fit against, so recovering trueQdiag from it is a meaningful
+** correctness check, not merely a convergence smoke test. Row-major
+** upper-triangular gamma ordering (gidx) is inlined here rather than
+** calling src/quaidstvp.src's own _quaidsTVPGammaIndex() -- see
+** _quaidsTVPStaticSyntheticDGP's own identical comment for why (this
+** file is #include-d by many otherwise-unrelated test files that have no
+** reason to also #include ../src/quaidstvp.src).
+**
+** Format: { w, pricesRel, lx, trueStateArr } =
+**             _quaidsTVPDynamicSyntheticDGP(tobs, seed, n1, trueQdiag, trueH);
+**
+** Input:  tobs       -- number of periods.
+**         seed       -- rndseed.
+**         n1         -- number of independently-estimated equations.
+**         trueQdiag  -- k_states x 1 vector, true state innovation
+**                       variances (diagonal Q; k_states = 2*n1 +
+**                       n1*(n1+1)/2).
+**         trueH      -- n1 x n1, true (positive definite) observation
+**                       covariance.
+**
+** Output: w           -- tobs x n1 simulated shares (equations 1..n1
+**                         only -- same scope as
+**                         _quaidsTVPStaticSyntheticDGP's own w).
+**         pricesRel    -- tobs x n1 relative log prices (regressors).
+**         lx           -- tobs x 1 Stone-deflated log expenditure
+**                          (regressor).
+**         trueStateArr -- k_states x tobs, the TRUE simulated state path
+**                         (column t = period t's state, same
+**                         [alpha | gamma(unique) | beta] layout as
+**                         src/quaidstvp.src's own _quaidsTVPBuildZ()/
+**                         _quaidsTVPStateToB()).
+*/
+proc (4) = _quaidsTVPDynamicSyntheticDGP(tobs, seed, n1, trueQdiag, trueH);
+
+    local ngamma, k_states, gidx, cnt, i, j, t,
+        pricesRel, lx, trueStateArr, w, state_t, gmat, Hchol, Qsd, eta, eps;
+
+    rndseed seed;
+
+    ngamma = n1*(n1+1)/2;
+    k_states = n1 + ngamma + n1;
+
+    gidx = zeros(n1, n1);
+    cnt = 1;
+    i = 1;
+    do while i <= n1;
+        j = i;
+        do while j <= n1;
+            gidx[i, j] = cnt;
+            gidx[j, i] = cnt;
+            cnt = cnt + 1;
+            j = j + 1;
+        endo;
+        i = i + 1;
+    endo;
+
+    pricesRel = .1*rndn(tobs, n1);
+    lx = .2*rndn(tobs, 1);
+
+    trueStateArr = zeros(k_states, tobs);
+    w = zeros(tobs, n1);
+
+    state_t = (.1*round(rndn(n1, 1)*10)/10 + .1)
+              |(.1*round(rndn(ngamma, 1)*10)/10)
+              |(.05*round(rndn(n1, 1)*10)/10);
+
+    Qsd = sqrt(trueQdiag);
+    Hchol = chol(trueH)';
+
+    t = 1;
+    do while t <= tobs;
+        if t > 1;
+            eta = Qsd.*rndn(k_states, 1);
+            state_t = state_t + eta;
+        endif;
+        trueStateArr[., t] = state_t;
+
+        gmat = zeros(n1, n1);
+        i = 1;
+        do while i <= n1;
+            j = 1;
+            do while j <= n1;
+                gmat[i, j] = state_t[n1 + gidx[i, j]];
+                j = j + 1;
+            endo;
+            i = i + 1;
+        endo;
+
+        eps = Hchol*rndn(n1, 1);
+        i = 1;
+        do while i <= n1;
+            w[t, i] = state_t[i] + pricesRel[t, .]*gmat[i, .]' + state_t[n1+ngamma+i]*lx[t] + eps[i];
+            i = i + 1;
+        endo;
+
+        t = t + 1;
+    endo;
+
+    retp(w, pricesRel, lx, trueStateArr);
+endp;

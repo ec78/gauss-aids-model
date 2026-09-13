@@ -12,13 +12,14 @@ _Last updated: 2026-09-13_
 Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
 a repo-owner-requested extension beyond the now-largely-complete public
 release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
-"TVP-AIDS initiative" section for the full plan). Stages 0, 1, and 2 are
-now **complete, committed (`086c97a`), and pushed to `origin/master`**.
-**Stage 3** (hyperparameter MLE via `sslib`'s `ssFitTVP()`) has not been
-started. Nothing functional remains open on Stage 2 itself; only the
-open items already listed under Next Steps (sslib install
-durability/commit-pinning mechanism) carry forward into general
-TVP-AIDS upkeep, not Stage 2 specifically.
+"TVP-AIDS initiative" section for the full plan). Stages 0–3 are now
+**complete and validated locally** (Stages 0–2 committed/pushed as
+`086c97a`/doc-sync `8ed8ea3`; **Stage 3 is implemented and tested this
+session but NOT YET COMMITTED** — see Handoff Notes). **Stage 4** (the
+TVP smoother, `ssKalmanSmoothTVP()`) has not been started. Stage 3 is
+still Q-only MLE (H stays caller-fixed) — see Decisions for why, a
+repo-owner-approved scope call made explicitly this session, not
+assumed.
 
 ## Completed Work
 
@@ -111,6 +112,91 @@ TVP-AIDS upkeep, not Stage 2 specifically.
     CI-status tool available here) — check it directly
     (`gh run list`/the Actions tab) at the start of the next session if
     not already known to have passed.
+- **TVP-AIDS Stage 3** (`src/quaidstvpmle.src`, new private file --
+  `_quaidsTVPQUpdate()`, `_quaidsTVPMLEFit()`): hyperparameter MLE for
+  the diagonal state innovation covariance Q, via `sslib`'s `ssFitTVP()`.
+  Scope decided explicitly with repo-owner sign-off before writing code
+  (see Decisions): Q ONLY (H stays caller-fixed, same as Stage 2) and Q
+  DIAGONAL (not a full covariance) -- both to sidestep a documented
+  state-space variance-identification risk, not arbitrary
+  simplifications. Positivity enforced via `sslib`'s own
+  `ssControl.positive_vars` squaring transform (`sstransformParms`), not
+  a hand-rolled log-variance transform. Depends directly on Stage 2's own
+  `_quaidsTVPBuildModel()`/`_quaidsTVPReplicateConstant()` (a real
+  proc-level dependency, unlike Stage 2's own deliberately Stage-1
+  decoupled design) -- a caller must `#include quaidstvpkalman.src`
+  before this file.
+  - **Real, non-obvious API gotcha found and documented** (now also in
+    CLAUDE.md's language-gotchas list): `ssFitTVP()`'s own `y` parameter
+    is **nobs x k_endog** (this library's usual Txn convention), the
+    OPPOSITE of `_quaidsTVPKalmanFit()`'s `k_endog x nobs` -- `ssFitTVP()`
+    transposes internally. Passing the transposed form compiles fine and
+    fails deep inside `kalmanFilterDiffuseTVP` with a generic "Matrix
+    dimensions are incompatible", not a clear argument-shape error at the
+    call boundary. Confirmed directly against a real failure before
+    fixing, not assumed from either proc's doc comment (which are
+    themselves easy to misread by analogy from Stage 2's own contract).
+  - New fixture `_quaidsTVPDynamicSyntheticDGP()` added to
+    `tests/quaidsfixtures.src` -- unlike Stage 1's
+    `_quaidsTVPStaticSyntheticDGP()` (noiseless, time-invariant), this
+    simulates a genuine random-walk state with KNOWN diagonal Q and KNOWN
+    H, i.e. the actual correctly-specified DGP Stage 3's MLE assumes, so
+    recovering the true Q is a meaningful correctness check.
+  - **Finding, empirically confirmed (not guessed)**: individual
+    per-state-element Q diagonal entries are only loosely identified even
+    at `tobs=500` (worst single element off by ~54% of its own true value
+    at the test's seed), while the AGGREGATE (mean across all `k_states`
+    elements) is much better identified (~7% off, same seed) -- a milder,
+    within-Q version of the same general state-space
+    variance-identification phenomenon that motivated fixing H in the
+    first place (see Decisions). `tests/quaidstvp_mle_test.e`'s own
+    synthetic-recovery check is therefore on the MEAN of the fitted Q
+    diagonal, not each element individually -- a deliberate, documented
+    choice, not a weakened test.
+  - New test `tests/quaidstvp_mle_test.e` (7 checks: convergence,
+    positivity/no-blowup sanity, mean-Q recovery, an EXACT
+    internal-consistency check against Stage 2's independently-validated
+    `_quaidsTVPKalmanFit()` at the fitted Q -- confirmed to match to
+    floating-point precision -- and a loose final-state plausibility
+    check) plus four new guard-error cases
+    (`tvp_mle_bad_q0_shape.e`/`tvp_mle_nonpositive_q0.e`/
+    `tvp_mle_bad_H_shape.e`/`tvp_mle_bad_y_shape.e`); wired into
+    `run_source_tests.ps1` under the SAME `-SkipTVPKalman` flag as Stage
+    2 (not a new flag -- identical underlying reason to skip). No version
+    bump (no public API surface -- every new proc is private,
+    `_`-prefixed).
+  - `src/quaidstvpmle.src` added to `verify_package_manifest.ps1`'s
+    `intentionallyUnlisted` allowlist, same reasoning as
+    `quaidstvpkalman.src`.
+  - **Mid-session incident, found and fixed before Stage 3 work could
+    proceed**: `quaidstvp_kalman_test.e` (Stage 2, previously passing)
+    started failing with `error G0159 : Wrong number of parameters
+    'init_diffTVP' expected 2 arguments, received 1` at the very start of
+    this session's work, despite NO local change to this repo. Root
+    cause: `C:\gauss26\pkgs\sslib\src\sstvp.src`/`ssstructural.src` (the
+    SHARED installed package directory) had been modified that same
+    morning (confirmed via `Get-ChildItem` timestamps, not assumed) by
+    something other than this session. `ListAgents` found a concurrent
+    session (`gauss-state-space-ea`) actively working in the
+    `gauss-state-space` repo; messaged them directly rather than touching
+    shared state unilaterally. They confirmed: their own repo working
+    tree was clean/unrelated (not mid-edit on the installed copy
+    themselves), and the signature change (`init_diffTVP`/
+    `init_stationaryTVP` gaining a required `stationary_states` second
+    parameter, unused for the pure-diffuse case, added so every init
+    function shares one dispatch signature for a new "mixed" init mode)
+    is from upstream commit `ae921ce`, intentional and finished, not WIP
+    -- so someone/something else had refreshed the shared install to a
+    newer commit than this repo's own documented `9132c35` pin, between
+    last session's end and this session's start. Fixed by updating
+    `_quaidsTVPKalmanFit()`'s call site (`src/quaidstvpkalman.src`) to
+    `init_diffTVP(tvpm, 0)` (the second arg is genuinely unused for the
+    diffuse case, confirmed by reading `sstvp.src`'s own comment) --
+    re-ran `quaidstvp_kalman_test.e` standalone afterward to confirm all
+    8 checks pass again before continuing to Stage 3. See Known Issues
+    for the now-stale `9132c35` pin this incident exposed, and Decisions
+    for CLAUDE.md's new durable gotcha about shared-package-directory
+    collision risk.
 
 ## Decisions
 
@@ -128,18 +214,42 @@ TVP-AIDS upkeep, not Stage 2 specifically.
   `tsmt`'s own `kalmanFilter()` (documented `k_endog>1` limitation).
 - **`sslib` version pinning decided in principle** ("pin to a specific
   commit") but **no mechanism built yet** — `package.json`'s `deps` array
-  is a bare string list with no room for a commit hash. Currently
-  installed from `9132c35`; this should be the pin once a mechanism
-  exists. Blocks a clean Stage 6.
+  is a bare string list with no room for a commit hash. **The
+  previously-documented `9132c35` pin is now KNOWN STALE**, not just
+  theoretically at risk: this session found the actual installed copy at
+  `C:\gauss26\pkgs\sslib` includes at least upstream commit `ae921ce`
+  (confirmed by the `init_diffTVP` arity break/fix — see Completed Work's
+  Stage 3 entry), and `gauss-state-space-ea`'s own concurrent session
+  reported their repo (clean, matching origin) is at `7d5ed72`, LIKELY
+  (not independently confirmed) close to what's actually installed. Blocks
+  a clean Stage 6 even more concretely now than before.
 - **`sslib` stays OUT of `package.json`'s `deps` array, and
-  `quaidstvpkalman.src` stays unlisted in its `src` array** — same
-  reasoning that already keeps `optmt`/`pubtable` out of `deps` and
-  `quaidscurvature.src`/`pubtable_quaids.src` out of `src`: `deps` is read
-  as "hard requirement to even install/compile the core package," not "a
-  dependency of one of its optional adapters," and listing
-  `quaidstvpkalman.src` would make `sslib` exactly that. The `9132c35` pin
-  is recorded only in this file and `quaidstvpkalman.src`'s own header
-  comment, not in package.json, pending a real pinning mechanism.
+  `quaidstvpkalman.src`/`quaidstvpmle.src` stay unlisted in its `src`
+  array** — same reasoning that already keeps `optmt`/`pubtable` out of
+  `deps` and `quaidscurvature.src`/`pubtable_quaids.src` out of `src`:
+  `deps` is read as "hard requirement to even install/compile the core
+  package," not "a dependency of one of its optional adapters," and
+  listing either file would make `sslib` exactly that. The stale
+  `9132c35` pin is recorded only in this file and
+  `quaidstvpkalman.src`'s own header comment, not in package.json,
+  pending a real pinning mechanism (see above — now a real, not
+  hypothetical, gap).
+- **TVP-AIDS Stage 3 estimates Q ONLY via MLE; H stays caller-supplied
+  and FIXED** (repo-owner sign-off, given explicitly this session before
+  any Stage 3 code was written) — `sslib`'s own `test/sstvpfit.inc`
+  header documents that jointly estimating both Q and H via unconstrained
+  MLE hit the classic state-space variance-identification problem and
+  never converged even given hundreds of iterations on a univariate
+  local-level model. A future stage could revisit joint estimation (e.g.
+  profiling H from a static `quaidsFit()` residual covariance as a
+  smarter starting point) if it becomes a real need — not attempted.
+- **Stage 3's Q is DIAGONAL, not a full covariance** (same sign-off) —
+  one free variance per state element via `sslib`'s own
+  `positive_vars`-squaring transform, not a Cholesky-parameterized full
+  covariance. Standard TVP-VAR/TVP-AIDS simplifying assumption
+  (independent per-state-element random-walk innovations), and the far
+  cheaper/safer choice given the identification risk above (a full
+  covariance would be `k_states*(k_states+1)/2` free parameters).
 - **Stage 2 code split across two files, not one** —
   `src/quaidstvp.src` (Stage 1, no sslib dependency) and the new
   `src/quaidstvpkalman.src` (Stage 2, hard sslib dependency). Tried as one
@@ -154,7 +264,9 @@ TVP-AIDS upkeep, not Stage 2 specifically.
   reason: `sslib` isn't a package.json dependency at all, and was found
   genuinely MISSING from this machine's own `C:\gauss26\pkgs` once already
   this initiative -- its presence is not yet a safe assumption for an
-  unattended CI run the way optmt/pubtable's is).
+  unattended CI run the way optmt/pubtable's is). Stage 3's own
+  sslib-dependent test/guard cases reuse this SAME flag rather than a new
+  one -- identical underlying reason to skip.
 
 ## Tests / Validation
 
@@ -180,6 +292,14 @@ TVP-AIDS upkeep, not Stage 2 specifically.
   re-run since the Phase 5 release work — not required for Stage 1/the
   sslib install (no public API surface changed), but worth running
   before any future version bump/release.
+- `tests/run_source_tests.ps1 -SkipBootstrap` (this machine's routine
+  local gate) re-run clean this session with Stage 3's new
+  `tests/quaidstvp_mle_test.e` (7 checks) and its four new guard cases
+  included, AND with the `init_diffTVP` arity fix applied to
+  `quaidstvpkalman.src` — full suite (all `guard_error_cases`, all
+  `gaussTests` including `quaidstvp_kalman_test.e` and
+  `quaidstvp_mle_test.e`) reported `run_source_tests.ps1: PASS`. Not yet
+  re-run WITHOUT `-SkipBootstrap` (full local gate) this session.
 
 ## Known Issues
 
@@ -197,6 +317,35 @@ TVP-AIDS upkeep, not Stage 2 specifically.
   its `git status` before reading from it again, and never install
   `sslib` from its live working tree — use `git archive` of a specific
   commit, as this session did.
+- **The collision risk is not limited to that repo's own working tree —
+  the SHARED INSTALLED COPY at `C:\gauss26\pkgs\sslib` itself changed
+  mid-session** (this session, not a hypothetical): `sstvp.src`/
+  `ssstructural.src` there were modified the same morning by something
+  other than this session, silently breaking already-committed Stage 2
+  code (`init_diffTVP` arity). Now fixed (see Completed Work), and a new
+  durable CLAUDE.md gotcha records the general pattern, but the
+  `9132c35` pin is now confirmed stale (see Decisions) and there is still
+  no mechanism preventing this from recurring. `ListAgents` found the
+  likely source (`gauss-state-space-ea`, a concurrent session); after
+  investigating on their end, they clarified: the drift past `9132c35`
+  predates their own session (a PREVIOUS session pushed `ae921ce`/
+  `bba9467` to `gauss-state-space`'s `origin/main`, now at `7d5ed72`, and
+  something refreshed the shared install from that before this session
+  started); they themselves temporarily copied `src`/`test` into the
+  shared install today for their own testing but reverted it back to
+  match `origin/main` exactly (verified via diff) before this incident
+  was even raised. So the actual actor that FIRST refreshed the shared
+  install past `9132c35` remains unidentified, but the install's current
+  content is understood: consistent with `gauss-state-space`
+  `origin/main` around `7d5ed72` as of 2026-09-13 — this should become
+  the new reference point once a real pinning mechanism exists (see
+  Decisions), not `9132c35`. They also flagged pushing a further new
+  commit (`1b82f62`, additive-only -- analytic-gradient support for a
+  correlated/non-diagonal H in the exact-diffuse filter, previously an
+  error case) after this incident, NOT yet confirmed present in the
+  installed copy -- low risk (additive, no signature changes, their own
+  43-file suite passed) but worth knowing if something TVP-related
+  behaves unexpectedly in a future session.
 - **`README.md`'s prose still says "public alpha (package version
   `0.1.0`)"** (line ~16) — actual current version is `0.2.0`. Stale
   reference, not yet fixed.
@@ -206,40 +355,53 @@ TVP-AIDS upkeep, not Stage 2 specifically.
 
 ## Next Steps
 
-1. **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP()`. Decide/build
-   a real commit-pinning mechanism for `sslib` at that point if it becomes
-   more pressing (see Decisions — currently just documented, not
-   mechanized, and deliberately not a `package.json` `deps`/`src` entry).
-   Consider whether `sslib`'s disappearance-and-reinstall this session
-   warrants a more durable install step (a script, not a one-off manual
-   `git archive`) before relying on it further.
-2. **Stage 4**: the TVP smoother (`gauss-state-space`'s
+1. **Commit Stage 3** (`src/quaidstvpmle.src`, the `init_diffTVP` arity
+   fix to `src/quaidstvpkalman.src`, `tests/quaidstvp_mle_test.e`, four
+   new guard cases, the `_quaidsTVPDynamicSyntheticDGP()` fixture, and
+   the `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring) — NOT
+   done yet this session; see Handoff Notes. CLAUDE.md was also updated
+   (two new durable gotchas) and should go in the same or an adjacent
+   commit.
+2. Decide/build a real commit-pinning mechanism for `sslib` — now a
+   confirmed-real gap (the `9132c35` pin is stale; see Decisions/Known
+   Issues), not just a theoretical one. Consider whether the pin should
+   live somewhere more durable than this file + a header comment, given
+   it has now silently drifted at least once without anyone noticing
+   until a test broke.
+3. **Stage 4**: the TVP smoother (`gauss-state-space`'s
    `ssKalmanSmoothTVP()`, already built in that repo).
-3. **Stage 5**: `quaidsTVPElasFit()`.
-4. **Stage 6**: printer/docs/example/packaging, version bump.
-5. (Housekeeping, not blocking) Confirm the push-triggered CI run for
-   `086c97a` passed — not verified from inside the session that pushed it
-   (see Handoff Notes).
+4. **Stage 5**: `quaidsTVPElasFit()`.
+5. **Stage 6**: printer/docs/example/packaging, version bump.
+6. (Housekeeping, not blocking) Confirm the push-triggered CI run for
+   `086c97a`/`8ed8ea3` passed — `gh run list` this session showed both as
+   `completed success`, so this item is now DONE, not just deferred.
 
 ## Handoff Notes
 
-- Working tree: `master` clean, up to date with `origin/master` at
-  `086c97a` (Stage 2, pushed this session — two commits ahead of this
-  file's previous note at `e090225`: `cb960f9` sslib-install, `086c97a`
-  Stage 2). Nothing uncommitted.
-- `086c97a`'s push triggers the self-hosted, push-only CI workflow
-  (`.github/workflows/tests.yml`, `-SkipBootstrap -SkipTVPKalman`) — this
-  session pushed but had no way to check the run's result afterward (no
-  CI-status tool available). **Check it before trusting master is green**
-  if that matters for whatever comes next (e.g. before building on top of
-  Stage 2, or before a release).
-- `sslib` was found MISSING from `C:\gauss26\pkgs\sslib` at the start of
-  this session despite the prior session's own record that it was
-  installed and verified there — reinstalled the same way (git archive of
-  `gauss-state-space`'s pinned `9132c35`, live working tree re-confirmed
-  dirty again). Treat its presence there as not durable across sessions;
-  re-verify with `Get-ChildItem C:\gauss26\pkgs\sslib` (not just trusting
-  this file) before relying on it, exactly as this session had to.
+- **Working tree: `master` has UNCOMMITTED changes from this session** —
+  new `src/quaidstvpmle.src`; modified `src/quaidstvpkalman.src` (the
+  `init_diffTVP` arity fix), `tests/quaidsfixtures.src` (new
+  `_quaidsTVPDynamicSyntheticDGP()`), `tests/run_source_tests.ps1`,
+  `tests/verify_package_manifest.ps1`, `CLAUDE.md`, this file; new
+  `tests/quaidstvp_mle_test.e` and four new
+  `tests/guard_error_cases/tvp_mle_*.e` files. Deliberately left
+  uncommitted per this repo's "never commit without being explicitly
+  asked" rule — the user has not yet asked for a commit as of this
+  file's own last update. `git status`/`git diff` before committing, as
+  always.
+- `gh run list` confirmed this session: CI runs for both `086c97a` and
+  `8ed8ea3` completed with `success` (`-SkipBootstrap -SkipTVPKalman`, so
+  neither actually exercised any sslib-dependent test — a reminder that
+  CI green here means "the non-sslib suite passed," not "the sslib path
+  was validated," given `-SkipTVPKalman` is always passed by CI).
+- `sslib`'s presence at `C:\gauss26\pkgs\sslib` was reconfirmed at this
+  session's start (real files, `lib/sslib.lcg` catalog present) — NOT
+  missing this time, unlike last session's finding. But its CONTENT had
+  silently drifted past the documented `9132c35` pin (see Known Issues'
+  new entry) — presence alone is no longer sufficient reassurance;
+  arity/signature drift is now a demonstrated real risk on top of the
+  already-documented disappearance risk. Re-verify both before relying on
+  it in a future session.
 - Full Stage 2 functional validation (diffuse filter exact-recovers
   Stage 1's noiseless true state to ~8e-17) was done via ad hoc scratch
   scripts before being formalized into the committed-to-repo test file —

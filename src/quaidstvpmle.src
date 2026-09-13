@@ -1,0 +1,200 @@
+/*
+** quaidstvpmle.src
+**
+** TVP-AIDS initiative, Stage 3: hyperparameter MLE for the state
+** innovation covariance Q, via sslib's ssFitTVP()/cmlmt -- Stage 2
+** (src/quaidstvpkalman.src) took Q (and H) as caller-supplied FIXED
+** inputs; this is what makes a TVP-AIDS fit a genuine one-call estimator
+** for the first time (Stages 0-2 were private plumbing only).
+**
+** SCOPE, decided explicitly (repo owner sign-off) before writing this
+** file, not assumed:
+**
+**   - Q ONLY is estimated by MLE here; H (the observation covariance)
+**     stays caller-supplied and FIXED, exactly as Stage 2 already
+**     requires. sslib's OWN test suite (test/sstvpfit.inc's header
+**     comment) documents that jointly estimating both Q and H via
+**     unconstrained MLE on even a univariate local-level model hit the
+**     classic state-space variance-identification problem and never
+**     reported true convergence given hundreds of iterations -- not a
+**     bug, a property of the model. Estimating Q alone against a fixed H
+**     sidesteps this entirely and mirrors sslib's own working example
+**     (test/sstvpfit.inc estimates its single Q parameter against a
+**     fixed H = 0.25 for exactly this reason). A future stage could
+**     revisit joint estimation (e.g. profiling H from a static
+**     quaidsFit() residual covariance as a smarter starting value, or a
+**     penalized/Bayesian approach) if it becomes a real need -- not
+**     attempted here.
+**
+**   - Q is DIAGONAL (one free variance per state element, k_states total
+**     free parameters), not a full k_states x k_states covariance --
+**     independent per-state-element random-walk innovations, the
+**     standard simplifying assumption in the TVP-VAR/TVP-AIDS literature
+**     (e.g. Primiceri-style), and the far cheaper/safer choice given the
+**     identification risk above (a full covariance would be
+**     k_states*(k_states+1)/2 free parameters -- e.g. 78 for the n1=3
+**     case this file's own test uses, vs. 12 for the diagonal).
+**
+** Positivity is enforced via sslib's own ssControl.positive_vars
+** mechanism (every element of Q's diagonal marked positive), NOT a
+** manual log-variance transform: sslib squares each positive_vars
+** element between CMLMT's raw (unconstrained) parameter and what
+** updateproc receives (see ssdiagnostics.src's sstransformParms/
+** _sstransformParmsJac) -- reusing this rather than inventing a parallel
+** transform keeps this file's parameter vector directly comparable to
+** every other sslib-fit model's own param_vec/positive_vars convention.
+**
+** Depends directly on src/quaidstvpkalman.src's own
+** _quaidsTVPBuildModel()/_quaidsTVPReplicateConstant() (a real proc-level
+** dependency, not just shared data flow, unlike Stage 2's own
+** deliberately Stage-1-decoupled design) -- a caller must #include
+** quaidstvpkalman.src BEFORE this file. Requires the same
+** `library cmlmt, tsmt, sslib;` (or equivalent) precondition as Stage 2 --
+** see that file's own header for the full reasoning (struct visibility,
+** the cross-file-global lazy-load gotcha already documented in
+** CLAUDE.md).
+*/
+
+
+/*
+** _quaidsTVPQUpdate
+**
+** Purpose: ssFitTVP() updateproc callback -- overwrites a tvpModel's Q
+**          field (and ONLY Q; Z/H/T/c/R/d are left exactly as the caller
+**          built them into ssCtl.tvp before the ssFitTVP() call) from the
+**          current (already positive_vars-transformed) parameter vector,
+**          treated as Q's k_states diagonal entries.
+**
+** Format:     _quaidsTVPQUpdate(&tvpm, p);        (called BY ssFitTVP/
+**                                                    tvpLFN, not directly)
+**
+** Input:      tvpm (by reference) -- struct tvpModel; tvpm->Q must
+**                    already be a genuine nobs-page array (from
+**                    _quaidsTVPBuildModel()) so getorders() can recover
+**                    k_states/nobs without them being passed separately
+**                    (ssFitTVP's own updateproc calling convention is
+**                    fixed at (tvpm, p) -- no room for extra arguments).
+**             p -- k_states x 1, Q's diagonal entries, ALREADY positive
+**                  (sslib's own sstransformParms has already squared
+**                  these by the time updateproc receives them -- see
+**                  this file's own header).
+**
+** Output:     none (mutates tvpm->Q in place).
+*/
+proc (0) = _quaidsTVPQUpdate(struct tvpModel *tvpmod, p);
+    local ord, k_states, nobs;
+
+    ord = getorders(tvpmod->Q);
+    nobs = ord[1];
+    k_states = ord[3];
+
+    tvpmod->Q = _quaidsTVPReplicateConstant(diagrv(eye(k_states), p), nobs);
+endp;
+
+
+/*
+** _quaidsTVPMLEFit
+**
+** Purpose: fits Q (diagonal, MLE) against a caller-fixed H, via sslib's
+**          ssFitTVP(), over Stage 1's Zarr design. Wraps: building a
+**          fully-populated ssControl (positive_vars over every Q
+**          element, diffuse init -- see quaidstvpkalman.src's header for
+**          why diffuse is the only principled choice for this pure
+**          random-walk state), an initial tvpModel via Stage 2's own
+**          _quaidsTVPBuildModel() (Q's STARTING values, H FIXED for the
+**          whole fit), converting the caller's natural-units starting Q
+**          diagonal into sslib's raw/unconstrained CMLMT parameter space
+**          via sslib's own ssUntransformParms(), and the ssFitTVP() call
+**          itself.
+**
+** Format:     sOut = _quaidsTVPMLEFit(Zarr, H, y, q0, n1);
+**
+** Input:      Zarr -- nobs-page array, each page n1 x k_states (Stage
+**                      1's _quaidsTVPBuildZ() output).
+**             H    -- n1 x n1, FIXED observation covariance (not
+**                      estimated -- see this file's own header for why).
+**             y    -- nobs x n1 data matrix -- this library's OWN usual
+**                      Txn `w` convention (e.g. w[.,1:n1]), NOT the
+**                      k_endog x nobs convention _quaidsTVPKalmanFit()/
+**                      kalmanFilterTVP() take directly. sslib's ssFitTVP()
+**                      transposes internally itself (confirmed against
+**                      sslib's own test/sstvpfit.inc, which passes a
+**                      plain nobs x 1 vector, and against a real
+**                      "Matrix dimensions are incompatible" failure
+**                      inside kalmanFilterDiffuseTVP hit by passing the
+**                      transposed n1 x nobs form here first) -- passing
+**                      the k_endog x nobs form here (as Stage 2's own
+**                      _quaidsTVPKalmanFit()/_quaidsTVPBuildModel()
+**                      contract would suggest by analogy) is silently
+**                      wrong, not just a different-but-equivalent shape.
+**             q0   -- k_states x 1, STARTING Q diagonal values, in
+**                      natural (positive variance) units -- NOT the raw
+**                      CMLMT parameter space (this proc converts
+**                      internally via ssUntransformParms()). Every
+**                      element must be strictly positive (its own sqrt
+**                      is the raw starting value CMLMT actually begins
+**                      from).
+**             n1   -- number of independently-estimated equations.
+**
+** Output:     sOut -- struct ssOut (sslib): sOut.final_params is the
+**                     fitted Q diagonal (k_states x 1, natural units,
+**                     already back-transformed -- see ssFitTVP's own
+**                     contract); sOut.kfResults.filtered_state is
+**                     k_states x nobs, the filtered state path AT the
+**                     fitted Q (column t = period t, same convention as
+**                     _quaidsTVPKalmanFit()'s own rslt.filtered_state --
+**                     feed any column to _quaidsTVPStateToB() to unpack);
+**                     sOut.mleResults.retcode == 0 signals CMLMT
+**                     convergence (check this -- see Remarks).
+**
+** Remarks: does NOT itself raise an error or warning if
+**          sOut.mleResults.retcode /= 0 (CMLMT's own convergence
+**          diagnostic) -- a caller building a public quaidsTVPFit() on
+**          top of this should surface that check explicitly, matching
+**          this library's existing convention of separating estimation
+**          from its own diagnostic/print layer (e.g. quaidsPreflight()
+**          vs. quaidsFit() itself).
+**
+** Requires: same as _quaidsTVPQUpdate() -- `struct tvpModel`/
+**           `struct ssOut`/`struct ssControl` must already be resolvable
+**           (`library cmlmt, tsmt, sslib;`), and
+**           src/quaidstvpkalman.src's procs must already be #include-d.
+*/
+proc (struct ssOut) = _quaidsTVPMLEFit(Zarr, H, y, q0, n1);
+    local ord, nobs, k_states, param_vec0;
+    struct ssControl ssCtl;
+    struct ssOut sOut;
+
+    ord = getorders(Zarr);
+    nobs = ord[1];
+    k_states = ord[3];
+
+    if rows(q0) /= k_states or cols(q0) /= 1;
+        errorlog "_quaidsTVPMLEFit: q0 must be k_states x 1 (k_states = rows/cols implied by Zarr's own page width).";
+        end;
+    endif;
+    if minc(q0) <= 0;
+        errorlog "_quaidsTVPMLEFit: every element of q0 (starting Q diagonal) must be strictly positive.";
+        end;
+    endif;
+    if rows(H) /= n1 or cols(H) /= n1;
+        errorlog "_quaidsTVPMLEFit: H must be n1 x n1.";
+        end;
+    endif;
+    if rows(y) /= nobs or cols(y) /= n1;
+        errorlog "_quaidsTVPMLEFit: y must be nobs x n1 (this library's usual Txn shares convention -- NOT the transposed n1 x nobs form _quaidsTVPKalmanFit() takes; ssFitTVP() transposes internally itself).";
+        end;
+    endif;
+
+    ssCtl = ssControlCreate(k_states, n1, k_states, nobs);
+    ssCtl.init = "diffuse";
+    ssCtl.positive_vars = seqa(1, 1, k_states);
+
+    ssCtl.tvp = _quaidsTVPBuildModel(Zarr, diagrv(eye(k_states), q0), H, n1);
+
+    param_vec0 = ssUntransformParms(q0, ssCtl);
+
+    sOut = ssFitTVP(&_quaidsTVPQUpdate, param_vec0, y, ssCtl);
+
+    retp(sOut);
+endp;

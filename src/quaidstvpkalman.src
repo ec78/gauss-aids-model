@@ -250,7 +250,14 @@ proc (struct kalmanResult) = _quaidsTVPKalmanFit(struct tvpModel tvpm, y, diffus
     endif;
 
     if diffuse;
-        { a_0, P_inf_0, P_star_0 } = init_diffTVP(tvpm);
+        /* init_diffTVP's second argument (stationary_states) is unused
+           internally for the pure-diffuse case -- accepted only so every
+           init function shares ssFitTVP's dispatch-table call signature
+           (added alongside a new "mixed" diffuse/stationary init mode in
+           gauss-state-space commit ae921ce; confirmed with
+           gauss-state-space-ea's own concurrent session, not guessed --
+           see PROJECT_STATUS.md). 0 is a placeholder, never read. */
+        { a_0, P_inf_0, P_star_0 } = init_diffTVP(tvpm, 0);
         rslt = kalmanFilterDiffuseTVP(y, tvpm.Z, tvpm.d, tvpm.H, tvpm.T, tvpm.c, tvpm.R, tvpm.Q, a_0, P_inf_0, P_star_0);
     else;
         rslt = kalmanFilterTVP(y, tvpm.Z, tvpm.d, tvpm.H, tvpm.T, tvpm.c, tvpm.R, tvpm.Q, tvpm.a_0, tvpm.p_0);
