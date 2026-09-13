@@ -3612,8 +3612,8 @@ hand-rolling a Kalman filter, missing only a period-varying smoother.
   out of `package.json`'s `deps`, and `quaidstvpkalman.src` out of `src`,
   for the same "don't force an optional adapter's dependency on the whole
   package" reasoning already applied to optmt/pubtable. No version bump
-  (no public API -- every new proc is private). Not yet committed as of
-  this write-up -- see PROJECT_STATUS.md's Handoff Notes.
+  (no public API -- every new proc is private). Committed as `086c97a`
+  and pushed to `origin/master`.
 - [ ] **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP`/`cmlmt` --
   `quaidsTVPFit()` becomes real.
 - [ ] **Stage 4**: `ssKalmanSmoothTVP` -- the one genuinely new numerical
