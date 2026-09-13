@@ -3614,8 +3614,41 @@ hand-rolling a Kalman filter, missing only a period-varying smoother.
   package" reasoning already applied to optmt/pubtable. No version bump
   (no public API -- every new proc is private). Committed as `086c97a`
   and pushed to `origin/master`.
-- [ ] **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP`/`cmlmt` --
-  `quaidsTVPFit()` becomes real.
+- [x] **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP`/`cmlmt` --
+  new file `src/quaidstvpmle.src` (`_quaidsTVPQUpdate()`/
+  `_quaidsTVPMLEFit()`), depending directly on Stage 2's own
+  `_quaidsTVPBuildModel()`/`_quaidsTVPReplicateConstant()` (unlike Stage
+  2's own deliberately Stage-1-decoupled design). Scope decided with
+  repo-owner sign-off before any code was written: Q ONLY is estimated
+  (H stays caller-fixed, same as Stage 2) and Q is DIAGONAL (not a full
+  covariance) -- both to sidestep the classic state-space Q/H
+  variance-identification problem `sslib`'s own `test/sstvpfit.inc`
+  documents (joint Q/H MLE never converged on even a univariate
+  local-level model). Positivity via `sslib`'s own `positive_vars`
+  squaring transform, not a hand-rolled log-variance parameterization.
+  Real API gotcha found and fixed: `ssFitTVP()`'s `y` is `nobs x
+  k_endog` and transposes internally, the OPPOSITE of
+  `_quaidsTVPKalmanFit()`'s `k_endog x nobs` -- now a durable CLAUDE.md
+  gotcha. New fixture `_quaidsTVPDynamicSyntheticDGP()` (genuine
+  random-walk state, known Q/H) in `tests/quaidsfixtures.src`; new test
+  `tests/quaidstvp_mle_test.e` (7 checks -- convergence, positivity/
+  no-blowup sanity, MEAN-of-Q recovery (empirically found: individual
+  per-state Q elements are only loosely identified even at `tobs=500`,
+  the aggregate mean much better so -- test tolerance reflects this
+  honestly rather than weakening to pass), an EXACT internal-consistency
+  check against Stage 2's own `_quaidsTVPKalmanFit()` at the fitted Q,
+  and a loose final-state plausibility check) plus four new guard cases
+  (`tvp_mle_bad_q0_shape.e`/`tvp_mle_nonpositive_q0.e`/
+  `tvp_mle_bad_H_shape.e`/`tvp_mle_bad_y_shape.e`), reusing Stage 2's
+  existing `-SkipTVPKalman` flag rather than a new one. No version bump
+  (no public API -- every new proc is private). Also fixed, mid-session:
+  the shared `C:\gauss26\pkgs\sslib` install had drifted past this
+  repo's documented `9132c35` pin (an upstream `init_diffTVP` signature
+  change landed in the installed copy independent of any local change),
+  breaking Stage 2's own test -- coordinated with a concurrent session
+  via `ListAgents`/`SendMessage` rather than guessing, fixed with a
+  one-line call-site update in `src/quaidstvpkalman.src`. Committed as
+  `a36c7a6` and pushed to `origin/master`; CI confirmed `success`.
 - [ ] **Stage 4**: `ssKalmanSmoothTVP` -- the one genuinely new numerical
   component (`sslib`'s own smoother is time-invariant only).
 - [ ] **Stage 5**: `quaidsTVPElasFit()`, reusing `_quaidsElas()` per period.

@@ -13,13 +13,12 @@ Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
 a repo-owner-requested extension beyond the now-largely-complete public
 release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
 "TVP-AIDS initiative" section for the full plan). Stages 0–3 are now
-**complete and validated locally** (Stages 0–2 committed/pushed as
-`086c97a`/doc-sync `8ed8ea3`; **Stage 3 is implemented and tested this
-session but NOT YET COMMITTED** — see Handoff Notes). **Stage 4** (the
-TVP smoother, `ssKalmanSmoothTVP()`) has not been started. Stage 3 is
-still Q-only MLE (H stays caller-fixed) — see Decisions for why, a
-repo-owner-approved scope call made explicitly this session, not
-assumed.
+**complete, committed, and pushed to `origin/master`** (Stages 0–2 as
+`086c97a`/doc-sync `8ed8ea3`; **Stage 3 as `a36c7a6`**, CI confirmed
+`success` via `gh run list`). **Stage 4** (the TVP smoother,
+`ssKalmanSmoothTVP()`) has not been started. Stage 3 is still Q-only MLE
+(H stays caller-fixed) — see Decisions for why, a repo-owner-approved
+scope call made explicitly before Stage 3 was written, not assumed.
 
 ## Completed Work
 
@@ -197,6 +196,11 @@ assumed.
     for the now-stale `9132c35` pin this incident exposed, and Decisions
     for CLAUDE.md's new durable gotcha about shared-package-directory
     collision risk.
+  - Committed as `a36c7a6` and pushed to `origin/master` (user explicitly
+    asked for the commit+push). The self-hosted push-triggered CI run
+    completed with `success` (confirmed via `gh run list` from inside
+    this session, unlike the prior two commits where that had to wait
+    for a follow-up session) -- run id `34784706305`.
 
 ## Decisions
 
@@ -355,45 +359,41 @@ assumed.
 
 ## Next Steps
 
-1. **Commit Stage 3** (`src/quaidstvpmle.src`, the `init_diffTVP` arity
-   fix to `src/quaidstvpkalman.src`, `tests/quaidstvp_mle_test.e`, four
-   new guard cases, the `_quaidsTVPDynamicSyntheticDGP()` fixture, and
-   the `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring) — NOT
-   done yet this session; see Handoff Notes. CLAUDE.md was also updated
-   (two new durable gotchas) and should go in the same or an adjacent
-   commit.
-2. Decide/build a real commit-pinning mechanism for `sslib` — now a
+1. Decide/build a real commit-pinning mechanism for `sslib` — a
    confirmed-real gap (the `9132c35` pin is stale; see Decisions/Known
    Issues), not just a theoretical one. Consider whether the pin should
    live somewhere more durable than this file + a header comment, given
    it has now silently drifted at least once without anyone noticing
-   until a test broke.
-3. **Stage 4**: the TVP smoother (`gauss-state-space`'s
+   until a test broke. Current best reference point if this is tackled:
+   `gauss-state-space` `origin/main` was at `7d5ed72` as of 2026-09-13,
+   plus a further additive commit `1b82f62` not yet confirmed installed
+   (see Known Issues).
+2. **Stage 4**: the TVP smoother (`gauss-state-space`'s
    `ssKalmanSmoothTVP()`, already built in that repo).
-4. **Stage 5**: `quaidsTVPElasFit()`.
-5. **Stage 6**: printer/docs/example/packaging, version bump.
-6. (Housekeeping, not blocking) Confirm the push-triggered CI run for
-   `086c97a`/`8ed8ea3` passed — `gh run list` this session showed both as
-   `completed success`, so this item is now DONE, not just deferred.
+3. **Stage 5**: `quaidsTVPElasFit()`.
+4. **Stage 6**: printer/docs/example/packaging, version bump.
 
 ## Handoff Notes
 
-- **Working tree: `master` has UNCOMMITTED changes from this session** —
-  new `src/quaidstvpmle.src`; modified `src/quaidstvpkalman.src` (the
-  `init_diffTVP` arity fix), `tests/quaidsfixtures.src` (new
-  `_quaidsTVPDynamicSyntheticDGP()`), `tests/run_source_tests.ps1`,
-  `tests/verify_package_manifest.ps1`, `CLAUDE.md`, this file; new
-  `tests/quaidstvp_mle_test.e` and four new
-  `tests/guard_error_cases/tvp_mle_*.e` files. Deliberately left
-  uncommitted per this repo's "never commit without being explicitly
-  asked" rule — the user has not yet asked for a commit as of this
-  file's own last update. `git status`/`git diff` before committing, as
-  always.
-- `gh run list` confirmed this session: CI runs for both `086c97a` and
-  `8ed8ea3` completed with `success` (`-SkipBootstrap -SkipTVPKalman`, so
-  neither actually exercised any sslib-dependent test — a reminder that
-  CI green here means "the non-sslib suite passed," not "the sslib path
-  was validated," given `-SkipTVPKalman` is always passed by CI).
+- Working tree: `master` clean, up to date with `origin/master` at
+  `a36c7a6` (Stage 3, committed and pushed this session at the user's
+  explicit request — three commits ahead of this file's previous note at
+  `086c97a`: `8ed8ea3` doc-sync, then `a36c7a6` Stage 3 itself, bundling
+  `src/quaidstvpmle.src`, the `init_diffTVP` arity fix to
+  `src/quaidstvpkalman.src`, `tests/quaidstvp_mle_test.e`, four new guard
+  cases, the `_quaidsTVPDynamicSyntheticDGP()` fixture,
+  `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring, and two
+  new CLAUDE.md gotchas). Nothing uncommitted.
+- `gh run list` confirmed this session: CI runs for `086c97a`, `8ed8ea3`,
+  AND `a36c7a6` all completed with `success`. `086c97a`/`8ed8ea3` (like
+  every push so far) ran with `-SkipBootstrap -SkipTVPKalman`, so they
+  never actually exercised any sslib-dependent test — a reminder that CI
+  green here means "the non-sslib suite passed," not "the sslib path was
+  validated," given `-SkipTVPKalman` is always passed by CI. The Stage
+  3/sslib path (`quaidstvp_kalman_test.e`, `quaidstvp_mle_test.e`, all
+  six `tvp_*`/`tvp_mle_*` guard cases) is validated only by this
+  session's own local `run_source_tests.ps1 -SkipBootstrap` run (passed
+  clean, no flags related to TVP skipped), not by CI.
 - `sslib`'s presence at `C:\gauss26\pkgs\sslib` was reconfirmed at this
   session's start (real files, `lib/sslib.lcg` catalog present) — NOT
   missing this time, unlike last session's finding. But its CONTENT had
