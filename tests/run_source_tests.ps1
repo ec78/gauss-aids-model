@@ -48,13 +48,29 @@
 # quaids_robust_bootstrap_test.e (Milestone 20) has the same "refits the
 # whole pipeline B times" cost, so it shares the same -SkipBootstrap gate
 # rather than introducing a second flag.
+#
+# TVP-AIDS initiative, Stage 2: quaidstvp_kalman_test.e and the two
+# tvp_bad_*_shape.e guard cases require `library cmlmt, tsmt, sslib;` --
+# sslib is NOT a package.json dependency (deliberately; see
+# src/quaidstvp.src's own Stage 2 header) and was found missing from this
+# very machine's C:\gauss26\pkgs once already this initiative (reinstalled
+# from gauss-state-space's pinned commit via `git archive`, not assumed
+# present) -- so its presence here is not guaranteed the way optmt/pubtable
+# are. Pass -SkipTVPKalman to skip these on a machine without sslib
+# installed; the automatic push-triggered CI workflow
+# (.github/workflows/tests.yml) passes it for exactly that reason. These
+# three scripts also need the GAUSS26_CFG override documented in
+# CLAUDE.md (tsmt package-shadowing on this machine) -- this script points
+# GAUSS26_CFG at tests/gauss26_cfg_override for just these invocations, not
+# for any of the others.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
     [string]$GaussExe = "C:\gauss26\tgauss.exe",
     [switch]$SkipPubtable,
     [switch]$SkipCurvature,
-    [switch]$SkipBootstrap
+    [switch]$SkipBootstrap,
+    [switch]$SkipTVPKalman
 )
 
 $testsDir = Join-Path $RepoRoot "tests"
@@ -108,10 +124,19 @@ if (-not $SkipBootstrap) {
     $gaussTests += "quaids_robust_bootstrap_test.e"
 }
 
+$sslibTests = @()
+if (-not $SkipTVPKalman) {
+    $sslibTests += "quaidstvp_kalman_test.e"
+    $gaussTests += "quaidstvp_kalman_test.e"
+}
+
+$gaussCfgOverride = Join-Path $testsDir "gauss26_cfg_override"
+
 function Invoke-GaussBatch {
     param(
         [string]$Exe,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [string]$Gauss26Cfg = $null
     )
 
     # Milestone 15 finding: reading stdout fully (ReadToEnd()) before
@@ -141,6 +166,13 @@ function Invoke-GaussBatch {
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $psi.WorkingDirectory = $testsDir
+    if ($Gauss26Cfg) {
+        # sslib-dependent scripts only (see the TVP-AIDS Stage 2 comment
+        # above param()) -- the tsmt package-shadowing fix from CLAUDE.md,
+        # scoped to just this child process's environment so it cannot
+        # affect any other test invoked by this script.
+        $psi.EnvironmentVariables["GAUSS26_CFG"] = $Gauss26Cfg
+    }
 
     $proc = [System.Diagnostics.Process]::new()
     $proc.StartInfo = $psi
@@ -236,10 +268,25 @@ $guardTests = @(
     }
 )
 
+if (-not $SkipTVPKalman) {
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_bad_Q_shape.e"
+        Expected = "_quaidsTVPBuildModel: Q must be k_states x k_states"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvp_bad_H_shape.e"
+        Expected = "_quaidsTVPBuildModel: H must be n1 x n1."
+    }
+}
+
+$sslibGuardScripts = @("guard_error_cases\tvp_bad_Q_shape.e", "guard_error_cases\tvp_bad_H_shape.e")
+
 foreach ($guard in $guardTests) {
     Write-Host ""
     Write-Host "==> $($guard.Script) (expected guard error)"
-    $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-b", "-x", $guard.Script)
+    $cfgForThis = $null
+    if ($sslibGuardScripts -contains $guard.Script) { $cfgForThis = $gaussCfgOverride }
+    $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-b", "-x", $guard.Script) -Gauss26Cfg $cfgForThis
     $output = $result.Output
     $output
 
@@ -254,7 +301,9 @@ foreach ($guard in $guardTests) {
 foreach ($test in $gaussTests) {
     Write-Host ""
     Write-Host "==> $test"
-    $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-b", "-x", $test)
+    $cfgForThis = $null
+    if ($sslibTests -contains $test) { $cfgForThis = $gaussCfgOverride }
+    $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-b", "-x", $test) -Gauss26Cfg $cfgForThis
     $output = $result.Output
     $output
 

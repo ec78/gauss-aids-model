@@ -45,6 +45,10 @@ src/                    # Installed package source (see package.json's
   quaidsreplicate.src     quaidsReplicateWeightFit()
   quaidstrend.src         quaidsTrendFit() -- TVP screening diagnostic
   quaidstvp.src           TVP-AIDS state-vector plumbing (private, WIP -- see PROJECT_STATUS.md)
+  quaidstvpkalman.src     TVP-AIDS Kalman-filter wiring (private, WIP) --
+                         #   OPTIONAL, requires sslib, deliberately NOT in
+                         #   package.json's src array (see "Optional
+                         #   modules" below) -- see PROJECT_STATUS.md
   quaidscurvature.src     quaidsCurvatureFit() -- OPTIONAL, requires optmt,
                          #   deliberately NOT in package.json's src array
                          #   (see "Optional modules" below)
@@ -107,6 +111,12 @@ Both files are listed in `tests/verify_package_manifest.ps1`'s
 order — a file that calls procs in another file must load after it),
 bump the version, and rebuild/reinstall.
 
+`quaidstvpkalman.src` (needs `sslib`, via `library cmlmt, tsmt, sslib;`)
+is the same excluded-for-a-hard-dependency pattern, but is PRIVATE WIP,
+not public API yet (TVP-AIDS initiative, Stage 2 — see
+`PROJECT_STATUS.md`); also in the allowlist for that reason as well as
+the dependency one.
+
 ## Development environment
 
 - **GAUSS 26** at `C:\gauss26` (`tgauss.exe` at `C:\gauss26\tgauss.exe`).
@@ -129,7 +139,10 @@ bump the version, and rebuild/reinstall.
   Fix per-invocation without touching the shared `gauss.cfg`: set env
   var `GAUSS26_CFG` to a directory holding a copy of `gauss.cfg` whose
   `extra_lib_path` lists `$(PACKAGEDIR)\tsmt\lib` explicitly before the
-  `*` wildcard.
+  `*` wildcard. A ready-made such copy is checked into this repo at
+  `tests/gauss26_cfg_override/` (used by `run_source_tests.ps1` for its
+  sslib-dependent test invocations) — reuse it rather than hand-rolling a
+  new one in a temp directory.
 - **R 4.5.0** (`C:\Program Files\R\R-4.5.0\bin\Rscript.exe`, package
   `micEconAids`) and **Python 3.12** (numpy/pandas/scipy) are installed
   only to regenerate the published-data cross-validation reference

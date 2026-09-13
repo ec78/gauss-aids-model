@@ -15,9 +15,12 @@ release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
 "TVP-AIDS initiative" section for the full plan). Stages 0 and 1 are
 complete and committed. **Stage 2** (wire `sslib`'s `kalmanFilterTVP()`/
 `kalmanFilterDiffuseTVP()` into Stage 1's state-vector construction, with
-a caller-supplied fixed `Q`/`H`) has **not been started** — no Stage 2
-code exists yet, but its blocking dependency question (was `sslib`
-installed and usable?) is now resolved, so Stage 2 can begin.
+a caller-supplied fixed `Q`/`H`) is **code-complete and passing locally,
+not yet committed** — see "Completed Work" below. Remaining before Stage
+2 is fully closed out: nothing functional; only the open items already
+listed under Next Steps (sslib install durability/commit-pinning
+mechanism) carry forward into general TVP-AIDS upkeep, not Stage 2
+specifically.
 
 ## Completed Work
 
@@ -51,6 +54,51 @@ installed and usable?) is now resolved, so Stage 2 can begin.
 - **Context-management restructuring**: `CLAUDE.md` cut from ~5,100 lines
   down to a durable-only orientation file; this `PROJECT_STATUS.md`
   created for current-state tracking. Committed as `e090225`.
+- **TVP-AIDS Stage 2** (`src/quaidstvpkalman.src`, new private file --
+  `_quaidsTVPBuildModel()`, `_quaidsTVPKalmanFit()`, plus an internal
+  `_quaidsTVPReplicateConstant()` helper; NOT YET COMMITTED): wires
+  sslib's `kalmanFilterDiffuseTVP()`/`kalmanFilterTVP()` to Stage 1's
+  `_quaidsTVPBuildZ()` output, with a caller-supplied fixed `Q`/`H` and a
+  standard random-walk state transition (`T=I`, `c=0`, `R=I`). Deliberately
+  a SEPARATE file from `src/quaidstvp.src` (Stage 1) -- putting Stage 2
+  code directly into quaidstvp.src was tried first and broke Stage 1's own
+  sslib-free compilation/test (`quaidstvp_test.e` started failing with
+  "Undefined structure 'tvpModel'"), so it was reverted in favor of a
+  second file, mirroring the quaidscurvature.src/pubtable_quaids.src
+  optional-adapter pattern exactly. Validated against a real `tgauss` run
+  (not just compiled): with `Q`/`H` forced to ~0 and the diffuse filter,
+  the final-period filtered state recovers Stage 1's own noiseless
+  synthetic true state to floating-point precision (~8e-17 max abs diff),
+  confirming the filter-wiring is correct independently of Stage 1's own
+  OLS-based exact-recovery check. New test `tests/quaidstvp_kalman_test.e`
+  (8 checks) plus two new guard-error cases
+  (`tvp_bad_Q_shape.e`/`tvp_bad_H_shape.e`); wired into
+  `run_source_tests.ps1` behind a new `-SkipTVPKalman` flag (CI passes it
+  -- see Decisions). No version bump (no public API surface -- every new
+  proc is private, `_`-prefixed).
+  - **Environment finding, corrected this session**: despite the prior
+    session's own record that `sslib` was "installed and verified" at
+    `C:\gauss26\pkgs\sslib`, that directory was actually ABSENT at the
+    start of this session -- confirmed directly (`Get-ChildItem` on the
+    real path, sandbox-disabled), not assumed from the stale doc.
+    Reinstalled via the same documented method (git archive of
+    gauss-state-space's pinned commit `9132c35`, NOT its live working
+    tree, which was re-confirmed dirty again this session -- same
+    contributor's in-progress `ssstructural.src`/`ssmain.src` changes as
+    before) + this repo's own `build_lcg.ps1`. Cause of the disappearance
+    is unknown (not investigated -- out of scope); treat `sslib`'s
+    presence at that path as NOT durable across sessions until a better
+    mechanism exists (see Next Steps).
+  - A durable, repo-tracked `GAUSS26_CFG` override config now lives at
+    `tests/gauss26_cfg_override/gauss.cfg` (a copy of `C:\gauss26\gauss.cfg`
+    with `tsmt\lib` added explicitly to `extra_lib_path`, ahead of the `*`
+    wildcard) -- `run_source_tests.ps1` points `GAUSS26_CFG` at it only for
+    the sslib-dependent child processes (`quaidstvp_kalman_test.e` and its
+    two guard cases), leaving every other test's environment untouched.
+    Supersedes the ad hoc user-profile-`%TEMP%`-based copy used earlier
+    in this session and in the prior session's own verification (which
+    would not be visible to the self-hosted CI runner's separate service
+    account).
 
 ## Decisions
 
@@ -71,6 +119,30 @@ installed and usable?) is now resolved, so Stage 2 can begin.
   is a bare string list with no room for a commit hash. Currently
   installed from `9132c35`; this should be the pin once a mechanism
   exists. Blocks a clean Stage 6.
+- **`sslib` stays OUT of `package.json`'s `deps` array, and
+  `quaidstvpkalman.src` stays unlisted in its `src` array** — same
+  reasoning that already keeps `optmt`/`pubtable` out of `deps` and
+  `quaidscurvature.src`/`pubtable_quaids.src` out of `src`: `deps` is read
+  as "hard requirement to even install/compile the core package," not "a
+  dependency of one of its optional adapters," and listing
+  `quaidstvpkalman.src` would make `sslib` exactly that. The `9132c35` pin
+  is recorded only in this file and `quaidstvpkalman.src`'s own header
+  comment, not in package.json, pending a real pinning mechanism.
+- **Stage 2 code split across two files, not one** —
+  `src/quaidstvp.src` (Stage 1, no sslib dependency) and the new
+  `src/quaidstvpkalman.src` (Stage 2, hard sslib dependency). Tried as one
+  file first; broke Stage 1's own sslib-free compilation immediately
+  (confirmed via a real failing test run, not predicted), so reverted to
+  two files before anything was committed. `quaidstvp.src` itself was
+  restored to be byte-identical to its Stage 1 commit (`git diff` confirms
+  no changes survived in that file).
+- **`sslib`-dependent tests gated behind a new `-SkipTVPKalman` flag**,
+  passed by `.github/workflows/tests.yml`'s push-triggered CI run (the
+  same treatment as `-SkipCurvature`/`-SkipPubtable`, but for a stronger
+  reason: `sslib` isn't a package.json dependency at all, and was found
+  genuinely MISSING from this machine's own `C:\gauss26\pkgs` once already
+  this initiative -- its presence is not yet a safe assumption for an
+  unattended CI run the way optmt/pubtable's is).
 
 ## Tests / Validation
 
@@ -78,6 +150,15 @@ installed and usable?) is now resolved, so Stage 2 can begin.
   as of the Stage 1 commit — includes `tests/quaidstvp_test.e` (56
   checks: exact noiseless-recovery + loose real-data plausibility vs.
   `quaidsFit()`'s `bestB`).
+- `tests/run_source_tests.ps1 -SkipBootstrap` (this machine's routine
+  local gate) passed clean this session with the new
+  `tests/quaidstvp_kalman_test.e` (8 checks) and its two new guard cases
+  included — confirmed BOTH with and without `-SkipTVPKalman` (the latter
+  correctly excludes all three new sslib-dependent scripts and leaves
+  everything else, including the untouched `quaidstvp_test.e`, passing).
+  Not yet re-run with `-SkipBootstrap` absent (full local gate) this
+  session — nothing in that group touches TVP-AIDS, low risk, but hasn't
+  been re-confirmed since Stage 1.
 - `sslib` install verified directly with `tgauss` (not just file
   presence): `library cmlmt, tsmt, sslib;` then referencing
   `ssControlCreate()` before `kalmanFilterTVP`/`kalmanFilterDiffuseTVP`
@@ -113,13 +194,19 @@ installed and usable?) is now resolved, so Stage 2 can begin.
 
 ## Next Steps
 
-1. **Stage 2**: wire `sslib`'s `kalmanFilterTVP()`/`kalmanFilterDiffuseTVP()`
-   into Stage 1's `_quaidsTVPBuildZ()` output, with a caller-supplied
-   (not yet estimated) fixed `Q`/`H`. Establish `sslib` as a real
-   `package.json` dependency and decide/build the commit-pinning
-   mechanism (see Decisions) — pin to `9132c35` unless a newer commit is
-   deliberately chosen.
-2. **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP()`.
+1. **Commit Stage 2** (currently uncommitted working-tree changes — see
+   Handoff Notes): `src/quaidstvpkalman.src`, `tests/quaidstvp_kalman_test.e`,
+   two new guard cases, `tests/gauss26_cfg_override/`, and the
+   `run_source_tests.ps1`/`.github/workflows/tests.yml`/
+   `verify_package_manifest.ps1` wiring — not done yet, only ask first
+   ("Never commit or push without being explicitly asked").
+2. **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP()`. Decide/build
+   a real commit-pinning mechanism for `sslib` at that point if it becomes
+   more pressing (see Decisions — currently just documented, not
+   mechanized, and deliberately not a `package.json` `deps`/`src` entry).
+   Consider whether `sslib`'s disappearance-and-reinstall this session
+   warrants a more durable install step (a script, not a one-off manual
+   `git archive`) before relying on it further.
 3. **Stage 4**: the TVP smoother (`gauss-state-space`'s
    `ssKalmanSmoothTVP()`, already built in that repo).
 4. **Stage 5**: `quaidsTVPElasFit()`.
@@ -127,11 +214,31 @@ installed and usable?) is now resolved, so Stage 2 can begin.
 
 ## Handoff Notes
 
-- Working tree: `master` up to date with `origin/master` at `e090225`;
-  this file has uncommitted edits from this session (not committed —
-  not asked to).
-- No Stage 2 code written yet — this session was scoped to resolving the
-  `sslib` dependency question only, which is now done.
+- Working tree: `master` up to date with `origin/master` at `cb960f9`
+  (one commit ahead of this file's previous note — `e090225` plus the
+  sslib-install commit). This session's changes are UNCOMMITTED:
+  - New: `src/quaidstvpkalman.src`, `tests/quaidstvp_kalman_test.e`,
+    `tests/guard_error_cases/tvp_bad_Q_shape.e`,
+    `tests/guard_error_cases/tvp_bad_H_shape.e`,
+    `tests/gauss26_cfg_override/gauss.cfg`.
+  - Modified: `tests/run_source_tests.ps1` (new `-SkipTVPKalman` flag,
+    scoped `GAUSS26_CFG` env override for sslib-dependent child
+    processes), `.github/workflows/tests.yml` (passes `-SkipTVPKalman`),
+    `tests/verify_package_manifest.ps1` (allowlist + comment).
+  - `src/quaidstvp.src` itself: NOT modified (`git diff` confirms
+    byte-identical to the Stage 1 commit, after a false start that was
+    reverted — see Decisions).
+  - Not committed — not asked to.
+- `sslib` was found MISSING from `C:\gauss26\pkgs\sslib` at the start of
+  this session despite the prior session's own record that it was
+  installed and verified there — reinstalled the same way (git archive of
+  `gauss-state-space`'s pinned `9132c35`, live working tree re-confirmed
+  dirty again). Treat its presence there as not durable across sessions.
+- Full Stage 2 functional validation (diffuse filter exact-recovers
+  Stage 1's noiseless true state to ~8e-17) was done via ad hoc scratch
+  scripts before being formalized into the committed-to-repo test file —
+  the scratch scripts themselves were NOT kept (session scratchpad, not
+  part of this repo).
 - Update this file (not `CLAUDE.md`, not chat history) at the end of a
   meaningful unit of work or before starting a fresh session. Only
   promote something to `CLAUDE.md` if it will still be true and relevant

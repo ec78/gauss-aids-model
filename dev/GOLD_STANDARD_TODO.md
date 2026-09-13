@@ -3586,8 +3586,34 @@ hand-rolling a Kalman filter, missing only a period-varying smoother.
   into `run_source_tests.ps1`'s default list. No version bump (no public
   API surface yet). See CLAUDE.md's own "Stage 1" write-up for the full
   account.
-- [ ] **Stage 2**: wire `sslib`'s `kalmanFilterTVP`/`kalmanFilterDiffuseTVP`
-  with fixed `Q`/`H`.
+- [x] **Stage 2**: wire `sslib`'s `kalmanFilterTVP`/`kalmanFilterDiffuseTVP`
+  with fixed `Q`/`H` -- new file `src/quaidstvpkalman.src`
+  (`_quaidsTVPBuildModel()`/`_quaidsTVPKalmanFit()`/
+  `_quaidsTVPReplicateConstant()`), deliberately SEPARATE from
+  `quaidstvp.src` (Stage 1): putting Stage 2 in the same file was tried
+  first and broke Stage 1's own sslib-free compilation (`quaidstvp_test.e`
+  failed with "Undefined structure 'tvpModel'"), reverted before
+  committing, in favor of the same per-file optional-adapter split
+  `quaidscurvature.src`/`pubtable_quaids.src` already use for
+  optmt/pubtable. Random-walk state transition (`T=I`, `c=0`, `R=I`);
+  diffuse initialization (`kalmanFilterDiffuseTVP` + sslib's own
+  `init_diffTVP`) is the intended default, not just a convenience, since
+  a pure random walk has no stationary distribution for a proper prior to
+  fall back on. Validated against a real `tgauss` run: diffuse filter with
+  `Q`/`H` forced to ~0 recovers Stage 1's own noiseless synthetic true
+  state to floating-point precision (~8e-17), independently confirming
+  the filter wiring without re-deriving Stage 1's own OLS check. New test
+  `tests/quaidstvp_kalman_test.e` (8 checks) + two guard cases
+  (`tvp_bad_Q_shape.e`/`tvp_bad_H_shape.e`), gated behind a new
+  `-SkipTVPKalman` flag in `run_source_tests.ps1` (CI passes it: `sslib`
+  is not a package.json dependency and was found missing from this
+  machine's own `C:\gauss26\pkgs` once already this initiative, so its
+  presence is not yet a safe CI assumption). `sslib` deliberately stays
+  out of `package.json`'s `deps`, and `quaidstvpkalman.src` out of `src`,
+  for the same "don't force an optional adapter's dependency on the whole
+  package" reasoning already applied to optmt/pubtable. No version bump
+  (no public API -- every new proc is private). Not yet committed as of
+  this write-up -- see PROJECT_STATUS.md's Handoff Notes.
 - [ ] **Stage 3**: hyperparameter MLE via `sslib`'s `ssFitTVP`/`cmlmt` --
   `quaidsTVPFit()` becomes real.
 - [ ] **Stage 4**: `ssKalmanSmoothTVP` -- the one genuinely new numerical

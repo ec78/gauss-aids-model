@@ -61,10 +61,15 @@ if ($missing.Count -gt 0) {
 # optmt's struct types, and listing it would make optmt a hard dependency
 # for the whole package -- curvature imposition is now an opt-in adapter,
 # matching pubtable's own treatment (`library optmt, quaids;` +
-# `#include quaidscurvature.src`, see docs/USAGE_GUIDE.md). Any other
+# `#include quaidscurvature.src`, see docs/USAGE_GUIDE.md).
+# quaidstvpkalman.src (TVP-AIDS initiative, Stage 2) is excluded for the
+# same hard-compile-time-dependency reason, on sslib's struct types this
+# time (`library cmlmt, tsmt, sslib;` + `#include quaidstvpkalman.src`).
+# quaidstvp.src (Stage 1) has no such dependency itself, but stays
+# unlisted too since it has no public API yet (private WIP). Any other
 # .src/.sdf file added to src/ is expected to be a required part of the
 # package and must be listed.
-$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src")
+$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src")
 
 $actualSrc = Get-ChildItem -LiteralPath $srcDir -File |
     Where-Object { $_.Extension -in ".src", ".sdf" } |

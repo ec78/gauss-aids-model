@@ -1,0 +1,260 @@
+/*
+** quaidstvpkalman.src
+**
+** TVP-AIDS initiative, Stage 2: wires sslib's kalmanFilterTVP()/
+** kalmanFilterDiffuseTVP() to Stage 1's _quaidsTVPBuildZ() output (see
+** src/quaidstvp.src), with a CALLER-SUPPLIED FIXED Q/H (hyperparameter
+** MLE is Stage 3, via sslib's ssFitTVP -- not attempted here). Two new
+** private procs:
+**
+**   _quaidsTVPBuildModel() -- packages Zarr plus a random-walk state
+**     transition (T=I, c=0, R=I -- the standard TVP specification: every
+**     state element evolves as alpha_t = alpha_(t-1) + eta_t, no mean
+**     reversion) and the caller's fixed Q/H into a real sslib tvpModel.
+**
+**   _quaidsTVPKalmanFit() -- runs the filter given a built tvpModel,
+**     dispatching to kalmanFilterDiffuseTVP (the default) or
+**     kalmanFilterTVP (only if the caller has supplied a genuine proper
+**     prior via tvpm.a_0/tvpm.p_0).
+**
+** SEPARATE FILE from src/quaidstvp.src (Stage 1), deliberately: Stage 1's
+** state-vector construction has NO sslib dependency and must keep
+** compiling/working on a machine without sslib installed (its own test,
+** tests/quaidstvp_test.e, is pure #include with no `library` statement at
+** all). Putting Stage 2 code in the SAME file was tried first and broke
+** that guarantee outright -- `struct tvpModel`/`struct kalmanResult`
+** below are undefined symbols (error G0507) unless the caller has
+** already run `library cmlmt, tsmt, sslib;`, so appending Stage 2 to
+** quaidstvp.src made ITS compilation, not just Stage 2's own procs,
+** depend on sslib -- confirmed directly (quaidstvp_test.e started failing
+** to compile) before being reverted in favor of this separate file, the
+** exact same "optional adapter gets its own file" pattern
+** quaidscurvature.src/pubtable_quaids.src already established for
+** optmt/pubtable. Both the other optional adapters ALSO #include
+** quaids.sdf for their own base-package struct types, but this file has
+** no actual code dependency on quaidstvp.src's own procs (Zarr is
+** accepted as a generic array parameter) -- a caller combines them by
+** #include-ing both, in either order, not by this file #include-ing the
+** other.
+**
+** Dependency note: this file deliberately does NOT #include sslib's own
+** ss.sdf/tsmt.sdf (mirroring quaidscurvature.src's optmt.sdf-free use of
+** `struct optmtControl`/`struct optmtResults` -- see that file's own
+** Milestone-10 header and CLAUDE.md's "Optional modules" section) --
+** `struct tvpModel`/`struct kalmanResult` below resolve because GAUSS's
+** `library` statement registers a package's struct definitions into the
+** session's global struct-type namespace immediately (not lazily, unlike
+** procs), so any caller doing `library cmlmt, tsmt, sslib;` BEFORE
+** `#include quaidstvpkalman.src` (or, later, `library sslib, quaids;`
+** once/if this file ever gains public API and joins package.json's src
+** array) makes these types visible here with no direct #include needed.
+** Confirmed directly against a real `tgauss` run under the GAUSS26_CFG
+** override documented in CLAUDE.md, not assumed.
+**
+** This is why this file is in verify_package_manifest.ps1's
+** intentionallyUnlisted allowlist rather than package.json's src array:
+** listing it there would make sslib a hard compile-time dependency of
+** core estimation, exactly the reasoning that already keeps
+** quaidscurvature.src/pubtable_quaids.src out (see CLAUDE.md's "Optional
+** modules" section). sslib itself deliberately stays out of package.json's
+** bare-string `deps` array too, for the same reason optmt/pubtable aren't
+** in `deps` either -- that array is read as "hard requirement to even
+** install/compile the core package," not "a dependency of one of its
+** optional adapters." The sslib commit this was developed and verified
+** against is gauss-state-space's 9132c35 (see PROJECT_STATUS.md) -- not
+** recorded in package.json (deps has no room for a commit hash, and no
+** mechanism to add one has been built), so that commit is the durable
+** record of the pin.
+**
+** No diffuse-vs-proper-prior default is imposed silently: diffuse
+** (kalmanFilterDiffuseTVP, via sslib's own init_diffTVP helper) is the
+** principled choice for every state here, not just a convenient
+** default -- alpha/gamma/beta evolve as a pure random walk (T=I), which
+** has no stationary distribution for init_diffTVP's stationary-prior
+** sibling (init_stationaryTVP) to fall back on, so there is no
+** well-defined "proper" prior to default to without the caller supplying
+** one explicitly.
+*/
+
+
+/*
+** _quaidsTVPReplicateConstant
+**
+** Purpose: wraps a constant matrix into a genuine nobs-page array of
+**          identical pages, for assignment to one of tvpModel's
+**          array-typed fields (Z, d, H, T, c, R, Q). A direct
+**          `tvpm.field = someMatrix;` assignment (no wrapping) fails
+**          outright with "Illegal assignment - type mismatch" --
+**          confirmed directly against a real tgauss run, not assumed
+**          from sstvp.src's own `_checkforTVP` comment (which describes
+**          an auto-promotion that turned out not to apply to a plain
+**          struct-field assignment statement in caller code). This is
+**          exactly the "even a CONSTANT field must still be a full
+**          nobs-page array" gotcha already documented in CLAUDE.md,
+**          confirmed here to mean literally that, not merely "a 1-page
+**          array is allowed" -- matches sslib's own initTVPModel, which
+**          never assigns a bare matrix to any tvpModel field either.
+**
+** Format:     arr = _quaidsTVPReplicateConstant(mat, nobs);
+**
+** Input:      mat  -- r x c constant matrix.
+**             nobs -- number of periods to replicate across.
+**
+** Output:     arr -- nobs-page array, each page identically mat.
+*/
+proc (1) = _quaidsTVPReplicateConstant(mat, nobs);
+    local arr, t;
+
+    arr = arrayinit(nobs|rows(mat)|cols(mat), 0);
+    t = 1;
+    do while t <= nobs;
+        arr[t, ., .] = mat;
+        t = t + 1;
+    endo;
+
+    retp(arr);
+endp;
+
+
+/*
+** _quaidsTVPBuildModel
+**
+** Purpose: packages Stage 1's Zarr (see quaidstvp.src's own
+**          _quaidsTVPBuildZ()) and the caller's fixed Q/H into a real
+**          sslib tvpModel, with the standard TVP random-walk state
+**          transition (T=I, c=0, R=I -- every state element's own
+**          innovation variance is controlled entirely through Q, so R=I
+**          is not a loss of generality here).
+**
+** Format:     tvpm = _quaidsTVPBuildModel(Zarr, Q, H, n1);
+**
+** Input:      Zarr -- nobs-page array, each page n1 x k_states (see
+**                      quaidstvp.src's _quaidsTVPBuildZ()).
+**             Q    -- k_states x k_states state disturbance covariance
+**                      (fixed, caller-supplied -- not yet estimated;
+**                      that's Stage 3).
+**             H    -- n1 x n1 observation disturbance covariance (fixed,
+**                      caller-supplied, same scope note as Q).
+**             n1   -- number of independently-estimated equations.
+**
+** Output:     tvpm -- struct tvpModel (sslib), with tvpm.a_0/tvpm.p_0
+**                     left at zeros(k_states,1)/zeros(k_states,k_states)
+**                     -- meaningless defaults the caller MUST NOT rely on
+**                     for kalmanFilterTVP's own (non-diffuse) branch;
+**                     _quaidsTVPKalmanFit()'s diffuse branch (the
+**                     intended default -- see this file's own header)
+**                     never reads them at all, computing its own
+**                     (a_0, P_inf_0, P_star_0) via sslib's init_diffTVP.
+**
+** Requires:   caller has already run `library cmlmt, tsmt, sslib;` (or
+**             otherwise made `struct tvpModel` resolvable) before this
+**             file is #include-d/compiled -- see this file's own header.
+*/
+proc (struct tvpModel) = _quaidsTVPBuildModel(Zarr, Q, H, n1);
+    local ord, k_states, nobs;
+    struct tvpModel tvpm;
+    struct ssControl _loadTriggerCtl;
+
+    ord = getorders(Zarr);
+    nobs = ord[1];
+    k_states = ord[3];
+
+    /* Forces ssmain.src to compile (registering its file-level globals
+       _ssActiveCtl/_ssActiveUpdateProc/_ssActiveInitFn) before any
+       sstvp.src proc (kalmanFilterTVP, kalmanFilterDiffuseTVP,
+       init_diffTVP -- all called only from _quaidsTVPKalmanFit, never
+       from here) can be lazily triggered -- the documented `library`
+       cross-file-global lazy-load gap in CLAUDE.md's Known GAUSS-26
+       language gotchas. _quaidsTVPKalmanFit() itself cannot do this
+       defensively, because sstvp.src's OWN compilation is what fails
+       without this having already happened; doing it here instead
+       works because every real usage calls this proc first. Thrown
+       away immediately -- this call's only purpose is the load-order
+       side effect, confirmed directly against a real tgauss run (this
+       exact failure, and this exact fix, reproduced empirically) rather
+       than assumed from the CLAUDE.md gotcha description alone. */
+    _loadTriggerCtl = ssControlCreate(k_states, n1, k_states, nobs);
+
+    if rows(Q) /= k_states or cols(Q) /= k_states;
+        errorlog "_quaidsTVPBuildModel: Q must be k_states x k_states (k_states = rows/cols implied by Zarr's own page width).";
+        end;
+    endif;
+    if rows(H) /= n1 or cols(H) /= n1;
+        errorlog "_quaidsTVPBuildModel: H must be n1 x n1.";
+        end;
+    endif;
+
+    tvpm.Z = Zarr;
+    tvpm.d = _quaidsTVPReplicateConstant(zeros(n1, 1), nobs);
+    tvpm.H = _quaidsTVPReplicateConstant(H, nobs);
+    tvpm.T = _quaidsTVPReplicateConstant(eye(k_states), nobs);
+    tvpm.c = _quaidsTVPReplicateConstant(zeros(k_states, 1), nobs);
+    tvpm.R = _quaidsTVPReplicateConstant(eye(k_states), nobs);
+    tvpm.Q = _quaidsTVPReplicateConstant(Q, nobs);
+    tvpm.a_0 = zeros(k_states, 1);
+    tvpm.p_0 = zeros(k_states, k_states);
+    tvpm.k_endog = n1;
+    tvpm.k_states = k_states;
+    tvpm.k_posdef = k_states;
+    tvpm.nobs = nobs;
+
+    retp(tvpm);
+endp;
+
+
+/*
+** _quaidsTVPKalmanFit
+**
+** Purpose: runs sslib's TVP Kalman filter over a tvpModel built by
+**          _quaidsTVPBuildModel(), dispatching to the exact diffuse
+**          filter (kalmanFilterDiffuseTVP, via sslib's own init_diffTVP
+**          for (a_0, P_inf_0, P_star_0) -- every state diffuse, no
+**          proper/finite part) by default, or to the ordinary filter
+**          (kalmanFilterTVP, using tvpm.a_0/tvpm.p_0 AS-IS) only when the
+**          caller explicitly passes diffuse=0 AND has already overwritten
+**          tvpm.a_0/tvpm.p_0 with a genuine proper prior -- see this
+**          file's own header for why there is no principled default
+**          proper prior to fall back on for a pure random-walk state.
+**
+** Format:     rslt = _quaidsTVPKalmanFit(tvpm, y, diffuse);
+**
+** Input:      tvpm    -- struct tvpModel, from _quaidsTVPBuildModel().
+**             y       -- k_endog x nobs data matrix (sslib's own
+**                        kalmanFilterTVP/kalmanFilterDiffuseTVP
+**                        convention -- note this is the TRANSPOSE of
+**                        this library's own usual Txn `w` shares
+**                        convention; a caller passing the first n1
+**                        columns of w needs w[:,1:n1]' here, not
+**                        w[:,1:n1]).
+**             diffuse -- 1 (default/intended use) for
+**                        kalmanFilterDiffuseTVP; 0 for kalmanFilterTVP
+**                        using tvpm.a_0/tvpm.p_0 as supplied.
+**
+** Output:     rslt -- struct kalmanResult (tsmt/sslib): rslt.filtered_state
+**                     is k_states x nobs, column t the filtered state
+**                     estimate for period t -- feed any column to
+**                     quaidstvp.src's own _quaidsTVPStateToB() to unpack
+**                     it the same way Stage 1's OLS-recovered stateHat
+**                     already is.
+**
+** Requires:   same as _quaidsTVPBuildModel() -- `struct kalmanResult`
+**             (tsmt.sdf, via sslib) must already be resolvable.
+*/
+proc (struct kalmanResult) = _quaidsTVPKalmanFit(struct tvpModel tvpm, y, diffuse);
+    local a_0, P_inf_0, P_star_0;
+    struct kalmanResult rslt;
+
+    if rows(y) /= tvpm.k_endog;
+        errorlog "_quaidsTVPKalmanFit: y must be k_endog x nobs (rows(y) must match tvpm.k_endog) -- note this is the TRANSPOSE of this library's usual Txn shares convention.";
+        end;
+    endif;
+
+    if diffuse;
+        { a_0, P_inf_0, P_star_0 } = init_diffTVP(tvpm);
+        rslt = kalmanFilterDiffuseTVP(y, tvpm.Z, tvpm.d, tvpm.H, tvpm.T, tvpm.c, tvpm.R, tvpm.Q, a_0, P_inf_0, P_star_0);
+    else;
+        rslt = kalmanFilterTVP(y, tvpm.Z, tvpm.d, tvpm.H, tvpm.T, tvpm.c, tvpm.R, tvpm.Q, tvpm.a_0, tvpm.p_0);
+    endif;
+
+    retp(rslt);
+endp;
