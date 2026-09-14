@@ -234,6 +234,12 @@ endp;
 **          GLS design matrix would -- alpha_i is its own free state
 **          element per equation, not a single shared regressor's
 **          coefficient. beta is appended as its own trailing row.
+**
+**          The two gaps this proc deliberately leaves open (equation n's
+**          own adding-up-implied column, and the relative-to-absolute
+**          price gamma conversion) are closed by
+**          _quaidsTVPStateToFullB(), added in TVP-AIDS Stage 5 -- see
+**          that proc's own header just below.
 */
 proc (1) = _quaidsTVPStateToB(state, n1);
     local gidx, ngamma, alpha, gmat, beta, b0, i, j;
@@ -257,4 +263,87 @@ proc (1) = _quaidsTVPStateToB(state, n1);
 
     b0 = (alpha')|gmat|(beta');
     retp(b0);
+endp;
+
+
+/*
+** _quaidsTVPStateToFullB
+**
+** Purpose: TVP-AIDS initiative, Stage 5. Closes the two gaps
+**          _quaidsTVPStateToB() deliberately leaves open, producing the
+**          FULL n-good (n = n1+1) "b" matrix in the exact intcp|prices|lx
+**          row layout src/quaidselas.src's _quaidsElas()/quaidsElasFit()
+**          expect (aCtl.linear=1 -- no lx2/lambda row, matching this
+**          initiative's own Stone-index/LA-AIDS scope decision -- see
+**          this file's own header):
+**
+**            1. Equation n's own coefficients (alpha_n, gamma row/column
+**               n, beta_n) are never separately estimated in this
+**               reduced-state design (same as quaidsFit()'s own core) --
+**               recovered here from the SAME adding-up identities
+**               quaidsFit()/quaidsZeroFit() already use: alpha_n =
+**               1 - sum(alpha_1..n1), beta_n = -sum(beta_1..n1).
+**
+**            2. The state's gamma sub-block is on RELATIVE prices
+**               (coefficients on p_j - p_n, j=1..n1); _quaidsElas() needs
+**               ABSOLUTE-price gammas. Converted via homogeneity's own
+**               row-sum-zero identity (sum_j gamma_abs[i,j] = 0 for every
+**               row i, INCLUDING row n): gamma_abs[i,n] =
+**               -sum_{j=1}^{n1} gamma_rel[i,j] for i=1..n1, then row n
+**               itself via symmetry (gamma_abs[n,j] = gamma_abs[j,n] for
+**               j=1..n1) and homogeneity applied to row n
+**               (gamma_abs[n,n] = -sum_{j=1}^{n1} gamma_abs[n,j]).
+**
+**          Adding-up on gamma (sum_i gamma_abs[i,j] = 0 for every column
+**          j) is NOT separately imposed -- it falls out automatically
+**          once both symmetry and homogeneity hold (sum_i gamma_ij =
+**          sum_i gamma_ji = 0 by homogeneity on row j), exactly as this
+**          file's own header already documents for the reduced state
+**          ("gamma's redundant row/column via homogeneity's own
+**          row-sum-zero identity"). tests/quaidstvp_elas_test.e checks
+**          this identity directly on the recovered output, not just the
+**          construction logic above.
+**
+** Format:     bFull = _quaidsTVPStateToFullB(state, n1);
+**
+** Input:      state -- k_states x 1 vector (one period's filtered or
+**                       smoothed state -- e.g. a column of Stage 2/3's
+**                       rslt.filtered_state or Stage 4's a_TS).
+**             n1    -- number of independently-estimated equations
+**                       (n = n1+1 goods total).
+**
+** Output:     bFull -- (n+2) x n matrix: intercept alpha (1 row) |
+**                      absolute-price gamma (n rows, symmetric,
+**                      homogeneity-respecting) | beta (1 row), one column
+**                      per good (n columns, including good n) -- directly
+**                      usable as the `b` argument to _quaidsElas()/
+**                      quaidsElasFit() with intcpt=1 (scalar; this
+**                      initiative's own Stage 1 scope has no extra
+**                      intercept shifters, nint=0) and aCtl.linear=1.
+**
+** Requires:   no sslib dependency (state is a plain vector) -- see this
+**             file's own header.
+*/
+proc (1) = _quaidsTVPStateToFullB(state, n1);
+    local n, b0, alpha, gmatRel, beta, rowsum, gammaAbs, alphaN, betaN, bFull;
+
+    n = n1 + 1;
+    b0 = _quaidsTVPStateToB(state, n1);
+
+    alpha = b0[1, .];
+    gmatRel = b0[2:n1+1, .];
+    beta = b0[n1+2, .];
+
+    alphaN = 1 - sumc(alpha');
+    betaN = -sumc(beta');
+
+    rowsum = sumc(gmatRel');
+    gammaAbs = zeros(n, n);
+    gammaAbs[1:n1, 1:n1] = gmatRel;
+    gammaAbs[1:n1, n] = -rowsum;
+    gammaAbs[n, 1:n1] = -rowsum';
+    gammaAbs[n, n] = sumc(rowsum);
+
+    bFull = (alpha~alphaN)|gammaAbs|(beta~betaN);
+    retp(bFull);
 endp;

@@ -12,17 +12,16 @@ _Last updated: 2026-09-13_
 Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
 a repo-owner-requested extension beyond the now-largely-complete public
 release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
-"TVP-AIDS initiative" section for the full plan). Stages 0–4 are now
-**complete, committed, and pushed to `origin/master`** (Stages 0–2 as
+"TVP-AIDS initiative" section for the full plan). Stages 0–5 are now
+**functionally complete and locally validated**; Stages 0–4 are
+**committed and pushed to `origin/master`** (Stages 0–2 as
 `086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`, CI confirmed
-`success` via `gh run list`; **Stage 4 as `e3ef801`**, pushed this
-session at the user's explicit request). Stage 4 (the TVP smoother, via
-`sslib`'s `ssKalmanSmoothTVP()`) is new file `src/quaidstvpsmooth.src`,
-new test `tests/quaidstvp_smooth_test.e` (8 checks) plus two guard
-cases — validated locally (`run_source_tests.ps1 -SkipBootstrap` passes
-clean). Stage 3 is still Q-only MLE (H stays caller-fixed) — see
-Decisions for why, a repo-owner-approved scope call made explicitly
-before Stage 3 was written, not assumed.
+`success` via `gh run list`; Stage 4 as `e3ef801`). **Stage 5** (private
+`_quaidsTVPElasFit()`, elasticities at a chosen period's filtered/smoothed
+state) is new this session — see Completed Work — and is **NOT YET
+committed** (see Handoff Notes). Stage 3 is still Q-only MLE (H stays
+caller-fixed) — see Decisions for why, a repo-owner-approved scope call
+made explicitly before Stage 3 was written, not assumed.
 
 ## Completed Work
 
@@ -304,6 +303,84 @@ before Stage 3 was written, not assumed.
   - `run_source_tests.ps1 -SkipBootstrap` (full suite, no TVP flags
     skipped) re-run clean this session with Stage 4's new test and guard
     cases included: `run_source_tests.ps1: PASS`.
+  - Committed as `e3ef801`; doc-sync as `3d9f3d7`.
+- **TVP-AIDS Stage 5** (`_quaidsTVPStateToFullB()` added to
+  `src/quaidstvp.src`; new private file `src/quaidstvpelas.src` --
+  `_quaidsTVPElasFit()`): elasticities at one period's (filtered OR
+  smoothed) TVP-AIDS state, reusing `src/quaidselas.src`'s existing
+  `_quaidsElas()` per the plan doc rather than hand-rolling new
+  elasticity math. NO `sslib` dependency at all (unlike Stages 2-4) --
+  `_quaidsTVPElasFit()` takes a state as a plain `k_states x 1` vector,
+  not any `sslib` struct, so "filtered vs. smoothed" is entirely the
+  caller's choice of which column of Stage 2/3's `rslt.filtered_state` or
+  Stage 4's `a_TS` to pass in. Both new/changed procs stay
+  `_`-prefixed/private, matching Stages 1-4's own disposition (Stage 6 is
+  what actually publishes public API/docs/printer/example, per the plan
+  doc).
+  - `_quaidsTVPStateToFullB()` closes the two gaps
+    `_quaidsTVPStateToB()`'s own header already flagged: (1) equation n's
+    own adding-up-implied coefficients (alpha_n = 1 - sum(others), beta_n
+    = -sum(others)) and (2) relative-to-absolute-price gamma conversion,
+    via homogeneity's own row-sum-zero identity applied per row (INCLUDING
+    row n itself, recovered via symmetry from column n) -- NOT via a
+    separately-imposed adding-up identity on gamma, which falls out
+    automatically once symmetry+homogeneity both hold (confirmed by a
+    direct regression-guard check on the recovered output, not just
+    trusted from the derivation). Reused this same derivation conceptually
+    from `quaids.src`'s own "RECOVERS ABSOLUTE PRICE EFFECTS FROM
+    RELATIVE" block (read directly, per this session's own design
+    question) but written as fresh, much simpler direct formulas rather
+    than replicating that block's general-case reshape/kron machinery
+    (which also handles quaidsFit()'s own separate `ng`/nonlinear-`u`-block
+    dimensions this reduced state doesn't have) -- `quaids.src` was
+    consulted, not edited, per this session's own explicit instruction.
+  - `_quaidsTVPElasFit()` hardcodes `intcpt = 1` (Stage 1's own nint=0
+    scope decision -- no extra intercept shifters) and requires
+    `aCtl.linear == 1` (guarded explicitly; the recovered `b` has no
+    lambda row for `_quaidsElas()` to read if `aCtl.linear` is left at
+    `quaidsControlCreate()`'s own default 0) -- a caller with no other
+    reason to build a `quaidsControl` just calls `quaidsControlCreate()`
+    then sets `aCtl.linear = 1`. Point elasticities only, deliberately --
+    no delta-method SEs (unlike `quaidsElasFit()`), matching the plan
+    doc's own choice of `_quaidsElas()` (not `quaidsElasFit()`) as the
+    sibling to reuse; propagating the reduced state's own covariance
+    through the (linear) recovery step is real, tractable future work, not
+    attempted this stage.
+  - New test `tests/quaidstvp_elas_test.e` (13 checks, NO `library`
+    statement / no `-SkipTVPKalman` gating needed -- genuinely no `sslib`
+    dependency): builds a full n x n TRUE absolute-price gamma directly
+    (symmetric, exact-zero-row-sum by double-centering a random symmetric
+    matrix -- an INDEPENDENT construction, not `_quaidsTVPStateToFullB()`'s
+    own recovery formula) plus true full alpha/beta (equation n's values
+    set by hand via the adding-up identities, not by calling library code),
+    derives the n1-equation reduced system as a trivial submatrix/
+    subvector extraction, generates noiseless data, recovers `stateHat` via
+    plain pooled OLS (same pattern as Stage 1's own test), and checks the
+    recovered `bFull` matches the independently-built true full system to
+    floating-point precision -- a real correctness claim about the
+    recovery logic, not a tautology. Plus a regression guard confirming
+    homogeneity/symmetry/adding-up all hold exactly on the recovered
+    output, and an exact internal-consistency check
+    (`_quaidsTVPElasFit()`'s output vs. a direct `_quaidsElas()` call on
+    the same recovered `bFull`) satisfying CLAUDE.md's "two independent
+    checks" testing requirement. Three new guard cases
+    (`tvp_elas_bad_linear.e`/`tvp_elas_bad_state_length.e`/
+    `tvp_elas_bad_prices_length.e`), also NOT gated behind
+    `-SkipTVPKalman`. `src/quaidstvpelas.src` added to
+    `verify_package_manifest.ps1`'s `intentionallyUnlisted` allowlist.
+  - **Real language-gotcha finding, now in CLAUDE.md**: `mSym` (any
+    case) as an assignment TARGET is a reserved identifier in GAUSS 26 --
+    `mSym = (a + a')/2;` fails with a generic `error G0008 : Syntax error
+    '= (a + a')/2'` (pointing at the RHS, not the reserved name) plus a
+    cascading spurious error on the next line. Found while writing this
+    stage's own test fixture (`mSym` was the first natural name for a
+    symmetric-matrix intermediate); bisected by varying only the
+    assignment-target name in an isolated `tgauss` repro before assuming
+    the expression syntax itself was at fault. Renamed to `symMat` in the
+    committed test.
+  - `run_source_tests.ps1 -SkipBootstrap` (no TVP flags skipped, the full
+    local gate) re-run clean this session with Stage 5's new test and
+    three new guard cases included.
   - **NOT YET committed** -- see Handoff Notes.
 
 ## Decisions
@@ -408,6 +485,18 @@ before Stage 3 was written, not assumed.
   `gaussTests` including `quaidstvp_kalman_test.e` and
   `quaidstvp_mle_test.e`) reported `run_source_tests.ps1: PASS`. Not yet
   re-run WITHOUT `-SkipBootstrap` (full local gate) this session.
+- `tests/run_source_tests.ps1 -SkipBootstrap`, WITHOUT `-SkipTVPKalman`
+  (i.e. the full local gate, no TVP flags skipped at all) re-run clean
+  this session (Stage 5) with the new `tests/quaidstvp_elas_test.e` (13
+  checks) and its three new guard cases included. This run also
+  re-verified Stages 2-4's own `sslib`-dependent tests still pass against
+  the currently-installed `sslib` copy -- worth noting since
+  `sstvp.src`/`sskalman.src` had very recent mtimes at this session's
+  start (consistent with `gauss-state-space-ea`'s concurrent session being
+  active), so this full-gate pass is direct re-verification, not just
+  trust in a timestamp. Also confirmed standalone
+  (`tgauss -b -x quaidstvp_elas_test.e`, 13/13 checks) and all three new
+  guard cases fail with their expected diagnostics run individually.
 
 ## Known Issues
 
@@ -474,23 +563,36 @@ before Stage 3 was written, not assumed.
    best reference point: `gauss-state-space` `origin/main` at `1b82f62`
    as of 2026-09-13, and the installed `C:\gauss26\pkgs\sslib` copy is
    now confirmed (byte-for-byte, not just mtimes) to match it end to end.
-2. **Stage 5**: `quaidsTVPElasFit()`.
-3. **Stage 6**: printer/docs/example/packaging, version bump.
+2. **Stage 5 is functionally done** (this session) -- commit/push when
+   the repo owner asks (see Handoff Notes).
+3. **Stage 6**: printer/docs/example/packaging (incl. publishing a real
+   public `quaidsTVPElasFit()` wrapper around this session's private
+   `_quaidsTVPElasFit()`), `sslib` package dependency (the still-unbuilt
+   pinning mechanism -- see item 1), version bump.
 
 ## Handoff Notes
 
-- Working tree: `master` clean, up to date with `origin/master` at
-  `e3ef801` (Stage 4, committed and pushed this session at the user's
-  explicit request — one commit ahead of this file's previous note at
-  `21b729b`, bundling `src/quaidstvpsmooth.src`,
-  `tests/quaidstvp_smooth_test.e`, two new guard cases, the
-  `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring, and the
-  new CLAUDE.md `print`-of-bare-string gotcha). Nothing uncommitted.
-  Validated locally before commit (`run_source_tests.ps1 -SkipBootstrap`
-  passes clean, both new guard cases fail with the expected diagnostic).
-  Not yet confirmed green on CI from inside this session (no CI-status
-  tool available here) — check `gh run list` at the start of the next
-  session if not already known to have passed.
+- Working tree: `master` was clean at `3d9f3d7` (Stage 4 doc-sync) at
+  this session's start; now has **uncommitted** Stage 5 changes not yet
+  committed/pushed (no request to do so this session): `src/quaidstvp.src`
+  (added `_quaidsTVPStateToFullB()`), new `src/quaidstvpelas.src`, new
+  `tests/quaidstvp_elas_test.e`, three new
+  `tests/guard_error_cases/tvp_elas_bad_*.e`, `tests/run_source_tests.ps1`
+  wiring, `tests/verify_package_manifest.ps1`'s `intentionallyUnlisted`
+  addition, and this file's own update plus a new CLAUDE.md `mSym`-is-
+  reserved gotcha. Validated locally: `run_source_tests.ps1 -SkipBootstrap`
+  (no TVP flags skipped, the full local gate) passes clean; all three new
+  guard cases fail with their expected diagnostics; the new
+  `quaidstvp_elas_test.e` also confirmed passing standalone
+  (`tgauss -b -x quaidstvp_elas_test.e`, 13/13 checks). No version bump
+  (no public API surface changed -- every new/changed proc is private,
+  `_`-prefixed).
+- Prior handoff note (now stale, kept for the CI-status pointer): Stage 4
+  (`e3ef801`) was committed and pushed at the user's explicit request last
+  session, one commit ahead of `21b729b`. Not yet confirmed green on CI
+  from inside any session so far (no CI-status tool available here) --
+  check `gh run list` at the start of the next session if not already
+  known to have passed.
 - `gh run list` confirmed this session: CI runs for `086c97a`, `8ed8ea3`,
   AND `a36c7a6` all completed with `success`. `086c97a`/`8ed8ea3` (like
   every push so far) ran with `-SkipBootstrap -SkipTVPKalman`, so they

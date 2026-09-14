@@ -73,6 +73,12 @@
 # TVP-AIDS initiative, Stage 4: quaidstvp_smooth_test.e and its two
 # tvp_smooth_bad_state_*.e guard cases share the same sslib dependency,
 # the same -SkipTVPKalman flag, and the same GAUSS26_CFG override.
+#
+# TVP-AIDS initiative, Stage 5: quaidstvp_elas_test.e and its three
+# tvp_elas_bad_*.e guard cases have NO sslib dependency (a state here is a
+# plain vector, not any sslib struct -- see src/quaidstvpelas.src's own
+# header) and so are NOT gated behind -SkipTVPKalman/GAUSS26_CFG, unlike
+# Stages 2-4.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -118,7 +124,8 @@ $gaussTests = @(
     "quaids_compatibility_test.e",
     "quaids_print_format_test.e",
     "quaidstrend_test.e",
-    "quaidstvp_test.e"
+    "quaidstvp_test.e",
+    "quaidstvp_elas_test.e"
 )
 
 if (-not $SkipPubtable) {
@@ -279,6 +286,18 @@ $guardTests = @(
     [pscustomobject]@{
         Script = "guard_error_cases\trend_requires_homogenous.e"
         Expected = "quaidsTrendFit: requires aCtl.homogenous == 1"
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\tvp_elas_bad_linear.e"
+        Expected = "_quaidsTVPElasFit: aCtl.linear must be 1"
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\tvp_elas_bad_state_length.e"
+        Expected = "_quaidsTVPElasFit: state must be a k_states x 1 vector"
+    },
+    [pscustomobject]@{
+        Script = "guard_error_cases\tvp_elas_bad_prices_length.e"
+        Expected = "_quaidsTVPElasFit: prices must be an n x 1 vector of ABSOLUTE log prices"
     }
 )
 

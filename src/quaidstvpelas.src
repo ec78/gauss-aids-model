@@ -1,0 +1,106 @@
+/*
+** quaidstvpelas.src
+**
+** TVP-AIDS initiative, Stage 5: elasticities at a chosen period's
+** (filtered or smoothed) state, reusing src/quaidselas.src's existing
+** _quaidsElas() rather than hand-rolling new elasticity math -- the same
+** "reuse the already-correct sibling proc" pattern this codebase already
+** follows for level/variance computations.
+**
+** NO sslib dependency, unlike Stages 2-4: a state is accepted here as a
+** plain k_states x 1 vector, not any sslib struct type, so a caller
+** passes whichever column of Stage 2/3's rslt.filtered_state or Stage 4's
+** a_TS it wants elasticities at -- "filtered vs. smoothed" is entirely a
+** caller-side choice of which column to slice, not something this file
+** needs to know about.
+**
+** Depends directly on src/quaidstvp.src's own _quaidsTVPStateToFullB()
+** (Stage 5's own recovery step -- see that proc's header) and
+** src/quaidselas.src's own _quaidsElas() -- a caller must #include BOTH
+** quaidstvp.src and quaidselas.src BEFORE this file, same convention as
+** quaidstvpmle.src's own documented dependency on quaidstvpkalman.src.
+**
+** Not in package.json's src array yet -- same "private WIP, no public API
+** yet" disposition as quaidstvp.src/quaidstvpkalman.src/quaidstvpmle.src/
+** quaidstvpsmooth.src (see CLAUDE.md's "Optional modules" section and
+** this initiative's own Stage 6, which is what actually publishes a
+** public quaidsTVPElasFit() wrapper, docs, and a package.json entry). In
+** verify_package_manifest.ps1's intentionallyUnlisted allowlist alongside
+** the other four TVP-AIDS files.
+*/
+
+
+/*
+** _quaidsTVPElasFit
+**
+** Purpose: income/price elasticities at one period's TVP-AIDS state,
+**          via _quaidsTVPStateToFullB() (state -> full n-good b matrix)
+**          then _quaidsElas() (the already-correct, already-tested
+**          elasticity math) -- no new elasticity formula is introduced
+**          here.
+**
+** Format:     { er, ep, epc } = _quaidsTVPElasFit(state, n1, prices, totexp, aCtl);
+**
+** Input:      state  -- k_states x 1 vector, one period's filtered or
+**                        smoothed state (k_states = 2*n1 + n1*(n1+1)/2 --
+**                        see src/quaidstvp.src's own header).
+**             n1     -- number of independently-estimated equations
+**                       (n = n1+1 goods total).
+**             prices -- n x 1 vector of ABSOLUTE log prices (NOT the
+**                       relative prices the state space itself was built
+**                       from -- see CLAUDE.md's "Relative vs. absolute
+**                       prices" convention note) at the evaluation point.
+**             totexp -- scalar log total expenditure at the evaluation
+**                       point.
+**             aCtl   -- struct quaidsControl; only aCtl.alpha0 and
+**                       aCtl.linear are read (see _quaidsElas()'s own
+**                       header). aCtl.linear MUST be 1 -- this
+**                       initiative's own Stage 1 scope decision (Stone
+**                       index, no quadratic/lambda term -- see
+**                       src/quaidstvp.src's own header) means
+**                       _quaidsTVPStateToFullB()'s output never has a
+**                       lambda row for _quaidsElas() to read. A caller
+**                       with no other reason to build a quaidsControl can
+**                       just call quaidsControlCreate() then set
+**                       aCtl.linear = 1 (aCtl.alpha0 stays its default 0).
+**
+** Output:     er  -- n x 1 vector of income elasticities.
+**             ep  -- n x n uncompensated price elasticity matrix.
+**             epc -- n x n compensated price elasticity matrix.
+**
+** Remarks: point elasticities only -- NO standard errors, unlike
+**          quaidsElasFit()'s own delta-method SEs. Propagating the
+**          reduced state's own filtered/smoothed covariance through
+**          _quaidsTVPStateToFullB()'s recovery step is a real, separate
+**          extension (that recovery is itself linear in the state, so it
+**          is tractable -- see Stage 6's own planning notes), not
+**          attempted here; this proc mirrors _quaidsElas()'s own
+**          point-only contract, not quaidsElasFit()'s SE-computing one,
+**          by deliberate choice of which sibling proc to reuse (see this
+**          file's own header).
+*/
+proc (3) = _quaidsTVPElasFit(state, n1, prices, totexp, struct quaidsControl aCtl);
+    local n, k_states, b, intcpt, er, ep, epc;
+
+    n = n1 + 1;
+    k_states = 2*n1 + n1*(n1+1)/2;
+
+    if not aCtl.linear;
+        errorlog "_quaidsTVPElasFit: aCtl.linear must be 1 -- this initiative's own Stage 1 scope (Stone index, no quadratic term) means the recovered state has no lambda row for _quaidsElas() to read.";
+        end;
+    endif;
+    if rows(state) /= k_states or cols(state) /= 1;
+        errorlog "_quaidsTVPElasFit: state must be a k_states x 1 vector (k_states = 2*n1 + n1*(n1+1)/2 implied by n1).";
+        end;
+    endif;
+    if rows(prices) /= n or cols(prices) /= 1;
+        errorlog "_quaidsTVPElasFit: prices must be an n x 1 vector of ABSOLUTE log prices (n = n1+1), not the state space's own relative prices.";
+        end;
+    endif;
+
+    b = _quaidsTVPStateToFullB(state, n1);
+    intcpt = 1;
+    { er, ep, epc } = _quaidsElas(b, intcpt, prices, totexp, aCtl);
+
+    retp(er, ep, epc);
+endp;

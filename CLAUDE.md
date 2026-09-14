@@ -220,7 +220,14 @@ A single test file directly: `tgauss -b -x <file>.e` from `tests/` (or
 
 - `{a, b, c}` matrix literal: commas separate **rows**, not columns.
 - `gamma`, `quantile` and other builtin/function names are reserved —
-  can't be reused as local variable names.
+  can't be reused as local variable names. Confirmed non-obvious case:
+  `msym` (any case, e.g. `mSym`) is ALSO reserved -- assigning to it
+  produces a generic `error G0008 : Syntax error` pointing at the
+  RIGHT-hand side of the assignment (e.g. `mSym = (a + a')/2;` fails with
+  `Syntax error '= (a + a')/2'`), not a clear "reserved name" diagnostic,
+  and cascades into a second spurious error on the next line. Bisected by
+  varying only the assignment target name (confirmed directly, not
+  guessed) before assuming the expression itself was at fault.
 - `sign()` is not a GAUSS builtin — use `.>` comparisons.
 - Legacy `$+` character-matrix concatenation truncates each cell to 8
   characters — use `printQuaidsElas.src`'s pattern (value and `(SE)` on

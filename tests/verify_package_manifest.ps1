@@ -73,7 +73,11 @@ if ($missing.Count -gt 0) {
 # unlisted too since it has no public API yet (private WIP). Any other
 # .src/.sdf file added to src/ is expected to be a required part of the
 # package and must be listed.
-$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src", "quaidstvpmle.src", "quaidstvpsmooth.src")
+# quaidstvpelas.src (Stage 5, elasticities at a chosen period's state) has
+# no sslib dependency either (state is a plain vector, not an sslib
+# struct), same disposition as quaidstvp.src -- unlisted because it has no
+# public API yet, not because of any hard external dependency.
+$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src", "quaidstvpmle.src", "quaidstvpsmooth.src", "quaidstvpelas.src")
 
 $actualSrc = Get-ChildItem -LiteralPath $srcDir -File |
     Where-Object { $_.Extension -in ".src", ".sdf" } |
