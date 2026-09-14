@@ -13,16 +13,16 @@ Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
 a repo-owner-requested extension beyond the now-largely-complete public
 release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
 "TVP-AIDS initiative" section for the full plan). Stages 0–4 are now
-**complete**; Stages 0–3 committed and pushed to `origin/master` (Stages
-0–2 as `086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`, CI confirmed
-`success` via `gh run list`). **Stage 4** (the TVP smoother, via
-`sslib`'s `ssKalmanSmoothTVP()`) is done this session — new file
-`src/quaidstvpsmooth.src`, new test `tests/quaidstvp_smooth_test.e` (8
-checks) plus two guard cases — validated locally
-(`run_source_tests.ps1 -SkipBootstrap` passes clean) but **NOT YET
-committed** (see Handoff Notes). Stage 3 is still Q-only MLE (H stays
-caller-fixed) — see Decisions for why, a repo-owner-approved scope call
-made explicitly before Stage 3 was written, not assumed.
+**complete, committed, and pushed to `origin/master`** (Stages 0–2 as
+`086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`, CI confirmed
+`success` via `gh run list`; **Stage 4 as `e3ef801`**, pushed this
+session at the user's explicit request). Stage 4 (the TVP smoother, via
+`sslib`'s `ssKalmanSmoothTVP()`) is new file `src/quaidstvpsmooth.src`,
+new test `tests/quaidstvp_smooth_test.e` (8 checks) plus two guard
+cases — validated locally (`run_source_tests.ps1 -SkipBootstrap` passes
+clean). Stage 3 is still Q-only MLE (H stays caller-fixed) — see
+Decisions for why, a repo-owner-approved scope call made explicitly
+before Stage 3 was written, not assumed.
 
 ## Completed Work
 
@@ -224,21 +224,39 @@ made explicitly before Stage 3 was written, not assumed.
     ssKalmanSmoothTVP(tvpm, rsltOrY)` contract and both accepted
     second-argument forms directly from source, not by analogy from
     Stage 2/3's own conventions.
-  - **Pre-check before touching the shared install**: noticed
+  - **Pre-check before touching the shared install, then a real finding
+    confirmed AFTER this stage's own commit/push**: noticed
     `C:\gauss26\pkgs\sslib\src\sskalman.src`/`sstvp.src` had mtimes ~1.5
     hours newer than the rest of that directory at session start.
     Messaged `gauss-state-space-ea` (a concurrent session, found via
     `ListAgents`) to ask before proceeding, per last session's own
-    "coordinate rather than guess" precedent -- no reply received during
-    this session's work, but independently confirmed via a real `tgauss`
-    run that the installed `ssKalmanSmoothTVP()` works exactly as its own
-    doc comment describes, and that `gauss-state-space`'s own working
-    tree is clean at `1b82f62` (the last commit flagged as "not yet
-    confirmed installed" in the prior session's notes) -- consistent with
-    someone having simply refreshed the shared install to `1b82f62`
-    (additive-only, no signature changes per that commit's own message),
-    not with any new drift risk. Check for a reply at the start of the
-    next session.
+    "coordinate rather than guess" precedent, and proceeded on
+    independent verification (a real `tgauss` run confirming the
+    installed `ssKalmanSmoothTVP()` matches its own doc comment exactly,
+    plus `gauss-state-space`'s own working tree clean at `1b82f62`) while
+    awaiting a reply -- this stage's own commit (`e3ef801`) went in before
+    one arrived. `gauss-state-space-ea` replied shortly after: the newer
+    mtimes actually carried OLDER content -- those two files matched
+    `7d5ed72` (one commit behind `1b82f62`), missing the correlated-H
+    analytic-gradient path (`_cholDerivLinv` and
+    `kalmanFilterDiffuseTVPGrad`'s correlated-H fix) entirely, while every
+    other installed `src/*.src` file already matched `1b82f62`. `
+    ssKalmanSmoothTVP()` itself was unaffected (confirmed independently
+    this session, and re-confirmed by their own diff), so Stage 4's own
+    work is NOT impacted -- but this would have silently bitten a future
+    stage differentiating through a correlated (non-diagonal) H. Likely
+    cause per their account: last session's own documented workaround
+    (temporarily copying `src`/`test` into the shared install for testing,
+    then reverting to `origin/main`) reverted those two files but the
+    "refresh the install to the new push" step afterward was simply
+    missed, not another session's active work. They copied the current
+    `1b82f62` `src/sskalman.src`/`src/sstvp.src` into the installed copy
+    and verified a byte-for-byte match (`diff --strip-trailing-cr`) --
+    the shared install should now be genuinely consistent with `1b82f62`
+    end to end. Re-verify file hashes/mtimes again if anything TVP-related
+    looks stale in a future session; don't assume this one incident is
+    the last word on drift (see Known Issues/Next Steps on the still-
+    unbuilt pinning mechanism).
   - **Real, empirically-confirmed finding**: the RTS "smoothed variance
     <= filtered variance" tightening property can genuinely fail by a
     small amount (~0.01 absolute, one state element, one period) during
@@ -447,38 +465,32 @@ made explicitly before Stage 3 was written, not assumed.
 
 1. Decide/build a real commit-pinning mechanism for `sslib` — a
    confirmed-real gap (the `9132c35` pin is stale; see Decisions/Known
-   Issues), not just a theoretical one. Consider whether the pin should
-   live somewhere more durable than this file + a header comment, given
-   it has now silently drifted at least once without anyone noticing
-   until a test broke. Current best reference point if this is tackled:
-   `gauss-state-space` `origin/main` was at `7d5ed72` as of 2026-09-13,
-   plus a further additive commit `1b82f62` — this session found the
-   installed `C:\gauss26\pkgs\sslib` copy's `sskalman.src`/`sstvp.src`
-   have mtimes consistent with having been refreshed to `1b82f62`
-   already (not independently confirmed via content diff, and
-   `gauss-state-space-ea` had not replied to a query about it by the end
-   of this session — check for a reply first).
-2. Commit Stage 4's work (see Handoff Notes) — not done yet this session.
-3. **Stage 5**: `quaidsTVPElasFit()`.
-4. **Stage 6**: printer/docs/example/packaging, version bump.
+   Issues), not just a theoretical one, and now confirmed to have
+   drifted TWICE (the `init_diffTVP` arity break last session, and this
+   session's `sskalman.src`/`sstvp.src` stuck one commit behind at
+   `7d5ed72` until `gauss-state-space-ea` fixed it post-hoc — see Stage
+   4's own Completed Work entry). Consider whether the pin should live
+   somewhere more durable than this file + a header comment. Current
+   best reference point: `gauss-state-space` `origin/main` at `1b82f62`
+   as of 2026-09-13, and the installed `C:\gauss26\pkgs\sslib` copy is
+   now confirmed (byte-for-byte, not just mtimes) to match it end to end.
+2. **Stage 5**: `quaidsTVPElasFit()`.
+3. **Stage 6**: printer/docs/example/packaging, version bump.
 
 ## Handoff Notes
 
-- Working tree: `origin/master` is still at `21b729b` (Stage 3 doc-sync)
-  as of this session's start. This session's Stage 4 work is
-  **UNCOMMITTED** as of this file's own update — new files
-  `src/quaidstvpsmooth.src`, `tests/quaidstvp_smooth_test.e`,
-  `tests/guard_error_cases/tvp_smooth_bad_state_rows.e`,
-  `tests/guard_error_cases/tvp_smooth_bad_state_cols.e`; modified files
-  `tests/run_source_tests.ps1` (wires the new test + two guards into the
-  existing `-SkipTVPKalman` group), `tests/verify_package_manifest.ps1`
-  (adds `quaidstvpsmooth.src` to `intentionallyUnlisted`), `CLAUDE.md`
-  (new `print`-of-bare-string gotcha), `dev/GOLD_STANDARD_TODO.md` (Stage
-  4 marked `[x]` with full writeup), and this file. Validated locally
-  (`run_source_tests.ps1 -SkipBootstrap` passes clean, both new guard
-  cases fail with the expected diagnostic) but not yet committed or
-  pushed — commit only when the user explicitly asks, per this repo's
-  own standing constraint.
+- Working tree: `master` clean, up to date with `origin/master` at
+  `e3ef801` (Stage 4, committed and pushed this session at the user's
+  explicit request — one commit ahead of this file's previous note at
+  `21b729b`, bundling `src/quaidstvpsmooth.src`,
+  `tests/quaidstvp_smooth_test.e`, two new guard cases, the
+  `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring, and the
+  new CLAUDE.md `print`-of-bare-string gotcha). Nothing uncommitted.
+  Validated locally before commit (`run_source_tests.ps1 -SkipBootstrap`
+  passes clean, both new guard cases fail with the expected diagnostic).
+  Not yet confirmed green on CI from inside this session (no CI-status
+  tool available here) — check `gh run list` at the start of the next
+  session if not already known to have passed.
 - `gh run list` confirmed this session: CI runs for `086c97a`, `8ed8ea3`,
   AND `a36c7a6` all completed with `success`. `086c97a`/`8ed8ea3` (like
   every push so far) ran with `-SkipBootstrap -SkipTVPKalman`, so they
