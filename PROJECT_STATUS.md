@@ -5,23 +5,25 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-09-13_
+_Last updated: 2026-09-16_
 
 ## Current Objective
 
 Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
 a repo-owner-requested extension beyond the now-largely-complete public
 release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
-"TVP-AIDS initiative" section for the full plan). Stages 0–5 are now
-**functionally complete and locally validated**; Stages 0–4 are
-**committed and pushed to `origin/master`** (Stages 0–2 as
-`086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`, CI confirmed
-`success` via `gh run list`; Stage 4 as `e3ef801`). **Stage 5** (private
-`_quaidsTVPElasFit()`, elasticities at a chosen period's filtered/smoothed
-state) is new this session — see Completed Work — and is **NOT YET
-committed** (see Handoff Notes). Stage 3 is still Q-only MLE (H stays
-caller-fixed) — see Decisions for why, a repo-owner-approved scope call
-made explicitly before Stage 3 was written, not assumed.
+"TVP-AIDS initiative" section for the full plan). **Stages 0–5 are now
+complete, committed, and pushed to `origin/master`** (Stages 0–2 as
+`086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`; Stage 4 as `e3ef801`/
+doc-sync `3d9f3d7`; **Stage 5 as `c58c511`**, private `_quaidsTVPElasFit()`
+— elasticities at a chosen period's filtered/smoothed state — see
+Completed Work). CI confirmed `success` for every one of these via
+`gh run list` (Stage 5's own run id `34841421508`). **Only Stage 6
+remains** (printer/docs/example/packaging, `sslib` package dependency,
+version bump — see Next Steps) — nothing is currently in progress.
+Stage 3 is still Q-only MLE (H stays caller-fixed) — see Decisions for
+why, a repo-owner-approved scope call made explicitly before Stage 3 was
+written, not assumed.
 
 ## Completed Work
 
@@ -381,7 +383,9 @@ made explicitly before Stage 3 was written, not assumed.
   - `run_source_tests.ps1 -SkipBootstrap` (no TVP flags skipped, the full
     local gate) re-run clean this session with Stage 5's new test and
     three new guard cases included.
-  - **NOT YET committed** -- see Handoff Notes.
+  - Committed as `c58c511` and pushed to `origin/master` (user explicitly
+    asked for the commit+push). CI confirmed `success` via `gh run list`
+    (run id `34841421508`, ~2m27s).
 
 ## Decisions
 
@@ -563,46 +567,41 @@ made explicitly before Stage 3 was written, not assumed.
    best reference point: `gauss-state-space` `origin/main` at `1b82f62`
    as of 2026-09-13, and the installed `C:\gauss26\pkgs\sslib` copy is
    now confirmed (byte-for-byte, not just mtimes) to match it end to end.
-2. **Stage 5 is functionally done** (this session) -- commit/push when
-   the repo owner asks (see Handoff Notes).
-3. **Stage 6**: printer/docs/example/packaging (incl. publishing a real
-   public `quaidsTVPElasFit()` wrapper around this session's private
-   `_quaidsTVPElasFit()`), `sslib` package dependency (the still-unbuilt
-   pinning mechanism -- see item 1), version bump.
+2. **Stage 5 is done** -- committed and pushed as `c58c511`, CI green.
+3. **Stage 6 is the only remaining stage**: printer/docs/example/
+   packaging (incl. publishing a real public `quaidsTVPElasFit()` wrapper
+   around the current private `_quaidsTVPElasFit()`, and promoting
+   `_quaidsTVPStateToFullB()`/the other Stage 1-4 private helpers to
+   public API as needed), `sslib` package dependency (the still-unbuilt
+   pinning mechanism -- see item 1, which blocks doing this cleanly),
+   version bump. Not started.
 
 ## Handoff Notes
 
-- Working tree: `master` was clean at `3d9f3d7` (Stage 4 doc-sync) at
-  this session's start; now has **uncommitted** Stage 5 changes not yet
-  committed/pushed (no request to do so this session): `src/quaidstvp.src`
-  (added `_quaidsTVPStateToFullB()`), new `src/quaidstvpelas.src`, new
-  `tests/quaidstvp_elas_test.e`, three new
-  `tests/guard_error_cases/tvp_elas_bad_*.e`, `tests/run_source_tests.ps1`
-  wiring, `tests/verify_package_manifest.ps1`'s `intentionallyUnlisted`
-  addition, and this file's own update plus a new CLAUDE.md `mSym`-is-
-  reserved gotcha. Validated locally: `run_source_tests.ps1 -SkipBootstrap`
-  (no TVP flags skipped, the full local gate) passes clean; all three new
-  guard cases fail with their expected diagnostics; the new
-  `quaidstvp_elas_test.e` also confirmed passing standalone
-  (`tgauss -b -x quaidstvp_elas_test.e`, 13/13 checks). No version bump
-  (no public API surface changed -- every new/changed proc is private,
+- Working tree: `master` clean, up to date with `origin/master` at
+  `c58c511` (Stage 5, committed and pushed at the user's explicit request
+  — bundling `src/quaidstvp.src`'s `_quaidsTVPStateToFullB()`, new
+  `src/quaidstvpelas.src`, new `tests/quaidstvp_elas_test.e`, three new
+  `tests/guard_error_cases/tvp_elas_bad_*.e`, the
+  `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring, and the new
+  CLAUDE.md `mSym`-is-reserved gotcha). Nothing uncommitted. CI confirmed
+  `success` (`gh run list`, run id `34841421508`). No version bump (no
+  public API surface changed -- every new/changed proc is private,
   `_`-prefixed).
-- Prior handoff note (now stale, kept for the CI-status pointer): Stage 4
-  (`e3ef801`) was committed and pushed at the user's explicit request last
-  session, one commit ahead of `21b729b`. Not yet confirmed green on CI
-  from inside any session so far (no CI-status tool available here) --
-  check `gh run list` at the start of the next session if not already
-  known to have passed.
-- `gh run list` confirmed this session: CI runs for `086c97a`, `8ed8ea3`,
-  AND `a36c7a6` all completed with `success`. `086c97a`/`8ed8ea3` (like
-  every push so far) ran with `-SkipBootstrap -SkipTVPKalman`, so they
-  never actually exercised any sslib-dependent test — a reminder that CI
-  green here means "the non-sslib suite passed," not "the sslib path was
-  validated," given `-SkipTVPKalman` is always passed by CI. The Stage
-  3/sslib path (`quaidstvp_kalman_test.e`, `quaidstvp_mle_test.e`, all
-  six `tvp_*`/`tvp_mle_*` guard cases) is validated only by this
-  session's own local `run_source_tests.ps1 -SkipBootstrap` run (passed
-  clean, no flags related to TVP skipped), not by CI.
+- `gh run list` confirmed (as of 2026-09-16): CI runs for `086c97a`,
+  `8ed8ea3`, `a36c7a6`, `e3ef801`/`3d9f3d7` (Stage 4 + doc-sync), AND
+  `c58c511` (Stage 5) all completed with `success`. Every push so far
+  (including Stage 5's) runs with `-SkipBootstrap -SkipTVPKalman`, so CI
+  itself never actually exercises any `sslib`-dependent test — a
+  reminder that CI green here means "the non-sslib suite passed," not
+  "the sslib path was validated." Stages 2-4's own `sslib`-dependent
+  tests (`quaidstvp_kalman_test.e`, `quaidstvp_mle_test.e`,
+  `quaidstvp_smooth_test.e`, all their guard cases) are validated only by
+  local `run_source_tests.ps1 -SkipBootstrap` runs (no TVP flags
+  skipped), most recently Stage 5's own session (2026-09-13/14), not by
+  CI. Stage 5's own new test/guard cases (`quaidstvp_elas_test.e` and its
+  three guards) have NO `sslib` dependency and so ARE exercised by CI
+  normally, unlike Stages 2-4's.
 - `sslib`'s presence at `C:\gauss26\pkgs\sslib` was reconfirmed at this
   session's start (real files, `lib/sslib.lcg` catalog present) — NOT
   missing this time, unlike last session's finding. But its CONTENT had

@@ -3726,6 +3726,97 @@ hand-rolling a Kalman filter, missing only a period-varying smoother.
     stage's own new test file; NOT swept across the other ~30 existing
     test files (out of this stage's scope) -- worth a repo-wide pass if
     it ever actually bites during real debugging.
-- [ ] **Stage 5**: `quaidsTVPElasFit()`, reusing `_quaidsElas()` per period.
+- [x] **Stage 5**: elasticities at a chosen period's (filtered or
+  smoothed) state, reusing `src/quaidselas.src`'s existing `_quaidsElas()`
+  rather than hand-rolling new elasticity math -- new proc
+  `_quaidsTVPStateToFullB()` added to `src/quaidstvp.src`, new private
+  file `src/quaidstvpelas.src` (`_quaidsTVPElasFit()`). NO `sslib`
+  dependency at all (unlike Stages 2-4) -- a state is accepted as a plain
+  `k_states x 1` vector, not any `sslib` struct, so "filtered vs.
+  smoothed" is entirely the caller's own choice of which column of Stage
+  2/3's `rslt.filtered_state` or Stage 4's `a_TS` to pass in. Both new
+  procs stay `_`-prefixed/private, matching Stages 1-4's own disposition
+  (Stage 6 is what actually publishes a public `quaidsTVPElasFit()`
+  wrapper, docs, printer, example).
+  - `_quaidsTVPStateToFullB()` closes the two gaps
+    `_quaidsTVPStateToB()`'s own header (Stage 1) already flagged as
+    deliberately deferred: (1) equation n's own adding-up-implied
+    coefficients (never separately estimated in this reduced-state design
+    -- `alpha_n = 1 - sum(alpha_1..n1)`, `beta_n = -sum(beta_1..n1)`) and
+    (2) converting the state's RELATIVE-price gamma sub-block to
+    ABSOLUTE-price gammas, via homogeneity's own row-sum-zero identity
+    applied per row (INCLUDING row n itself, recovered via symmetry from
+    column n: `gamma_abs[n,j] = gamma_abs[j,n]`, then
+    `gamma_abs[n,n] = -sum_j gamma_abs[n,j]`). Adding-up on gamma (column
+    sums zero) is deliberately NOT separately imposed -- it falls out
+    automatically once symmetry+homogeneity both hold
+    (`sum_i gamma_ij = sum_i gamma_ji = 0` by homogeneity on row `j`), and
+    `tests/quaidstvp_elas_test.e` checks this identity directly on the
+    recovered output rather than just trusting the derivation.
+  - `src/quaids.src`'s own "RECOVERS ABSOLUTE PRICE EFFECTS FROM
+    RELATIVE" block was read directly and consulted for the underlying
+    math (per the repo owner's explicit instruction: check it, don't edit
+    it), but `_quaidsTVPStateToFullB()` is fresh, much simpler direct
+    formulas rather than a port of that block's general-case
+    reshape/Kronecker machinery -- that machinery also handles
+    `quaidsFit()`'s own separate `ng`/nonlinear-`u`-block dimensions,
+    which this reduced TVP state doesn't have at all.
+  - `_quaidsTVPElasFit()` hardcodes `intcpt = 1` (Stage 1's own `nint=0`
+    scope decision -- no extra intercept shifters in this design) and
+    guards `aCtl.linear == 1` explicitly (the recovered `b` has no lambda
+    row for `_quaidsElas()` to read if `aCtl.linear` is left at
+    `quaidsControlCreate()`'s own default of 0 -- without the guard this
+    would silently read a wrong/out-of-bounds row instead of erroring
+    clearly). Point elasticities only, deliberately -- no delta-method
+    SEs (unlike `quaidsElasFit()`), matching the plan's own choice of
+    `_quaidsElas()` (not `quaidsElasFit()`) as the sibling to reuse.
+    Propagating the reduced state's own filtered/smoothed covariance
+    through `_quaidsTVPStateToFullB()`'s recovery step is real, tractable
+    future work (that recovery is itself linear in the state) -- not
+    attempted this stage.
+  - New test `tests/quaidstvp_elas_test.e` (13 checks, no `library`
+    statement -- genuinely no `sslib` dependency, so NOT gated behind
+    `-SkipTVPKalman` unlike Stages 2-4's own tests): builds a full n x n
+    TRUE absolute-price gamma matrix directly (symmetric, exact
+    zero-row-sum by double-centering a random symmetric matrix -- an
+    INDEPENDENT construction, not `_quaidsTVPStateToFullB()`'s own
+    recovery formula) plus true full alpha/beta vectors (equation n's own
+    values set by hand via the adding-up identities, not by calling any
+    library proc), derives the n1-equation reduced system used to
+    generate noiseless data as a trivial submatrix/subvector extraction
+    from those true full values, recovers `stateHat` via plain pooled OLS
+    (same pattern as Stage 1's own test), and checks the recovered
+    `bFull` matches the independently-built true full system to
+    floating-point precision -- a real correctness claim about the
+    recovery logic, not a tautology. Plus a regression guard confirming
+    homogeneity/symmetry/adding-up all hold exactly on the recovered
+    output, and an exact internal-consistency check
+    (`_quaidsTVPElasFit()`'s own output vs. a direct `_quaidsElas()` call
+    fed the same recovered `bFull`) -- CLAUDE.md's "two independent
+    checks" requirement for new estimation logic. Three new guard cases
+    (`tvp_elas_bad_linear.e`/`tvp_elas_bad_state_length.e`/
+    `tvp_elas_bad_prices_length.e`), also not gated behind
+    `-SkipTVPKalman`. `src/quaidstvpelas.src` added to
+    `verify_package_manifest.ps1`'s `intentionallyUnlisted` allowlist. No
+    version bump (no public API surface -- every new proc is private,
+    `_`-prefixed).
+  - **Real language-gotcha found and now in CLAUDE.md**: `mSym` (any
+    case) as an assignment TARGET is a reserved identifier in GAUSS 26 --
+    `mSym = (a + a')/2;` fails with a generic `error G0008 : Syntax error
+    '= (a + a')/2'` (pointing at the RHS, not naming the reserved
+    identifier) plus a cascading spurious error on the following line.
+    Found while writing this stage's own test fixture (`mSym` was the
+    first natural name for a symmetric-matrix intermediate); bisected by
+    varying only the assignment-target name in an isolated `tgauss` repro
+    before assuming the expression syntax itself was at fault. Renamed to
+    `symMat` in the committed test.
+  - `run_source_tests.ps1 -SkipBootstrap`, WITHOUT `-SkipTVPKalman` (the
+    full local gate, no TVP flags skipped at all) run clean with Stage
+    5's new test and three new guard cases included -- this also
+    re-verified Stages 2-4's own `sslib`-dependent tests still pass
+    against the currently-installed `sslib` copy.
+  - Committed as `c58c511` and pushed to `origin/master`; the self-hosted
+    push-triggered CI run completed `success` (confirmed via
+    `gh run list`, run id `34841421508`).
 - [ ] **Stage 6**: printer, docs, example, `sslib` package dependency,
   version bump.
