@@ -77,7 +77,7 @@ if ($missing.Count -gt 0) {
 # no sslib dependency either (state is a plain vector, not an sslib
 # struct), same disposition as quaidstvp.src -- unlisted because it has no
 # public API yet, not because of any hard external dependency.
-$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src", "quaidstvpmle.src", "quaidstvpsmooth.src", "quaidstvpelas.src")
+$intentionallyUnlisted = @("pubtable_quaids.src", "quaidscurvature.src", "quaidstvp.src", "quaidstvpkalman.src", "quaidstvpmle.src", "quaidstvpsmooth.src", "quaidstvpelas.src", "quaidstvpfit.src")
 
 $actualSrc = Get-ChildItem -LiteralPath $srcDir -File |
     Where-Object { $_.Extension -in ".src", ".sdf" } |

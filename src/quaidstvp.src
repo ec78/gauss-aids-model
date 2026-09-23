@@ -238,7 +238,7 @@ endp;
 **          The two gaps this proc deliberately leaves open (equation n's
 **          own adding-up-implied column, and the relative-to-absolute
 **          price gamma conversion) are closed by
-**          _quaidsTVPStateToFullB(), added in TVP-AIDS Stage 5 -- see
+**          quaidsTVPStateToFullB(), added in TVP-AIDS Stage 5 -- see
 **          that proc's own header just below.
 */
 proc (1) = _quaidsTVPStateToB(state, n1);
@@ -267,9 +267,11 @@ endp;
 
 
 /*
-** _quaidsTVPStateToFullB
+** quaidsTVPStateToFullB
 **
-** Purpose: TVP-AIDS initiative, Stage 5. Closes the two gaps
+** Purpose: TVP-AIDS initiative, Stage 5 (promoted to public API in Stage
+**          6 -- was _quaidsTVPStateToFullB through Stage 5). Closes the
+**          two gaps
 **          _quaidsTVPStateToB() deliberately leaves open, producing the
 **          FULL n-good (n = n1+1) "b" matrix in the exact intcp|prices|lx
 **          row layout src/quaidselas.src's _quaidsElas()/quaidsElasFit()
@@ -304,7 +306,7 @@ endp;
 **          this identity directly on the recovered output, not just the
 **          construction logic above.
 **
-** Format:     bFull = _quaidsTVPStateToFullB(state, n1);
+** Format:     bFull = quaidsTVPStateToFullB(state, n1);
 **
 ** Input:      state -- k_states x 1 vector (one period's filtered or
 **                       smoothed state -- e.g. a column of Stage 2/3's
@@ -324,7 +326,7 @@ endp;
 ** Requires:   no sslib dependency (state is a plain vector) -- see this
 **             file's own header.
 */
-proc (1) = _quaidsTVPStateToFullB(state, n1);
+proc (1) = quaidsTVPStateToFullB(state, n1);
     local n, b0, alpha, gmatRel, beta, rowsum, gammaAbs, alphaN, betaN, bFull;
 
     n = n1 + 1;

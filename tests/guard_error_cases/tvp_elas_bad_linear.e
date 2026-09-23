@@ -1,5 +1,5 @@
 /*
-** Expected-failure guard test: _quaidsTVPElasFit() must reject
+** Expected-failure guard test: quaidsTVPElasFit() must reject
 ** aCtl.linear == 0 -- TVP-AIDS initiative, Stage 5. This initiative's own
 ** Stage 1 scope (Stone index, no quadratic term) means the recovered
 ** state has no lambda row for _quaidsElas() to read if aCtl.linear is
@@ -23,4 +23,4 @@ aCtl = quaidsControlCreate();
 /* aCtl.linear left at its default 0 -- deliberately wrong for this call. */
 
 prices = zeros(n1+1, 1);
-{ er, ep, epc } = _quaidsTVPElasFit(trueState, n1, prices, 0, aCtl);
+{ er, ep, epc } = quaidsTVPElasFit(trueState, n1, prices, 0, aCtl);

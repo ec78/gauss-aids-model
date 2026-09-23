@@ -73,12 +73,13 @@ docs/
   COMMAND_REFERENCE.md, USAGE_GUIDE.md, METHODOLOGY_NOTES.md,
   DATA_PREPARATION_GUIDE.md, TROUBLESHOOTING_GUIDE.md,
   FEATURE_SUPPORT_MATRIX.md, public-api.json (machine-checked API contract)
-  command-reference/*.md  # one page per public proc (49 pages)
+  command-reference/*.md  # one page per public proc (54 pages)
 scripts/
   build_lcg.ps1, build_package.ps1, verify_release_artifact.ps1,
   run_release_verification.ps1, run_release_gate.ps1 (single go/no-go
   release command), verify_public_api.ps1, verify_docs_consistency.ps1,
-  verify_docs_quality.ps1
+  verify_docs_quality.ps1, sync_sslib.ps1/verify_sslib_pin.ps1 (sslib
+  commit-pin sync/check -- see sslib.pin.json below)
 .github/workflows/tests.yml   # self-hosted CI, push-to-master only (see below)
 dev/
   GOLD_STANDARD_TODO.md   # Living roadmap + full milestone-by-milestone
@@ -90,6 +91,9 @@ dev/
 package.json             # GAUSS package manifest (src array = installed
                          #   package's load order; deps array = required
                          #   external GAUSS packages)
+sslib.pin.json           # sslib (gauss-state-space) commit pin -- see
+                         #   scripts/sync_sslib.ps1/verify_sslib_pin.ps1
+                         #   and CLAUDE.md's own "sslib" note above
 CHANGELOG.md, CITATION.cff, README.md, CONTRIBUTING.md, SUPPORT.md
 PROJECT_STATUS.md        # Current work state -- read this, not chat history
 ```
@@ -111,11 +115,13 @@ Both files are listed in `tests/verify_package_manifest.ps1`'s
 order — a file that calls procs in another file must load after it),
 bump the version, and rebuild/reinstall.
 
-`quaidstvpkalman.src` (needs `sslib`, via `library cmlmt, tsmt, sslib;`)
-is the same excluded-for-a-hard-dependency pattern, but is PRIVATE WIP,
-not public API yet (TVP-AIDS initiative, Stage 2 — see
-`PROJECT_STATUS.md`); also in the allowlist for that reason as well as
-the dependency one.
+`quaidstvpkalman.src`/`quaidstvpmle.src`/`quaidstvpsmooth.src` (need
+`sslib`, via `library cmlmt, tsmt, sslib;`) are the same
+excluded-for-a-hard-dependency pattern — real, documented public API as
+of TVP-AIDS Stage 6 (`quaidsTVPFit()` in `quaidstvpfit.src`, also
+unlisted, orchestrates them internally), not just WIP, but `sslib` stays
+an optional adapter dependency exactly like `optmt`/`pubtable`, never a
+`package.json` `deps`/`src` entry. Also in the allowlist for that reason.
 
 ## Development environment
 
@@ -126,9 +132,23 @@ the dependency one.
 - **`sslib` (gauss-state-space)** — a separate Aptech-licensed
   state-space/Kalman-filter package this project's TVP-AIDS work builds
   on, installed at `C:\gauss26\pkgs\sslib`. Sourced from a specific
-  commit of the separate `gauss-state-space` repo (not built by this
-  repo's own scripts) — check `PROJECT_STATUS.md` for which commit and
-  whether it's still present before assuming it's available or current.
+  commit of the separate `gauss-state-space` repo, pinned at
+  `sslib.pin.json` (repo root) — the durable record of which commit, plus
+  a sha256 of the handful of files that have actually drifted/mattered in
+  past incidents. `scripts\sync_sslib.ps1 -SourceRepoPath <a local
+  gauss-state-space checkout>` resyncs the shared install to that pin (or
+  `-Commit <hash>` to deliberately repin) in one reproducible step,
+  replacing any ad hoc `git archive`-by-hand process; `scripts\
+  verify_sslib_pin.ps1` checks the current install against the pin
+  (advisory by default — pass `-Strict` to hard-fail) and is wired into
+  `run_source_tests.ps1`'s `-SkipTVPKalman`-false branch. Check
+  `sslib.pin.json`/rerun `verify_sslib_pin.ps1` for whether the install is
+  current before assuming it's available or matches this repo's own
+  tests. `sslib` stays out of `package.json`'s `deps` array and every
+  TVP-AIDS `.src` file stays out of its `src` array — same optional-
+  adapter reasoning as `optmt`/`pubtable` (see "Optional modules" above),
+  not a hard dependency of core estimation even though `quaidsTVPFit()` is
+  real public API as of Stage 6.
 - **`tsmt` package shadowing on this machine**: `gauss.cfg`'s
   `extra_lib_path` resolves `$(PACKAGEDIR)\*\lib` alphabetically, and
   `pkgs\timeseries\lib\tsmt.lcg` (an older/incomplete catalog also named
@@ -314,6 +334,43 @@ A single test file directly: `tgauss -b -x <file>.e` from `tests/` (or
   its own pass/fail detection keys off the ABSENCE of `"ALL \d+ CHECKS
   PASSED"`, not the fail-count text, so a garbled count still correctly
   fails the test -- cosmetic/readability only.
+- A character-matrix value built with `$|` (vertical string
+  concatenation, e.g. `"Food" $| "Housing" $| "Other"`, the pattern
+  `examples/example_data.src`'s `quaidsExampleGoodNames()` uses) is a
+  DIFFERENT GAUSS type from the legacy character matrix `$+`/`ftocv()`
+  build (e.g. `0$+"W"$+ftocv(seqa(1,1,n),...)`) — assigning a `$|`-built
+  value directly into a struct field declared `matrix` (or `string`)
+  fails with `error G0071 : Type mismatch`, confirmed via an isolated
+  repro script (a bare struct with one `matrix` field), not assumed from
+  the failure site alone. A leading `0$+` coerces it into the accepted
+  legacy form: `tvpCtl.othnam = 0$+quaidsExampleGoodNames();` — confirmed
+  this recovers correctly. Found via `examples/14_tvp_aids_estimation.e`
+  (TVP-AIDS Stage 6) — the first place in this codebase any caller ever
+  assigned a real (non-default) value to an `othnam`-style struct field,
+  so this had never been exercised before. Every existing in-repo
+  character-matrix-into-a-struct-field assignment already uses the
+  `$+`/`ftocv()` form, not `$|`, which is presumably why this had never
+  surfaced previously. The same incompatibility also breaks
+  `print$ someCharMatrix~ftocv(someVec,w,d);` when `someCharMatrix` was
+  `$|`-built (`error G0165 : Type mismatch or missing arguments` there,
+  a different error code from the struct-field case but the same root
+  cause) — the same leading `0$+` fixes it.
+- Concatenating a short label string with a MULTI-ELEMENT `ftocv()`
+  result via `$+` (e.g. `print "label: " $+ "" $+ ftocv(rowVector,w,d);`)
+  does not produce one joined string — it BROADCASTS the label across
+  every element instead, garbling the row into repeated
+  `"label: v1  label: v2  ..."` text (confirmed via an isolated repro,
+  not assumed from the garbled output alone). Switching `$+` to `~`
+  (horzcat) avoids the broadcast but then hits the OTHER already-
+  documented legacy-character-matrix gotcha above this one (cells
+  truncate to 8 characters), garbling a longer label instead. The only
+  clean fix confirmed to work: print the label and its row of values as
+  TWO separate `print`/`print$` calls, not one combined line — exactly
+  why every existing multi-row printer in this codebase already does
+  that (see `printQuaidsTrend`/`printQuaidsCurvature`'s own row loops),
+  not a style choice. Found in `printQuaidsTVP()` (TVP-AIDS Stage 6) —
+  the first printer in this codebase to try combining a label with more
+  than one formatted value on the same line.
 
 ## Testing expectations
 

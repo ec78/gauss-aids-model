@@ -47,6 +47,24 @@ effort.
 - [quaidsTrendFit](command-reference/quaidsTrendFit.md)
 - [printQuaidsTrend](command-reference/printQuaidsTrend.md)
 
+## Time-Varying-Parameter Estimation (optional, `sslib`)
+
+Genuine time-varying-parameter AIDS estimation via a Kalman filter --
+coefficients evolving as a random walk over time, rather than the
+screening diagnostic above. Requires the separately-installed
+[gauss-state-space](https://github.com/aptech/gauss-state-space) (`sslib`)
+package; not a `library quaids;` dependency, so core estimation never
+requires it. See
+[Time-Varying-Parameter Estimation](../README.md#time-varying-parameter-estimation-optional-sslib)
+in the README and `examples/14_tvp_aids_estimation.e` for a full runnable
+example.
+
+- [quaidsTVPFit](command-reference/quaidsTVPFit.md)
+- [printQuaidsTVP](command-reference/printQuaidsTVP.md)
+- [quaidsTVPControlCreate](command-reference/quaidsTVPControlCreate.md)
+- [quaidsTVPStateToFullB](command-reference/quaidsTVPStateToFullB.md)
+- [quaidsTVPElasFit](command-reference/quaidsTVPElasFit.md)
+
 ## Elasticities and Diagnostics
 
 - [quaidsPreflight](command-reference/quaidsPreflight.md)

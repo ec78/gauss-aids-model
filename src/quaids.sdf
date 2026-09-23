@@ -583,4 +583,92 @@ struct quaidsTrendOut {
     matrix trendDf;
 };
 
+/*
+** quaidsTVPControl -- struct passed to quaidsTVPFit(): options for the
+** genuine time-varying-parameter (Kalman-filter-based) AIDS estimator.
+** TVP-AIDS initiative, Stage 6. Deliberately minimal (mirrors
+** quaidsControl's own minimalism) -- H and q0 stay explicit required
+** arguments to quaidsTVPFit() itself, not control-struct fields, since
+** they are data-dependent inputs, not tunable defaults. Only matrix/
+** string fields (no sslib struct types) -- keeps this core src/quaids.sdf
+** file free of any sslib dependency, exactly like quaidsCurvOut's own
+** optmt-free fields below stay free of any optmt dependency; see
+** src/quaidstvpfit.src's own header for the full quaidsTVPFit() contract.
+*/
+struct quaidsTVPControl {
+    matrix smooth;   // 1 (default) to also run the Stage 4 RTS smoother;
+                     //   0 to return only the filtered (causal) path
+    matrix othnam;   // legacy character matrix of good names, or 0 (default)
+                     //   for auto W1..Wn. `matrix`, not `string` (unlike
+                     //   quaidsControl.othnam) -- confirmed directly that a
+                     //   `string`-typed struct field rejects a real
+                     //   multi-row character-matrix assignment with a
+                     //   GAUSS `error G0071 : Type mismatch` (found via
+                     //   examples/14_tvp_aids_estimation.e, the first
+                     //   place in this codebase either othnam field is
+                     //   ever assigned a REAL non-default value -- every
+                     //   existing quaidsControl.othnam usage only ever
+                     //   sets it to "" and never exercises this path).
+                     //   `matrix` is the same type every OUTPUT struct's
+                     //   own name field (wnam/xnam/unam/enam) already uses
+                     //   successfully for real character-matrix content.
+                     //   A SECOND, separate gotcha found the same way: a
+                     //   value built with $| (vertical string concat --
+                     //   e.g. examples/example_data.src's own
+                     //   quaidsExampleGoodNames()) is STILL rejected even
+                     //   by this `matrix`-typed field -- confirmed via an
+                     //   isolated repro that $| produces a type distinct
+                     //   from the legacy character matrix $+/ftocv()
+                     //   produces, and only the latter is accepted. Fix:
+                     //   coerce with a leading `0$+` (e.g. `tvpCtl.othnam
+                     //   = 0$+quaidsExampleGoodNames();`) before assigning
+                     //   -- confirmed this recovers the legacy form
+                     //   correctly. See both call sites (examples/
+                     //   14_tvp_aids_estimation.e, tests/
+                     //   quaidstvpfit_test.e) for the working pattern.
+};
+
+/*
+** quaidsTVPOut -- struct returned by quaidsTVPFit(). TVP-AIDS initiative,
+** Stage 6 -- the consolidated public entry point wrapping Stage 1's
+** state-vector construction, Stage 3's MLE-fitted Q (against a
+** caller-fixed H, via Stage 2's Kalman filter internally), Stage 4's RTS
+** smoother (if tvpCtl.smooth), and Stage 5's state-to-coefficients
+** recovery at the final period -- see src/quaidstvpfit.src's own header
+** for the full contract and src/quaidstvp.src's own header for the state
+** vector's layout (k_states = 2*n1 + n1*(n1+1)/2). No sslib struct types
+** here either, same reasoning as quaidsTVPControl above -- filtered/
+** smoothed state paths and their covariances are unpacked into plain
+** matrix/array fields before being stored.
+*/
+struct quaidsTVPOut {
+    matrix n;               // number of goods
+    matrix n1;               // n - 1 (homogeneity always imposed, as
+                             //   throughout this initiative)
+    matrix nobs;
+    matrix k_states;         // 2*n1 + n1*(n1+1)/2
+    matrix wnam;              // legacy character matrix of good names
+    matrix H;                 // echoed, caller-fixed observation covariance (n1 x n1)
+    matrix q0;                 // echoed starting Q diagonal (k_states x 1)
+    matrix Qfit;                // fitted Q diagonal (k_states x 1), natural units
+    matrix mleRetcode;           // CMLMT convergence code; 0 == converged
+    matrix filteredState;         // k_states x nobs, column t = period t's
+                                  //   filtered (causal) state estimate
+    array filteredStateCov;        // nobs x k_states x k_states
+    matrix smoothed;                 // echoes tvpCtl.smooth (1 or 0)
+    matrix smoothedState;             // k_states x nobs (0 if not smoothed)
+    array smoothedStateCov;            // nobs x k_states x k_states, or a
+                                      //   placeholder 1x1x1 zero array if
+                                      //   not smoothed (an array-typed
+                                      //   field can't hold a bare scalar
+                                      //   0 -- see quaidstvpfit.src)
+    matrix bFinal;                      // (n+2) x n: the full coefficient
+                                        //   snapshot (intercept | absolute-
+                                        //   price gamma | beta) at the FINAL
+                                        //   period's smoothed-if-available-
+                                        //   else-filtered state, via
+                                        //   quaidsTVPStateToFullB() -- point
+                                        //   values only, no standard errors
+};
+
 #endif

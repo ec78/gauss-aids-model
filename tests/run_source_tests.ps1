@@ -79,6 +79,14 @@
 # plain vector, not any sslib struct -- see src/quaidstvpelas.src's own
 # header) and so are NOT gated behind -SkipTVPKalman/GAUSS26_CFG, unlike
 # Stages 2-4.
+#
+# TVP-AIDS initiative, Stage 6: quaidstvpfit_test.e and its two
+# tvpfit_bad_*.e guard cases share the sslib dependency/-SkipTVPKalman
+# flag/GAUSS26_CFG override of Stages 2-4 (quaidsTVPFit() calls
+# _quaidsTVPMLEFit() internally). Also runs scripts/verify_sslib_pin.ps1
+# once, right before the sslib-dependent tests, printing a warning (not a
+# hard failure -- see that script's own header) if the installed sslib
+# copy no longer matches sslib.pin.json's documented commit.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -143,12 +151,19 @@ if (-not $SkipBootstrap) {
 
 $sslibTests = @()
 if (-not $SkipTVPKalman) {
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $scriptsDir "verify_sslib_pin.ps1") -RepoRoot $RepoRoot
+    # Advisory only (verify_sslib_pin.ps1 exits 0 on drift unless -Strict) --
+    # a warning here is a heads-up before the sslib-dependent tests below,
+    # not a gate on this script's own exit code.
+
     $sslibTests += "quaidstvp_kalman_test.e"
     $gaussTests += "quaidstvp_kalman_test.e"
     $sslibTests += "quaidstvp_mle_test.e"
     $gaussTests += "quaidstvp_mle_test.e"
     $sslibTests += "quaidstvp_smooth_test.e"
     $gaussTests += "quaidstvp_smooth_test.e"
+    $sslibTests += "quaidstvpfit_test.e"
+    $gaussTests += "quaidstvpfit_test.e"
 }
 
 $gaussCfgOverride = Join-Path $testsDir "gauss26_cfg_override"
@@ -289,15 +304,15 @@ $guardTests = @(
     },
     [pscustomobject]@{
         Script = "guard_error_cases\tvp_elas_bad_linear.e"
-        Expected = "_quaidsTVPElasFit: aCtl.linear must be 1"
+        Expected = "quaidsTVPElasFit: aCtl.linear must be 1"
     },
     [pscustomobject]@{
         Script = "guard_error_cases\tvp_elas_bad_state_length.e"
-        Expected = "_quaidsTVPElasFit: state must be a k_states x 1 vector"
+        Expected = "quaidsTVPElasFit: state must be a k_states x 1 vector"
     },
     [pscustomobject]@{
         Script = "guard_error_cases\tvp_elas_bad_prices_length.e"
-        Expected = "_quaidsTVPElasFit: prices must be an n x 1 vector of ABSOLUTE log prices"
+        Expected = "quaidsTVPElasFit: prices must be an n x 1 vector of ABSOLUTE log prices"
     }
 )
 
@@ -334,6 +349,14 @@ if (-not $SkipTVPKalman) {
         Script = "guard_error_cases\tvp_smooth_bad_state_cols.e"
         Expected = "_quaidsTVPSmoothFit: rslt.filtered_state must have tvpm.nobs columns"
     }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_bad_H_shape.e"
+        Expected = "_quaidsTVPMLEFit: H must be n1 x n1."
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_bad_q0_shape.e"
+        Expected = "_quaidsTVPMLEFit: q0 must be k_states x 1"
+    }
 }
 
 $sslibGuardScripts = @(
@@ -344,7 +367,9 @@ $sslibGuardScripts = @(
     "guard_error_cases\tvp_mle_bad_H_shape.e",
     "guard_error_cases\tvp_mle_bad_y_shape.e",
     "guard_error_cases\tvp_smooth_bad_state_rows.e",
-    "guard_error_cases\tvp_smooth_bad_state_cols.e"
+    "guard_error_cases\tvp_smooth_bad_state_cols.e",
+    "guard_error_cases\tvpfit_bad_H_shape.e",
+    "guard_error_cases\tvpfit_bad_q0_shape.e"
 )
 
 foreach ($guard in $guardTests) {

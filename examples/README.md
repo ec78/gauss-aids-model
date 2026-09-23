@@ -9,7 +9,7 @@ compare against an independent reference, compute elasticities, export a
 table) and the best starting point if you want to see the whole pipeline
 against real numbers before touching synthetic data -- its own comments
 link back to [../docs/DATA_PREPARATION_GUIDE.md](../docs/DATA_PREPARATION_GUIDE.md)
-at each data-preparation decision it makes. Examples 01-13 share
+at each data-preparation decision it makes. Examples 01-14 share
 one small, well-commented synthetic dataset generator
 ([`example_data.src`](example_data.src)): a simulated household budget
 survey with 5 spending categories (Food, Housing, Transportation,
@@ -42,9 +42,13 @@ working directory correctly regardless of where it is itself invoked
 from) -- see that script's own header for the full technical finding
 behind this section.
 
-(`10_curvature_imposition.e` and `13_pubtable_reporting.e` need the
-optional `optmt`/`pubtable` packages installed and loaded first, noted
-in their own header comments.)
+(`10_curvature_imposition.e`, `13_pubtable_reporting.e`, and
+`14_tvp_aids_estimation.e` need the optional `optmt`/`pubtable`/`sslib`
+packages installed and loaded first, noted in their own header comments.
+`14_tvp_aids_estimation.e` also needs the `GAUSS26_CFG` environment-
+variable override documented in `CLAUDE.md`'s "tsmt package shadowing"
+note and in its own header comment -- the same requirement
+`tests/run_source_tests.ps1`'s `sslib`-dependent tests already have.)
 
 ## Reading order
 
@@ -64,6 +68,7 @@ in their own header comments.)
 | 11 | [`11_survey_weighted_estimation.e`](11_survey_weighted_estimation.e) | `quaidsFit`'s `weight=` argument, `quaidsSurveyWorkflowFit` -- naive vs. weighted estimation on an informatively-sampled dataset | -- |
 | 12 | [`12_applied_workflow.e`](12_applied_workflow.e) | `quaidsWorkflowFit`/`quaidsWorkflowScenarioFit` -- preflight, fit, shares/elasticities, robust SE, and a CV/EV scenario in one call | -- |
 | 13 | [`13_pubtable_reporting.e`](13_pubtable_reporting.e) | `ptFromQuaids`, `ptTablesFromQuaidsElas`, `ptTablesFromQuaidsWorkflow` -- LaTeX/Markdown/CSV export | `pubtable` |
+| 14 | [`14_tvp_aids_estimation.e`](14_tvp_aids_estimation.e) | `quaidsTVPFit`/`printQuaidsTVP`, `quaidsTVPControlCreate`, `quaidsTVPElasFit` -- genuine time-varying-parameter AIDS estimation via a Kalman filter, filtered vs. smoothed state paths | `sslib` |
 
 See [docs/USAGE_GUIDE.md](../docs/USAGE_GUIDE.md) for the prose reference
 each example pairs with, and

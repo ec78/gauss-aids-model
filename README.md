@@ -13,7 +13,7 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is a **public alpha** (package version `0.1.0`). Its public
+This library is a **public alpha** (package version `0.3.0`). Its public
 API is usable, documented, and tested, but has not yet reached the
 compatibility guarantees of a `1.0.0` release -- see
 [Compatibility Policy](#compatibility-policy) below. The full feature set
@@ -43,6 +43,12 @@ documented validation and convergence limits -- see
 - The optional `pubtable` package (LaTeX/Markdown/CSV/RTF/HTML/XLSX table
   export) is needed only if you use `src/pubtable_quaids.src` -- see
   [Reporting](#reporting-optional-pubtable) below.
+- The optional [`sslib`](https://github.com/aptech/gauss-state-space)
+  (`gauss-state-space`) package is needed only for genuine time-varying-
+  parameter (Kalman-filter-based) AIDS estimation (`quaidsTVPFit()`), an
+  opt-in adapter -- see
+  [Time-Varying-Parameter Estimation](#time-varying-parameter-estimation-optional-sslib)
+  below.
 
 ## Installation
 
@@ -137,6 +143,7 @@ below.
 | Zero-share correction (`quaidsZeroFit`) | Experimental | Inherits the base model's convergence risk above, plus a simplified (non-sandwich) SE formula, approximate adding-up in corrected coefficients, and a known non-trappable `glm()` crash mode on some inputs. |
 | Curvature imposition (`quaidsCurvatureFit`, requires `optmt`) | Experimental | Delta-method SE are known-unreliable whenever the estimated Cholesky factor sits at the boundary of the constraint (a common outcome in testing) -- prefer `quaidsCurvatureBootstrapFit`/`quaidsCurvatureBootstrapCI`. QUAIDS curvature additionally needs damping (`aCtl.relax=.25`-ish) to converge at all. |
 | Bootstrap / replicate-weight procedures | Inherits base model's tier | A resampled or replicate refit that itself fails to converge is dropped, not retried -- check the returned struct's `nCompleted`/`nFailed`. |
+| Time-varying-parameter estimation (`quaidsTVPFit`, requires `sslib`) | Experimental | No IV/endogeneity treatment of total expenditure, no standard errors (point elasticities/coefficients only), `H` (observation covariance) must be supplied fixed rather than estimated, and `Q`'s individual per-state-element diagonal entries are only loosely identified even at moderate sample sizes (the aggregate mean is much better identified) -- always check `tvOut.mleRetcode == 0`. MLE convergence speed degrades sharply above `n1=2`-`3` (confirmed: a 5-good, `n1=4` dataset made CMLMT pathologically slow) -- see [quaidsTVPFit](docs/command-reference/quaidsTVPFit.md)'s own Remarks. |
 
 **What `qOut.converged == 1` proves, and what it does not**: it means the
 iteration's relative parameter change fell below `aCtl.err` before
@@ -334,16 +341,58 @@ Requires the [pubtable](https://github.com/aptech/gauss_table_creator)
 package installed separately. See `examples/13_pubtable_reporting.e` for
 a full runnable example.
 
+## Time-Varying-Parameter Estimation (optional, `sslib`)
+
+Genuine time-varying-parameter (TVP) AIDS estimation via a Kalman filter:
+coefficients evolve as a random walk over time, rather than being
+constant across the sample -- distinct from `quaidsTrendFit()`'s own
+cheap, one-shot linear-drift screening diagnostic (see
+[Model & Feature Support Tiers](#model--feature-support-tiers)).
+
+```gauss
+library cmlmt, tsmt, sslib, quaids;
+#include quaids.sdf
+#include quaidstvp.src
+#include quaidstvpkalman.src
+#include quaidstvpmle.src
+#include quaidstvpsmooth.src
+#include quaidstvpelas.src
+#include quaidstvpfit.src   // not in package.json's src array -- see docs/COMMAND_REFERENCE.md
+
+n1 = cols(prices) - 1;
+k_states = 2*n1 + n1*(n1+1)/2;
+
+// H (observation covariance) stays fixed, not estimated -- a simple
+// starting choice is a static fit's own residual variances.
+qOut = quaidsFit(w, 0, prices, totexp, instr, aCtl);
+H = diagrv(eye(n1), qOut.homogSse[1:n1]/qOut.nobs);
+q0 = 0.1*meanc(diag(H))*ones(k_states, 1);   // scaled relative to H, not a flat tiny constant
+
+tvpCtl = quaidsTVPControlCreate();
+tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
+call printQuaidsTVP(tvOut);
+
+{ er, ep, epc } = quaidsTVPElasFit(tvOut.smoothedState[., tvOut.nobs], n1, prices[tvOut.nobs, .]', totexp[tvOut.nobs], aCtl);
+```
+
+Requires the [sslib](https://github.com/aptech/gauss-state-space)
+(`gauss-state-space`) package installed separately -- not a
+`library quaids;` dependency, so core estimation never requires it. The
+installed copy's commit is tracked in `sslib.pin.json` and kept in sync
+via `scripts/sync_sslib.ps1`/`scripts/verify_sslib_pin.ps1` (see that
+file's own comments). See `examples/14_tvp_aids_estimation.e` for a full
+runnable example.
+
 ## Examples
 
-The `examples/` directory contains a numbered, read-in-order suite of 13
+The `examples/` directory contains a numbered, read-in-order suite of 14
 runnable GAUSS programs -- one per major feature area, from basic
-estimation through curvature imposition, survey weighting, and
-publication-quality reporting -- sharing a small, well-commented
-synthetic household-budget dataset (`examples/example_data.src`). See
-[examples/README.md](examples/README.md) for the full list, run
-instructions, and which two examples need an optional package
-(`optmt`/`pubtable`) installed.
+estimation through curvature imposition, survey weighting,
+publication-quality reporting, and time-varying-parameter estimation --
+sharing a small, well-commented synthetic household-budget dataset
+(`examples/example_data.src`). See [examples/README.md](examples/README.md)
+for the full list, run instructions, and which three examples need an
+optional package (`optmt`/`pubtable`/`sslib`) installed.
 
 ## Testing
 

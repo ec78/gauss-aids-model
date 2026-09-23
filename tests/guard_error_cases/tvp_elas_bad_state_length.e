@@ -1,5 +1,5 @@
 /*
-** Expected-failure guard test: _quaidsTVPElasFit() must reject a state
+** Expected-failure guard test: quaidsTVPElasFit() must reject a state
 ** vector whose length does not match k_states implied by n1 -- TVP-AIDS
 ** initiative, Stage 5.
 */
@@ -22,4 +22,4 @@ aCtl.linear = 1;
 
 prices = zeros(n1+1, 1);
 badState = trueState|0;  /* one element too many */
-{ er, ep, epc } = _quaidsTVPElasFit(badState, n1, prices, 0, aCtl);
+{ er, ep, epc } = quaidsTVPElasFit(badState, n1, prices, 0, aCtl);

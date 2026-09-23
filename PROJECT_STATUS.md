@@ -5,25 +5,41 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-09-16_
+_Last updated: 2026-09-23_
 
 ## Current Objective
 
 Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
 a repo-owner-requested extension beyond the now-largely-complete public
 release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
-"TVP-AIDS initiative" section for the full plan). **Stages 0–5 are now
-complete, committed, and pushed to `origin/master`** (Stages 0–2 as
-`086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`; Stage 4 as `e3ef801`/
-doc-sync `3d9f3d7`; **Stage 5 as `c58c511`**, private `_quaidsTVPElasFit()`
-— elasticities at a chosen period's filtered/smoothed state — see
-Completed Work). CI confirmed `success` for every one of these via
-`gh run list` (Stage 5's own run id `34841421508`). **Only Stage 6
-remains** (printer/docs/example/packaging, `sslib` package dependency,
-version bump — see Next Steps) — nothing is currently in progress.
-Stage 3 is still Q-only MLE (H stays caller-fixed) — see Decisions for
-why, a repo-owner-approved scope call made explicitly before Stage 3 was
-written, not assumed.
+"TVP-AIDS initiative" section for the full plan). **Stages 0–5 complete,
+committed, and pushed to `origin/master`** (Stages 0–2 as `086c97a`/
+doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`; Stage 4 as `e3ef801`/doc-sync
+`3d9f3d7`; Stage 5 as `c58c511`). CI confirmed `success` for every one of
+these via `gh run list` (Stage 5's own run id `34841421508`).
+
+**Stage 6 (the final, last stage) is functionally COMPLETE and fully
+verified, but NOT yet committed** — per this session's own standing
+instruction, confirm with the user before committing even though the
+work itself is done. The full release-verification pipeline
+(`scripts\run_release_verification.ps1 -BuildArtifact -ForceArtifact
+-InstallArtifact`) is green end to end: every source test, every guard
+case, the build, the install, the installed-package public API test, and
+all 15 example smoke tests (including the new TVP-AIDS one) all pass with
+zero failures. See Completed Work's Stage 6 entry for the full account,
+including several real bugs found and fixed only once real `sslib`
+access became available (an array-typed struct-field sentinel, a
+`string`-vs-`matrix` struct field type mismatch, a `$|`-vs-`$+`
+character-matrix type mismatch found in TWO separate places, a `diag()`
+vs `diagrv()` mistake, an MLE-hangs-at-`n1=4` scale limit, and a
+`$+`-broadcast printer bug) — none of these were catchable by
+`#include`-based testing alone, only by actually building, installing,
+and running against a real `sslib` install and the installed package.
+`sslib` itself is now repinned to the tagged, stable `v1.0.0` (`ad15626`)
+release of `gauss-state-space`, not a commit hash on a moving branch —
+see Decisions for why. Stage 3 is still Q-only MLE (H stays caller-fixed)
+— see Decisions for why, a repo-owner-approved scope call made explicitly
+before Stage 3 was written, not assumed.
 
 ## Completed Work
 
@@ -386,6 +402,191 @@ written, not assumed.
   - Committed as `c58c511` and pushed to `origin/master` (user explicitly
     asked for the commit+push). CI confirmed `success` via `gh run list`
     (run id `34841421508`, ~2m27s).
+- **TVP-AIDS Stage 6 (functionally complete, NOT yet committed)**: the
+  final stage — publishes real public API, docs, example, packaging, the
+  `sslib` pinning mechanism, and the version bump. A repo-owner design
+  plan was written and approved (via a plan-mode review) before any code
+  was written, including two explicit decisions: the public surface stays
+  MINIMAL (one consolidated `quaidsTVPFit()`, not every stage exposed
+  separately) and the `sslib` pin gets a real automated mechanism, not
+  just better documentation.
+  - Two Stage 1/5 procs promoted from private to public IN PLACE (same
+    behavior, dropped leading underscore): `_quaidsTVPStateToFullB` →
+    `quaidsTVPStateToFullB` (`src/quaidstvp.src`), `_quaidsTVPElasFit` →
+    `quaidsTVPElasFit` (`src/quaidstvpelas.src`). Verified directly: both
+    renamed sslib-FREE tests (`tests/quaidstvp_test.e`,
+    `tests/quaidstvp_elas_test.e`, plus its three renamed guard cases)
+    re-run clean under the new names (56 + 13 checks). A PowerShell
+    `Set-Content -Encoding utf8` rewrite of `quaidstvp_elas_test.e` during
+    the rename was found to have silently added a UTF-8 BOM, breaking
+    `tgauss`'s own lexer (`error G0008 : Syntax error '﻿ new'`) —
+    fixed via `[System.IO.File]::WriteAllText` with an explicit
+    BOM-less `UTF8Encoding` instead; worth remembering for any future
+    PowerShell-driven rewrite of a `.e`/`.src` file (`Write`/`Edit`
+    themselves do not add a BOM, only `Set-Content -Encoding utf8` does,
+    confirmed directly).
+  - New file `src/quaidstvpfit.src`: `quaidsTVPFit()` (pure orchestration
+    over Stages 1/3/4/5's already-tested pieces — Stone index + Z-build,
+    MLE-fitted Q against a caller-fixed H via Stage 2's filter internally,
+    the RTS smoother if `tvpCtl.smooth`, `quaidsTVPStateToFullB()` at the
+    final period — no new estimation math), `printQuaidsTVP()`,
+    `quaidsTVPControlCreate()`. New structs `quaidsTVPControl`/
+    `quaidsTVPOut` in `src/quaids.sdf` (matrix/array/string fields only,
+    same optmt/sslib-independent pattern `quaidsCurvOut` already uses —
+    core `quaids.sdf` must keep compiling without `sslib`).
+    - `quaidsTVPOut.smoothedStateCov` is `array`-typed (matches
+      `filtered_state_cov`'s own type from `sslib`'s `kalmanResult`);
+      the "not smoothed" sentinel uses a placeholder `arrayinit(1|1|1, 0)`,
+      not a bare `0` (which would hit the same "Illegal assignment - type
+      mismatch" `quaidstvpkalman.src`'s own `_quaidsTVPReplicateConstant`
+      header already documents) — confirmed correct by a real passing
+      check in `tests/quaidstvpfit_test.e` once `sslib` access was
+      available, not left as a guess.
+    - `quaidsTVPControl.othnam` is `matrix`-typed, NOT `string`-typed
+      like `quaidsControl.othnam` — a real bug found via
+      `examples/14_tvp_aids_estimation.e`, the FIRST place in this
+      codebase's history either `othnam` field was ever assigned a real
+      (non-default) value (`error G0071 : Type mismatch` on a `string`
+      field). A SECOND, separate gotcha found the same way: a value
+      built with `$|` (vertical string concat, e.g.
+      `quaidsExampleGoodNames()`'s own construction) is rejected even by
+      a `matrix`-typed field, or by `print$`/`~` horzcat, with a
+      DIFFERENT error (`G0165`, same root cause) — only the legacy
+      `$+`/`ftocv()` character-matrix form works; fix is a leading
+      `0$+` coercion. Both are new durable `CLAUDE.md` gotchas now,
+      confirmed via isolated scratch repro scripts before editing any
+      real file, not guessed from the failure site alone.
+    - `printQuaidsTVP()`'s coefficient/Q-diagonal-block printing
+      originally used `"label: " $+ "" $+ ftocv(rowVector,w,d)` — found,
+      via real output inspection (not just "did it crash"), to BROADCAST
+      the label across every element instead of joining one string
+      (`"alpha block: v1  alpha block: v2"`). Switching `$+` to `~` avoids
+      the broadcast but then truncates any label over 8 characters (the
+      already-documented legacy-character-matrix cell limit). Fixed by
+      printing the label and its row of values as two SEPARATE
+      `print`/`print$` calls — matching every existing multi-row printer
+      in this codebase, confirmed via an isolated repro before editing
+      the real printer. Also a new durable `CLAUDE.md` gotcha.
+  - `sslib.pin.json` (new, repo root): now pinned to `gauss-state-space`'s
+    tagged, STABLE `v1.0.0` release (`ad15626`), not a commit hash on a
+    moving branch — a real, live course correction mid-session (see
+    Decisions for the full story: the shared install drifted TWICE more
+    even after this mechanism was built and first used, because
+    `gauss-state-space-1a`'s own test runner mirrors ITS working tree into
+    the shared install on every one of its own runs, making any commit
+    pin inherently unstable while that session iterates on a breaking
+    `v2` line). `verifiedFiles`/`lastVerified` are populated from a real
+    `scripts/sync_sslib.ps1` run against this tag, not placeholders.
+  - `scripts/sync_sslib.ps1` (new): `git archive` of the pinned/target
+    commit from a LOCAL `gauss-state-space` checkout (never the live
+    install, never that repo's own working tree) into a clean temp
+    staging dir, `robocopy /MIR` into the shared install (confirmed this
+    correctly PURGES any stale `lib/` directory too, since a git archive
+    has no `lib/` at all — closes exactly the "source and .lcg from
+    different generations" failure class `gauss-state-space-1a` flagged
+    as a risk, confirmed by re-reading the script together with them, not
+    just asserted), rebuild `lib/sslib.lcg` via this repo's own
+    `build_lcg.ps1` (a full `Set-Content` overwrite, not an incremental
+    update — also closes that same failure class, independent of the
+    `/MIR` purge), recompute/rewrite `sslib.pin.json`'s `verifiedFiles`/
+    `lastVerified`. Supports both resync-to-documented-pin (default) and
+    deliberate repin (`-Commit`). **This mechanism already proved its own
+    value live**: `scripts/verify_sslib_pin.ps1` caught real drift twice
+    during this same session (see Decisions), each time BEFORE it could
+    silently break a test run the way the pre-Stage-6 ad hoc process
+    already had twice earlier in this initiative.
+  - `scripts/verify_sslib_pin.ps1` (new): sha256-compares the installed
+    copy against `sslib.pin.json`'s `verifiedFiles`; warns (default) or
+    hard-fails (`-Strict`) on drift. Wired into
+    `run_source_tests.ps1`'s `-SkipTVPKalman`-false branch. **Real
+    PowerShell 5.1 gotcha found and fixed**: `@($obj.PSObject.
+    Properties.Name)` on a TRULY EMPTY `PSCustomObject` (e.g. `{}` from
+    `ConvertFrom-Json`) yields a ONE-element array containing `$null`/`""`,
+    not an empty array — confirmed directly (a `Get-FileHash` call on a
+    null path threw "cannot call a method on a null-valued expression"
+    instead of the intended "no tracked files yet" branch being taken).
+    Fixed in both this script and `sync_sslib.ps1` by checking
+    `.PSObject.Properties.Count -eq 0` first, only enumerating `.Name` via
+    `ForEach-Object` once confirmed non-empty.
+  - `docs/public-api.json`: new `optional_modules` entry `"tvp"` (source
+    is an ARRAY of six files, unlike `curvature`/`pubtable_adapter`'s one
+    file each — genuinely needed, not a style choice, since the TVP-AIDS
+    public surface spans that many files). Required a real code change to
+    `scripts/verify_public_api.ps1` (previously assumed `module.source`
+    was always a single string) — extended to accept a string OR an
+    array, keyed the internal lookup by module NAME instead of `source`
+    (which may no longer be a valid scalar hashtable key).
+  - Version bump `0.2.0` → `0.3.0` (`package.json`, `CITATION.cff`,
+    `docs/public-api.json`) + `CHANGELOG.md` entry. **Found and fixed a
+    pre-existing stale reference while here**: `README.md`'s own "public
+    alpha (package version `0.1.0`)" line (flagged stale — should have
+    said `0.2.0` — in this file's own Known Issues since the Stage 5
+    session) now correctly says `0.3.0`.
+  - New `examples/14_tvp_aids_estimation.e` + `examples/README.md`/
+    `README.md` updates (new "Time-Varying-Parameter Estimation (optional,
+    `sslib`)" sections, examples-count bump 13→14, a new support-tier
+    table row). `tests/run_examples_smoke.ps1` gained a matching
+    `-SkipTVPKalman` switch and its own `GAUSS26_CFG` wiring (mirroring
+    `run_source_tests.ps1`'s own pattern) for this one example.
+    - **Two real bugs found only by actually running this example
+      end to end**, neither catchable by `#include`-based testing alone
+      since both only manifest against the installed package / real
+      `sslib`: (1) `H = diag(vector)` does NOT build a diagonal matrix
+      from a vector in GAUSS (that's `diagrv(eye(n), vector)`) —
+      `diag()` on a vector instead degenerates to something far smaller,
+      which `_quaidsTVPMLEFit`'s own shape guard correctly caught
+      (`error: H must be n1 x n1`) rather than silently misbehaving;
+      fixed in the example AND in the two doc pages (`quaidsTVPFit.md`,
+      `README.md`) that had copied the same mistake. (2) The full 5-good
+      `quaidsExampleData()` dataset (`n1=4`, `k_states=18`) makes
+      `ssFitTVP()`'s CMLMT optimization pathologically slow/
+      non-terminating — confirmed directly by letting a run burn ~24
+      hours of real CPU time before killing it, then isolating the cause
+      with short-timeout scratch scripts (still hung at `n1=4`/`tobs=200`
+      within 100s; converged in ~34s at `n1=2`/`tobs=500`). Fixed by
+      restricting the example to a 3-good subset (`n1=2`), matching every
+      other test/example in this initiative, and documented as a real,
+      confirmed scale limit (`quaidsTVPFit.md`'s Remarks, the README
+      support-tier table) — not merely an untested configuration.
+  - New `tests/quaidstvpfit_test.e` (16 checks, all INTERNAL CONSISTENCY —
+    `quaidsTVPFit()`'s own output vs. the same already-validated Stage
+    1/3/4/5 procs called directly on identical inputs — no synthetic-
+    recovery-of-truth claim needed since Stage 6 adds no new math,
+    including a dedicated check that a caller-supplied `tvpCtl.othnam` is
+    honored, added after the type-mismatch bug above was found) + two new
+    guard cases (`tvpfit_bad_H_shape.e`/`tvpfit_bad_q0_shape.e`, reusing
+    `_quaidsTVPMLEFit`'s own existing error messages, no duplicate
+    validation added in the public wrapper). Uses a small self-contained
+    synthetic generator, NOT `tests/quaidsfixtures.src`'s existing
+    `_quaidsTVPStaticSyntheticDGP`/`_quaidsTVPDynamicSyntheticDGP` — both
+    of those already return pre-built relative-price/Stone-deflated
+    pieces, not the raw absolute-price/totexp/full-`w` inputs
+    `quaidsTVPFit()`'s own public contract actually takes. All 16 checks
+    confirmed passing via a real `tgauss` run.
+  - `verify_package_manifest.ps1`'s `intentionallyUnlisted` allowlist
+    gained `quaidstvpfit.src` (sixth TVP-AIDS entry).
+  - `CLAUDE.md` updated: the `sslib`/optional-modules notes now describe
+    the new pin file/scripts as the durable mechanism (superseding the
+    old "check PROJECT_STATUS.md for which commit" pointer), the
+    `command-reference/*.md` page count (49 → 54), plus three new durable
+    language gotchas (the `$|`-vs-`$+` character-matrix incompatibility,
+    the `$+`-broadcast-across-a-multi-element-`ftocv()`-result printer
+    trap, and this section's own cross-reference).
+  - **Full release-verification pipeline
+    (`scripts\run_release_verification.ps1 -BuildArtifact -ForceArtifact
+    -InstallArtifact`) confirmed GREEN end to end**: source tests, every
+    guard case, build, install, the installed-package public API test,
+    and all 15 example smoke tests (including the new TVP-AIDS one) —
+    zero `FAIL`/`error G\d+`/"Undefined structure" lines anywhere in the
+    full output, confirmed by grepping the complete output, not just
+    skimming it. This is the FIRST time in this initiative any
+    `sslib`-dependent code has been validated against a real install
+    AND a real package rebuild/reinstall, not just `#include`-based
+    source-tree tests — and it directly surfaced 6 real, independently
+    confirmed bugs (listed above) that `#include`-based testing alone had
+    completely missed. **NOT committed** — working tree has all of the
+    above uncommitted, per this session's own standing instruction to
+    confirm before any commit even mid-stage.
 
 ## Decisions
 
@@ -412,6 +613,39 @@ written, not assumed.
   reported their repo (clean, matching origin) is at `7d5ed72`, LIKELY
   (not independently confirmed) close to what's actually installed. Blocks
   a clean Stage 6 even more concretely now than before.
+- **`sslib` is pinned to `gauss-state-space`'s tagged `v1.0.0` release
+  (`ad15626`), not a bare commit hash** — a real course correction made
+  DURING Stage 6, after the newly-built pinning mechanism (`sslib.pin.json`
+  + `scripts/sync_sslib.ps1`/`verify_sslib_pin.ps1`) caught the shared
+  install drifting TWICE more in the same session, even after already
+  being resynced once. Root cause, confirmed directly by the concurrent
+  `gauss-state-space-1a` session, not guessed: their own test runner
+  (`test/run-tests.ps1`) mirrors THEIR working tree into
+  `C:\gauss26\pkgs\sslib` via `robocopy /MIR` on every single run of their
+  own gate, so the shared install tracks whatever they're actively
+  iterating on, not any commit either side pins — a genuinely different
+  problem from the earlier "someone forgot to refresh the install" drift
+  incidents (Stages 3-4). They are also mid-flight on a deliberately
+  BREAKING `v2.0.0` line (`feature/v2-modern-api-components`, minimum
+  GAUSS 26.1.4, a reshaped `ssOut` with a new nested `structural` field,
+  typed-struct-return/keyword-argument public procs) — a real
+  `error G0507 : Undefined structure 'ssStructuralInfo'` hit mid-session
+  was diagnosed together with them as a stale-`.lcg`-vs-new-source
+  generation mismatch from their OWN install-refresh timing, not a bug on
+  this repo's side. `v1.0.0` is their explicit recommendation for a
+  GAUSS-26.1.4-compatible, old-`ssOut`-shape target that they will not
+  touch further; `scripts/sync_sslib.ps1`'s hand-built `.lcg` generator
+  (a full `Set-Content` scan, not GAUSS's own `lib` command) was
+  confirmed BY THEM to be strictly more robust than `lib` for `v1.0.0`
+  specifically (v1's own `sstvp.src` references a global declared in
+  `ssmain.src`, which trips `lib`'s own per-file-independent parser into
+  silently truncating that file's index entry) — but their `.lcg` would
+  need the `typed_returns`/`keywords` annotations only GAUSS's real `lib`
+  command emits if this repo ever moves up to `v2` (declaration-free
+  struct assignment and keyword calls are load-bearing on those
+  annotations there); install `v2` via the GAUSS Package Manager or `lib`
+  itself when that day comes, not `sync_sslib.ps1`'s current generator.
+  They will ping this repo's session if/when `v2` reaches their `main`.
 - **`sslib` stays OUT of `package.json`'s `deps` array, and
   `quaidstvpkalman.src`/`quaidstvpmle.src` stay unlisted in its `src`
   array** — same reasoning that already keeps `optmt`/`pubtable` out of
@@ -556,38 +790,52 @@ written, not assumed.
 
 ## Next Steps
 
-1. Decide/build a real commit-pinning mechanism for `sslib` — a
-   confirmed-real gap (the `9132c35` pin is stale; see Decisions/Known
-   Issues), not just a theoretical one, and now confirmed to have
-   drifted TWICE (the `init_diffTVP` arity break last session, and this
-   session's `sskalman.src`/`sstvp.src` stuck one commit behind at
-   `7d5ed72` until `gauss-state-space-ea` fixed it post-hoc — see Stage
-   4's own Completed Work entry). Consider whether the pin should live
-   somewhere more durable than this file + a header comment. Current
-   best reference point: `gauss-state-space` `origin/main` at `1b82f62`
-   as of 2026-09-13, and the installed `C:\gauss26\pkgs\sslib` copy is
-   now confirmed (byte-for-byte, not just mtimes) to match it end to end.
+1. **`sslib` commit-pinning mechanism: BUILT and PROVEN this session**
+   (`sslib.pin.json` + `scripts/sync_sslib.ps1`/`verify_sslib_pin.ps1` —
+   see Stage 6's own Completed Work entry and Decisions). Pinned to
+   `gauss-state-space`'s tagged `v1.0.0` (`ad15626`), confirmed installed
+   and verified clean via a real `scripts\verify_sslib_pin.ps1` run. The
+   mechanism already caught real drift twice live during this session,
+   working exactly as intended.
 2. **Stage 5 is done** -- committed and pushed as `c58c511`, CI green.
-3. **Stage 6 is the only remaining stage**: printer/docs/example/
-   packaging (incl. publishing a real public `quaidsTVPElasFit()` wrapper
-   around the current private `_quaidsTVPElasFit()`, and promoting
-   `_quaidsTVPStateToFullB()`/the other Stage 1-4 private helpers to
-   public API as needed), `sslib` package dependency (the still-unbuilt
-   pinning mechanism -- see item 1, which blocks doing this cleanly),
-   version bump. Not started.
+3. **Stage 6 is functionally DONE, not yet committed.** Every piece
+   (public `quaidsTVPFit()`/`printQuaidsTVP()`/`quaidsTVPControlCreate()`/
+   `quaidsTVPStateToFullB()`/`quaidsTVPElasFit()`, docs, example, the
+   pinning mechanism, version bump to `0.3.0`) is written AND the full
+   `scripts\run_release_verification.ps1 -BuildArtifact -ForceArtifact
+   -InstallArtifact` pipeline (source tests, guard cases, build, install,
+   installed-package API test, all 15 example smoke tests) is confirmed
+   green end to end — the real `sslib`-backed run this file's earlier
+   session left as a resume step is now done, and it surfaced/fixed 6 real
+   bugs in the process (see Completed Work). **Only remaining step: ask
+   the user whether to commit** — per this session's own standing
+   instruction to confirm before any commit even mid-stage. Suggested
+   commit scope: everything currently uncommitted (see Handoff Notes)
+   as one Stage 6 commit, matching how Stages 0-2/3/4/5 were each
+   committed as a single unit.
 
 ## Handoff Notes
 
-- Working tree: `master` clean, up to date with `origin/master` at
-  `c58c511` (Stage 5, committed and pushed at the user's explicit request
-  — bundling `src/quaidstvp.src`'s `_quaidsTVPStateToFullB()`, new
-  `src/quaidstvpelas.src`, new `tests/quaidstvp_elas_test.e`, three new
-  `tests/guard_error_cases/tvp_elas_bad_*.e`, the
-  `run_source_tests.ps1`/`verify_package_manifest.ps1` wiring, and the new
-  CLAUDE.md `mSym`-is-reserved gotcha). Nothing uncommitted. CI confirmed
-  `success` (`gh run list`, run id `34841421508`). No version bump (no
-  public API surface changed -- every new/changed proc is private,
-  `_`-prefixed).
+- **Working tree: `master` has substantial UNCOMMITTED, but fully
+  VERIFIED, Stage 6 work** on top of `origin/master`'s `c58c511`
+  (Stage 5) — do NOT assume clean/up to date. Touches:
+  `src/quaidstvp.src` (rename), `src/quaidstvpelas.src` (rename), new
+  `src/quaidstvpfit.src`, `src/quaids.sdf` (two new structs),
+  `sslib.pin.json` (new), `scripts/sync_sslib.ps1`/`verify_sslib_pin.ps1`
+  (new), `scripts/verify_public_api.ps1` (multi-file module support),
+  `tests/run_source_tests.ps1`/`run_examples_smoke.ps1` (wiring),
+  `tests/quaidstvpfit_test.e` (new) + two new guard cases,
+  `tests/quaidstvp_elas_test.e` + its three guard cases (rename),
+  `docs/public-api.json`/`docs/COMMAND_REFERENCE.md` + five new
+  `docs/command-reference/*.md` pages, `README.md`/`examples/README.md`,
+  new `examples/14_tvp_aids_estimation.e`,
+  `package.json`/`CITATION.cff`/`CHANGELOG.md` (version bump to `0.3.0`),
+  `CLAUDE.md` (sslib/optional-modules notes + three new language
+  gotchas). **Not committed** — per this session's own standing
+  instruction, confirm with the user before any commit even mid-stage.
+  The full release-verification pipeline has been run clean against this
+  exact working-tree state (see Next Steps item 3) — nothing here is
+  provisional or awaiting a resume step.
 - `gh run list` confirmed (as of 2026-09-16): CI runs for `086c97a`,
   `8ed8ea3`, `a36c7a6`, `e3ef801`/`3d9f3d7` (Stage 4 + doc-sync), AND
   `c58c511` (Stage 5) all completed with `success`. Every push so far
@@ -618,6 +866,20 @@ written, not assumed.
 - A live secret (`fred_api_key`) was caught in `tests/gauss26_cfg_override/
   gauss.cfg` before commit and blanked — see the Completed Work entry
   above. Worth remembering if that file is ever regenerated.
+- **This session's `sslib` saga, summarized** (full account in Decisions/
+  Completed Work): resynced to `2a26076` after a live coordination check;
+  ran the full test suite and examples smoke suite; found a real
+  `diag()`-vs-`diagrv()` bug and an `n1=4` MLE-hang scale limit in the new
+  example; while fixing those, `gauss-state-space-1a`'s own test runner
+  refreshed the shared install AGAIN (mirroring their own working tree,
+  not any commit) and left it briefly inconsistent (`error G0507`,
+  diagnosed together with them as a stale-`.lcg` timing issue, not a bug
+  here); repinned to their recommended stable `v1.0.0` tag (`ad15626`)
+  instead of chasing their actively-moving `v2` branch; final pipeline
+  run after that repin is clean. `C:\gauss26\pkgs\sslib` was explicitly
+  freed back to them at the end of this session (messaged directly) —
+  check `ListAgents`/message them before assuming it's still at `v1.0.0`
+  in a future session, same collision-risk caution as always.
 - Update this file (not `CLAUDE.md`, not chat history) at the end of a
   meaningful unit of work or before starting a fresh session. Only
   promote something to `CLAUDE.md` if it will still be true and relevant

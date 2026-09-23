@@ -2,8 +2,8 @@
 ** quaidstvp_elas_test.e
 **
 ** TVP-AIDS initiative, Stage 5: validates src/quaidstvp.src's
-** _quaidsTVPStateToFullB() and src/quaidstvpelas.src's
-** _quaidsTVPElasFit() -- no sslib dependency (plain #include, no
+** quaidsTVPStateToFullB() and src/quaidstvpelas.src's
+** quaidsTVPElasFit() -- no sslib dependency (plain #include, no
 ** `library` statement), since a state here is just a plain vector, not
 ** any sslib struct type (see quaidstvpelas.src's own header).
 **
@@ -12,25 +12,25 @@
 ** Stage 1's own quaidstvp_test.e already checks): builds a full n x n
 ** absolute-price gamma matrix directly (symmetric, row-sum-zero by
 ** construction via double-centering -- an INDEPENDENT construction, not
-** _quaidsTVPStateToFullB()'s own recovery formula) plus full true
+** quaidsTVPStateToFullB()'s own recovery formula) plus full true
 ** alpha/beta vectors (equation n's own values set by the adding-up
 ** identities directly, in the test, not by calling any library proc).
 ** The n1-equation REDUCED system used to generate data is then only a
 ** trivial submatrix/subvector extraction from these true full values, so
 ** an exact match between the recovered bFull and the independently-built
 ** true full system is a real correctness claim about
-** _quaidsTVPStateToFullB()'s own recovery logic, not a tautology.
+** quaidsTVPStateToFullB()'s own recovery logic, not a tautology.
 **
 ** Check 2 (regression guard): homogeneity (gamma row sums), symmetry,
 ** and adding-up (alpha/beta/gamma column sums) all hold exactly on the
 ** RECOVERED bFull -- confirms adding-up-on-gamma really does fall out
 ** automatically from homogeneity+symmetry alone, as
-** _quaidsTVPStateToFullB()'s own header claims, rather than merely
+** quaidsTVPStateToFullB()'s own header claims, rather than merely
 ** trusting that derivation.
 **
 ** Check 3 (internal consistency, exact -- the second independent check
 ** required for new estimation logic per CLAUDE.md's Testing
-** expectations): _quaidsTVPElasFit()'s own output must exactly match a
+** expectations): quaidsTVPElasFit()'s own output must exactly match a
 ** direct call to _quaidsElas() (the already-correct, already-tested
 ** sibling proc it wraps) fed the same recovered bFull -- isolates "does
 ** the wrapper plumb its inputs through correctly" from "is the recovery
@@ -83,7 +83,7 @@ rndseed 4242;
    (and adding back the grand mean) preserves symmetry while forcing every
    row (and, by symmetry, every column) to sum to exactly zero. This is an
    INDEPENDENT construction of a valid true system, not
-   _quaidsTVPStateToFullB()'s own row-sum recovery formula. */
+   quaidsTVPStateToFullB()'s own row-sum recovery formula. */
 rawMat = .1*round(rndn(n, n)*10)/10;
 symMat = (rawMat + rawMat')/2;
 rowMeanVec = sumc(symMat')/n;
@@ -103,7 +103,7 @@ trueBetaFull = trueBeta|trueBetaN;
 
 /* The n1-equation REDUCED system is just a trivial submatrix/subvector
    extraction from the true full system above -- see this proc's own
-   derivation in _quaidsTVPStateToFullB()'s header for why the relative-
+   derivation in quaidsTVPStateToFullB()'s header for why the relative-
    price coefficient on (p_j - p_n) in equation i equals gamma_abs[i,j]
    exactly whenever homogeneity holds. */
 trueGammaRel = trueGammaAbs[1:n1, 1:n1];
@@ -159,11 +159,11 @@ stateHat = invpd(Xstack'Xstack)*Xstack'ystack;
    independently-constructed true full system (see Setup above).
    ========================================================================== */
 
-bFullHat = _quaidsTVPStateToFullB(stateHat, n1);
+bFullHat = quaidsTVPStateToFullB(stateHat, n1);
 
 call check(rows(bFullHat) == n+2 and cols(bFullHat) == n, "bFullHat shape is (n+2) x n");
 call check(maxc(maxc(abs(bFullHat - trueBFull))) < 1e-8,
-    "noiseless recovery: _quaidsTVPStateToFullB's bFull matches the independently-constructed true full system exactly");
+    "noiseless recovery: quaidsTVPStateToFullB's bFull matches the independently-constructed true full system exactly");
 
 
 /* ==========================================================================
@@ -184,7 +184,7 @@ call check(abs(sumc(betaHat')) < 1e-8, "recovered beta sums to exactly 0 (adding
 
 
 /* ==========================================================================
-   Check 3: internal consistency, exact -- _quaidsTVPElasFit()'s own
+   Check 3: internal consistency, exact -- quaidsTVPElasFit()'s own
    output must exactly match a direct call to _quaidsElas() (the
    already-correct sibling proc it wraps) fed the same recovered bFull.
    ========================================================================== */
@@ -196,12 +196,12 @@ aCtl.linear = 1;
 pricesEval = .05*ones(n, 1);
 totexpEval = .1;
 
-{ erWrap, epWrap, epcWrap } = _quaidsTVPElasFit(stateHat, n1, pricesEval, totexpEval, aCtl);
+{ erWrap, epWrap, epcWrap } = quaidsTVPElasFit(stateHat, n1, pricesEval, totexpEval, aCtl);
 { erDirect, epDirect, epcDirect } = _quaidsElas(bFullHat, 1, pricesEval, totexpEval, aCtl);
 
-call check(maxc(abs(erWrap - erDirect)) < 1e-12, "_quaidsTVPElasFit's income elasticities exactly match a direct _quaidsElas() call on the same recovered bFull");
-call check(maxc(maxc(abs(epWrap - epDirect))) < 1e-12, "_quaidsTVPElasFit's uncompensated price elasticities exactly match a direct _quaidsElas() call");
-call check(maxc(maxc(abs(epcWrap - epcDirect))) < 1e-12, "_quaidsTVPElasFit's compensated price elasticities exactly match a direct _quaidsElas() call");
+call check(maxc(abs(erWrap - erDirect)) < 1e-12, "quaidsTVPElasFit's income elasticities exactly match a direct _quaidsElas() call on the same recovered bFull");
+call check(maxc(maxc(abs(epWrap - epDirect))) < 1e-12, "quaidsTVPElasFit's uncompensated price elasticities exactly match a direct _quaidsElas() call");
+call check(maxc(maxc(abs(epcWrap - epcDirect))) < 1e-12, "quaidsTVPElasFit's compensated price elasticities exactly match a direct _quaidsElas() call");
 
 /* Loose sanity check: income elasticities should be finite, non-degenerate
    numbers (not NaN/Inf from a shape mismatch slipping through silently). */

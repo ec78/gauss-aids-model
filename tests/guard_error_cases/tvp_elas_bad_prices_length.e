@@ -1,5 +1,5 @@
 /*
-** Expected-failure guard test: _quaidsTVPElasFit() must reject a prices
+** Expected-failure guard test: quaidsTVPElasFit() must reject a prices
 ** vector whose length is not n = n1+1 (e.g. a caller mistakenly passing
 ** the n1-length RELATIVE prices the state space itself was built from,
 ** instead of the full n-good ABSOLUTE prices _quaidsElas() needs) --
@@ -23,4 +23,4 @@ aCtl = quaidsControlCreate();
 aCtl.linear = 1;
 
 badPrices = zeros(n1, 1);  /* should be n1+1 */
-{ er, ep, epc } = _quaidsTVPElasFit(trueState, n1, badPrices, 0, aCtl);
+{ er, ep, epc } = quaidsTVPElasFit(trueState, n1, badPrices, 0, aCtl);

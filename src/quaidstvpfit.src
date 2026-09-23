@@ -1,0 +1,285 @@
+#include quaids.sdf
+
+/*
+** quaidstvpfit.src
+**
+** TVP-AIDS initiative, Stage 6: the consolidated public entry point --
+** quaidsTVPFit()/printQuaidsTVP()/quaidsTVPControlCreate() -- publishing
+** Stages 1-5's already-tested private machinery as real, documented,
+** supported public API. Adds NO new estimation math: quaidsTVPFit() is
+** pure orchestration over already-validated pieces --
+**
+**   _quaidsTVPStoneIndex() + _quaidsTVPBuildZ()   (Stage 1, quaidstvp.src)
+**   _quaidsTVPMLEFit()                            (Stage 3, quaidstvpmle.src
+**                                                    -- itself runs Stage 2's
+**                                                    _quaidsTVPKalmanFit()
+**                                                    internally via sslib's
+**                                                    ssFitTVP())
+**   _quaidsTVPSmoothFit()                         (Stage 4, quaidstvpsmooth.src,
+**                                                    only if tvpCtl.smooth)
+**   quaidsTVPStateToFullB()                       (Stage 5, quaidstvp.src,
+**                                                    at the final period)
+**
+** -- so this file's own header carries no new design decisions beyond
+** "publish what Stages 1-5 already built and validated." See each of
+** those files' own headers for the actual estimation design rationale
+** (Stone index, hard-constrained symmetry, Q-only/diagonal-only MLE
+** scope, H staying caller-fixed).
+**
+** Public surface stays deliberately MINIMAL (a repo-owner decision made
+** explicitly before this file was written): only quaidsTVPFit()/
+** printQuaidsTVP()/quaidsTVPControlCreate() are new here, plus
+** quaidsTVPStateToFullB()/quaidsTVPElasFit() (promoted in place, dropping
+** their leading underscore, in quaidstvp.src/quaidstvpelas.src
+** respectively -- see those files' own updated headers). Every Stage 2-4
+** building block (_quaidsTVPBuildModel/_quaidsTVPKalmanFit/
+** _quaidsTVPMLEFit/_quaidsTVPQUpdate/_quaidsTVPSmoothFit/
+** _quaidsTVPReplicateConstant) stays private, called only internally by
+** quaidsTVPFit() -- matches this library's existing convention of one
+** clean Fit()-style entry point per feature (quaidsFit(),
+** quaidsWorkflowFit()) rather than exposing every intermediate stage
+** separately.
+**
+** H and q0 stay REQUIRED, caller-supplied arguments to quaidsTVPFit()
+** itself (not quaidsTVPControl fields, and no "smart default" heuristic
+** invented here) -- matches Stage 2/3's own already-tested,
+** repo-owner-approved scope (H fixed, never estimated; Q's own starting
+** value is the caller's responsibility). Existing lower-level shape
+** guards (already in _quaidsTVPMLEFit/_quaidsTVPBuildModel) are relied on
+** as-is, not duplicated here.
+**
+** Required #include chain (this file only #include's quaids.sdf itself,
+** matching every other .src file's own convention in this codebase -- no
+** sibling .src #includes anywhere), same documented-dependency pattern
+** quaidstvpelas.src's own header already uses:
+**
+**   library cmlmt, tsmt, sslib, quaids;
+**   #include quaids.sdf
+**   #include quaidstvp.src
+**   #include quaidstvpkalman.src
+**   #include quaidstvpmle.src
+**   #include quaidstvpsmooth.src
+**   #include quaidstvpelas.src
+**   #include quaidstvpfit.src
+**
+** Real, documented, supported public API as of Stage 6, but still NOT in
+** package.json's src array -- same "optional adapter" reasoning that
+** already keeps quaidscurvature.src/pubtable_quaids.src out (a hard
+** sslib dependency on every `library quaids;` user would be wrong even
+** though this is now intentional public API, not WIP -- see CLAUDE.md's
+** "Optional modules" section). In verify_package_manifest.ps1's
+** intentionallyUnlisted allowlist alongside the other five TVP-AIDS
+** files. sslib itself stays pinned via the repo-root sslib.pin.json /
+** scripts/sync_sslib.ps1 / scripts/verify_sslib_pin.ps1 mechanism (new in
+** this stage) rather than package.json's own deps array, which stays
+** reserved for "hard requirement to even install/compile the core
+** package."
+*/
+
+
+/*
+** quaidsTVPControlCreate
+**
+** Purpose: default quaidsTVPControl -- mirrors quaidsControlCreate()'s
+**          own minimalism.
+**
+** Format:     tvpCtl = quaidsTVPControlCreate();
+**
+** Output:     tvpCtl -- struct quaidsTVPControl: smooth = 1 (also run the
+**                       Stage 4 RTS smoother), othnam = 0 (auto W1..Wn
+**                       good names).
+*/
+proc (struct quaidsTVPControl) = quaidsTVPControlCreate();
+    struct quaidsTVPControl tvpCtl;
+
+    tvpCtl.smooth = 1;
+    tvpCtl.othnam = 0;
+
+    retp(tvpCtl);
+endp;
+
+
+/*
+** quaidsTVPFit
+**
+** Purpose: genuine time-varying-parameter (Kalman-filter-based) AIDS
+**          estimation -- one call from raw data to a fitted, optionally
+**          smoothed, state path plus a final-period coefficient snapshot.
+**          See this file's own header for exactly which already-validated
+**          Stage 1-5 pieces this orchestrates, in order.
+**
+** Format:     tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
+**
+** Input:      w      -- TxN budget shares.
+**             prices -- TxN ABSOLUTE log prices.
+**             totexp -- Tx1 log total expenditure. Unlike quaidsFit(),
+**                       this initiative's own reduced state-space design
+**                       (Stage 1) has no IV/endogeneity treatment --
+**                       totexp is used directly, not first-stage-purged.
+**             H      -- n1 x n1 FIXED observation covariance (n1 = N-1,
+**                       homogeneity always imposed) -- caller-supplied,
+**                       never estimated (Stage 3's own repo-owner-approved
+**                       scope; see quaidstvpmle.src's header for why joint
+**                       Q/H MLE is not attempted). A simple starting
+**                       choice: a diagonal matrix from quaidsFit()'s own
+**                       homogSse/nobs residual variances on the same
+**                       data.
+**             q0     -- k_states x 1 STARTING Q diagonal, natural
+**                       (positive variance) units (k_states = 2*n1 +
+**                       n1*(n1+1)/2 -- see quaidstvp.src's own header for
+**                       the state vector's layout). Every element must be
+**                       strictly positive.
+**             tvpCtl -- struct quaidsTVPControl (quaidsTVPControlCreate()
+**                       for defaults).
+**
+** Output:     tvOut -- struct quaidsTVPOut (see quaids.sdf): fitted Q,
+**                      MLE convergence code, filtered state path (+
+**                      covariance), smoothed state path (+ covariance, if
+**                      tvpCtl.smooth -- else zeros), and bFinal (the full
+**                      n-good coefficient snapshot at the final period's
+**                      smoothed-if-available-else-filtered state, via
+**                      quaidsTVPStateToFullB() -- point values only, no
+**                      standard errors).
+**
+** Requires:   `library cmlmt, tsmt, sslib;` (or equivalent) and the
+**             #include chain documented in this file's own header.
+*/
+proc (struct quaidsTVPOut) = quaidsTVPFit(w, prices, totexp, H, q0, struct quaidsTVPControl tvpCtl);
+    local n, n1, nobs, k_states, wnam, pricesRel, lx, Zarr, sOut, a_TS, p_TS, finalState;
+    struct quaidsTVPOut tvOut;
+
+    n = cols(prices);
+    n1 = n - 1;
+    nobs = rows(w);
+    k_states = 2*n1 + n1*(n1+1)/2;
+
+    if tvpCtl.othnam == 0;
+        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+    else;
+        wnam = tvpCtl.othnam[1:n];
+    endif;
+
+    pricesRel = prices[., 1:n1] - prices[., n];
+    lx = _quaidsTVPStoneIndex(w, prices, totexp, n);
+    Zarr = _quaidsTVPBuildZ(pricesRel, lx, n1);
+
+    sOut = _quaidsTVPMLEFit(Zarr, H, w[., 1:n1], q0, n1);
+
+    tvOut.n = n;
+    tvOut.n1 = n1;
+    tvOut.nobs = nobs;
+    tvOut.k_states = k_states;
+    tvOut.wnam = wnam;
+    tvOut.H = H;
+    tvOut.q0 = q0;
+    tvOut.Qfit = sOut.final_params;
+    tvOut.mleRetcode = sOut.mleResults.retcode;
+    tvOut.filteredState = sOut.kfResults.filtered_state;
+    tvOut.filteredStateCov = sOut.kfResults.filtered_state_cov;
+    tvOut.smoothed = tvpCtl.smooth;
+
+    if tvpCtl.smooth;
+        { a_TS, p_TS } = _quaidsTVPSmoothFit(sOut.tvpFinal, sOut.kfResults);
+        tvOut.smoothedState = a_TS;
+        tvOut.smoothedStateCov = p_TS;
+        finalState = a_TS[., nobs];
+    else;
+        tvOut.smoothedState = 0;
+        /* smoothedStateCov is `array`-typed (see quaids.sdf) -- a bare
+           scalar 0 assignment to an array-typed struct field is a real,
+           confirmed GAUSS failure mode in this exact codebase (see
+           quaidstvpkalman.src's own _quaidsTVPReplicateConstant header:
+           "Illegal assignment - type mismatch"), so the "not smoothed"
+           sentinel must itself be a genuine (if minimal) array, not a
+           bare 0. */
+        tvOut.smoothedStateCov = arrayinit(1|1|1, 0);
+        finalState = tvOut.filteredState[., nobs];
+    endif;
+
+    tvOut.bFinal = quaidsTVPStateToFullB(finalState, n1);
+
+    retp(tvOut);
+endp;
+
+
+/*******************************************************************************
+**
+** PRINTQUAIDSTVP
+**
+** Purpose: print the report captured in a quaidsTVPOut struct -- MLE
+**          convergence, the fitted Q diagonal grouped by the state
+**          vector's own alpha/gamma/beta blocks (see quaidstvp.src's own
+**          header for that layout), and the final-period coefficient
+**          snapshot in printQuaidsTrend()'s existing table layout (point
+**          values only here -- no delta-method SEs are available for a
+**          TVP-AIDS fit yet, see quaidstvpelas.src's own Remarks).
+**
+** Format:     call printQuaidsTVP(tvOut);
+**
+*******************************************************************************/
+
+proc 0 = printQuaidsTVP(struct quaidsTVPOut tvOut);
+
+    local n1, ngamma, qAlpha, qGamma, qBeta, rlab, i;
+
+    n1 = tvOut.n1;
+    ngamma = n1*(n1+1)/2;
+
+    print "TVP-AIDS FIT (genuine time-varying-parameter estimation via a Kalman filter)";
+    print "n = " $+ ftocv(tvOut.n, 1, 0) $+ "   nobs = " $+ ftocv(tvOut.nobs, 1, 0)
+        $+ "   k_states = " $+ ftocv(tvOut.k_states, 1, 0);
+    print;
+
+    if tvOut.mleRetcode == 0;
+        print "MLE (Q, against a fixed H): CONVERGED";
+    else;
+        print "MLE (Q, against a fixed H): DID NOT CONVERGE (retcode = " $+ ftocv(tvOut.mleRetcode, 1, 0) $+ ") -- treat results with caution.";
+    endif;
+    print;
+
+    print "FITTED STATE INNOVATION VARIANCES (Q diagonal, by state block):";
+    qAlpha = tvOut.Qfit[1:n1];
+    qGamma = tvOut.Qfit[n1+1:n1+ngamma];
+    qBeta = tvOut.Qfit[n1+ngamma+1:tvOut.k_states];
+    /* Label on its OWN print line, values via a separate print$ --
+       confirmed via an isolated repro that concatenating a label string
+       with a multi-element ftocv() result via $+ BROADCASTS the label
+       across every element (each element gets its own copy of the label,
+       garbling the row into repeated "label: value  label: value  ..."
+       text) rather than producing one joined string -- this codebase's
+       own existing per-row printers never ftocv() more than a single
+       ROW at once for exactly this reason. A `~`-horzcat label instead of
+       `$+` avoids the broadcast but hits the OTHER already-documented
+       CLAUDE.md gotcha (legacy character-matrix cells truncate to 8
+       characters), which is exactly why every existing multi-row printer
+       already keeps a label and its row of values on separate print
+       calls, not smashed into one line via either operator. */
+    print "  alpha block:";
+    print$ ftocv(qAlpha', 0, 6);
+    print "  gamma block:";
+    print$ ftocv(qGamma', 0, 6);
+    print "  beta  block:";
+    print$ ftocv(qBeta', 0, 6);
+    print;
+
+    if tvOut.smoothed;
+        print "FINAL-PERIOD COEFFICIENTS (smoothed state -- point estimates only, no SEs):";
+    else;
+        print "FINAL-PERIOD COEFFICIENTS (filtered state -- tvpCtl.smooth was 0 -- point estimates only, no SEs):";
+    endif;
+    print$ "row"~tvOut.wnam';
+    print "------------------------------------------------------------------------";
+    /* Row-by-row print$, matching printQuaidsCurvature/printQuaidsZero's
+       own pattern -- every existing printer in this codebase applies
+       ftocv() to one row at a time, never a full multi-row matrix in one
+       call, so this follows that same proven convention rather than
+       risking an unproven whole-matrix ftocv() call. */
+    rlab = "alpha"|(0$+"gamma"$+ftocv(seqa(1, 1, tvOut.n), __vpad*(floor(log(tvOut.n)+1), 0)))|"beta";
+    i = 1;
+    do while i <= rows(tvOut.bFinal);
+        print$ rlab[i]~ftocv(tvOut.bFinal[i, .], 0, 4);
+        i = i + 1;
+    endo;
+    print;
+
+endp;

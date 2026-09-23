@@ -92,25 +92,38 @@ foreach ($entry in $srcEntries) {
     }
 }
 
-# Optional modules (public release roadmap PR-101/PR-003): files
-# deliberately excluded from package.json's src array (a hard compile-time
-# dependency on another package's struct types would otherwise force that
-# package on every quaids user) -- pubtable_quaids.src (needs pubtable) and
-# quaidscurvature.src (needs optmt). Each still ships in the installed
+# Optional modules (public release roadmap PR-101/PR-003, extended in
+# TVP-AIDS Stage 6): files deliberately excluded from package.json's src
+# array (a hard compile-time dependency on another package's struct types
+# would otherwise force that package on every quaids user) --
+# pubtable_quaids.src (needs pubtable), quaidscurvature.src (needs optmt),
+# and six TVP-AIDS files (need sslib -- see sslib.pin.json/CLAUDE.md's
+# "Optional modules" section). Each still ships in the installed
 # package's src/ directory and is real, documented, supported API; a
 # caller opts in via an explicit #include, per each module's own "setup"
 # string in docs/public-api.json.
 $corePocs = Get-ProcNames -Text $sourceText
-$moduleProcsBySource = @{}
+# module.source is normally a single file path (curvature/pubtable, one file
+# each), but a module's public procs can genuinely span several files (the
+# TVP-AIDS optional module -- its public API is spread across the six files
+# Stages 1-6 built it in). @() treats a single string as a one-element array,
+# so this stays backward-compatible with the existing single-string entries.
+# Keyed by module NAME, not by source, since source may no longer be a valid
+# scalar hashtable key.
+$moduleProcsByName = @{}
 foreach ($module in @($publicApi.optional_modules)) {
-    $modulePath = Join-Path $RepoRoot ([string]$module.source)
-    if (-not (Test-Path -LiteralPath $modulePath)) {
-        throw "docs/public-api.json optional_modules['$($module.name)'].source not found: $($module.source)"
+    $moduleSources = @($module.source)
+    $moduleText = ""
+    foreach ($modulePath in $moduleSources) {
+        $fullModulePath = Join-Path $RepoRoot ([string]$modulePath)
+        if (-not (Test-Path -LiteralPath $fullModulePath)) {
+            throw "docs/public-api.json optional_modules['$($module.name)'].source not found: $modulePath"
+        }
+        $moduleText += "`n" + (Get-Content -LiteralPath $fullModulePath -Raw)
     }
-    $moduleText = Get-Content -LiteralPath $modulePath -Raw
-    $moduleProcsBySource[[string]$module.source] = Get-ProcNames -Text $moduleText
+    $moduleProcsByName[[string]$module.name] = Get-ProcNames -Text $moduleText
 }
-$allModuleProcs = @($moduleProcsBySource.Values | ForEach-Object { $_ } | Sort-Object -Unique)
+$allModuleProcs = @($moduleProcsByName.Values | ForEach-Object { $_ } | Sort-Object -Unique)
 $allKnownProcs = @($corePocs + $allModuleProcs | Sort-Object -Unique)
 
 $commandRefText = Get-Content -LiteralPath $commandRefPath -Raw
@@ -133,10 +146,11 @@ if ($missingFromDocs.Count -gt 0) {
 }
 
 foreach ($module in @($publicApi.optional_modules)) {
-    $moduleProcs = $moduleProcsBySource[[string]$module.source]
+    $moduleProcs = $moduleProcsByName[[string]$module.name]
     $notInModuleSource = @($module.procedures) | Where-Object { $moduleProcs -notcontains $_ }
     if ($notInModuleSource.Count -gt 0) {
-        throw "docs/public-api.json optional_modules['$($module.name)'] lists procedures not found in $($module.source): $($notInModuleSource -join ', ')"
+        $sourceDesc = (@($module.source) -join ', ')
+        throw "docs/public-api.json optional_modules['$($module.name)'] lists procedures not found in $sourceDesc`: $($notInModuleSource -join ', ')"
     }
 }
 

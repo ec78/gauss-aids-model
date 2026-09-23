@@ -38,14 +38,22 @@
 # limitation, not a bug in that example -- see its own header comment).
 #
 # Skips mirror tests/run_source_tests.ps1's existing -SkipCurvature/
-# -SkipPubtable convention for the two optional-package examples.
+# -SkipPubtable/-SkipTVPKalman convention for the three optional-package
+# examples. 14_tvp_aids_estimation.e also needs the GAUSS26_CFG override
+# (tsmt package shadowing -- see CLAUDE.md) that run_source_tests.ps1's
+# own sslib-dependent tests already use -- reuses the same
+# tests/gauss26_cfg_override directory, scoped to just this one example's
+# child process.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
     [string]$GaussExe = "C:\gauss26\tgauss.exe",
     [switch]$SkipCurvature,
-    [switch]$SkipPubtable
+    [switch]$SkipPubtable,
+    [switch]$SkipTVPKalman
 )
+
+$gaussCfgOverride = Join-Path $RepoRoot "tests\gauss26_cfg_override"
 
 $examplesDir = Join-Path $RepoRoot "examples"
 
@@ -73,6 +81,10 @@ if (-not $SkipPubtable) {
     $examples += "13_pubtable_reporting.e"
 }
 
+if (-not $SkipTVPKalman) {
+    $examples += "14_tvp_aids_estimation.e"
+}
+
 # Same async-stream-drain fix as tests/run_source_tests.ps1's own
 # Invoke-GaussBatch (Milestone 15 finding): sequential ReadToEnd() calls
 # on stdout then stderr can deadlock once a child writes enough to both
@@ -84,7 +96,8 @@ function Invoke-GaussBatch {
     param(
         [string]$Exe,
         [string[]]$Arguments,
-        [string]$WorkingDirectory
+        [string]$WorkingDirectory,
+        [string]$Gauss26Cfg = $null
     )
 
     $psi = [System.Diagnostics.ProcessStartInfo]::new()
@@ -100,6 +113,13 @@ function Invoke-GaussBatch {
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $psi.WorkingDirectory = $WorkingDirectory
+    if ($Gauss26Cfg) {
+        # 14_tvp_aids_estimation.e only -- the tsmt package-shadowing fix
+        # from CLAUDE.md, scoped to just this child process's environment,
+        # same pattern tests/run_source_tests.ps1's own Invoke-GaussBatch
+        # already uses for its sslib-dependent tests.
+        $psi.EnvironmentVariables["GAUSS26_CFG"] = $Gauss26Cfg
+    }
 
     $proc = [System.Diagnostics.Process]::new()
     $proc.StartInfo = $psi
@@ -159,7 +179,9 @@ $failed = @()
 foreach ($example in $examples) {
     Write-Host ""
     Write-Host "==> $example"
-    $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-b", "-x", $example) -WorkingDirectory $examplesDir
+    $cfgForThis = $null
+    if ($example -eq "14_tvp_aids_estimation.e") { $cfgForThis = $gaussCfgOverride }
+    $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-b", "-x", $example) -WorkingDirectory $examplesDir -Gauss26Cfg $cfgForThis
     $output = $result.Output
     $output
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "package": "quaids",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "maturity": "public-alpha",
   "compatibility_policy": {
     "starts_at": "0.1.0",
@@ -21,6 +21,7 @@
     "printQuaidsRobustBootstrap",
     "printQuaidsShares",
     "printQuaidsTrend",
+    "printQuaidsTVP",
     "printQuaidsWelfare",
     "printQuaidsZero",
     "ptFromQuaids",
@@ -54,6 +55,10 @@
     "quaidsSlutzky",
     "quaidsSurveyWorkflowFit",
     "quaidsTrendFit",
+    "quaidsTVPControlCreate",
+    "quaidsTVPElasFit",
+    "quaidsTVPFit",
+    "quaidsTVPStateToFullB",
     "quaidsWelfareFit",
     "quaidsWorkflowFit",
     "quaidsWorkflowScenarioFit",
@@ -87,6 +92,26 @@
         "quaidsCurvatureBootstrapFit",
         "quaidsCurvatureFit"
       ]
+    },
+    {
+      "name": "tvp",
+      "requires_package": "sslib",
+      "source": [
+        "src/quaidstvp.src",
+        "src/quaidstvpkalman.src",
+        "src/quaidstvpmle.src",
+        "src/quaidstvpsmooth.src",
+        "src/quaidstvpelas.src",
+        "src/quaidstvpfit.src"
+      ],
+      "setup": "library cmlmt, tsmt, sslib, quaids; #include quaids.sdf #include quaidstvp.src #include quaidstvpkalman.src #include quaidstvpmle.src #include quaidstvpsmooth.src #include quaidstvpelas.src #include quaidstvpfit.src",
+      "procedures": [
+        "printQuaidsTVP",
+        "quaidsTVPControlCreate",
+        "quaidsTVPElasFit",
+        "quaidsTVPFit",
+        "quaidsTVPStateToFullB"
+      ]
     }
   ],
   "compatibility_procedures": [
@@ -117,7 +142,9 @@
       "quaidsPreflightOut",
       "quaidsWorkflowOut",
       "quaidsReplicateOut",
-      "quaidsTrendOut"
+      "quaidsTrendOut",
+      "quaidsTVPControl",
+      "quaidsTVPOut"
     ]
   },
   "deprecated_fields": [

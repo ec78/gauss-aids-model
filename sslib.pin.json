@@ -1,0 +1,14 @@
+{
+    "package":  "sslib",
+    "sourceRepo":  "gauss-state-space",
+    "pinnedCommit":  "ad15626",
+    "installPath":  "C:\\gauss26\\pkgs\\sslib",
+    "verifiedFiles":  {
+                          "src/sstvp.src":  "21ec7c4d755db4e3aee61ec61fb5c4f28d521322cf213d4b8ac926ec2e2e54e4",
+                          "src/sskalman.src":  "6f5f6d247d6f136a9929e91327d4187e2317763ed20ce17d0e6ab67781a74893",
+                          "src/ssmain.src":  "3f69517e8483dd00d8d38011c2f02df905ca7c93e76078c0dc427eadc58816d5",
+                          "src/ssstructural.src":  "d2b4c260e974f39e275552efa0145c082e25c3f3e0030003f88cafdc3e2ce2fe"
+                      },
+    "lastVerified":  "2026-09-23",
+    "notes":  "TVP-AIDS Stage 6: pin repointed to 2a26076 (gauss-state-space\u0027s ssStructuralTS multi-seasonal/multi-cycle generalization, confirmed backward-compatible and internal-only per a live coordination check with the concurrent session that authored it) and synced for real via scripts/sync_sslib.ps1 -SourceRepoPath \u003clocal checkout\u003e -Commit 2a26076. verifiedFiles/lastVerified are now populated from an actual run, not placeholders."
+}

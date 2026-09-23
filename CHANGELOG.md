@@ -4,6 +4,46 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
+## 0.3.0 - 2026-09-17
+
+### Added
+
+- `quaidsTVPFit()`/`printQuaidsTVP()`/`quaidsTVPControlCreate()`
+  (`src/quaidstvpfit.src`) -- TVP-AIDS initiative, Stage 6: the
+  consolidated public entry point for genuine time-varying-parameter
+  (Kalman-filter-based) AIDS estimation, publishing Stages 1-5's
+  already-validated private machinery (reduced homogeneity/symmetry-
+  respecting state-vector construction, the diffuse Kalman filter,
+  MLE-fitted state innovation covariance `Q` against a caller-fixed
+  observation covariance `H`, the RTS smoother, state-to-coefficients
+  recovery) as one clean `Fit()`-style call. Adds no new estimation math
+  of its own -- pure orchestration over already-tested pieces. New
+  structs `quaidsTVPControl`/`quaidsTVPOut`.
+- `quaidsTVPStateToFullB()` (`src/quaidstvp.src`) and `quaidsTVPElasFit()`
+  (`src/quaidstvpelas.src`) promoted from private (`_`-prefixed) to public
+  API -- same procs, same behavior, TVP-AIDS Stages 1/5's own recovery and
+  elasticity logic respectively.
+- New third `optional_modules` entry (`"tvp"`) in `docs/public-api.json`,
+  alongside the existing `pubtable_adapter`/`curvature` entries -- the
+  TVP-AIDS public surface requires the separately-installed `sslib`
+  (`gauss-state-space`) package, the same "optional adapter, not a core
+  dependency" pattern already used for `optmt`/`pubtable`. All six
+  TVP-AIDS `.src` files stay out of `package.json`'s `src` array
+  permanently, by design (see `CLAUDE.md`'s "Optional modules" section).
+- `sslib.pin.json` plus `scripts/sync_sslib.ps1`/
+  `scripts/verify_sslib_pin.ps1` -- a real, automated commit-pinning
+  mechanism for the `sslib` dependency, replacing the ad hoc
+  `git archive`-by-hand process used every TVP-AIDS stage so far. The
+  `sslib` install had already drifted past its documented pin twice this
+  initiative, each time silently breaking previously-passing tests;
+  `verify_sslib_pin.ps1` now warns up front instead.
+- `examples/14_tvp_aids_estimation.e` -- full runnable example.
+- `scripts/verify_public_api.ps1`'s `optional_modules` handling now
+  supports a module's public API spanning multiple source files (`source`
+  as an array, not just a single string) -- needed because the TVP-AIDS
+  optional module's public procs are spread across six files, unlike
+  `curvature`/`pubtable_adapter`'s one file each.
+
 ## 0.2.0 - 2026-09-11
 
 ### Added
