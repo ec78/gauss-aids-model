@@ -5,41 +5,45 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-09-23_
+_Last updated: 2026-09-24_
 
 ## Current Objective
 
-Building **TVP-AIDS** (time-varying-parameter AIDS via a Kalman filter),
-a repo-owner-requested extension beyond the now-largely-complete public
-release roadmap. Staged as Stage 0–6 (see `dev/GOLD_STANDARD_TODO.md`'s
-"TVP-AIDS initiative" section for the full plan). **Stages 0–5 complete,
-committed, and pushed to `origin/master`** (Stages 0–2 as `086c97a`/
-doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`; Stage 4 as `e3ef801`/doc-sync
-`3d9f3d7`; Stage 5 as `c58c511`). CI confirmed `success` for every one of
-these via `gh run list` (Stage 5's own run id `34841421508`).
+**TVP-AIDS (time-varying-parameter AIDS via a Kalman filter) is
+COMPLETE** — a repo-owner-requested extension beyond the now-largely-
+complete public release roadmap, staged as Stage 0–6 (see
+`dev/GOLD_STANDARD_TODO.md`'s "TVP-AIDS initiative" section, now marked
+complete, for the full plan and every stage's own detailed writeup).
+**All six stages are committed and pushed to `origin/master`** (Stages
+0–2 as `086c97a`/doc-sync `8ed8ea3`; Stage 3 as `a36c7a6`; Stage 4 as
+`e3ef801`/doc-sync `3d9f3d7`; Stage 5 as `c58c511`; **Stage 6 (the final
+stage) as `4129201`**). CI confirmed `success` for every one of these via
+`gh run list` (Stage 6's own run id `35878499421`).
 
-**Stage 6 (the final, last stage) is functionally COMPLETE and fully
-verified, but NOT yet committed** — per this session's own standing
-instruction, confirm with the user before committing even though the
-work itself is done. The full release-verification pipeline
+Stage 6 published real public API (`quaidsTVPFit()`/`printQuaidsTVP()`/
+`quaidsTVPControlCreate()`, plus `quaidsTVPStateToFullB()`/
+`quaidsTVPElasFit()` promoted from private), a real automated `sslib`
+commit-pinning mechanism, docs, a new example, and a version bump to
+`0.3.0`. The full release-verification pipeline
 (`scripts\run_release_verification.ps1 -BuildArtifact -ForceArtifact
--InstallArtifact`) is green end to end: every source test, every guard
-case, the build, the install, the installed-package public API test, and
-all 15 example smoke tests (including the new TVP-AIDS one) all pass with
-zero failures. See Completed Work's Stage 6 entry for the full account,
-including several real bugs found and fixed only once real `sslib`
-access became available (an array-typed struct-field sentinel, a
-`string`-vs-`matrix` struct field type mismatch, a `$|`-vs-`$+`
-character-matrix type mismatch found in TWO separate places, a `diag()`
-vs `diagrv()` mistake, an MLE-hangs-at-`n1=4` scale limit, and a
-`$+`-broadcast printer bug) — none of these were catchable by
+-InstallArtifact`) is green end to end. See Completed Work's Stage 6
+entry for the full account, including six real bugs found and fixed only
+once real `sslib` access became available (an array-typed struct-field
+sentinel, a `string`-vs-`matrix` struct field type mismatch, a
+`$|`-vs-`$+` character-matrix type mismatch found in TWO separate places,
+a `diag()` vs `diagrv()` mistake, an MLE-hangs-at-`n1=4` scale limit, and
+a `$+`-broadcast printer bug) — none of these were catchable by
 `#include`-based testing alone, only by actually building, installing,
 and running against a real `sslib` install and the installed package.
-`sslib` itself is now repinned to the tagged, stable `v1.0.0` (`ad15626`)
+`sslib` itself is now pinned to the tagged, stable `v1.0.0` (`ad15626`)
 release of `gauss-state-space`, not a commit hash on a moving branch —
 see Decisions for why. Stage 3 is still Q-only MLE (H stays caller-fixed)
 — see Decisions for why, a repo-owner-approved scope call made explicitly
 before Stage 3 was written, not assumed.
+
+**No active work is in progress.** A future session should read this
+file plus `git log`/`git status` and check with the repo owner for the
+next objective — there is no automatic "next stage" after Stage 6.
 
 ## Completed Work
 
@@ -584,9 +588,9 @@ before Stage 3 was written, not assumed.
     AND a real package rebuild/reinstall, not just `#include`-based
     source-tree tests — and it directly surfaced 6 real, independently
     confirmed bugs (listed above) that `#include`-based testing alone had
-    completely missed. **NOT committed** — working tree has all of the
-    above uncommitted, per this session's own standing instruction to
-    confirm before any commit even mid-stage.
+    completely missed. Committed as `4129201` and pushed to
+    `origin/master`; the self-hosted push-triggered CI run completed
+    `success` (confirmed via `gh run list`, run id `35878499421`, 1m28s).
 
 ## Decisions
 
@@ -790,49 +794,43 @@ before Stage 3 was written, not assumed.
 
 ## Next Steps
 
-1. **`sslib` commit-pinning mechanism: BUILT and PROVEN this session**
-   (`sslib.pin.json` + `scripts/sync_sslib.ps1`/`verify_sslib_pin.ps1` —
-   see Stage 6's own Completed Work entry and Decisions). Pinned to
-   `gauss-state-space`'s tagged `v1.0.0` (`ad15626`), confirmed installed
-   and verified clean via a real `scripts\verify_sslib_pin.ps1` run. The
-   mechanism already caught real drift twice live during this session,
-   working exactly as intended.
-2. **Stage 5 is done** -- committed and pushed as `c58c511`, CI green.
-3. **Stage 6 is functionally DONE, not yet committed.** Every piece
-   (public `quaidsTVPFit()`/`printQuaidsTVP()`/`quaidsTVPControlCreate()`/
-   `quaidsTVPStateToFullB()`/`quaidsTVPElasFit()`, docs, example, the
-   pinning mechanism, version bump to `0.3.0`) is written AND the full
-   `scripts\run_release_verification.ps1 -BuildArtifact -ForceArtifact
-   -InstallArtifact` pipeline (source tests, guard cases, build, install,
-   installed-package API test, all 15 example smoke tests) is confirmed
-   green end to end — the real `sslib`-backed run this file's earlier
-   session left as a resume step is now done, and it surfaced/fixed 6 real
-   bugs in the process (see Completed Work). **Only remaining step: ask
-   the user whether to commit** — per this session's own standing
-   instruction to confirm before any commit even mid-stage. Suggested
-   commit scope: everything currently uncommitted (see Handoff Notes)
-   as one Stage 6 commit, matching how Stages 0-2/3/4/5 were each
-   committed as a single unit.
+**None specific to TVP-AIDS — the initiative is complete.** All six
+stages are committed and pushed (see Current Objective). Whoever picks
+this repo up next should check with the repo owner for a new objective
+rather than assuming there's a queued follow-on. Two standing items worth
+keeping in mind regardless of what's next:
+
+1. `sslib.pin.json` is pinned to `gauss-state-space`'s tagged `v1.0.0`
+   (`ad15626`) — a deliberately stable choice while that repo iterates on
+   a breaking `v2.0.0` line. Re-verify with `scripts\verify_sslib_pin.ps1`
+   before relying on the shared install in a future session (its own
+   `PSObject.Properties`-emptiness fix and general design are documented
+   in Stage 6's own Completed Work entry) — do not assume it's still at
+   `v1.0.0` without checking, since the shared install is genuinely
+   mutable, shared machine state (see Known Issues/CLAUDE.md).
+2. `README.md`'s "public alpha (package version `0.3.0`)" line and
+   `package.json`'s version are both current as of Stage 6's push — no
+   known stale-version references remain.
 
 ## Handoff Notes
 
-- **Working tree: `master` has substantial UNCOMMITTED, but fully
-  VERIFIED, Stage 6 work** on top of `origin/master`'s `c58c511`
-  (Stage 5) — do NOT assume clean/up to date. Touches:
-  `src/quaidstvp.src` (rename), `src/quaidstvpelas.src` (rename), new
-  `src/quaidstvpfit.src`, `src/quaids.sdf` (two new structs),
-  `sslib.pin.json` (new), `scripts/sync_sslib.ps1`/`verify_sslib_pin.ps1`
-  (new), `scripts/verify_public_api.ps1` (multi-file module support),
-  `tests/run_source_tests.ps1`/`run_examples_smoke.ps1` (wiring),
-  `tests/quaidstvpfit_test.e` (new) + two new guard cases,
-  `tests/quaidstvp_elas_test.e` + its three guard cases (rename),
-  `docs/public-api.json`/`docs/COMMAND_REFERENCE.md` + five new
-  `docs/command-reference/*.md` pages, `README.md`/`examples/README.md`,
-  new `examples/14_tvp_aids_estimation.e`,
-  `package.json`/`CITATION.cff`/`CHANGELOG.md` (version bump to `0.3.0`),
-  `CLAUDE.md` (sslib/optional-modules notes + three new language
-  gotchas). **Not committed** — per this session's own standing
-  instruction, confirm with the user before any commit even mid-stage.
+- **Working tree: `master` clean, up to date with `origin/master` at
+  `4129201`** (Stage 6, committed and pushed at the user's explicit
+  request — bundling every file listed in Stage 6's own Completed Work
+  entry: `src/quaidstvp.src`/`quaidstvpelas.src` renames, new
+  `src/quaidstvpfit.src`, `src/quaids.sdf`'s two new structs, new
+  `sslib.pin.json`/`scripts/sync_sslib.ps1`/`verify_sslib_pin.ps1`,
+  `scripts/verify_public_api.ps1`'s multi-file module support,
+  `tests/run_source_tests.ps1`/`run_examples_smoke.ps1` wiring, new
+  `tests/quaidstvpfit_test.e` + two guard cases,
+  `tests/quaidstvp_elas_test.e` + its three guard cases (rename), five
+  new `docs/command-reference/*.md` pages plus
+  `docs/public-api.json`/`docs/COMMAND_REFERENCE.md`, `README.md`/
+  `examples/README.md`, new `examples/14_tvp_aids_estimation.e`, the
+  version bump to `0.3.0` across `package.json`/`CITATION.cff`/
+  `CHANGELOG.md`, and `CLAUDE.md`'s sslib/optional-modules notes plus
+  three new language gotchas). Nothing uncommitted. CI confirmed
+  `success` (`gh run list`, run id `35878499421`).
   The full release-verification pipeline has been run clean against this
   exact working-tree state (see Next Steps item 3) — nothing here is
   provisional or awaiting a resume step.

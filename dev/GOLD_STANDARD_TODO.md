@@ -3532,7 +3532,7 @@ specialized fixture matching the already-validated one in
 bump (pure examples/documentation work, matching Milestone 8's
 precedent).
 
-## TVP-AIDS initiative (in progress)
+## TVP-AIDS initiative (complete)
 
 Requested by the repo owner: extend this library to support genuine
 time-varying-parameter (TVP) AIDS -- coefficients evolving over time via
@@ -3818,5 +3818,144 @@ hand-rolling a Kalman filter, missing only a period-varying smoother.
   - Committed as `c58c511` and pushed to `origin/master`; the self-hosted
     push-triggered CI run completed `success` (confirmed via
     `gh run list`, run id `34841421508`).
-- [ ] **Stage 6**: printer, docs, example, `sslib` package dependency,
-  version bump.
+- [x] **Stage 6**: the final stage -- publishes real public API, docs, an
+  example, the `sslib` package dependency, and a version bump, closing
+  out the initiative. A repo-owner design plan was written and approved
+  (plan-mode review) before any code was written, settling two explicit
+  decisions up front: the public surface stays MINIMAL (one consolidated
+  `quaidsTVPFit()`, not every stage exposed separately) and the `sslib`
+  pin gets a real automated mechanism, not just better documentation.
+  - New public API: `quaidsTVPFit()`/`printQuaidsTVP()`/
+    `quaidsTVPControlCreate()` (new file `src/quaidstvpfit.src` -- pure
+    orchestration over Stages 1/3/4/5's already-tested pieces: Stone
+    index + Z-build, MLE-fitted Q against a caller-fixed H via Stage 2's
+    filter internally, the RTS smoother if `tvpCtl.smooth`,
+    `quaidsTVPStateToFullB()` at the final period -- no new estimation
+    math introduced), plus `quaidsTVPStateToFullB()`/`quaidsTVPElasFit()`
+    promoted from private to public in place (dropped their leading
+    underscore in `quaidstvp.src`/`quaidstvpelas.src`, same behavior).
+    New structs `quaidsTVPControl`/`quaidsTVPOut` in `quaids.sdf`
+    (matrix/array/string fields only, same optmt/sslib-independent
+    pattern `quaidsCurvOut` already uses -- core `quaids.sdf` stays
+    compilable without `sslib`). Every Stage 2-4 building block
+    (`_quaidsTVPBuildModel`/`_quaidsTVPKalmanFit`/`_quaidsTVPMLEFit`/
+    `_quaidsTVPSmoothFit`) stays private, called only internally --
+    matches this library's existing one-clean-`Fit()`-per-feature
+    convention rather than exposing every intermediate stage.
+  - A real, automated `sslib` commit-pinning mechanism: `sslib.pin.json`
+    (repo root) plus `scripts/sync_sslib.ps1` (resync or deliberate
+    repin, via `git archive` of a LOCAL checkout -- never the live
+    install, never that repo's own working tree) and
+    `scripts/verify_sslib_pin.ps1` (sha256 drift check, wired into
+    `run_source_tests.ps1`'s `-SkipTVPKalman`-false branch), replacing
+    the ad hoc `git archive`-by-hand process that had already silently
+    broken passing tests twice earlier in this initiative (Stages 3-4).
+    The mechanism proved its own value immediately: it caught the shared
+    install drifting TWICE MORE live during this very stage, even after
+    already being used once. Root cause, diagnosed jointly with the
+    concurrent `gauss-state-space-1a` session rather than guessed: their
+    own test runner mirrors THEIR working tree into
+    `C:\gauss26\pkgs\sslib` via `robocopy /MIR` on every run of their own
+    gate, while they were mid-flight on a deliberately breaking `v2.0.0`
+    line (`feature/v2-modern-api-components` -- minimum GAUSS 26.1.4, a
+    reshaped `ssOut` with a new nested `structural` field, typed-struct-
+    return/keyword-argument public procs) -- a fundamentally different,
+    harder failure mode than "someone forgot to refresh the install." A
+    real `error G0507 : Undefined structure 'ssStructuralInfo'` hit
+    mid-session was diagnosed together with them as a stale-`.lcg`-vs-
+    new-source generation-mismatch timing issue on their side, not a bug
+    here. Repinned to their explicit recommendation, `gauss-state-space`'s
+    tagged, stable `v1.0.0` release (`ad15626`) rather than a bare commit
+    hash on their moving branch -- confirmed with them that
+    `sync_sslib.ps1`'s hand-built `.lcg` generator (a full source scan,
+    not GAUSS's own `lib` command) is strictly more robust than `lib` for
+    `v1.0.0` specifically, though a future move to `v2` would need `lib`
+    or the GAUSS Package Manager instead (v2's own `typed_returns`/
+    `keywords` catalog annotations are load-bearing there; a hand-built
+    generator doesn't emit them).
+  - `sslib` deliberately stays OUT of `package.json`'s `deps` array, and
+    all six TVP-AIDS `.src` files (including the new
+    `quaidstvpfit.src`) stay unlisted in its `src` array permanently --
+    same "optional adapter" reasoning that already keeps
+    `optmt`/`pubtable` and `quaidscurvature.src`/`pubtable_quaids.src`
+    out, even though this is now real, intentional public API rather than
+    WIP. New third `docs/public-api.json` `optional_modules` entry
+    (`"tvp"`), whose `source` is genuinely an ARRAY of six files (unlike
+    `curvature`/`pubtable_adapter`'s one file each) -- required a real
+    code change to `scripts/verify_public_api.ps1` (previously assumed a
+    single-string `source`), extended to accept a string or an array,
+    keyed by module name instead.
+  - Five new `docs/command-reference/*.md` pages, a new
+    "Time-Varying-Parameter Estimation (optional, `sslib`)" section in
+    both `README.md` and `docs/COMMAND_REFERENCE.md`, a new runnable
+    `examples/14_tvp_aids_estimation.e`, and `tests/run_examples_smoke.ps1`
+    gaining its own `-SkipTVPKalman`/`GAUSS26_CFG` wiring for it. New
+    `tests/quaidstvpfit_test.e` (16 checks, all INTERNAL CONSISTENCY --
+    `quaidsTVPFit()`'s output vs. the same already-validated Stage 1/3/4/5
+    procs called directly on identical inputs, since Stage 6 adds no new
+    math) plus two new guard cases
+    (`tvpfit_bad_H_shape.e`/`tvpfit_bad_q0_shape.e`, reusing
+    `_quaidsTVPMLEFit`'s own existing error messages). Version bump
+    `0.2.0` → `0.3.0` (`package.json`/`CITATION.cff`/`docs/public-api.json`)
+    plus a `CHANGELOG.md` entry.
+  - **Six real bugs found and fixed, every one of them only catchable by
+    actually building, installing, and running against a real `sslib`
+    install and the installed package** -- none were catchable by the
+    `#include`-based source-tree testing this initiative had relied on
+    through Stage 5:
+    1. `quaidsTVPOut.smoothedStateCov` is `array`-typed (matching
+       `sslib`'s own `kalmanResult.filtered_state_cov`); a bare
+       `tvOut.smoothedStateCov = 0;` "not smoothed" sentinel hits the
+       same "Illegal assignment - type mismatch" `quaidstvpkalman.src`'s
+       own header already documents for array fields -- fixed with a
+       placeholder `arrayinit(1|1|1, 0)` instead.
+    2. `quaidsTVPControl.othnam` needed to be `matrix`-typed, not
+       `string`-typed like `quaidsControl.othnam` -- a `string` field
+       rejects a real character-matrix assignment outright
+       (`error G0071 : Type mismatch`), found via
+       `examples/14_tvp_aids_estimation.e`, the first place in this
+       codebase's history either `othnam` field was ever assigned a real
+       (non-default) value.
+    3. A SEPARATE, related gotcha: a value built with `$|` (vertical
+       string concatenation, e.g. `quaidsExampleGoodNames()`'s own
+       construction) is rejected even by a `matrix`-typed field, or by
+       `print$`/`~` horzcat (`error G0165`, same root cause) -- only the
+       legacy `$+`/`ftocv()` character-matrix form works; fixed with a
+       leading `0$+` coercion at both call sites, confirmed via isolated
+       scratch repro scripts before touching any real file.
+    4. `H = diag(vector)` does NOT build a diagonal matrix from a vector
+       in GAUSS (that's `diagrv(eye(n), vector)`) -- `_quaidsTVPMLEFit`'s
+       own shape guard correctly caught the resulting malformed `H`
+       rather than silently misbehaving; fixed in the example and in the
+       two doc pages that had copied the same mistake.
+    5. The full 5-good `quaidsExampleData()` dataset (`n1=4`,
+       `k_states=18`) makes `ssFitTVP()`'s CMLMT optimization
+       pathologically slow/non-terminating -- confirmed directly by
+       letting a run burn roughly 24 hours of real CPU time before
+       killing it, then isolating the cause with short-timeout scratch
+       scripts (still hung at `n1=4`/`tobs=200` within 100s; converged in
+       ~34s at `n1=2`/`tobs=500`). Fixed by restricting the example to a
+       3-good subset (`n1=2`), matching every other test/example in this
+       initiative, and documented as a real, confirmed scale limit
+       (`quaidsTVPFit.md`'s Remarks, a new README support-tier table
+       row) -- not merely an untested configuration.
+    6. `printQuaidsTVP()`'s Q-diagonal-block printing originally
+       concatenated a label with a multi-element `ftocv()` result via
+       `$+`, which BROADCASTS the label across every element instead of
+       joining one string (confirmed via an isolated repro, not assumed
+       from the garbled output alone) -- fixed by printing the label and
+       its row of values as two separate `print`/`print$` calls, matching
+       every existing multi-row printer in this codebase.
+    All six are now durable `CLAUDE.md` language gotchas.
+  - Full `scripts\run_release_verification.ps1 -BuildArtifact
+    -ForceArtifact -InstallArtifact` pipeline confirmed green end to end:
+    every source test, every guard case, the build, the install, the
+    installed-package public API test, and all 15 example smoke tests
+    (including the new TVP-AIDS one) -- zero failures anywhere in the
+    full output. This was the first time in this initiative any
+    `sslib`-dependent code was validated against a real install and a
+    real package rebuild/reinstall, not just `#include`-based source-tree
+    tests.
+  - Committed as `4129201` and pushed to `origin/master`; the self-hosted
+    push-triggered CI run completed `success` (confirmed via
+    `gh run list`, run id `35878499421`, 1m28s).
