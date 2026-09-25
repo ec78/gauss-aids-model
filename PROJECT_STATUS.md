@@ -5,9 +5,26 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-09-24_
+_Last updated: 2026-09-25_
 
 ## Current Objective
+
+**`v0.3.0` has been RELEASED.** `scripts\run_release_gate.ps1` reported
+`GO` (artifact SHA256
+`c5ce5e5ded68c64c6e5bdeaad9fdaf01bd82fca384d1aa7cef202f926d52b791`;
+release record at `release_records/0.3.0-20260924-093017.json`,
+gitignored). Tagged `v0.3.0` on `cc22950` and pushed; GitHub release
+created at https://github.com/ec78/gauss-aids-model/releases/tag/v0.3.0
+with `quaids.0.3.0.zip` attached (digest matches the gate's own
+checksum, confirmed). One transient, non-blocking hiccup during the
+gate's install step: `Remove-Item` on `C:\gauss26\pkgs\quaids` hit "file
+in use by another process" (likely a lingering handle from the prior
+verification run) and left the old directory in place instead of a clean
+wipe, but `build_lcg.ps1` still wrote into it successfully immediately
+after and every downstream check (installed-package API test, all 15
+examples, convergence sweep) passed clean against the result — worth a
+clean re-run if it recurs, not something that needed fixing this time.
+No other action items from this release; see below for prior context.
 
 **TVP-AIDS (time-varying-parameter AIDS via a Kalman filter) is
 COMPLETE** — a repo-owner-requested extension beyond the now-largely-
