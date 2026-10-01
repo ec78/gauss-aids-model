@@ -1,0 +1,55 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: anderson_curvature_check2.e ( C:\Users\Owner\AppData\Local\Temp\claude\c--Users-eclow-Documents-GitHub-gauss-aids-model\5d938cc6-63ab-4ca7-93b7-65c9d14e6084\scratchpad )
+Tue Sep 29 05:28:34 2026
+
+
+REFERENCE (normal single-start fit, no acceleration): converged       1.0000000 recErr      0.46477963 maxSlutzkyEig       44.425123
+(fixture's own documented reference: recErr ~0.16, maxEig ~+0.17)
+
+k       1.0000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425113
+k       2.0000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425123
+k       3.0000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       4.0000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       5.0000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       6.0000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425122
+k       7.0000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425118
+k       8.0000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       9.0000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425122
+k       10.000000 converged 1  recErr      0.46477956 isCorrect       1.0000000 maxSlutzkyEig       44.425104
+k       11.000000 converged 1  recErr      0.46477961 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       12.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425119
+k       13.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       14.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       15.000000 converged 1  recErr      0.46477959 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       16.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       17.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425123
+k       18.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425107
+k       19.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425118
+k       20.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425122
+k       21.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       22.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       23.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       24.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       25.000000 converged 1  recErr      0.46477961 isCorrect       1.0000000 maxSlutzkyEig       44.425122
+k       26.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       27.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       28.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425119
+k       29.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425122
+k       30.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       31.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       32.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425121
+k       33.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425119
+k       34.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       35.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       36.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       37.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       38.000000 converged 1  recErr      0.46477962 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       39.000000 converged 1  recErr      0.46477963 isCorrect       1.0000000 maxSlutzkyEig       44.425120
+k       40.000000 converged 1  recErr      0.46477960 isCorrect       1.0000000 maxSlutzkyEig       44.425127
+
+anderson_curvature_check2.e: run complete.

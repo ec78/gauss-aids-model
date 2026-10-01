@@ -1,0 +1,712 @@
+/*
+** quaidsfit_anderson_prototype.src
+**
+** EXPERIMENT, not shipped code. A faithful copy of src/quaids.src's
+** quaidsFit() (byte-identical outside the iteration loop), renamed
+** _quaidsFitAnderson(), with ONE change: the iteration loop's update
+** step can optionally use Anderson acceleration (Type-II, depth mDepth)
+** instead of (or on top of) the existing aCtl.relax flat damping.  The
+** optional residualStop audit flag makes the accelerated branch stop on
+** ||T(x)-x|| rather than on the accelerated step size; it defaults to 0
+** so every pre-audit invocation retains its original behavior.
+** safeMode=1 additionally uses consecutive-difference Type-II history,
+** a rank-truncated compact-SVD least-squares solve, residual-growth
+** history restarts, and an accelerated-step safeguard.  It is also
+** opt-in so the original sweep remains exactly reproducible.
+** mDepth=0 (default) reproduces quaidsFit()'s existing behavior exactly
+** (same branch, same code), so this is directly comparable in the
+** sweep harness -- any difference in outcome is attributable ONLY to
+** mDepth>0's Anderson branch, not to any incidental copy drift.
+**
+** Anderson formula validated in isolation first (anderson_toy_test.e,
+** a toy linear fixed point with spectral radius 1.4 -- plain Picard
+** iteration diverges to ~9e5 within 42 iterations; Anderson(depth=n)
+** recovers the true fixed point to ~1e-12 in 8 iterations) before being
+** wired in here.
+*/
+
+proc (2) = _andersonSvdMix(gVec, DG, rankTol);
+    local leftVecs, singMat, rightVecs, singVals, rankUse, mixCoef, oldtrp;
+
+    oldtrp = trapchk(1);
+    trap 1,1;
+    { leftVecs, singMat, rightVecs } = svd2(DG);
+    trap oldtrp,1;
+
+    if scalmiss(singMat[1,1]) or singMat[1,1] <= 0;
+        rankUse = 0;
+        mixCoef = zeros(cols(DG), 1);
+        retp(mixCoef, rankUse);
+    endif;
+
+    singVals = diag(singMat);
+    if singVals[1] <= 0;
+        rankUse = 0;
+        mixCoef = zeros(cols(DG), 1);
+    else;
+        rankUse = sumc(singVals .> rankTol*singVals[1]);
+        if rankUse > 0;
+            mixCoef = rightVecs[., 1:rankUse]
+                *((leftVecs[., 1:rankUse]'gVec)./singVals[1:rankUse]);
+        else;
+            mixCoef = zeros(cols(DG), 1);
+        endif;
+    endif;
+
+    retp(mixCoef, rankUse);
+endp;
+
+proc (struct quaidsOut) = _quaidsFitAnderson(w,  intcpt,  prices,  totexp,  instr,  struct quaidsControl aCtl, weight=0, mDepth=0, residualStop=0, safeMode=0, rankTol=1e-10, residualGrowth=10, stepFactor=10);
+
+    local nobs, n, n1, nint, xnam, wnam, unam, znam, ninst, endog, nu, m1, zzi, u, stone, lx,
+        nendog, m, ng, gg, gw, b, ok, alpha, gama, a_p, _beta, b_p, lx2, err, iter, df, iw, m_, cov,
+        std, cor, tv, ww, sse, v, y1, J, lambda, D, iu, O, R, vi, ii, crit, rbsq, fstat, Sgma,
+        pvf, stdest, stderr, t, pvt, i, ic, ig, R1, enam,
+        S, X, v_s, b_s, nz, mss, u1, b0, rsq, k, sym, pfsym,
+        z1z1, z1z1i, zz1, gz1, gama1, D1, J1, H1, itheta, Ji, v2, v1, v3, y2, g, nr, mi, ma,
+        model, iterHist, firstIter, overidFstat, overidPvf, oldtrp, xvix, b0Scalar,
+        isWeighted, rawWeightSum, effN, rootWt,
+        Tb, bVec, b0Vec, gVec, Xhist, Ghist, histCount, mUse, DX, DG, mixCoef, xnew, residErr,
+        prevResidErr, havePrevResid, rejectHistory, rankUse, plainStepNorm, acceleratedStepNorm;
+    struct quaidsOut qOut;
+
+    nobs = rows(w);
+    if cols(prices) ne cols(w);
+        "ERROR - not same number of prices and shares.";
+        stop;
+    endif;
+    n = cols(prices);
+    n1 = n - aCtl.homogenous;
+
+    { isWeighted, weight, rawWeightSum, effN } =
+        _quaidsNormalizeWeight(weight, nobs, "quaidsFit");
+    rootWt = sqrt(weight);
+
+    if intcpt == 0;
+        intcpt = ones(nobs, 1);
+        nint = 0;
+        xnam = 0$+"CONSTANT";
+    else;
+        nint = cols(intcpt);
+        intcpt = ones(nobs, 1)~intcpt;
+        if aCtl.othnam $== 0;
+            xnam=0$+"X"$+ftocv(seqa(1, 1, nint), __vpad*(floor(log(nint)+1), 0));
+        else;
+            xnam = aCtl.othnam[1:nint];
+        endif;
+        xnam = "CONSTANT"|xnam;
+    endif;
+
+    if aCtl.othnam $== 0;
+        wnam = 0$+"W"$+ftocv(seqa(1, 1, n), __vpad*(floor(log(n)+1), 0));
+    else;
+        wnam = aCtl.othnam[nint+1:nint+n];
+    endif;
+
+    ninst = cols(instr);
+    if aCtl.othnam $== 0;
+        znam=0$+"Z"$+ftocv(seqa(1, 1, ninst), __vpad*(floor(log(ninst)+1), 0));
+    else;
+        znam = aCtl.othnam[nint+n+1:nint+n+ninst];
+    endif;
+
+    if aCtl.maxiter == 1;
+        model = "LA-AIDS";
+    elseif aCtl.linear;
+        model = "AIDS";
+    else;
+        model = "QUAIDS";
+    endif;
+
+    qOut.model = model;
+    qOut.linear = aCtl.linear;
+    qOut.homogeneous = aCtl.homogenous;
+    qOut.homogenous = aCtl.homogenous;
+    qOut.maxiter = aCtl.maxiter;
+    qOut.alpha0 = aCtl.alpha0;
+    qOut.nobs = nobs;
+    qOut.n = n;
+    qOut.nint = nint;
+    qOut.ninst = ninst;
+    qOut.n1 = n1;
+    qOut.xnam = xnam;
+    qOut.wnam = wnam;
+    qOut.znam = znam;
+    qOut.intcptFull = intcpt;
+    qOut.weighted = isWeighted;
+    qOut.weightSum = rawWeightSum;
+    qOut.effN = effN;
+
+
+    /*****************************************************************/
+    /* INSTRUMENTATION OF ENDOGENOUS VARIABLE (quaidsiv.src) */
+    /*****************************************************************/
+
+    { prices, u, zzi, m1, nz, nu, enam,
+        b, stderr, t, pvt, cor, tv, df, rsq, rbsq, sse, stdest, fstat, pvf }
+        = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n, weight);
+
+    qOut.nu = nu;
+    qOut.enam = enam;
+    qOut.nz = nz;
+    qOut.u = u;
+    qOut.ivB = b;
+    qOut.ivSE = stderr;
+    qOut.ivT = t;
+    qOut.ivPvt = pvt;
+    qOut.ivCor = cor;
+    qOut.ivTv = tv;
+    qOut.ivDf = df;
+    qOut.ivRsq = rsq;
+    qOut.ivRbsq = rbsq;
+    qOut.ivSse = sse;
+    qOut.ivStdest = stdest;
+    qOut.ivFstat = fstat;
+    qOut.ivPvf = pvf;
+
+    clear tv, df, rsq, rbsq, sse, stdest, pvf, stderr, t, pvt, cor;
+
+
+
+    /**************************/
+    /* STARTING VALUE  */
+    /***************************/
+
+    stone = (prices[., 1:n-1] + prices[., n])~prices[., n];
+    stone = stone*meanc(w);
+    lx = totexp -stone;
+    clear stone;
+    if not aCtl.linear;
+        endog = lx~lx^2;
+    else;
+        endog = lx;
+    endif;
+    nendog = cols(endog);
+    unam = 0$+"U"$+ftocv(seqa(1, 1, nu), __vpad*(floor(log(nu)+1), 0));
+    m = moment(rootWt.*(intcpt~prices[., 1:n1]~endog~u~w), 0);
+    ng = 1+nint+n1+nendog+nu;
+    gg = m[1:ng, 1:ng];
+    gw = m[1:ng, ng+1:ng+n];
+
+    b0Scalar = rows(aCtl.b0)*cols(aCtl.b0) == 1;
+    if b0Scalar and aCtl.b0==0;
+        b = solpd(gw, gg);
+
+    else;
+        if rows(aCtl.b0) /= ng or cols(aCtl.b0) /= n;
+            errorlog "_quaidsFitAnderson: aCtl.b0 must be scalar 0 or an ng x n reduced raw coefficient matrix matching qOut.homogB.";
+            end;
+        endif;
+        b = aCtl.b0;
+    endif;
+
+    qOut.unam = unam;
+    qOut.nendog = nendog;
+    qOut.ng = ng;
+
+
+    /******************************/
+    /* BEGINS ITERATIONS */
+    /*****************************/
+
+    ok = aCtl.maxiter>1;
+    iter = 1;
+    firstIter = 1;
+    histCount = 0;
+    havePrevResid = 0;
+    prevResidErr = 0;
+    if mDepth > 0;
+        Xhist = zeros(ng*n, mDepth);
+        Ghist = zeros(ng*n, mDepth);
+    endif;
+    do while ok;
+        b0 = b;
+        alpha = intcpt*b[1:1+nint, 1:n-1];
+        if aCtl.homogenous;
+            gama = b[1+nint+1:1+nint+n1, 1:n-1] | zeros(1, n-1);
+        else;
+            gama = b[1+nint+1:1+nint+n, 1:n-1];
+        endif;
+
+        a_p = aCtl.alpha0 + prices[., n]
+            + sumc((prices[., 1:n-1].*alpha)')
+            + .5*sumc(((prices*gama).*prices[., 1:n-1])');
+        lx = totexp - a_p;
+        if not aCtl.linear;
+            _beta = b[1+nint+n1+1, 1:n-1];
+            b_p = exp(prices[., 1:n-1]*_beta');
+            lx2 = (lx^2)./b_p;
+            endog = lx~lx2;
+        else;
+            endog = lx;
+        endif;
+        m[1+nint+n1+1:1+nint+n1+nendog, .]
+            = endog'(weight.*(intcpt~prices[., 1:n1]~endog~u~w));
+        m[., 1+nint+n1+1:1+nint+n1+nendog]
+            = m[1+nint+n1+1:1+nint+n1+nendog, .]';
+        gg = m[1:ng, 1:ng];
+        gw = m[1:ng, ng+1:ng+n];
+        Tb = solpd(gw, gg);
+        residErr = maxc(maxc(abs((Tb-b0)./(b0 + (b0 .== 0)))));
+
+        if mDepth == 0;
+            /* Existing quaidsFit() behavior, byte-identical. */
+            b = aCtl.relax*Tb + (1-aCtl.relax)*b0;
+        elseif residualStop and residErr <= aCtl.err;
+            /* An accelerated step can be tiny because the history terms
+               cancel even when T(b0)-b0 is not.  For the audit mode,
+               declare convergence from the fixed-point residual itself
+               and finish on the current GLS map value. */
+            b = Tb;
+        else;
+            /* Anderson(mDepth) acceleration (Type-II), validated in
+               isolation (anderson_toy_test.e) before being wired in
+               here. b0/Tb are ng x n matrices; vec() them (column-major
+               stacking) for the mixing linear algebra, then invert via
+               reshape(.,cols,rows)' -- NOT reshape(.,rows,cols), per
+               CLAUDE.md's own documented reshape()-fills-row-major
+               gotcha (reshape(v,rows(X),cols(X)) does NOT invert
+               vec(X) in general). aCtl.relax is read as the Anderson
+               mixing parameter beta here (relax=1 is the standard,
+               undamped Anderson step).
+            */
+            b0Vec = vec(b0);
+            gVec = vec(Tb) - b0Vec;
+            rejectHistory = 0;
+            if safeMode and havePrevResid;
+                rejectHistory = residErr > residualGrowth*prevResidErr;
+            endif;
+
+            if histCount == 0 or rejectHistory;
+                bVec = b0Vec + aCtl.relax*gVec;
+            else;
+                mUse = histCount;
+                if safeMode;
+                    if mUse == 1;
+                        DX = b0Vec - Xhist[., 1];
+                        DG = gVec - Ghist[., 1];
+                    else;
+                        DX = (Xhist[., 2:mUse] - Xhist[., 1:mUse-1])
+                            ~(b0Vec - Xhist[., mUse]);
+                        DG = (Ghist[., 2:mUse] - Ghist[., 1:mUse-1])
+                            ~(gVec - Ghist[., mUse]);
+                    endif;
+                    { mixCoef, rankUse } = _andersonSvdMix(gVec, DG, rankTol);
+                    if rankUse == 0;
+                        rejectHistory = 1;
+                    endif;
+                else;
+                    DX = b0Vec - Xhist[., 1:mUse];
+                    DG = gVec - Ghist[., 1:mUse];
+                    mixCoef = invpd(DG'DG + 1e-10*eye(mUse)) * (DG'gVec);
+                endif;
+                bVec = b0Vec + aCtl.relax*gVec - (DX + aCtl.relax*DG)*mixCoef;
+
+                if safeMode;
+                    plainStepNorm = maxc(abs(aCtl.relax*gVec));
+                    acceleratedStepNorm = maxc(abs(bVec-b0Vec));
+                    if acceleratedStepNorm > stepFactor*(plainStepNorm + 1e-12)
+                        or acceleratedStepNorm > 1e12;
+                        bVec = b0Vec + aCtl.relax*gVec;
+                        rejectHistory = 1;
+                    endif;
+                endif;
+            endif;
+
+            if rejectHistory;
+                histCount = 0;
+            endif;
+
+            if histCount < mDepth;
+                Xhist[., histCount+1] = b0Vec;
+                Ghist[., histCount+1] = gVec;
+                histCount = histCount + 1;
+            else;
+                Xhist = Xhist[., 2:mDepth]~b0Vec;
+                Ghist = Ghist[., 2:mDepth]~gVec;
+            endif;
+
+            b = reshape(bVec, cols(b0), rows(b0))';
+            prevResidErr = residErr;
+            havePrevResid = 1;
+        endif;
+
+        if mDepth > 0 and residualStop;
+            err = residErr;
+        else;
+            err = maxc(maxc(abs((b-b0)./(b0 + (b0 .== 0)))));
+        endif;
+        if err <= aCtl.err or iter>=aCtl.maxiter;
+            ok = 0;
+        else;
+            if firstIter;
+                iterHist = iter~err;
+                firstIter = 0;
+            else;
+                iterHist = iterHist | (iter~err);
+            endif;
+        endif;
+        iter = iter+1;
+    endo;
+
+    if aCtl.maxiter > 1 and not firstIter;
+        qOut.iterHistory = iterHist;
+    else;
+        qOut.iterHistory = 0;
+    endif;
+    if aCtl.maxiter > 1;
+        qOut.iterations = iter-1;
+        qOut.finalErr = err;
+        qOut.converged = err <= aCtl.err;
+    else;
+        qOut.iterations = 0;
+        qOut.finalErr = miss(0, 0);
+        qOut.converged = 1;
+    endif;
+
+
+
+    /* VARIANCE */
+
+    J = eye(n-1).*.gg;
+    if aCtl.maxiter > 1;
+        _beta = b[1+nint+n1+1, 1:n-1];
+        nr = 500;
+        mi = 1;
+        ma = minc(nr|nobs);
+        do while mi<=nobs;
+            ii = seqa(mi, 1, ma-mi+1);
+            g = weight[ii].*(intcpt[ii, .]~prices[ii, 1:n1]~endog[ii, .]~u[ii, .]);
+            y1 = intcpt[ii, .]~.5*prices[ii, 1:n1];
+            y2 = prices[ii, 1:n-1]*~(y1~zeros(ma-mi+1, nendog+nu));
+            J = J - _beta'.*.(g'y2);
+            if not aCtl.linear;
+                lambda = b[1+nint+n1+2, 1:n-1];
+                y2 = prices[ii, 1:n-1]*~( 2*y1.*lx[ii, .]./b_p[ii, .] ~ lx2[ii, .] ~ zeros(ma-mi+1, 1+nu) );
+                J = J - lambda'.*.( g'y2);
+            endif;
+            mi = ma+1;
+            ma = minc(ma+nr|nobs);
+        endo;
+        clear y1, y2, g;
+    endif;
+
+    iw = seqa(ng+1, 1, n);
+    ww = m[iw, iw];
+    sse = ww-b'gw;
+    S = sse/nobs;
+    D = m1[1:1+nint+n1, 1:nz]
+        |endog'(weight.*(intcpt~prices~instr));
+    D = D|zeros(nu, nz);
+    iu = seqa(ng-nu+1, 1, nu);
+    R = b[iu, 1:n-1];
+    O = R'm[iu, iu]/nobs*R;
+    Sgma =  S[1:n-1, 1:n-1].*.gg + O.*.(D*zzi*D') ;
+    Ji = inv(J);
+    v = Ji'Sgma*Ji;
+    clear J;
+
+    ii = -ones(1, n-1).*.eye(ng);
+    v = (v|ii*v)~(v*ii'|ii*v*ii');
+    clear ii;
+
+
+    /* HOMOGENEITY-CONSTRAINED (OR UNCONSTRAINED, IF NOT aCtl.homogenous) STAGE */
+
+    crit = -ln(det(S[1:n-1, 1:n-1]));
+    df = nobs-ng;
+    m_ = m[., 1]/nobs;
+    cov = m/nobs - m_*m_';
+    clear m_;
+    std = sqrt(diag(cov));
+    cor = cov[2:ng, iw]./std[2:ng]./std[iw]';
+    clear std;
+    tv = nobs*diag(cov[iw, iw]);
+    clear cov;
+    mss = { . };
+    sse = diag(sse);
+    rsq = (tv - sse)./tv;
+    rbsq = 1-(1-rsq)*((nobs-1)/df);
+    fstat = (rsq./(1-rsq))*(df/(ng-1));
+    if fstat>0;
+        pvf = cdffc(fstat, ng-1, df);
+    else;
+        pvf = {.};
+    endif;
+
+    stdest = sqrt(sse/df);
+    stderr = sqrt(diag(v));
+    stderr = reshape(stderr, n, ng)';
+    t = b./miss(stderr, 0);
+    pvt = 2*cdftc(abs(t), df);
+
+    qOut.homogB = b;
+    qOut.homogV = v;
+    qOut.homogSE = stderr;
+    qOut.homogT = t;
+    qOut.homogPvt = pvt;
+    qOut.homogCor = cor;
+    qOut.homogTv = tv;
+    qOut.homogRsq = rsq;
+    qOut.homogRbsq = rbsq;
+    qOut.homogSse = sse;
+    qOut.homogStdest = stdest;
+    qOut.homogFstat = fstat;
+    qOut.homogPvf = pvf;
+    qOut.homogDf = df;
+    qOut.homogCrit = crit;
+
+    clear crit, rsq, rbsq, sse, stdest, pvf, stderr, t, pvt, cor;
+
+
+
+
+    /**********************************************************/
+    /* TEST OF OVERIDENTIFYING RESTRICTIONS */
+    /**********************************************************/
+
+    qOut.overidValid = ninst>nu;
+    if ninst>nu;
+
+
+        z1z1 = m1[1+nint+n+1:nz, 1+nint+n+1:nz];
+        z1z1i = invpd(z1z1);
+        gz1 = m1[1:1+nint+n1, 1+nint+n+1:nz]
+            |endog'(weight.*instr);
+        gama1 = z1z1i*((weight.*instr)'w-gz1'b[1:1+nint+n1+nendog, .]);
+        D1 = gz1|zeros(nu, ninst);
+
+        J1 = eye(n-1).*.gz1';
+        if aCtl.maxiter > 1;
+            nr = 500;
+            mi = 1;
+            ma = minc(nr|nobs);
+            do while mi<=nobs;
+                ii = seqa(mi, 1, ma-mi+1);
+                y1 = intcpt[ii, .]~.5*prices[ii, 1:n1];
+                y2 = prices[ii, 1:n-1]*~(y1~zeros(ma-mi+1, nendog));
+                J1 = J1 - _beta'.*.((weight[ii].*instr[ii, .])'y2);
+                if not aCtl.linear;
+                    lambda = b[1+nint+n1+2, 1:n-1];
+                    y2 = prices[ii, 1:n-1]*~( 2*y1.*lx[ii, .]./b_p[ii, .] ~ lx2[ii, .] ~ zeros(ma-mi+1, 1) );
+                    J1 = J1 - lambda'.*.( (weight[ii].*instr[ii, .])'y2);
+                endif;
+                mi = ma+1;
+                ma = minc(ma+nr|nobs);
+            endo;
+            clear y1, y2;
+        endif;
+
+
+        itheta = seqa(1, 1, 1+nint+n1+nendog);
+        itheta = vec(itheta+seqa(0, ng, n-1)');
+        H1 = (eye(n-1).*.z1z1i) * J1*Ji[itheta, .];
+        v2 = H1 * (S[1:n-1, 1:n-1].*.(D1*z1z1i));
+        zz1 = m1[1:nz, 1+nint+n+1:nz];
+        v3 = H1 * (O.*.(D*zzi*zz1*z1z1i));
+        v1 =  ((S[1:n-1, 1:n-1]+O).*.z1z1i )
+            - v2 - v2' - v3 - v3'
+            + H1*Sgma*H1';
+
+        clear J1, Ji, Sgma, H1, v2, v3, D1, gz1, zz1, z1z1, z1z1i;
+
+
+        ii = -ones(1, n-1).*.eye(ninst);
+        v1 = (v1|ii*v1)~(v1*ii'|ii*v1*ii');
+        clear ii;
+
+
+        stderr = sqrt(diag(v1));
+        stderr = reshape(stderr, n, ninst)';
+        t = gama1./miss(stderr, 0);
+        pvt = 2*cdfnc(abs(t));
+
+        overidFstat = zeros(n, 1);
+        overidPvf = zeros(n, 1);
+        i = 1;
+        do while i<=n;
+            ii = seqa(1, 1, ninst)+ninst*(i-1);
+            overidFstat[i] = gama1[1:ninst, i]'pinv(v1[ii, ii])*gama1[1:ninst, i];
+            if overidFstat[i]>0;
+                overidPvf[i] = cdfchic(overidFstat[i], ninst-nu);
+            else;
+                overidPvf[i] = miss(0, 0);
+            endif;
+            i = i+1;
+        endo;
+
+        qOut.overidGamma = gama1;
+        qOut.overidSE = stderr;
+        qOut.overidT = t;
+        qOut.overidPvt = pvt;
+        qOut.overidFstat = overidFstat;
+        qOut.overidPvf = overidPvf;
+        qOut.overidDf = ninst-nu;
+
+    endif;
+
+
+    /*********************************************************************************/
+    /* TEST OF SYMMETRY SYMMETRY CONSTRAINED ESTIMATION */
+    /*********************************************************************************/
+
+    qOut.symValid = aCtl.homogenous;
+    if aCtl.homogenous;
+        ic = seqa(1, 1, 1+nint)|seqa(1+nint+n1+1, 1, nendog+nu);
+        ig = seqa(1+nint+1, 1, n1);
+        ic = vec(ic+seqa(0, ng, n1)');
+        ig = vec(ig+seqa(0, ng, n1)');
+        i = ic|ig;
+        i = sortind(i);
+
+        R1 = design(vec(xpnd(seqa(1, 1, n1*(n1+1)/2))));
+        k = (ng-n1)*n1;
+        X = ( eye(k)          ~zeros(k, cols(R1)) )|
+            ( zeros(rows(R1), k)~     R1           );
+        X = X[i, .];
+
+        xvix = 0;
+        oldtrp = trapchk(1);
+        trap 1,1;
+        vi = invpd(v[1:n1*ng, 1:n1*ng]);
+        trap oldtrp,1;
+
+        if not scalmiss(vi);
+            oldtrp = trapchk(1);
+            trap 1,1;
+            xvix = invpd(X'vi*X);
+            trap oldtrp,1;
+        endif;
+
+        if scalmiss(vi) or scalmiss(xvix);
+            qOut.symValid = 0;
+            qOut.symStat = miss(0, 0);
+            qOut.symPval = miss(0, 0);
+            qOut.symDf = n1*(n1-1)/2;
+            b_s = vec(b[., 1:n1]);
+            v_s = v[1:n1*ng, 1:n1*ng];
+        else;
+            v_s = X*xvix*X';
+            b_s = v_s*vi*vec(b[., 1:n1]);
+            u1 = vec(b[., 1:n1]) - b_s;
+            sym = u1'*vi*u1;
+            pfsym = cdfchic(sym, n1*(n1-1)/2);
+
+            qOut.symStat = sym;
+            qOut.symPval = pfsym;
+            qOut.symDf = n1*(n1-1)/2;
+        endif;
+        clear i, ic, ig, R1, X, vi, xvix;
+
+        ii = -ones(1, n-1).*.eye(ng);
+        v_s = (v_s|ii*v_s)~(v_s*ii'|ii*v_s*ii');
+        b_s = b_s|ii*b_s;
+        b_s = reshape(b_s, n, ng)';
+        b_s[1, n] = 1 + b_s[1, n];
+
+        sse = ww-b_s'gw-gw'b_s+b_s'gg*b_s;
+        crit = -ln(det(sse[1:n-1, 1:n-1]/nobs));
+        sse = diag(sse);
+        rsq = (tv - sse)./tv;
+        rbsq = 1-(1-rsq)*((nobs-1)/df);
+        stdest = sqrt(sse/df);
+        stderr = sqrt(diag(v_s));
+        stderr = reshape(stderr, n, ng)';
+        t = b_s./stderr;
+        pvt = 2*cdfnc(abs(t));
+
+        qOut.symcB = b_s;
+        qOut.symcV = v_s;
+        qOut.symcSE = stderr;
+        qOut.symcT = t;
+        qOut.symcPvt = pvt;
+        qOut.symcRsq = rsq;
+        qOut.symcRbsq = rbsq;
+        qOut.symcSse = sse;
+        qOut.symcStdest = stdest;
+        qOut.symcCrit = crit;
+
+        clear i;
+    endif;
+    clear crit, tv, df, rsq, rbsq, sse, stdest, stderr, t, pvt, cor;
+
+
+
+    /*****************************************************************************/
+    /*  RECOVERS ABSOLUTE PRICE EFFECTS FROM RELATIVE */
+    /****************************************************************************/
+    if not aCtl.homogenous;
+        ic = seqa(1, 1, 1+nint)|(1+nint+n+seqa(1, 1, 2-aCtl.linear+nu));
+        ig = seqa(1+nint+1, 1, n);
+        ic = vec(ic+seqa(0, ng, n)');
+        ig = vec(ig+seqa(0, ng, n)');
+        i = ic|ig;
+        i = sortind(i);
+
+        R1 = ( eye(n-1) ~ zeros(n-1, 1) ) |
+            ( -ones(1, n-1) ~ 1 );
+        R1 = eye(n).*.R1;
+
+        k = (ng-n)*n;
+        X = ( eye(k)          ~zeros(k, cols(R1)) )|
+            ( zeros(rows(R1), k)~     R1           );
+        X = X[i, i];
+
+        b_s = X*vec(b);
+        b_s = reshape(b_s, n, ng)';
+        v_s = X*v*X';
+        clear i, ic, ig, R1, X;
+
+    else;
+        ic = seqa(1, 1, 1+nint)|(1+nint+n1+seqa(1, 1, 2-aCtl.linear+nu));
+        ig = seqa(1+nint+1, 1, n1);
+        ic = vec(ic+seqa(0, ng, n)');
+        ig = vec(ig+seqa(0, ng, n)');
+        i = ic|ig;
+        i = sortind(i);
+
+        R1 =  eye(n1) |
+            -ones(1, n1);
+        R1 = eye(n).*.R1;
+
+        k = (ng-n1)*n;
+        X = ( eye(k)          ~zeros(k, cols(R1)) )|
+            ( zeros(rows(R1), k)~     R1           );
+        X = X[., i];
+
+        ic = seqa(1, 1, 1+nint)|(1+nint+n+seqa(1, 1, 2-aCtl.linear+nu));
+        ig = seqa(1+nint+1, 1, n);
+        ic = vec(ic+seqa(0, ng+1, n)');
+        ig = vec(ig+seqa(0, ng+1, n)');
+        i = ic|ig;
+        i = sortind(i);
+        X = X[i, .];
+
+        b = X*vec(b);
+        b = reshape(b, n, ng+1)';
+        v = X*v*X';
+        b_s = X*vec(b_s);
+        b_s = reshape(b_s, n, ng+1)';
+        v_s = X*v_s*X';
+        clear i, ig, ic, R1, X;
+
+    endif;
+
+    if aCtl.homogenous;
+        qOut.b = b;
+        qOut.v = v;
+        qOut.bS = b_s;
+        qOut.vS = v_s;
+        qOut.bestB = b_s;
+        qOut.bestV = v_s;
+    else;
+        qOut.b = b_s;
+        qOut.v = v_s;
+        qOut.bS = 0;
+        qOut.vS = 0;
+        qOut.bestB = b_s;
+        qOut.bestV = v_s;
+    endif;
+
+    retp(qOut);
+endp;

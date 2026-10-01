@@ -1,0 +1,450 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: anderson_curvature_check.e ( C:\Users\Owner\AppData\Local\Temp\claude\c--Users-eclow-Documents-GitHub-gauss-aids-model\5d938cc6-63ab-4ca7-93b7-65c9d14e6084\scratchpad )
+Tue Sep 29 05:25:25 2026
+
+
+seed       1.0000000 modelIterated AIDS (linear)k       1.0000000 recErr       7.7609747 isCorrect       0.0000000 maxSlutzkyEig       7984.0459 curvHolds       0.0000000
+seed       1.0000000 modelIterated AIDS (linear)k       2.0000000 recErr       7.7610131 isCorrect       0.0000000 maxSlutzkyEig       7984.1744 curvHolds       0.0000000
+seed       1.0000000 modelIterated AIDS (linear)k       3.0000000 recErr       7.7610113 isCorrect       0.0000000 maxSlutzkyEig       7984.1247 curvHolds       0.0000000
+seed       1.0000000 modelIterated AIDS (linear)k       4.0000000 recErr       7.7610013 isCorrect       0.0000000 maxSlutzkyEig       7984.1290 curvHolds       0.0000000
+seed       1.0000000 modelIterated AIDS (linear)k       5.0000000 recErr       7.7610192 isCorrect       0.0000000 maxSlutzkyEig       7984.1831 curvHolds       0.0000000
+seed       1.0000000 modelIterated AIDS (linear)k       6.0000000 recErr       7.7610108 isCorrect       0.0000000 maxSlutzkyEig       7984.1631 curvHolds       0.0000000
+seed       1.0000000 modelIterated AIDS (linear)k       7.0000000 recErr       7.7611663 isCorrect       0.0000000 maxSlutzkyEig       7984.3854 curvHolds       0.0000000
+seed       1.0000000 modelIterated AIDS (linear)k       8.0000000 recErr       7.7610046 isCorrect       0.0000000 maxSlutzkyEig       7984.1375 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.88460404 isCorrect       1.0000000 maxSlutzkyEig       4036.1066 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.88460404 isCorrect       1.0000000 maxSlutzkyEig       4036.1062 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.88460402 isCorrect       1.0000000 maxSlutzkyEig       4036.1071 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.88460409 isCorrect       1.0000000 maxSlutzkyEig       4036.1078 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.88460399 isCorrect       1.0000000 maxSlutzkyEig       4036.1075 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.88460403 isCorrect       1.0000000 maxSlutzkyEig       4036.1069 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.88460407 isCorrect       1.0000000 maxSlutzkyEig       4036.1062 curvHolds       0.0000000
+seed       2.0000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.88460399 isCorrect       1.0000000 maxSlutzkyEig       4036.1080 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.54212887 isCorrect       1.0000000 maxSlutzkyEig       11894.880 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.54212845 isCorrect       1.0000000 maxSlutzkyEig       11894.897 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.54212838 isCorrect       1.0000000 maxSlutzkyEig       11894.899 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.54212834 isCorrect       1.0000000 maxSlutzkyEig       11894.901 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.54212814 isCorrect       1.0000000 maxSlutzkyEig       11894.907 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.54212835 isCorrect       1.0000000 maxSlutzkyEig       11894.900 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.54212828 isCorrect       1.0000000 maxSlutzkyEig       11894.902 curvHolds       0.0000000
+seed       3.0000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.54212837 isCorrect       1.0000000 maxSlutzkyEig       11894.899 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       1.0000000 recErr       6.2048145 isCorrect       0.0000000 maxSlutzkyEig       2558.8432 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       2.0000000 recErr       6.2048137 isCorrect       0.0000000 maxSlutzkyEig       2558.8445 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       3.0000000 recErr       6.2048136 isCorrect       0.0000000 maxSlutzkyEig       2558.8425 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       4.0000000 recErr       6.2048136 isCorrect       0.0000000 maxSlutzkyEig       2558.8421 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       5.0000000 recErr       6.2048142 isCorrect       0.0000000 maxSlutzkyEig       2558.8418 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       6.0000000 recErr       6.2048130 isCorrect       0.0000000 maxSlutzkyEig       2558.8417 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       7.0000000 recErr       6.2048139 isCorrect       0.0000000 maxSlutzkyEig       2558.8426 curvHolds       0.0000000
+seed       4.0000000 modelIterated AIDS (linear)k       8.0000000 recErr       6.2048135 isCorrect       0.0000000 maxSlutzkyEig       2558.8427 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       1.0000000 recErr       6.1525963 isCorrect       0.0000000 maxSlutzkyEig       4270.9694 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       2.0000000 recErr       6.1525774 isCorrect       0.0000000 maxSlutzkyEig       4270.9226 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       3.0000000 recErr       6.1525908 isCorrect       0.0000000 maxSlutzkyEig       4270.9662 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       4.0000000 recErr       6.1525896 isCorrect       0.0000000 maxSlutzkyEig       4270.9610 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       5.0000000 recErr       6.1525908 isCorrect       0.0000000 maxSlutzkyEig       4270.9615 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       6.0000000 recErr       6.1525858 isCorrect       0.0000000 maxSlutzkyEig       4270.9561 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       7.0000000 recErr       6.1525725 isCorrect       0.0000000 maxSlutzkyEig       4270.9441 curvHolds       0.0000000
+seed       5.0000000 modelIterated AIDS (linear)k       8.0000000 recErr       6.1525926 isCorrect       0.0000000 maxSlutzkyEig       4270.9704 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       1.0000000 recErr       1.2313404 isCorrect       0.0000000 maxSlutzkyEig       11354.397 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       2.0000000 recErr       1.2313527 isCorrect       0.0000000 maxSlutzkyEig       11354.420 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       3.0000000 recErr       1.2313526 isCorrect       0.0000000 maxSlutzkyEig       11354.421 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       4.0000000 recErr       1.2313401 isCorrect       0.0000000 maxSlutzkyEig       11354.396 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       5.0000000 recErr       1.2313414 isCorrect       0.0000000 maxSlutzkyEig       11354.399 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       6.0000000 recErr       1.2313352 isCorrect       0.0000000 maxSlutzkyEig       11354.387 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       7.0000000 recErr       1.2313377 isCorrect       0.0000000 maxSlutzkyEig       11354.392 curvHolds       0.0000000
+seed       6.0000000 modelIterated AIDS (linear)k       8.0000000 recErr       1.2313405 isCorrect       0.0000000 maxSlutzkyEig       11354.400 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.86942362 isCorrect       1.0000000 maxSlutzkyEig       4787.7240 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.86942361 isCorrect       1.0000000 maxSlutzkyEig       4787.7229 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.86942357 isCorrect       1.0000000 maxSlutzkyEig       4787.7229 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.86942359 isCorrect       1.0000000 maxSlutzkyEig       4787.7230 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.86942361 isCorrect       1.0000000 maxSlutzkyEig       4787.7249 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.86942351 isCorrect       1.0000000 maxSlutzkyEig       4787.7204 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.86942360 isCorrect       1.0000000 maxSlutzkyEig       4787.7231 curvHolds       0.0000000
+seed       7.0000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.86942359 isCorrect       1.0000000 maxSlutzkyEig       4787.7237 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.77894874 isCorrect       1.0000000 maxSlutzkyEig       6887.8735 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.77894872 isCorrect       1.0000000 maxSlutzkyEig       6887.8737 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.77894872 isCorrect       1.0000000 maxSlutzkyEig       6887.8738 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.77894866 isCorrect       1.0000000 maxSlutzkyEig       6887.8750 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.77894889 isCorrect       1.0000000 maxSlutzkyEig       6887.8649 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.77894870 isCorrect       1.0000000 maxSlutzkyEig       6887.8752 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.77894871 isCorrect       1.0000000 maxSlutzkyEig       6887.8739 curvHolds       0.0000000
+seed       8.0000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.77894872 isCorrect       1.0000000 maxSlutzkyEig       6887.8741 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.75866153 isCorrect       1.0000000 maxSlutzkyEig       4329.0337 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.75866250 isCorrect       1.0000000 maxSlutzkyEig       4329.0312 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.75866187 isCorrect       1.0000000 maxSlutzkyEig       4329.0326 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.75865896 isCorrect       1.0000000 maxSlutzkyEig       4329.0426 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.75866143 isCorrect       1.0000000 maxSlutzkyEig       4329.0343 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.75866203 isCorrect       1.0000000 maxSlutzkyEig       4329.0325 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.75866212 isCorrect       1.0000000 maxSlutzkyEig       4329.0315 curvHolds       0.0000000
+seed       9.0000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.75866215 isCorrect       1.0000000 maxSlutzkyEig       4329.0317 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       1.0000000 recErr       1.0002806 isCorrect       0.0000000 maxSlutzkyEig       9059.2994 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       2.0000000 recErr       1.0002742 isCorrect       0.0000000 maxSlutzkyEig       9059.3281 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       3.0000000 recErr       1.0002764 isCorrect       0.0000000 maxSlutzkyEig       9059.3128 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       4.0000000 recErr       1.0002667 isCorrect       0.0000000 maxSlutzkyEig       9059.3465 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       5.0000000 recErr       1.0002734 isCorrect       0.0000000 maxSlutzkyEig       9059.3203 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       6.0000000 recErr       1.0002775 isCorrect       0.0000000 maxSlutzkyEig       9059.2989 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       7.0000000 recErr       1.0002756 isCorrect       0.0000000 maxSlutzkyEig       9059.3094 curvHolds       0.0000000
+seed       10.000000 modelIterated AIDS (linear)k       8.0000000 recErr       1.0002753 isCorrect       0.0000000 maxSlutzkyEig       9059.2950 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.86908494 isCorrect       1.0000000 maxSlutzkyEig       6465.7087 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.86908955 isCorrect       1.0000000 maxSlutzkyEig       6465.6888 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.86908489 isCorrect       1.0000000 maxSlutzkyEig       6465.7110 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.86908471 isCorrect       1.0000000 maxSlutzkyEig       6465.7100 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.86908524 isCorrect       1.0000000 maxSlutzkyEig       6465.7075 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.86908486 isCorrect       1.0000000 maxSlutzkyEig       6465.7099 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.86908502 isCorrect       1.0000000 maxSlutzkyEig       6465.7087 curvHolds       0.0000000
+seed       11.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.86908422 isCorrect       1.0000000 maxSlutzkyEig       6465.7141 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.77341168 isCorrect       1.0000000 maxSlutzkyEig       1008.8888 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.77341167 isCorrect       1.0000000 maxSlutzkyEig       1008.8887 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.77341168 isCorrect       1.0000000 maxSlutzkyEig       1008.8888 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.77341168 isCorrect       1.0000000 maxSlutzkyEig       1008.8888 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.77341168 isCorrect       1.0000000 maxSlutzkyEig       1008.8888 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.77341168 isCorrect       1.0000000 maxSlutzkyEig       1008.8888 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.77341167 isCorrect       1.0000000 maxSlutzkyEig       1008.8887 curvHolds       0.0000000
+seed       12.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.77341168 isCorrect       1.0000000 maxSlutzkyEig       1008.8888 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       1.0000000 recErr       4.7279039 isCorrect       0.0000000 maxSlutzkyEig       2425.1060 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       2.0000000 recErr       4.7279122 isCorrect       0.0000000 maxSlutzkyEig       2425.1039 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       3.0000000 recErr       4.7279118 isCorrect       0.0000000 maxSlutzkyEig       2425.1029 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       4.0000000 recErr       4.7279047 isCorrect       0.0000000 maxSlutzkyEig       2425.1059 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       5.0000000 recErr       4.7278868 isCorrect       0.0000000 maxSlutzkyEig       2425.1049 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       6.0000000 recErr       4.7279077 isCorrect       0.0000000 maxSlutzkyEig       2425.1091 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       7.0000000 recErr       4.7279036 isCorrect       0.0000000 maxSlutzkyEig       2425.1043 curvHolds       0.0000000
+seed       13.000000 modelIterated AIDS (linear)k       8.0000000 recErr       4.7279084 isCorrect       0.0000000 maxSlutzkyEig       2425.1035 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.28861407 isCorrect       1.0000000 maxSlutzkyEig       3436.2979 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.28861407 isCorrect       1.0000000 maxSlutzkyEig       3436.2980 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.28861405 isCorrect       1.0000000 maxSlutzkyEig       3436.2975 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.28861422 isCorrect       1.0000000 maxSlutzkyEig       3436.3006 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.28861420 isCorrect       1.0000000 maxSlutzkyEig       3436.2999 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.28861404 isCorrect       1.0000000 maxSlutzkyEig       3436.2977 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.28861407 isCorrect       1.0000000 maxSlutzkyEig       3436.2980 curvHolds       0.0000000
+seed       14.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.28861423 isCorrect       1.0000000 maxSlutzkyEig       3436.2998 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       1.0000000 recErr       9.1458006 isCorrect       0.0000000 maxSlutzkyEig       5580.7316 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       2.0000000 recErr       9.1457987 isCorrect       0.0000000 maxSlutzkyEig       5580.7380 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       3.0000000 recErr       9.1457986 isCorrect       0.0000000 maxSlutzkyEig       5580.7433 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       4.0000000 recErr       9.1457998 isCorrect       0.0000000 maxSlutzkyEig       5580.7293 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       5.0000000 recErr       9.1458000 isCorrect       0.0000000 maxSlutzkyEig       5580.7263 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       6.0000000 recErr       9.1457748 isCorrect       0.0000000 maxSlutzkyEig       5580.7593 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       7.0000000 recErr       9.1458010 isCorrect       0.0000000 maxSlutzkyEig       5580.7296 curvHolds       0.0000000
+seed       15.000000 modelIterated AIDS (linear)k       8.0000000 recErr       9.1458008 isCorrect       0.0000000 maxSlutzkyEig       5580.7355 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       1.0000000 recErr       7.9376929 isCorrect       0.0000000 maxSlutzkyEig       3392.8072 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       2.0000000 recErr       7.9376931 isCorrect       0.0000000 maxSlutzkyEig       3392.8065 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       3.0000000 recErr       7.9376930 isCorrect       0.0000000 maxSlutzkyEig       3392.8068 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       4.0000000 recErr       7.9376952 isCorrect       0.0000000 maxSlutzkyEig       3392.8062 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       5.0000000 recErr       7.9376914 isCorrect       0.0000000 maxSlutzkyEig       3392.8085 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       6.0000000 recErr       7.9376932 isCorrect       0.0000000 maxSlutzkyEig       3392.8065 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       7.0000000 recErr       7.9376931 isCorrect       0.0000000 maxSlutzkyEig       3392.8065 curvHolds       0.0000000
+seed       16.000000 modelIterated AIDS (linear)k       8.0000000 recErr       7.9376932 isCorrect       0.0000000 maxSlutzkyEig       3392.8064 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       1.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       2.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       3.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       4.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       5.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       6.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       7.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       17.000000 modelIterated AIDS (linear)k       8.0000000 recErr       12.566503 isCorrect       0.0000000 maxSlutzkyEig       1224.3624 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       1.0000000 recErr       5.4144764 isCorrect       0.0000000 maxSlutzkyEig       40663.956 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       2.0000000 recErr       5.4144933 isCorrect       0.0000000 maxSlutzkyEig       40664.069 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       3.0000000 recErr       5.4144801 isCorrect       0.0000000 maxSlutzkyEig       40663.887 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       4.0000000 recErr       5.4144990 isCorrect       0.0000000 maxSlutzkyEig       40664.008 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       5.0000000 recErr       5.4144869 isCorrect       0.0000000 maxSlutzkyEig       40664.015 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       6.0000000 recErr       5.4144939 isCorrect       0.0000000 maxSlutzkyEig       40664.011 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       7.0000000 recErr       5.4144904 isCorrect       0.0000000 maxSlutzkyEig       40663.944 curvHolds       0.0000000
+seed       18.000000 modelIterated AIDS (linear)k       8.0000000 recErr       5.4144912 isCorrect       0.0000000 maxSlutzkyEig       40664.033 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.32283349 isCorrect       1.0000000 maxSlutzkyEig       3008.2422 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.32283351 isCorrect       1.0000000 maxSlutzkyEig       3008.2416 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.32283351 isCorrect       1.0000000 maxSlutzkyEig       3008.2416 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.32283356 isCorrect       1.0000000 maxSlutzkyEig       3008.2422 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.32283350 isCorrect       1.0000000 maxSlutzkyEig       3008.2416 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.32283350 isCorrect       1.0000000 maxSlutzkyEig       3008.2416 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.32283350 isCorrect       1.0000000 maxSlutzkyEig       3008.2416 curvHolds       0.0000000
+seed       19.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.32283351 isCorrect       1.0000000 maxSlutzkyEig       3008.2412 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.54937072 isCorrect       1.0000000 maxSlutzkyEig       29291.686 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.54937075 isCorrect       1.0000000 maxSlutzkyEig       29291.675 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.54937072 isCorrect       1.0000000 maxSlutzkyEig       29291.670 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       4.0000000 recErr       7.3317688 isCorrect       0.0000000 maxSlutzkyEig       7147.6757 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.99992710 isCorrect       1.0000000 maxSlutzkyEig       30103.274 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.99991618 isCorrect       1.0000000 maxSlutzkyEig       30103.263 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.99992178 isCorrect       1.0000000 maxSlutzkyEig       30103.268 curvHolds       0.0000000
+seed       20.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.54937067 isCorrect       1.0000000 maxSlutzkyEig       29291.660 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.27453805 isCorrect       1.0000000 maxSlutzkyEig       16026.040 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.27451883 isCorrect       1.0000000 maxSlutzkyEig       16026.023 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.27452744 isCorrect       1.0000000 maxSlutzkyEig       16026.049 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.27452144 isCorrect       1.0000000 maxSlutzkyEig       16026.062 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.27454400 isCorrect       1.0000000 maxSlutzkyEig       16025.984 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       6.0000000 recErr       9.8495933 isCorrect       0.0000000 maxSlutzkyEig       5797.8892 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.27452732 isCorrect       1.0000000 maxSlutzkyEig       16026.003 curvHolds       0.0000000
+seed       21.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.27452121 isCorrect       1.0000000 maxSlutzkyEig       16026.063 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       1.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4783 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       2.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4783 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       3.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4783 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       4.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4782 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       5.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4779 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       6.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4779 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       7.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4787 curvHolds       0.0000000
+seed       22.000000 modelIterated AIDS (linear)k       8.0000000 recErr       1.0139627 isCorrect       0.0000000 maxSlutzkyEig       3013.4783 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.95635720 isCorrect       1.0000000 maxSlutzkyEig       9419.8013 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.95635720 isCorrect       1.0000000 maxSlutzkyEig       9419.8019 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.95635720 isCorrect       1.0000000 maxSlutzkyEig       9419.8020 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.95635720 isCorrect       1.0000000 maxSlutzkyEig       9419.8022 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.95635720 isCorrect       1.0000000 maxSlutzkyEig       9419.8015 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.95635721 isCorrect       1.0000000 maxSlutzkyEig       9419.8011 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.95635720 isCorrect       1.0000000 maxSlutzkyEig       9419.8016 curvHolds       0.0000000
+seed       23.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.95635720 isCorrect       1.0000000 maxSlutzkyEig       9419.8017 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       1.0000000 recErr       3.8081509 isCorrect       0.0000000 maxSlutzkyEig       8059.6029 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       2.0000000 recErr       3.8081493 isCorrect       0.0000000 maxSlutzkyEig       8059.6169 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       3.0000000 recErr       3.8081509 isCorrect       0.0000000 maxSlutzkyEig       8059.6004 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       4.0000000 recErr       3.8081511 isCorrect       0.0000000 maxSlutzkyEig       8059.5900 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       5.0000000 recErr       3.8081505 isCorrect       0.0000000 maxSlutzkyEig       8059.6066 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       6.0000000 recErr       3.8081511 isCorrect       0.0000000 maxSlutzkyEig       8059.5971 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       7.0000000 recErr       3.8081508 isCorrect       0.0000000 maxSlutzkyEig       8059.5974 curvHolds       0.0000000
+seed       24.000000 modelIterated AIDS (linear)k       8.0000000 recErr       3.8081508 isCorrect       0.0000000 maxSlutzkyEig       8059.6010 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       1.0000000 recErr       1.2186948 isCorrect       0.0000000 maxSlutzkyEig       16279.757 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       2.0000000 recErr       1.2186950 isCorrect       0.0000000 maxSlutzkyEig       16279.745 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       3.0000000 recErr       1.2186952 isCorrect       0.0000000 maxSlutzkyEig       16279.698 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       4.0000000 recErr       1.2186951 isCorrect       0.0000000 maxSlutzkyEig       16279.723 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       5.0000000 recErr       1.2186951 isCorrect       0.0000000 maxSlutzkyEig       16279.724 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       6.0000000 recErr       1.2186951 isCorrect       0.0000000 maxSlutzkyEig       16279.729 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       7.0000000 recErr       1.2186952 isCorrect       0.0000000 maxSlutzkyEig       16279.705 curvHolds       0.0000000
+seed       25.000000 modelIterated AIDS (linear)k       8.0000000 recErr       1.2186951 isCorrect       0.0000000 maxSlutzkyEig       16279.731 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.93116499 isCorrect       1.0000000 maxSlutzkyEig       1568.9626 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.93116508 isCorrect       1.0000000 maxSlutzkyEig       1568.9636 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.93116503 isCorrect       1.0000000 maxSlutzkyEig       1568.9635 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.93116506 isCorrect       1.0000000 maxSlutzkyEig       1568.9635 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.93116507 isCorrect       1.0000000 maxSlutzkyEig       1568.9635 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.93116507 isCorrect       1.0000000 maxSlutzkyEig       1568.9636 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.93116506 isCorrect       1.0000000 maxSlutzkyEig       1568.9635 curvHolds       0.0000000
+seed       26.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.93116507 isCorrect       1.0000000 maxSlutzkyEig       1568.9636 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.33527236 isCorrect       1.0000000 maxSlutzkyEig       1482.8359 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.33527236 isCorrect       1.0000000 maxSlutzkyEig       1482.8359 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.33527236 isCorrect       1.0000000 maxSlutzkyEig       1482.8357 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.33527236 isCorrect       1.0000000 maxSlutzkyEig       1482.8356 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.33527237 isCorrect       1.0000000 maxSlutzkyEig       1482.8358 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.33527236 isCorrect       1.0000000 maxSlutzkyEig       1482.8359 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.33527236 isCorrect       1.0000000 maxSlutzkyEig       1482.8359 curvHolds       0.0000000
+seed       27.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.33527237 isCorrect       1.0000000 maxSlutzkyEig       1482.8360 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.64640868 isCorrect       1.0000000 maxSlutzkyEig       15290.365 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.64640867 isCorrect       1.0000000 maxSlutzkyEig       15290.370 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.64640869 isCorrect       1.0000000 maxSlutzkyEig       15290.362 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.64640869 isCorrect       1.0000000 maxSlutzkyEig       15290.362 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.64640871 isCorrect       1.0000000 maxSlutzkyEig       15290.345 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.64640869 isCorrect       1.0000000 maxSlutzkyEig       15290.362 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.64640869 isCorrect       1.0000000 maxSlutzkyEig       15290.362 curvHolds       0.0000000
+seed       28.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.64640873 isCorrect       1.0000000 maxSlutzkyEig       15290.361 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       1.0000000 recErr       3.2262420 isCorrect       0.0000000 maxSlutzkyEig       3938.0754 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       2.0000000 recErr       3.2262510 isCorrect       0.0000000 maxSlutzkyEig       3938.0671 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       3.0000000 recErr       3.2262638 isCorrect       0.0000000 maxSlutzkyEig       3938.0534 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       4.0000000 recErr       3.2262467 isCorrect       0.0000000 maxSlutzkyEig       3938.0718 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       5.0000000 recErr       3.2264673 isCorrect       0.0000000 maxSlutzkyEig       3937.8701 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       6.0000000 recErr       3.2262309 isCorrect       0.0000000 maxSlutzkyEig       3938.0889 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       7.0000000 recErr       3.2261654 isCorrect       0.0000000 maxSlutzkyEig       3938.1550 curvHolds       0.0000000
+seed       29.000000 modelIterated AIDS (linear)k       8.0000000 recErr       3.2262487 isCorrect       0.0000000 maxSlutzkyEig       3938.0695 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       1.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       2.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       3.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       4.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       5.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       6.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       7.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       30.000000 modelIterated AIDS (linear)k       8.0000000 recErr      0.58213521 isCorrect       1.0000000 maxSlutzkyEig       1242.9324 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       1.0000000 recErr       82.434910 isCorrect       0.0000000 maxSlutzkyEig   1.8505136e+11 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       2.0000000 recErr       82.434750 isCorrect       0.0000000 maxSlutzkyEig   1.8505528e+11 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       3.0000000 recErr       82.434772 isCorrect       0.0000000 maxSlutzkyEig   1.8505556e+11 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       4.0000000 recErr       82.434638 isCorrect       0.0000000 maxSlutzkyEig   1.8505555e+11 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       5.0000000 recErr       82.435177 isCorrect       0.0000000 maxSlutzkyEig   1.8505482e+11 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       6.0000000 recErr       82.432178 isCorrect       0.0000000 maxSlutzkyEig   1.8508793e+11 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       7.0000000 recErr       82.435981 isCorrect       0.0000000 maxSlutzkyEig   1.8504875e+11 curvHolds       0.0000000
+seed       1.0000000 modelQUAIDSk       8.0000000 recErr       82.434832 isCorrect       0.0000000 maxSlutzkyEig   1.8505412e+11 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       1.0000000 recErr      0.86877147 isCorrect       1.0000000 maxSlutzkyEig       151350.67 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       2.0000000 recErr      0.86877242 isCorrect       1.0000000 maxSlutzkyEig       151349.92 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       3.0000000 recErr      0.86877182 isCorrect       1.0000000 maxSlutzkyEig       151350.99 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       4.0000000 recErr      0.86877147 isCorrect       1.0000000 maxSlutzkyEig       151350.00 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       5.0000000 recErr      0.86877143 isCorrect       1.0000000 maxSlutzkyEig       151351.33 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       6.0000000 recErr      0.86877261 isCorrect       1.0000000 maxSlutzkyEig       151349.78 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       7.0000000 recErr      0.86877209 isCorrect       1.0000000 maxSlutzkyEig       151350.89 curvHolds       0.0000000
+seed       2.0000000 modelQUAIDSk       8.0000000 recErr      0.86876738 isCorrect       1.0000000 maxSlutzkyEig       151349.78 curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       1.0000000 recErr       53.073290 isCorrect       0.0000000 maxSlutzkyEig   3.7221881e+09 curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       2.0000000 recErr       53.073332 isCorrect       0.0000000 maxSlutzkyEig   3.7225365e+09 curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       3.0000000 recErr      0.61953713 isCorrect       1.0000000 maxSlutzkyEig       41166291. curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       4.0000000 recErr       53.073466 isCorrect       0.0000000 maxSlutzkyEig   3.7221418e+09 curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       5.0000000 recErr       53.072692 isCorrect       0.0000000 maxSlutzkyEig   3.7235697e+09 curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       6.0000000 recErr       53.073955 isCorrect       0.0000000 maxSlutzkyEig   3.7216718e+09 curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       7.0000000 recErr       53.073392 isCorrect       0.0000000 maxSlutzkyEig   3.7224338e+09 curvHolds       0.0000000
+seed       3.0000000 modelQUAIDSk       8.0000000 recErr       53.073460 isCorrect       0.0000000 maxSlutzkyEig   3.7231041e+09 curvHolds       0.0000000
+seed       4.0000000 modelQUAIDSk       1.0000000 recErr       103.16768 isCorrect       0.0000000 maxSlutzkyEig   1.3881570e+20 curvHolds       0.0000000
+seed       4.0000000 modelQUAIDSk       3.0000000 recErr       103.16765 isCorrect       0.0000000 maxSlutzkyEig   1.3881515e+20 curvHolds       0.0000000
+seed       4.0000000 modelQUAIDSk       4.0000000 recErr       103.16786 isCorrect       0.0000000 maxSlutzkyEig   1.3881081e+20 curvHolds       0.0000000
+seed       4.0000000 modelQUAIDSk       5.0000000 recErr       98.278418 isCorrect       0.0000000 maxSlutzkyEig   9.8001033e+09 curvHolds       0.0000000
+seed       4.0000000 modelQUAIDSk       6.0000000 recErr       98.273902 isCorrect       0.0000000 maxSlutzkyEig   9.8013946e+09 curvHolds       0.0000000
+seed       4.0000000 modelQUAIDSk       7.0000000 recErr       98.274302 isCorrect       0.0000000 maxSlutzkyEig   9.8002413e+09 curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       1.0000000 recErr       66.532572 isCorrect       0.0000000 maxSlutzkyEig       5986546.3 curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       2.0000000 recErr       13.944517 isCorrect       0.0000000 maxSlutzkyEig       12647832. curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       3.0000000 recErr       27.616016 isCorrect       0.0000000 maxSlutzkyEig   4.1928267e+11 curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       4.0000000 recErr       66.532578 isCorrect       0.0000000 maxSlutzkyEig       5986591.4 curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       5.0000000 recErr       66.532855 isCorrect       0.0000000 maxSlutzkyEig       5986147.2 curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       6.0000000 recErr       41.757548 isCorrect       0.0000000 maxSlutzkyEig   5.4187825e+11 curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       7.0000000 recErr       27.615222 isCorrect       0.0000000 maxSlutzkyEig   4.1925943e+11 curvHolds       0.0000000
+seed       5.0000000 modelQUAIDSk       8.0000000 recErr       66.532751 isCorrect       0.0000000 maxSlutzkyEig       5986125.2 curvHolds       0.0000000
+seed       6.0000000 modelQUAIDSk       1.0000000 recErr       1.0482833 isCorrect       0.0000000 maxSlutzkyEig       2554285.5 curvHolds       0.0000000
+seed       6.0000000 modelQUAIDSk       3.0000000 recErr       1.0481884 isCorrect       0.0000000 maxSlutzkyEig       2554148.0 curvHolds       0.0000000
+seed       6.0000000 modelQUAIDSk       4.0000000 recErr       7.4283754 isCorrect       0.0000000 maxSlutzkyEig       657252.96 curvHolds       0.0000000
+seed       6.0000000 modelQUAIDSk       5.0000000 recErr       7.4280771 isCorrect       0.0000000 maxSlutzkyEig       657260.14 curvHolds       0.0000000
+seed       6.0000000 modelQUAIDSk       6.0000000 recErr      0.78171758 isCorrect       1.0000000 maxSlutzkyEig       1385305.0 curvHolds       0.0000000
+seed       6.0000000 modelQUAIDSk       7.0000000 recErr       7.4282696 isCorrect       0.0000000 maxSlutzkyEig       657255.09 curvHolds       0.0000000
+seed       6.0000000 modelQUAIDSk       8.0000000 recErr      0.78162959 isCorrect       1.0000000 maxSlutzkyEig       1385070.7 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       1.0000000 recErr      0.89666195 isCorrect       1.0000000 maxSlutzkyEig       402903.46 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       2.0000000 recErr      0.89666133 isCorrect       1.0000000 maxSlutzkyEig       402904.10 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       3.0000000 recErr      0.89666235 isCorrect       1.0000000 maxSlutzkyEig       402902.16 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       4.0000000 recErr      0.89666334 isCorrect       1.0000000 maxSlutzkyEig       402902.99 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       5.0000000 recErr      0.89666275 isCorrect       1.0000000 maxSlutzkyEig       402902.57 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       6.0000000 recErr      0.89666135 isCorrect       1.0000000 maxSlutzkyEig       402906.52 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       7.0000000 recErr      0.89666261 isCorrect       1.0000000 maxSlutzkyEig       402902.24 curvHolds       0.0000000
+seed       7.0000000 modelQUAIDSk       8.0000000 recErr      0.89666412 isCorrect       1.0000000 maxSlutzkyEig       402899.57 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       1.0000000 recErr       1.2081732 isCorrect       0.0000000 maxSlutzkyEig       57412.496 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       2.0000000 recErr       1.2081735 isCorrect       0.0000000 maxSlutzkyEig       57412.509 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       3.0000000 recErr       1.2081732 isCorrect       0.0000000 maxSlutzkyEig       57412.503 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       4.0000000 recErr       1.2081716 isCorrect       0.0000000 maxSlutzkyEig       57412.502 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       5.0000000 recErr       1.2081732 isCorrect       0.0000000 maxSlutzkyEig       57412.526 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       6.0000000 recErr       1.2081732 isCorrect       0.0000000 maxSlutzkyEig       57412.504 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       7.0000000 recErr       1.2081732 isCorrect       0.0000000 maxSlutzkyEig       57412.501 curvHolds       0.0000000
+seed       8.0000000 modelQUAIDSk       8.0000000 recErr       1.2081732 isCorrect       0.0000000 maxSlutzkyEig       57412.508 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       1.0000000 recErr       34.480387 isCorrect       0.0000000 maxSlutzkyEig   2.7850042e+09 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       2.0000000 recErr       34.480348 isCorrect       0.0000000 maxSlutzkyEig   2.7850787e+09 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       3.0000000 recErr       34.480343 isCorrect       0.0000000 maxSlutzkyEig   2.7850931e+09 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       4.0000000 recErr       34.480375 isCorrect       0.0000000 maxSlutzkyEig   2.7851172e+09 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       5.0000000 recErr       34.480350 isCorrect       0.0000000 maxSlutzkyEig   2.7850805e+09 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       6.0000000 recErr       34.480352 isCorrect       0.0000000 maxSlutzkyEig   2.7850773e+09 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       7.0000000 recErr       34.480424 isCorrect       0.0000000 maxSlutzkyEig   2.7849967e+09 curvHolds       0.0000000
+seed       10.000000 modelQUAIDSk       8.0000000 recErr       34.480315 isCorrect       0.0000000 maxSlutzkyEig   2.7851122e+09 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       1.0000000 recErr       9.2095668 isCorrect       0.0000000 maxSlutzkyEig   2.3996438e+08 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       2.0000000 recErr       9.2095751 isCorrect       0.0000000 maxSlutzkyEig   2.3996421e+08 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       3.0000000 recErr       9.2095631 isCorrect       0.0000000 maxSlutzkyEig   2.3996436e+08 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       4.0000000 recErr       9.2094344 isCorrect       0.0000000 maxSlutzkyEig   2.3996335e+08 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       5.0000000 recErr       9.2095620 isCorrect       0.0000000 maxSlutzkyEig   2.3996444e+08 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       6.0000000 recErr       11.628212 isCorrect       0.0000000 maxSlutzkyEig       5811636.9 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       7.0000000 recErr       11.628403 isCorrect       0.0000000 maxSlutzkyEig       5811439.7 curvHolds       0.0000000
+seed       11.000000 modelQUAIDSk       8.0000000 recErr       11.628439 isCorrect       0.0000000 maxSlutzkyEig       5811428.7 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       1.0000000 recErr      0.78229027 isCorrect       1.0000000 maxSlutzkyEig       21780.239 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       2.0000000 recErr      0.78229042 isCorrect       1.0000000 maxSlutzkyEig       21780.256 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       3.0000000 recErr      0.78229046 isCorrect       1.0000000 maxSlutzkyEig       21780.257 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       4.0000000 recErr      0.78229060 isCorrect       1.0000000 maxSlutzkyEig       21780.230 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       5.0000000 recErr      0.78229052 isCorrect       1.0000000 maxSlutzkyEig       21780.246 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       6.0000000 recErr      0.78229073 isCorrect       1.0000000 maxSlutzkyEig       21780.254 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       7.0000000 recErr      0.78229055 isCorrect       1.0000000 maxSlutzkyEig       21780.240 curvHolds       0.0000000
+seed       12.000000 modelQUAIDSk       8.0000000 recErr      0.78229046 isCorrect       1.0000000 maxSlutzkyEig       21780.277 curvHolds       0.0000000
+seed       13.000000 modelQUAIDSk       2.0000000 recErr       157.04284 isCorrect       0.0000000 maxSlutzkyEig   2.0044162e+18 curvHolds       0.0000000
+seed       13.000000 modelQUAIDSk       6.0000000 recErr       221.38499 isCorrect       0.0000000 maxSlutzkyEig   3.6337138e+23 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       1.0000000 recErr      0.27845216 isCorrect       1.0000000 maxSlutzkyEig       15284.335 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       2.0000000 recErr      0.27845217 isCorrect       1.0000000 maxSlutzkyEig       15284.335 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       3.0000000 recErr      0.27845217 isCorrect       1.0000000 maxSlutzkyEig       15284.338 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       4.0000000 recErr      0.27845216 isCorrect       1.0000000 maxSlutzkyEig       15284.336 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       5.0000000 recErr      0.27845217 isCorrect       1.0000000 maxSlutzkyEig       15284.335 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       6.0000000 recErr      0.27845216 isCorrect       1.0000000 maxSlutzkyEig       15284.338 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       7.0000000 recErr      0.27845217 isCorrect       1.0000000 maxSlutzkyEig       15284.335 curvHolds       0.0000000
+seed       14.000000 modelQUAIDSk       8.0000000 recErr      0.27845212 isCorrect       1.0000000 maxSlutzkyEig       15284.312 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       1.0000000 recErr       125.71693 isCorrect       0.0000000 maxSlutzkyEig   2.8416216e+12 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       2.0000000 recErr       125.71753 isCorrect       0.0000000 maxSlutzkyEig   2.8417856e+12 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       3.0000000 recErr       125.71690 isCorrect       0.0000000 maxSlutzkyEig   2.8416188e+12 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       4.0000000 recErr       125.71680 isCorrect       0.0000000 maxSlutzkyEig   2.8415908e+12 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       5.0000000 recErr       125.71689 isCorrect       0.0000000 maxSlutzkyEig   2.8416171e+12 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       6.0000000 recErr       125.71800 isCorrect       0.0000000 maxSlutzkyEig   2.8419952e+12 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       7.0000000 recErr       125.71719 isCorrect       0.0000000 maxSlutzkyEig   2.8417206e+12 curvHolds       0.0000000
+seed       16.000000 modelQUAIDSk       8.0000000 recErr       125.71692 isCorrect       0.0000000 maxSlutzkyEig   2.8416388e+12 curvHolds       0.0000000
+seed       17.000000 modelQUAIDSk       1.0000000 recErr       74.352381 isCorrect       0.0000000 maxSlutzkyEig   7.8327756e+08 curvHolds       0.0000000
+seed       17.000000 modelQUAIDSk       2.0000000 recErr       394.37325 isCorrect       0.0000000 maxSlutzkyEig   5.5867044e+12 curvHolds       0.0000000
+seed       18.000000 modelQUAIDSk       6.0000000 recErr       102.75518 isCorrect       0.0000000 maxSlutzkyEig   8.3638809e+10 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       1.0000000 recErr      0.32445431 isCorrect       1.0000000 maxSlutzkyEig       15031.922 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       2.0000000 recErr      0.32445432 isCorrect       1.0000000 maxSlutzkyEig       15031.921 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       3.0000000 recErr      0.32445432 isCorrect       1.0000000 maxSlutzkyEig       15031.923 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       4.0000000 recErr      0.32445428 isCorrect       1.0000000 maxSlutzkyEig       15031.916 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       5.0000000 recErr      0.32445432 isCorrect       1.0000000 maxSlutzkyEig       15031.921 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       6.0000000 recErr      0.32445432 isCorrect       1.0000000 maxSlutzkyEig       15031.921 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       7.0000000 recErr      0.32445432 isCorrect       1.0000000 maxSlutzkyEig       15031.921 curvHolds       0.0000000
+seed       19.000000 modelQUAIDSk       8.0000000 recErr      0.32445432 isCorrect       1.0000000 maxSlutzkyEig       15031.921 curvHolds       0.0000000
+seed       20.000000 modelQUAIDSk       1.0000000 recErr       26.135401 isCorrect       0.0000000 maxSlutzkyEig   1.4681585e+09 curvHolds       0.0000000
+seed       20.000000 modelQUAIDSk       3.0000000 recErr       1.0908150 isCorrect       0.0000000 maxSlutzkyEig   1.4076832e+09 curvHolds       0.0000000
+seed       20.000000 modelQUAIDSk       5.0000000 recErr       35.875916 isCorrect       0.0000000 maxSlutzkyEig   1.4642935e+09 curvHolds       0.0000000
+seed       20.000000 modelQUAIDSk       6.0000000 recErr       26.135404 isCorrect       0.0000000 maxSlutzkyEig   1.4681601e+09 curvHolds       0.0000000
+seed       20.000000 modelQUAIDSk       8.0000000 recErr       26.135425 isCorrect       0.0000000 maxSlutzkyEig   1.4681212e+09 curvHolds       0.0000000
+seed       21.000000 modelQUAIDSk       1.0000000 recErr       89.294033 isCorrect       0.0000000 maxSlutzkyEig   7.7128614e+08 curvHolds       0.0000000
+seed       21.000000 modelQUAIDSk       3.0000000 recErr       150.17191 isCorrect       0.0000000 maxSlutzkyEig   2.5460654e+17 curvHolds       0.0000000
+seed       21.000000 modelQUAIDSk       4.0000000 recErr       89.294039 isCorrect       0.0000000 maxSlutzkyEig   7.7128207e+08 curvHolds       0.0000000
+seed       21.000000 modelQUAIDSk       5.0000000 recErr       89.294071 isCorrect       0.0000000 maxSlutzkyEig   7.7129685e+08 curvHolds       0.0000000
+seed       21.000000 modelQUAIDSk       6.0000000 recErr       89.293840 isCorrect       0.0000000 maxSlutzkyEig   7.7132974e+08 curvHolds       0.0000000
+seed       21.000000 modelQUAIDSk       7.0000000 recErr       150.17366 isCorrect       0.0000000 maxSlutzkyEig   2.5459342e+17 curvHolds       0.0000000
+seed       21.000000 modelQUAIDSk       8.0000000 recErr       89.293736 isCorrect       0.0000000 maxSlutzkyEig   7.7120677e+08 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       1.0000000 recErr       1.0182120 isCorrect       0.0000000 maxSlutzkyEig       64308.217 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       2.0000000 recErr       1.0182121 isCorrect       0.0000000 maxSlutzkyEig       64308.314 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       3.0000000 recErr       1.0182121 isCorrect       0.0000000 maxSlutzkyEig       64308.326 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       4.0000000 recErr       1.0182121 isCorrect       0.0000000 maxSlutzkyEig       64308.310 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       5.0000000 recErr       1.0182123 isCorrect       0.0000000 maxSlutzkyEig       64308.258 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       6.0000000 recErr       1.0182122 isCorrect       0.0000000 maxSlutzkyEig       64308.283 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       7.0000000 recErr       1.0182121 isCorrect       0.0000000 maxSlutzkyEig       64308.330 curvHolds       0.0000000
+seed       22.000000 modelQUAIDSk       8.0000000 recErr       1.0182121 isCorrect       0.0000000 maxSlutzkyEig       64308.331 curvHolds       0.0000000
+seed       23.000000 modelQUAIDSk       1.0000000 recErr       7.4331859 isCorrect       0.0000000 maxSlutzkyEig       5890566.3 curvHolds       0.0000000
+seed       23.000000 modelQUAIDSk       2.0000000 recErr       7.4334768 isCorrect       0.0000000 maxSlutzkyEig       5886454.2 curvHolds       0.0000000
+seed       23.000000 modelQUAIDSk       3.0000000 recErr       18.215398 isCorrect       0.0000000 maxSlutzkyEig       7830447.3 curvHolds       0.0000000
+seed       23.000000 modelQUAIDSk       4.0000000 recErr       7.4334736 isCorrect       0.0000000 maxSlutzkyEig       5886486.7 curvHolds       0.0000000
+seed       23.000000 modelQUAIDSk       5.0000000 recErr       7.4334273 isCorrect       0.0000000 maxSlutzkyEig       5887155.7 curvHolds       0.0000000
+seed       23.000000 modelQUAIDSk       6.0000000 recErr       7.4334685 isCorrect       0.0000000 maxSlutzkyEig       5886587.7 curvHolds       0.0000000
+seed       23.000000 modelQUAIDSk       7.0000000 recErr       7.4334794 isCorrect       0.0000000 maxSlutzkyEig       5886420.4 curvHolds       0.0000000
+seed       24.000000 modelQUAIDSk       1.0000000 recErr       56.854400 isCorrect       0.0000000 maxSlutzkyEig   7.7202150e+09 curvHolds       0.0000000
+seed       24.000000 modelQUAIDSk       2.0000000 recErr       56.854254 isCorrect       0.0000000 maxSlutzkyEig   7.7194744e+09 curvHolds       0.0000000
+seed       24.000000 modelQUAIDSk       3.0000000 recErr       56.854294 isCorrect       0.0000000 maxSlutzkyEig   7.7197479e+09 curvHolds       0.0000000
+seed       24.000000 modelQUAIDSk       5.0000000 recErr       55.847156 isCorrect       0.0000000 maxSlutzkyEig   1.3677269e+10 curvHolds       0.0000000
+seed       24.000000 modelQUAIDSk       6.0000000 recErr       56.854310 isCorrect       0.0000000 maxSlutzkyEig   7.7198845e+09 curvHolds       0.0000000
+seed       24.000000 modelQUAIDSk       7.0000000 recErr       56.854393 isCorrect       0.0000000 maxSlutzkyEig   7.7202139e+09 curvHolds       0.0000000
+seed       24.000000 modelQUAIDSk       8.0000000 recErr       56.854322 isCorrect       0.0000000 maxSlutzkyEig   7.7198673e+09 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       1.0000000 recErr       8.6116110 isCorrect       0.0000000 maxSlutzkyEig       578255.83 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       2.0000000 recErr       8.6117381 isCorrect       0.0000000 maxSlutzkyEig       578272.92 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       3.0000000 recErr       8.6115824 isCorrect       0.0000000 maxSlutzkyEig       578255.66 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       4.0000000 recErr       8.6118420 isCorrect       0.0000000 maxSlutzkyEig       578257.29 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       5.0000000 recErr       8.6115489 isCorrect       0.0000000 maxSlutzkyEig       578253.47 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       6.0000000 recErr       8.6116111 isCorrect       0.0000000 maxSlutzkyEig       578261.16 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       7.0000000 recErr       8.6116747 isCorrect       0.0000000 maxSlutzkyEig       578264.40 curvHolds       0.0000000
+seed       25.000000 modelQUAIDSk       8.0000000 recErr       8.6116021 isCorrect       0.0000000 maxSlutzkyEig       578255.15 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       1.0000000 recErr      0.94707409 isCorrect       1.0000000 maxSlutzkyEig       42525.313 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       2.0000000 recErr      0.94707388 isCorrect       1.0000000 maxSlutzkyEig       42525.279 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       3.0000000 recErr      0.94707404 isCorrect       1.0000000 maxSlutzkyEig       42525.269 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       4.0000000 recErr      0.94707398 isCorrect       1.0000000 maxSlutzkyEig       42525.210 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       5.0000000 recErr      0.94707408 isCorrect       1.0000000 maxSlutzkyEig       42525.356 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       6.0000000 recErr      0.94707390 isCorrect       1.0000000 maxSlutzkyEig       42525.285 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       7.0000000 recErr      0.94707385 isCorrect       1.0000000 maxSlutzkyEig       42525.278 curvHolds       0.0000000
+seed       26.000000 modelQUAIDSk       8.0000000 recErr      0.94707426 isCorrect       1.0000000 maxSlutzkyEig       42525.099 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       1.0000000 recErr      0.32820056 isCorrect       1.0000000 maxSlutzkyEig       141083.23 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       2.0000000 recErr      0.32820085 isCorrect       1.0000000 maxSlutzkyEig       141083.27 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       3.0000000 recErr      0.32820065 isCorrect       1.0000000 maxSlutzkyEig       141083.23 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       4.0000000 recErr      0.32820059 isCorrect       1.0000000 maxSlutzkyEig       141083.04 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       5.0000000 recErr      0.32820089 isCorrect       1.0000000 maxSlutzkyEig       141083.23 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       6.0000000 recErr      0.32820040 isCorrect       1.0000000 maxSlutzkyEig       141083.26 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       7.0000000 recErr      0.32820104 isCorrect       1.0000000 maxSlutzkyEig       141083.09 curvHolds       0.0000000
+seed       27.000000 modelQUAIDSk       8.0000000 recErr      0.32820067 isCorrect       1.0000000 maxSlutzkyEig       141083.31 curvHolds       0.0000000
+seed       28.000000 modelQUAIDSk       2.0000000 recErr       159.14251 isCorrect       0.0000000 maxSlutzkyEig   4.9221063e+08 curvHolds       0.0000000
+seed       28.000000 modelQUAIDSk       3.0000000 recErr       159.14346 isCorrect       0.0000000 maxSlutzkyEig   4.9227469e+08 curvHolds       0.0000000
+seed       28.000000 modelQUAIDSk       5.0000000 recErr       159.14303 isCorrect       0.0000000 maxSlutzkyEig   4.9225621e+08 curvHolds       0.0000000
+seed       28.000000 modelQUAIDSk       7.0000000 recErr       91.340934 isCorrect       0.0000000 maxSlutzkyEig   3.6147373e+09 curvHolds       0.0000000
+seed       28.000000 modelQUAIDSk       8.0000000 recErr       33.044123 isCorrect       0.0000000 maxSlutzkyEig   1.0411058e+08 curvHolds       0.0000000
+seed       29.000000 modelQUAIDSk       4.0000000 recErr      0.85342578 isCorrect       1.0000000 maxSlutzkyEig       14581442. curvHolds       0.0000000
+seed       29.000000 modelQUAIDSk       5.0000000 recErr       26.406245 isCorrect       0.0000000 maxSlutzkyEig   5.1019296e+08 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       1.0000000 recErr      0.57508879 isCorrect       1.0000000 maxSlutzkyEig       52467.932 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       2.0000000 recErr      0.57508891 isCorrect       1.0000000 maxSlutzkyEig       52467.914 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       3.0000000 recErr      0.57508925 isCorrect       1.0000000 maxSlutzkyEig       52467.991 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       4.0000000 recErr      0.57508860 isCorrect       1.0000000 maxSlutzkyEig       52467.807 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       5.0000000 recErr      0.57508873 isCorrect       1.0000000 maxSlutzkyEig       52467.995 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       6.0000000 recErr      0.57508906 isCorrect       1.0000000 maxSlutzkyEig       52467.968 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       7.0000000 recErr      0.57508904 isCorrect       1.0000000 maxSlutzkyEig       52468.012 curvHolds       0.0000000
+seed       30.000000 modelQUAIDSk       8.0000000 recErr      0.57508907 isCorrect       1.0000000 maxSlutzkyEig       52467.967 curvHolds       0.0000000
+
+===================================================================
+CURVATURE vs. CORRECTNESS CROSS-TAB (all converged starts, both models pooled)
+===================================================================
+curvature HOLDS   & correct:          0.0000000
+curvature HOLDS   & wrong:            0.0000000
+curvature VIOLATED & correct:         194.00000
+curvature VIOLATED & wrong:           233.00000
+
+Among CORRECT fits, % where curvature holds:        0.0000000
+Among WRONG fits,   % where curvature holds:        0.0000000
+
+anderson_curvature_check.e: run complete.

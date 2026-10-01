@@ -1,0 +1,89 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: anderson_full_multistart_benchmark.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\experiments\convergence-anderson )
+Tue Sep 29 06:14:43 2026
+
+
+START RECIPES:
+1 Stone; 2-3 relative all (.3,.8); 4-6 standardized all (.1,.3,.6);
+7-8 alpha (.3,.8); 9-10 gamma (.3,.8); 11 gamma sign flip;
+12 beta (.5); 13 beta sign flip; 14-15 core joint (.3,.8);
+16 lambda (.8) for QUAIDS, gamma+beta sign flip for AIDS.
+
+seed       1.0000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       4.0000000 selectedStart       11.000000 selectedRecErr      0.66749815 oracleRecErr      0.66749815 selectedCrit      -5.4765119 trueCrit      -5.4870216
+seed       2.0000000 modelIterated AIDS (linear)convergedStarts       3.0000000 distinct       1.0000000 selectedStart       11.000000 selectedRecErr      0.88460237 oracleRecErr      0.88460237 selectedCrit      -5.6109129 trueCrit      -5.5438747
+seed       3.0000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       1.0000000 selectedStart       5.0000000 selectedRecErr      0.54213065 oracleRecErr      0.54212481 selectedCrit      -5.4893330 trueCrit      -5.4985268
+seed       4.0000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       2.0000000 selectedStart       11.000000 selectedRecErr      0.55890591 oracleRecErr      0.55890580 selectedCrit      -5.5872418 trueCrit      -5.5818653
+seed       5.0000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       3.0000000 selectedStart       15.000000 selectedRecErr       6.1524786 oracleRecErr       6.1524786 selectedCrit      -6.8000194 trueCrit      -5.5303312
+seed       6.0000000 modelIterated AIDS (linear)no safeguarded start converged
+seed       7.0000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       1.0000000 selectedStart       2.0000000 selectedRecErr      0.86942161 oracleRecErr      0.86942161 selectedCrit      -5.5137811 trueCrit      -5.5248842
+seed       8.0000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       1.0000000 selectedStart       4.0000000 selectedRecErr      0.77894677 oracleRecErr      0.77894677 selectedCrit      -5.5042457 trueCrit      -5.5091970
+seed       9.0000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       1.0000000 selectedStart       8.0000000 selectedRecErr      0.75866056 oracleRecErr      0.75864603 selectedCrit      -5.5874198 trueCrit      -5.5976587
+seed       10.000000 modelIterated AIDS (linear)convergedStarts       15.000000 distinct       9.0000000 selectedStart       6.0000000 selectedRecErr       4.0276092 oracleRecErr      0.99946946 selectedCrit      -6.2695047 trueCrit      -5.5073714
+seed       11.000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       2.0000000 selectedStart       6.0000000 selectedRecErr      0.86907492 oracleRecErr      0.86907492 selectedCrit      -5.5197383 trueCrit      -5.5180438
+seed       12.000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       1.0000000 selectedStart       2.0000000 selectedRecErr      0.77341172 oracleRecErr      0.77341154 selectedCrit      -5.5579996 trueCrit      -5.5619659
+seed       13.000000 modelIterated AIDS (linear)convergedStarts       13.000000 distinct       3.0000000 selectedStart       7.0000000 selectedRecErr       4.7277810 oracleRecErr       4.7277810 selectedCrit      -7.4609325 trueCrit      -5.5889423
+seed       14.000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       1.0000000 selectedStart       9.0000000 selectedRecErr      0.28861412 oracleRecErr      0.28861363 selectedCrit      -5.4274397 trueCrit      -5.4317890
+seed       15.000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       2.0000000 selectedStart       14.000000 selectedRecErr       9.1457496 oracleRecErr       9.1457382 selectedCrit      -7.7542914 trueCrit      -5.5367442
+seed       16.000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       2.0000000 selectedStart       11.000000 selectedRecErr       3.2663784 oracleRecErr       3.2663784 selectedCrit      -6.4188485 trueCrit      -5.5180330
+seed       17.000000 modelIterated AIDS (linear)convergedStarts       16.000000 distinct       1.0000000 selectedStart       12.000000 selectedRecErr       12.566503 oracleRecErr       12.566503 selectedCrit      -8.4270946 trueCrit      -5.6251287
+
+================================================================
+FULL SAFEGUARDED MULTI-START:Iterated AIDS (linear)seeds       17.000000 starts       16.000000
+================================================================
+SAFE ANDERSON STONE-ONLY: never/wrong/correct       2.0000000        8.0000000        7.0000000
+MAX-homogCrit MULTI-START: never/wrong/correct       1.0000000        6.0000000        10.000000
+ORACLE among converged starts: wrong/correct       5.0000000        11.000000
+selector misses where oracle had a correct endpoint:       1.0000000
+seeds with multiple distinct converged endpoints:       8.0000000
+total converged starts:       239.00000 of       272.00000
+seeds where any wrong endpoint beat truth criterion:       0.0000000
+selected recErr <= .5/1/2/5:       1.0000000        10.000000        10.000000        13.000000
+oracle recErr <= .5/1/2/5:       1.0000000        11.000000        11.000000        13.000000
+max abs raw-criterion replica difference:   3.3560004e-05
+converged count by start recipe:
+       15.000000        15.000000        15.000000        15.000000        15.000000        15.000000        15.000000        15.000000        14.000000        15.000000        15.000000        15.000000        15.000000        15.000000        14.000000        16.000000
+selected winner count by start recipe:
+       0.0000000        2.0000000        0.0000000        1.0000000        1.0000000        2.0000000        1.0000000        1.0000000        1.0000000        0.0000000        4.0000000        1.0000000        0.0000000        1.0000000        1.0000000        0.0000000
+
+seed       1.0000000 modelQUAIDSconvergedStarts       16.000000 distinct       6.0000000 selectedStart       7.0000000 selectedRecErr       82.434912 oracleRecErr       82.434821 selectedCrit      -16.985097 trueCrit      -5.4870216
+seed       2.0000000 modelQUAIDSconvergedStarts       16.000000 distinct       3.0000000 selectedStart       15.000000 selectedRecErr      0.86876374 oracleRecErr      0.86876374 selectedCrit      -5.6842615 trueCrit      -5.5438747
+seed       3.0000000 modelQUAIDSconvergedStarts       16.000000 distinct       11.000000 selectedStart       13.000000 selectedRecErr       4.5518153 oracleRecErr       4.5518153 selectedCrit      -12.224471 trueCrit      -5.4985268
+seed       4.0000000 modelQUAIDSconvergedStarts       12.000000 distinct       11.000000 selectedStart       4.0000000 selectedRecErr       98.274884 oracleRecErr       98.265587 selectedCrit      -17.090262 trueCrit      -5.5818653
+seed       5.0000000 modelQUAIDSconvergedStarts       15.000000 distinct       12.000000 selectedStart       11.000000 selectedRecErr       27.614718 oracleRecErr       27.614718 selectedCrit      -13.663882 trueCrit      -5.5303312
+seed       6.0000000 modelQUAIDSconvergedStarts       4.0000000 distinct       2.0000000 selectedStart       4.0000000 selectedRecErr       1.0481973 oracleRecErr       1.0481973 selectedCrit      -6.3655591 trueCrit      -5.5079982
+seed       7.0000000 modelQUAIDSconvergedStarts       16.000000 distinct       3.0000000 selectedStart       16.000000 selectedRecErr      0.89661803 oracleRecErr      0.89661803 selectedCrit      -5.5419864 trueCrit      -5.5248842
+seed       8.0000000 modelQUAIDSconvergedStarts       16.000000 distinct       2.0000000 selectedStart       8.0000000 selectedRecErr      0.80152869 oracleRecErr      0.80152605 selectedCrit      -5.5061107 trueCrit      -5.5091970
+seed       9.0000000 modelQUAIDSno safeguarded start converged
+seed       10.000000 modelQUAIDSconvergedStarts       16.000000 distinct       4.0000000 selectedStart       8.0000000 selectedRecErr       34.480350 oracleRecErr       34.480203 selectedCrit      -12.762550 trueCrit      -5.5073714
+seed       11.000000 modelQUAIDSconvergedStarts       16.000000 distinct       8.0000000 selectedStart       8.0000000 selectedRecErr       1.4113418 oracleRecErr       1.4113416 selectedCrit      -5.9718519 trueCrit      -5.5180438
+seed       12.000000 modelQUAIDSconvergedStarts       16.000000 distinct       1.0000000 selectedStart       9.0000000 selectedRecErr      0.78229001 oracleRecErr      0.78229001 selectedCrit      -5.5582713 trueCrit      -5.5619659
+seed       13.000000 modelQUAIDSconvergedStarts       13.000000 distinct       11.000000 selectedStart       8.0000000 selectedRecErr       221.38468 oracleRecErr       157.04132 selectedCrit      -15.048365 trueCrit      -5.5889423
+seed       14.000000 modelQUAIDSconvergedStarts       16.000000 distinct       1.0000000 selectedStart       2.0000000 selectedRecErr      0.27845207 oracleRecErr      0.27845202 selectedCrit      -5.4291470 trueCrit      -5.4317890
+seed       15.000000 modelQUAIDSconvergedStarts       1.0000000 distinct       1.0000000 selectedStart       16.000000 selectedRecErr       32.536309 oracleRecErr       32.536309 selectedCrit      -15.537930 trueCrit      -5.5367442
+seed       16.000000 modelQUAIDSconvergedStarts       16.000000 distinct       2.0000000 selectedStart       8.0000000 selectedRecErr       125.71745 oracleRecErr       125.71681 selectedCrit      -16.740257 trueCrit      -5.5180330
+seed       17.000000 modelQUAIDSconvergedStarts       7.0000000 distinct       5.0000000 selectedStart       6.0000000 selectedRecErr       160.64530 oracleRecErr       160.64530 selectedCrit      -17.743343 trueCrit      -5.6251287
+
+================================================================
+FULL SAFEGUARDED MULTI-START:QUAIDSseeds       17.000000 starts       16.000000
+================================================================
+SAFE ANDERSON STONE-ONLY: never/wrong/correct       3.0000000        10.000000        4.0000000
+MAX-homogCrit MULTI-START: never/wrong/correct       1.0000000        11.000000        5.0000000
+ORACLE among converged starts: wrong/correct       11.000000        5.0000000
+selector misses where oracle had a correct endpoint:       0.0000000
+seeds with multiple distinct converged endpoints:       13.000000
+total converged starts:       212.00000 of       272.00000
+seeds where any wrong endpoint beat truth criterion:       0.0000000
+selected recErr <= .5/1/2/5:       1.0000000        5.0000000        7.0000000        8.0000000
+oracle recErr <= .5/1/2/5:       1.0000000        5.0000000        7.0000000        8.0000000
+max abs raw-criterion replica difference:   4.7854758e-05
+converged count by start recipe:
+       14.000000        13.000000        13.000000        15.000000        12.000000        12.000000        12.000000        14.000000        14.000000        13.000000        13.000000        13.000000        14.000000        13.000000        12.000000        15.000000
+selected winner count by start recipe:
+       0.0000000        1.0000000        0.0000000        2.0000000        0.0000000        1.0000000        1.0000000        5.0000000        1.0000000        0.0000000        1.0000000        0.0000000        1.0000000        0.0000000        1.0000000        2.0000000
+
+anderson_full_multistart_benchmark.e: run complete.

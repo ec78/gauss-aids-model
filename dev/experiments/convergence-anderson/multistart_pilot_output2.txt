@@ -1,0 +1,97 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: anderson_multistart_pilot.e ( C:\Users\Owner\AppData\Local\Temp\claude\c--Users-eclow-Documents-GitHub-gauss-aids-model\5d938cc6-63ab-4ca7-93b7-65c9d14e6084\scratchpad )
+Tue Sep 29 05:18:03 2026
+
+
+seed       1.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       7.7609747   picked recErr       7.7611663
+seed       2.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.88460399   picked recErr      0.88460404
+seed       3.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.54212814   picked recErr      0.54212845
+seed       4.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       6.2048130   picked recErr       6.2048137
+seed       5.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       6.1525725   picked recErr       6.1525774
+seed       6.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       1.2313352   picked recErr       1.2313526
+seed       7.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.86942351   picked recErr      0.86942359
+seed       8.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.77894866   picked recErr      0.77894866
+seed       9.0000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.75865896   picked recErr      0.75865896
+seed       10.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       1.0002667   picked recErr       1.0002742
+seed       11.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.86908422   picked recErr      0.86908524
+seed       12.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.77341167   picked recErr      0.77341168
+seed       13.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       4.7278868   picked recErr       4.7278868
+seed       14.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.28861404   picked recErr      0.28861404
+seed       15.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       9.1457748   picked recErr       9.1457748
+seed       16.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       7.9376914   picked recErr       7.9376932
+seed       17.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       12.566503   picked recErr       12.566503
+seed       18.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       5.4144764   picked recErr       5.4144869
+seed       19.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.32283349   picked recErr      0.32283351
+seed       20.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr      0.54937067   picked recErr       7.3317688
+seed       21.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr      0.27451883   picked recErr       9.8495933
+seed       22.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       1.0139627   picked recErr       1.0139627
+seed       23.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.95635720   picked recErr      0.95635720
+seed       24.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       3.8081493   picked recErr       3.8081511
+seed       25.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       1.2186948   picked recErr       1.2186948
+seed       26.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.93116499   picked recErr      0.93116503
+seed       27.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.33527236   picked recErr      0.33527236
+seed       28.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.64640867   picked recErr      0.64640871
+seed       29.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-but-wrong  oracle recErr       3.2261654   picked recErr       3.2262638
+seed       30.000000 modelIterated AIDS (linear)homogCrit-picked bucketconverged-correctly  oracle recErr      0.58213521   picked recErr      0.58213521
+
+===================================================================
+MULTI-START PILOT SUMMARY:Iterated AIDS (linear)  (       30.000000 seeds, numStarts=       8.0000000 , anDepth=       8.0000000 )
+===================================================================
+homogCrit-selected (realistic, no-truth-needed):
+  never-converged:             0.0000000   (       0.0000000 %)
+  converged-but-wrong:          16.000000   (       53.333333 %)
+  converged-correctly:          14.000000   (       46.666667 %)
+ORACLE best-of-numStarts by recErr (upper bound, uses truth):
+  converged-but-wrong:          14.000000   (       46.666667 %)
+  converged-correctly:          16.000000   (       53.333333 %)
+at least one of numStarts starts converged:        30.000000   (       100.00000 %)
+
+seed       1.0000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       82.432178   picked recErr       82.434832
+seed       2.0000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.86876738   picked recErr      0.86877261
+seed       3.0000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr      0.61953713   picked recErr       53.073290
+seed       4.0000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       98.273902   picked recErr       103.16786
+seed       5.0000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       13.944517   picked recErr       66.532578
+seed       6.0000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr      0.78162959   picked recErr       7.4280771
+seed       7.0000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.89666133   picked recErr      0.89666135
+seed       8.0000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       1.2081716   picked recErr       1.2081716
+seed       9.0000000 modelQUAIDShomogCrit-picked bucketnever-converged  oracle recErr       0.0000000   picked recErr       1.2081716
+seed       10.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       34.480315   picked recErr       34.480315
+seed       11.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       9.2094344   picked recErr       11.628212
+seed       12.000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.78229027   picked recErr      0.78229046
+seed       13.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       157.04284   picked recErr       157.04284
+seed       14.000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.27845212   picked recErr      0.27845212
+seed       15.000000 modelQUAIDShomogCrit-picked bucketnever-converged  oracle recErr       0.0000000   picked recErr      0.27845212
+seed       16.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       125.71680   picked recErr       125.71693
+seed       17.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       74.352381   picked recErr       394.37325
+seed       18.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       102.75518   picked recErr       102.75518
+seed       19.000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.32445428   picked recErr      0.32445428
+seed       20.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       1.0908150   picked recErr       35.875916
+seed       21.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       89.293736   picked recErr       89.293736
+seed       22.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       1.0182120   picked recErr       1.0182123
+seed       23.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       7.4331859   picked recErr       18.215398
+seed       24.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       55.847156   picked recErr       56.854400
+seed       25.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       8.6115489   picked recErr       8.6115489
+seed       26.000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.94707385   picked recErr      0.94707404
+seed       27.000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.32820040   picked recErr      0.32820089
+seed       28.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr       33.044123   picked recErr       159.14346
+seed       29.000000 modelQUAIDShomogCrit-picked bucketconverged-but-wrong  oracle recErr      0.85342578   picked recErr       26.406245
+seed       30.000000 modelQUAIDShomogCrit-picked bucketconverged-correctly  oracle recErr      0.57508860   picked recErr      0.57508860
+
+===================================================================
+MULTI-START PILOT SUMMARY:QUAIDS  (       30.000000 seeds, numStarts=       8.0000000 , anDepth=       8.0000000 )
+===================================================================
+homogCrit-selected (realistic, no-truth-needed):
+  never-converged:             2.0000000   (       6.6666667 %)
+  converged-but-wrong:          20.000000   (       66.666667 %)
+  converged-correctly:          8.0000000   (       26.666667 %)
+ORACLE best-of-numStarts by recErr (upper bound, uses truth):
+  converged-but-wrong:          17.000000   (       56.666667 %)
+  converged-correctly:          11.000000   (       36.666667 %)
+at least one of numStarts starts converged:        28.000000   (       93.333333 %)
+
+anderson_multistart_pilot.e: pilot run complete.

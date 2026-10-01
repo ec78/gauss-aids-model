@@ -1,0 +1,437 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: anderson_sweep_compare.e ( C:\Users\Owner\AppData\Local\Temp\claude\c--Users-eclow-Documents-GitHub-gauss-aids-model\5d938cc6-63ab-4ca7-93b7-65c9d14e6084\scratchpad )
+Mon Sep 28 06:19:08 2026
+
+
+seed       1.0000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       2.0000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-correctly
+seed       3.0000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       24.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       4.0000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       5.0000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       6.0000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       7.0000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       15.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       8.0000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       28.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       9.0000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       49.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       10.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       11.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       40.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       12.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       21.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       13.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       14.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       16.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       15.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       45.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       16.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       17.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       18.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       58.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       19.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       22.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       20.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       21.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       30.000000 bucketconverged-correctly
+seed       22.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       54.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       23.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       25.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       24.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       25.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       26.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       17.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       27.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       35.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       28.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       25.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       27.000000 bucketconverged-correctly
+seed       29.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       30.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       13.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       31.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       32.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-but-wrong
+seed       33.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       34.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-correctly
+seed       35.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       21.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       36.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       37.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       25.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       38.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       48.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       39.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       44.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       40.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       41.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       24.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       42.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-correctly
+seed       43.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       28.000000 bucketconverged-correctly
+seed       44.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       45.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       12.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-correctly
+seed       46.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       14.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       47.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       19.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       48.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       31.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       49.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       43.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       50.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       15.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       51.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       15.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       52.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       23.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       53.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       15.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       54.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       55.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       56.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       57.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       58.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       59.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       95.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       60.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       15.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       61.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       48.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       62.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       63.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       64.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       39.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       65.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       52.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       66.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       57.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       67.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       29.000000 bucketconverged-but-wrong
+seed       68.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       58.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       31.000000 bucketconverged-correctly
+seed       69.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       70.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       46.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       71.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       72.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       73.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       9.0000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-correctly
+seed       74.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-but-wrong
+seed       75.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       23.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       76.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       77.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       22.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       78.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       79.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       80.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       21.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       81.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       82.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       18.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       83.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       53.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       84.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       52.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       20.000000 bucketconverged-correctly
+seed       85.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       39.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       86.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       43.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       87.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       24.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       88.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       23.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       89.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       75.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+seed       90.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-but-wrong
+seed       91.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       30.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       92.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       62.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       93.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       94.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       95.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       60.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       96.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-correctly
+seed       97.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       47.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       98.000000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       29.000000 bucketconverged-correctly
+seed       99.000000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       20.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       100.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       20.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       101.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       102.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       61.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       103.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       70.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       104.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       17.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       105.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       36.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       106.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       60.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       107.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       108.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       109.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       32.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       110.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       16.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       111.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       112.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       38.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       113.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       23.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       114.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       7.0000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-but-wrong
+seed       115.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       45.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       116.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       117.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       118.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       55.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       119.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       34.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       120.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       121.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       26.000000 bucketconverged-but-wrong
+seed       122.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       50.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       123.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       18.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       124.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       20.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       125.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-correctly
+seed       126.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       18.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       127.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       128.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       12.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-but-wrong
+seed       129.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       65.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       130.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       131.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       22.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       132.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       22.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       133.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       14.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       134.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       81.000000 bucketconverged-but-wrong
+seed       135.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       136.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-but-wrong
+seed       137.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       138.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       38.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       139.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       140.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       141.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       31.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       142.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       62.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       143.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       55.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       144.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       145.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       66.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       146.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       21.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       147.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       32.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       148.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       27.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       149.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       18.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       150.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       151.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       53.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       152.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-but-wrong
+seed       153.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       14.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       154.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       70.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       35.000000 bucketconverged-correctly
+seed       155.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       156.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       157.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       30.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       158.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       20.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       159.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       160.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       12.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-but-wrong
+seed       161.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       95.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-correctly
+seed       162.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       163.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       7.0000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       5.0000000 bucketconverged-correctly
+seed       164.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       39.000000 bucketconverged-but-wrong
+seed       165.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       166.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       44.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       167.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       168.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       19.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-but-wrong
+seed       169.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       71.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-correctly
+seed       170.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       93.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       20.000000 bucketconverged-correctly
+seed       171.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       48.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       172.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       15.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       173.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       30.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       174.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       39.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       175.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       9.0000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       6.0000000 bucketconverged-correctly
+seed       176.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       20.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       177.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       29.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       178.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       26.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       179.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       34.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-but-wrong
+seed       180.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       181.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       23.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       182.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-but-wrong
+seed       183.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       63.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       184.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       26.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       185.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       186.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       29.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-correctly
+seed       187.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       34.000000 bucketconverged-but-wrong
+seed       188.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       20.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       189.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       16.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       190.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       20.000000 bucketconverged-but-wrong
+seed       191.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       17.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       192.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       193.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       194.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       20.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       195.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       196.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       22.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       197.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       14.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       7.0000000 bucketconverged-correctly
+seed       198.00000 modelIterated AIDS (linear)  BASE conv       1.0000000 iters       21.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       199.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       200.00000 modelIterated AIDS (linear)  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+
+===================================================================
+SUMMARY:Iterated AIDS (linear)  (       200.00000 seeds, tobs=       3000.0000 , anDepth=       8.0000000 )
+===================================================================
+BASELINE (relax=1, no acceleration):
+  never-converged:             78.000000   (       39.000000 %)
+  converged-but-wrong:          38.000000   (       19.000000 %)
+  converged-correctly:          84.000000   (       42.000000 %)
+ANDERSON(8):
+  never-converged:             2.0000000   (       1.0000000 %)
+  converged-but-wrong:          96.000000   (       48.000000 %)
+  converged-correctly:          102.00000   (       51.000000 %)
+
+seed       1.0000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       31.000000 bucketconverged-but-wrong
+seed       2.0000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       22.000000 bucketconverged-correctly
+seed       3.0000000 modelQUAIDS  BASE conv       1.0000000 iters       68.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       77.000000 bucketconverged-but-wrong
+seed       4.0000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       34.000000 bucketconverged-but-wrong
+seed       5.0000000 modelQUAIDS  BASE conv       1.0000000 iters       91.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       6.0000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       52.000000 bucketconverged-but-wrong
+seed       7.0000000 modelQUAIDS  BASE conv       1.0000000 iters       34.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       8.0000000 modelQUAIDS  BASE conv       1.0000000 iters       89.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-but-wrong
+seed       9.0000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       10.000000 modelQUAIDS  BASE conv       1.0000000 iters       36.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+seed       11.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       25.000000 bucketconverged-but-wrong
+seed       12.000000 modelQUAIDS  BASE conv       1.0000000 iters       36.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       13.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       14.000000 modelQUAIDS  BASE conv       1.0000000 iters       22.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       15.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       16.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       22.000000 bucketconverged-but-wrong
+seed       17.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       71.000000 bucketconverged-but-wrong
+seed       18.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       19.000000 modelQUAIDS  BASE conv       1.0000000 iters       26.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       20.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       42.000000 bucketconverged-but-wrong
+seed       21.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       20.000000 bucketconverged-but-wrong
+seed       22.000000 modelQUAIDS  BASE conv       1.0000000 iters       91.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-but-wrong
+seed       23.000000 modelQUAIDS  BASE conv       1.0000000 iters       65.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       24.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       31.000000 bucketconverged-but-wrong
+seed       25.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       26.000000 modelQUAIDS  BASE conv       1.0000000 iters       20.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       27.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       27.000000 bucketconverged-correctly
+seed       28.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       29.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       30.000000 modelQUAIDS  BASE conv       1.0000000 iters       45.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       31.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       32.000000 modelQUAIDS  BASE conv       1.0000000 iters       11.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       33.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       99.000000 bucketconverged-but-wrong
+seed       34.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       34.000000 bucketconverged-but-wrong
+seed       35.000000 modelQUAIDS  BASE conv       1.0000000 iters       27.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-correctly
+seed       36.000000 modelQUAIDS  BASE conv       1.0000000 iters       20.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-but-wrong
+seed       37.000000 modelQUAIDS  BASE conv       1.0000000 iters       20.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-correctly
+seed       38.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       39.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       38.000000 bucketconverged-but-wrong
+seed       40.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       41.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       27.000000 bucketconverged-but-wrong
+seed       42.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       38.000000 bucketconverged-but-wrong
+seed       43.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       44.000000 modelQUAIDS  BASE conv       1.0000000 iters       34.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       45.000000 modelQUAIDS  BASE conv       1.0000000 iters       96.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       46.000000 modelQUAIDS  BASE conv       1.0000000 iters       17.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-correctly
+seed       47.000000 modelQUAIDS  BASE conv       1.0000000 iters       29.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       31.000000 bucketconverged-correctly
+seed       48.000000 modelQUAIDS  BASE conv       1.0000000 iters       27.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       49.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       50.000000 modelQUAIDS  BASE conv       1.0000000 iters       21.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       51.000000 modelQUAIDS  BASE conv       1.0000000 iters       14.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       52.000000 modelQUAIDS  BASE conv       1.0000000 iters       24.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       53.000000 modelQUAIDS  BASE conv       1.0000000 iters       16.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       54.000000 modelQUAIDS  BASE conv       1.0000000 iters       84.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       20.000000 bucketconverged-but-wrong
+seed       55.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       35.000000 bucketconverged-but-wrong
+seed       56.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       20.000000 bucketconverged-but-wrong
+seed       57.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       26.000000 bucketconverged-but-wrong
+seed       58.000000 modelQUAIDS  BASE conv       1.0000000 iters       13.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       59.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       40.000000 bucketconverged-correctly
+seed       60.000000 modelQUAIDS  BASE conv       1.0000000 iters       59.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-but-wrong
+seed       61.000000 modelQUAIDS  BASE conv       1.0000000 iters       47.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       28.000000 bucketconverged-but-wrong
+seed       62.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       76.000000 bucketconverged-but-wrong
+seed       63.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       64.000000 modelQUAIDS  BASE conv       1.0000000 iters       45.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       65.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       66.000000 modelQUAIDS  BASE conv       1.0000000 iters       28.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-correctly
+seed       67.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       30.000000 bucketconverged-but-wrong
+seed       68.000000 modelQUAIDS  BASE conv       1.0000000 iters       35.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       69.000000 modelQUAIDS  BASE conv       1.0000000 iters       28.000000 bucketconverged-but-wrong  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       70.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+seed       71.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       72.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       73.000000 modelQUAIDS  BASE conv       1.0000000 iters       14.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-correctly
+seed       74.000000 modelQUAIDS  BASE conv       1.0000000 iters       26.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       75.000000 modelQUAIDS  BASE conv       1.0000000 iters       39.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+seed       76.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       100.00000 bucketconverged-but-wrong
+seed       77.000000 modelQUAIDS  BASE conv       1.0000000 iters       28.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       78.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-but-wrong
+seed       79.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       80.000000 modelQUAIDS  BASE conv       1.0000000 iters       31.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-correctly
+seed       81.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       82.000000 modelQUAIDS  BASE conv       1.0000000 iters       25.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       83.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       84.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       85.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       31.000000 bucketconverged-correctly
+seed       86.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       87.000000 modelQUAIDS  BASE conv       1.0000000 iters       58.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       23.000000 bucketconverged-but-wrong
+seed       88.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       89.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       90.000000 modelQUAIDS  BASE conv       1.0000000 iters       12.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       91.000000 modelQUAIDS  BASE conv       1.0000000 iters       24.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       92.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-correctly
+seed       93.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       29.000000 bucketconverged-but-wrong
+seed       94.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       99.000000 bucketconverged-but-wrong
+seed       95.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       96.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       97.000000 modelQUAIDS  BASE conv       1.0000000 iters       70.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       22.000000 bucketconverged-correctly
+seed       98.000000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       22.000000 bucketconverged-but-wrong
+seed       99.000000 modelQUAIDS  BASE conv       1.0000000 iters       53.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       100.00000 modelQUAIDS  BASE conv       1.0000000 iters       53.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       101.00000 modelQUAIDS  BASE conv       1.0000000 iters       34.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       102.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       39.000000 bucketconverged-but-wrong
+seed       103.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       30.000000 bucketconverged-but-wrong
+seed       104.00000 modelQUAIDS  BASE conv       1.0000000 iters       21.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       105.00000 modelQUAIDS  BASE conv       1.0000000 iters       40.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       106.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       22.000000 bucketconverged-but-wrong
+seed       107.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-but-wrong
+seed       108.00000 modelQUAIDS  BASE conv       1.0000000 iters       79.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       109.00000 modelQUAIDS  BASE conv       1.0000000 iters       27.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       110.00000 modelQUAIDS  BASE conv       1.0000000 iters       19.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       111.00000 modelQUAIDS  BASE conv       1.0000000 iters       31.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       112.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       113.00000 modelQUAIDS  BASE conv       1.0000000 iters       50.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       114.00000 modelQUAIDS  BASE conv       1.0000000 iters       12.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       8.0000000 bucketconverged-but-wrong
+seed       115.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       34.000000 bucketconverged-but-wrong
+seed       116.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       117.00000 modelQUAIDS  BASE conv       1.0000000 iters       56.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       31.000000 bucketconverged-but-wrong
+seed       118.00000 modelQUAIDS  BASE conv       1.0000000 iters       77.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-but-wrong
+seed       119.00000 modelQUAIDS  BASE conv       1.0000000 iters       32.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       120.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       28.000000 bucketconverged-but-wrong
+seed       121.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       40.000000 bucketconverged-but-wrong
+seed       122.00000 modelQUAIDS  BASE conv       1.0000000 iters       51.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       35.000000 bucketconverged-but-wrong
+seed       123.00000 modelQUAIDS  BASE conv       1.0000000 iters       21.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-correctly
+seed       124.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       125.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       126.00000 modelQUAIDS  BASE conv       1.0000000 iters       27.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       127.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       40.000000 bucketconverged-but-wrong
+seed       128.00000 modelQUAIDS  BASE conv       1.0000000 iters       22.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       129.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-but-wrong
+seed       130.00000 modelQUAIDS  BASE conv       1.0000000 iters       28.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       131.00000 modelQUAIDS  BASE conv       1.0000000 iters       30.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       14.000000 bucketconverged-correctly
+seed       132.00000 modelQUAIDS  BASE conv       1.0000000 iters       63.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-but-wrong
+seed       133.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       134.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       135.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       41.000000 bucketconverged-but-wrong
+seed       136.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       30.000000 bucketconverged-but-wrong
+seed       137.00000 modelQUAIDS  BASE conv       1.0000000 iters       18.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       138.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       139.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       140.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       20.000000 bucketconverged-but-wrong
+seed       141.00000 modelQUAIDS  BASE conv       1.0000000 iters       35.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       83.000000 bucketconverged-but-wrong
+seed       142.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       143.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       93.000000 bucketconverged-but-wrong
+seed       144.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       41.000000 bucketconverged-but-wrong
+seed       145.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-but-wrong
+seed       146.00000 modelQUAIDS  BASE conv       1.0000000 iters       54.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-correctly
+seed       147.00000 modelQUAIDS  BASE conv       1.0000000 iters       16.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       148.00000 modelQUAIDS  BASE conv       1.0000000 iters       90.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-correctly
+seed       149.00000 modelQUAIDS  BASE conv       1.0000000 iters       16.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       150.00000 modelQUAIDS  BASE conv       1.0000000 iters       24.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-but-wrong
+seed       151.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       152.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       42.000000 bucketconverged-but-wrong
+seed       153.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       72.000000 bucketconverged-but-wrong
+seed       154.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       155.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       75.000000 bucketconverged-but-wrong
+seed       156.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       33.000000 bucketconverged-but-wrong
+seed       157.00000 modelQUAIDS  BASE conv       1.0000000 iters       25.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+seed       158.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       19.000000 bucketconverged-but-wrong
+seed       159.00000 modelQUAIDS  BASE conv       1.0000000 iters       19.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       160.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       35.000000 bucketconverged-but-wrong
+seed       161.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       25.000000 bucketconverged-correctly
+seed       162.00000 modelQUAIDS  BASE conv       1.0000000 iters       43.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       163.00000 modelQUAIDS  BASE conv       1.0000000 iters       13.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       164.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-but-wrong
+seed       165.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       26.000000 bucketconverged-but-wrong
+seed       166.00000 modelQUAIDS  BASE conv       1.0000000 iters       81.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-correctly
+seed       167.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       168.00000 modelQUAIDS  BASE conv       1.0000000 iters       57.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       13.000000 bucketconverged-but-wrong
+seed       169.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       23.000000 bucketconverged-but-wrong
+seed       170.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       171.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+seed       172.00000 modelQUAIDS  BASE conv       1.0000000 iters       29.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-correctly
+seed       173.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       174.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       175.00000 modelQUAIDS  BASE conv       1.0000000 iters       14.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       176.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       177.00000 modelQUAIDS  BASE conv       1.0000000 iters       73.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       22.000000 bucketconverged-correctly
+seed       178.00000 modelQUAIDS  BASE conv       1.0000000 iters       35.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       15.000000 bucketconverged-correctly
+seed       179.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       180.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       47.000000 bucketconverged-correctly
+seed       181.00000 modelQUAIDS  BASE conv       1.0000000 iters       26.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       182.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       183.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+seed       184.00000 modelQUAIDS  BASE conv       1.0000000 iters       36.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       55.000000 bucketconverged-but-wrong
+seed       185.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       186.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       63.000000 bucketconverged-but-wrong
+seed       187.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       188.00000 modelQUAIDS  BASE conv       1.0000000 iters       43.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       18.000000 bucketconverged-correctly
+seed       189.00000 modelQUAIDS  BASE conv       1.0000000 iters       18.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       10.000000 bucketconverged-correctly
+seed       190.00000 modelQUAIDS  BASE conv       1.0000000 iters       46.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       24.000000 bucketconverged-but-wrong
+seed       191.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       192.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-but-wrong
+seed       193.00000 modelQUAIDS  BASE conv       1.0000000 iters       78.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       17.000000 bucketconverged-but-wrong
+seed       194.00000 modelQUAIDS  BASE conv       1.0000000 iters       23.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       12.000000 bucketconverged-correctly
+seed       195.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       196.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       1.0000000 iters       9.0000000 bucketconverged-but-wrong
+seed       197.00000 modelQUAIDS  BASE conv       1.0000000 iters       23.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       11.000000 bucketconverged-correctly
+seed       198.00000 modelQUAIDS  BASE conv       1.0000000 iters       36.000000 bucketconverged-correctly  ANDERSON conv       1.0000000 iters       21.000000 bucketconverged-correctly
+seed       199.00000 modelQUAIDS  BASE conv       0.0000000 iters       100.00000 bucketnever-converged  ANDERSON conv       0.0000000 iters       100.00000 bucketnever-converged
+seed       200.00000 modelQUAIDS  BASE conv       1.0000000 iters       56.000000 bucketconverged-but-wrong  ANDERSON conv       1.0000000 iters       16.000000 bucketconverged-but-wrong
+
+===================================================================
+SUMMARY:QUAIDS  (       200.00000 seeds, tobs=       3000.0000 , anDepth=       8.0000000 )
+===================================================================
+BASELINE (relax=1, no acceleration):
+  never-converged:             109.00000   (       54.500000 %)
+  converged-but-wrong:          43.000000   (       21.500000 %)
+  converged-correctly:          48.000000   (       24.000000 %)
+ANDERSON(8):
+  never-converged:             40.000000   (       20.000000 %)
+  converged-but-wrong:          105.00000   (       52.500000 %)
+  converged-correctly:          55.000000   (       27.500000 %)
+
+anderson_sweep_compare.e: diagnostic run complete.
