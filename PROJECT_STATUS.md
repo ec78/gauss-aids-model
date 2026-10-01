@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-09-25_
+_Last updated: 2026-10-01_
 
 ## Current Objective
 
@@ -58,9 +58,23 @@ see Decisions for why. Stage 3 is still Q-only MLE (H stays caller-fixed)
 — see Decisions for why, a repo-owner-approved scope call made explicitly
 before Stage 3 was written, not assumed.
 
-**No active work is in progress.** A future session should read this
-file plus `git log`/`git status` and check with the repo owner for the
-next objective — there is no automatic "next stage" after Stage 6.
+**The latest completed work is the AIDS/QUAIDS convergence-correctness
+research** in `dev/experiments/convergence-anderson/`, committed and
+pushed as `7e98720`. The methodology audit corrected the original
+multi-start selector direction, added a numerically safer experimental
+Anderson path, and completed the recommended 200-seed x 16-start
+benchmark for both iterated AIDS and QUAIDS. The push-triggered CI run
+completed successfully (`36855314457`). This work is deliberately NOT
+wired into the installed package or CI test surface; no shipped `src/`
+file changed. See the Completed Work entry and the experiment's
+`SUMMARY.md`/`CLAUDE_HANDOFF.md` for the evidence and handoff.
+
+**No implementation is currently in progress.** The recommended next
+research objective is a small, validated direct-nonlinear-optimization
+pilot, not further Anderson-depth tuning: define the concentrated
+residual/GMM objective, verify it on a noiseless known-truth fixture, and
+then compare safe Anderson, direct LM/Gauss-Newton, and a hybrid on 30
+seeds before deciding whether a full 200-seed run is justified.
 
 ## Completed Work
 
@@ -423,7 +437,7 @@ next objective — there is no automatic "next stage" after Stage 6.
   - Committed as `c58c511` and pushed to `origin/master` (user explicitly
     asked for the commit+push). CI confirmed `success` via `gh run list`
     (run id `34841421508`, ~2m27s).
-- **TVP-AIDS Stage 6 (functionally complete, NOT yet committed)**: the
+- **TVP-AIDS Stage 6 (complete, committed, and released)**: the
   final stage — publishes real public API, docs, example, packaging, the
   `sslib` pinning mechanism, and the version bump. A repo-owner design
   plan was written and approved (via a plan-mode review) before any code
@@ -609,6 +623,38 @@ next objective — there is no automatic "next stage" after Stage 6.
     `origin/master`; the self-hosted push-triggered CI run completed
     `success` (confirmed via `gh run list`, run id `35878499421`, 1m28s).
 
+- **AIDS/QUAIDS convergence-correctness research** (experiment-only,
+  committed/pushed as `7e98720`): critically audited the prior Anderson
+  acceleration and multi-start investigation, corrected its objective
+  direction, implemented the recommended safeguarded structured
+  multi-start benchmark, and retained complete scripts/output under
+  `dev/experiments/convergence-anderson/`.
+  - `homogCrit=-ln(det(Sigma))` must be maximized. The earlier pilot had
+    minimized it; after correction, criterion selection matched the
+    synthetic oracle's loose correct/wrong classification in 399 of 400
+    seed/model cases in the full benchmark.
+  - The safe experiment path uses true fixed-point-residual stopping,
+    consecutive-difference Type-II history, a rank-truncated SVD solve,
+    residual-growth restart, an accelerated-step safeguard, and a plain
+    step/history reset when SVD is unusable. The SVD fallback was added
+    after a reproducible QUAIDS seed-17 failure and then validated through
+    that seed before the full rerun.
+  - Full 200-seed x 16-start results: iterated AIDS improved from
+    98 correct / 96 wrong / 6 never-converged with Stone-only safe
+    Anderson to 121 / 76 / 3 with max-criterion multi-start. QUAIDS
+    improved from 56 / 111 / 33 to 69 / 122 / 9. Thus multi-start
+    improves reachability, but QUAIDS still converts many failures into
+    converged-but-wrong answers. At the stricter `recErr <= .5` threshold,
+    only 38/200 AIDS and 16/200 QUAIDS selections qualify.
+  - The criterion selector is not the demonstrated bottleneck; reaching a
+    good endpoint and restoring a real-data trust signal are. Substantial
+    endpoint diversity was observed (71 AIDS and 119 QUAIDS seeds), so
+    Anderson-induced basin collapse is not supported by this evidence.
+  - Nothing here is production-ready or shipped. The next research step
+    is direct nonlinear optimization plus held-out and local-rank/
+    conditioning diagnostics; see `CLAUDE_HANDOFF.md` in the experiment
+    directory for exact reproduction commands and sequencing.
+
 ## Decisions
 
 - **Stone price index, not the full translog index**, for TVP-AIDS's
@@ -623,17 +669,19 @@ next objective — there is no automatic "next stage" after Stage 6.
   not expected to match exactly on real data.
 - **`sslib` (gauss-state-space) is the Kalman-filter dependency**, not
   `tsmt`'s own `kalmanFilter()` (documented `k_endog>1` limitation).
-- **`sslib` version pinning decided in principle** ("pin to a specific
-  commit") but **no mechanism built yet** — `package.json`'s `deps` array
-  is a bare string list with no room for a commit hash. **The
-  previously-documented `9132c35` pin is now KNOWN STALE**, not just
+- **Historical pre-Stage-6 state:** `sslib` version pinning had been
+  decided in principle ("pin to a specific commit"), but no mechanism
+  existed because `package.json`'s `deps` array is a bare string list with
+  no room for a commit hash. The previously documented `9132c35` pin was
+  already known stale, not just
   theoretically at risk: this session found the actual installed copy at
   `C:\gauss26\pkgs\sslib` includes at least upstream commit `ae921ce`
   (confirmed by the `init_diffTVP` arity break/fix — see Completed Work's
   Stage 3 entry), and `gauss-state-space-ea`'s own concurrent session
   reported their repo (clean, matching origin) is at `7d5ed72`, LIKELY
-  (not independently confirmed) close to what's actually installed. Blocks
-  a clean Stage 6 even more concretely now than before.
+  (not independently confirmed) close to what was then installed. This
+  blocked a clean Stage 6 until the pinning mechanism and stable v1 pin in
+  the next decision were implemented.
 - **`sslib` is pinned to `gauss-state-space`'s tagged `v1.0.0` release
   (`ad15626`), not a bare commit hash** — a real course correction made
   DURING Stage 6, after the newly-built pinning mechanism (`sslib.pin.json`
@@ -714,6 +762,17 @@ next objective — there is no automatic "next stage" after Stage 6.
 
 ## Tests / Validation
 
+- Convergence research validation (2026-10-01):
+  `anderson_safe_solver_test.e` passed its deliberately rank-deficient
+  SVD solve (rank 2, fit difference from pseudoinverse `4.44e-16`) and a
+  real QUAIDS seed-7 safe fit; `anderson_faithfulness_check.e` confirmed
+  the experiment prototype at `mDepth=0` exactly reproduces shipped
+  `quaidsFit()` in both `bS` and `vS`; the full benchmark output contains
+  both 200-seed summaries and its explicit `run complete` marker.
+- GitHub Actions for experiment commit `7e98720` completed successfully
+  (`Test suite`, run `36855314457`, 2026-10-01). The experiment itself is
+  not part of CI; this confirms the existing shipped suite was not
+  regressed by adding the research artifacts.
 - `tests/run_source_tests.ps1` (33 files, no flags skipped) passed clean
   as of the Stage 1 commit — includes `tests/quaidstvp_test.e` (56
   checks: exact noiseless-recovery + loose real-data plausibility vs.
@@ -732,10 +791,12 @@ next objective — there is no automatic "next stage" after Stage 6.
   `ssControlCreate()` before `kalmanFilterTVP`/`kalmanFilterDiffuseTVP`
   resolves and compiles cleanly under the `GAUSS26_CFG` override
   described in Known Issues.
-- Full release gate (`scripts/run_release_gate.ps1`) has **not** been
-  re-run since the Phase 5 release work — not required for Stage 1/the
-  sslib install (no public API surface changed), but worth running
-  before any future version bump/release.
+- Full Stage 6 release verification
+  (`scripts/run_release_verification.ps1 -BuildArtifact -ForceArtifact
+  -InstallArtifact`) passed before the Stage 6 commit. The subsequent
+  `v0.3.0` release gate also reported `GO`; artifact digest and release
+  record are in Current Objective. No later work changed the installed
+  package surface.
 - `tests/run_source_tests.ps1 -SkipBootstrap` (this machine's routine
   local gate) re-run clean this session with Stage 3's new
   `tests/quaidstvp_mle_test.e` (7 checks) and its four new guard cases
@@ -759,6 +820,34 @@ next objective — there is no automatic "next stage" after Stage 6.
 
 ## Known Issues
 
+- **`sslib` v2.0.0 released upstream (2026-09-29); the shared install at
+  `C:\gauss26\pkgs\sslib` is currently a drifted/mixed tree, NOT this
+  repo's pinned `v1.0.0`/`ad15626`.** Rechecked on 2026-10-01:
+  `package.json` still reports `1.0.0`, but
+  `scripts\verify_sslib_pin.ps1` flags `src/sstvp.src`/`sskalman.src`/
+  `ssmain.src`/`ssstructural.src` as differing from the recorded v1
+  hashes. A 2026-09-29 concurrent inspection identified the replacement
+  source as coming from the v2 line, but the current mixed metadata means
+  callers should describe it simply as unverified drift. `v1.0.0` itself
+  is untouched upstream
+  (`gauss-state-space`'s `v1.0.0` tag still peels to `ad15626`) — this
+  repo's own pin is still valid, the INSTALLED copy is just currently
+  something else. No action taken since nothing `sslib`-dependent is
+  in flight; before any future TVP-AIDS/`sslib` work, re-run
+  `scripts\sync_sslib.ps1 -SourceRepoPath <checkout> -Commit ad15626`
+  (or deliberately move the pin to `v2.0.0`/`67bc506` — v2 requires GAUSS
+  26.1.4+, which this repo's own dev environment already has, and per
+  `gauss-state-space-af` every proc this repo calls by field name
+  (`ssOut.final_params`/`.kfResults`/`.tvpFinal`/`.mleResults.retcode`)
+  is unaffected by v2's only structural change, a new nested
+  `ssOut.structural` field — worth a deliberate decision, not a default,
+  since `sync_sslib.ps1`'s own hand-built `.lcg` generator does not emit
+  the `typed_returns`/`keywords` annotations v2's own newer API surface
+  needs; install v2 via `lib`/the GAUSS Package Manager instead if this
+  repo ever moves up). Also good to know: `sslib`'s own test runner now
+  defaults to an isolated install mode that never touches the shared
+  directory, so the specific contention pattern that caused two earlier
+  drift incidents this initiative should not recur.
 - **`tsmt` package shadowing + the `library`/cross-file-global lazy-load
   gotcha** — both now documented as durable environment/language facts
   in `CLAUDE.md` (Development environment / Known GAUSS-26 language
@@ -766,16 +855,16 @@ next objective — there is no automatic "next stage" after Stage 6.
   touching `sslib`. In short: any `tgauss` invocation using `tsmt` or
   `sslib` needs the `GAUSS26_CFG` override described there, and Stage 2
   code should call `ssControlCreate()` before any `sstvp.src` proc.
-- `gauss-state-space`'s documented collision risk is real and live, not
-  hypothetical: its `main` working tree currently has an uncommitted,
-  in-progress change to `src/ssstructural.src` (someone else's
-  analytic-gradient work, unrelated to anything Stage 2 needs). Re-check
-  its `git status` before reading from it again, and never install
-  `sslib` from its live working tree — use `git archive` of a specific
-  commit, as this session did.
-- **The collision risk is not limited to that repo's own working tree —
-  the SHARED INSTALLED COPY at `C:\gauss26\pkgs\sslib` itself changed
-  mid-session** (this session, not a hypothetical): `sstvp.src`/
+- `gauss-state-space`'s documented collision risk was observed repeatedly
+  during TVP-AIDS development. Do not rely on an old statement about that
+  repository's current working-tree state: re-check its `git status`
+  before reading from it, and never install `sslib` from its live working
+  tree — use `git archive` of a specific commit, as the pinning workflow
+  does.
+- **Historical context: the collision risk is not limited to that repo's
+  own working tree — the SHARED INSTALLED COPY at
+  `C:\gauss26\pkgs\sslib` itself changed mid-session** during the TVP
+  work: `sstvp.src`/
   `ssstructural.src` there were modified the same morning by something
   other than this session, silently breaking already-committed Stage 2
   code (`init_diffTVP` arity). Now fixed (see Completed Work), and a new
@@ -801,60 +890,70 @@ next objective — there is no automatic "next stage" after Stage 6.
   error case) after this incident, NOT yet confirmed present in the
   installed copy -- low risk (additive, no signature changes, their own
   43-file suite passed) but worth knowing if something TVP-related
-  behaves unexpectedly in a future session.
-- **`README.md`'s prose still says "public alpha (package version
-  `0.1.0`)"** (line ~16) — actual current version is `0.2.0`. Stale
-  reference, not yet fixed.
+  behaves unexpectedly in a future session. This chronology is retained
+  to explain why the pin/verification tooling exists; the first Known
+  Issues item is authoritative for the installed copy's current state.
 - Iterated AIDS and QUAIDS (the estimator's own nonlinear iteration, not
   the TVP work) remain **experimental** per README's support-tier table
-  — a known, documented estimator property, not a bug.
+  — a known, documented estimator property, not a bug. The committed
+  200-seed safeguarded multi-start benchmark improves reachability but
+  does not resolve correctness: using the deliberately loose
+  `recErr <= 1` synthetic cutoff, only 121/200 AIDS and 69/200 QUAIDS
+  selections are correct; at `recErr <= .5`, only 38/200 and 16/200
+  qualify. On real data there is no `recErr`, so a faster or more
+  frequent `converged==1` result is not itself a trustworthy success
+  signal. No Anderson or multi-start behavior has been shipped.
 
 ## Next Steps
 
-**None specific to TVP-AIDS — the initiative is complete.** All six
-stages are committed and pushed (see Current Objective). Whoever picks
-this repo up next should check with the repo owner for a new objective
-rather than assuming there's a queued follow-on. Two standing items worth
-keeping in mind regardless of what's next:
+**TVP-AIDS is complete; the next recommended research direction is
+convergence correctness for iterated AIDS/QUAIDS.** This is a recommendation,
+not active implementation or approved production scope.
 
-1. `sslib.pin.json` is pinned to `gauss-state-space`'s tagged `v1.0.0`
-   (`ad15626`) — a deliberately stable choice while that repo iterates on
-   a breaking `v2.0.0` line. Re-verify with `scripts\verify_sslib_pin.ps1`
-   before relying on the shared install in a future session (its own
-   `PSObject.Properties`-emptiness fix and general design are documented
-   in Stage 6's own Completed Work entry) — do not assume it's still at
-   `v1.0.0` without checking, since the shared install is genuinely
-   mutable, shared machine state (see Known Issues/CLAUDE.md).
-2. `README.md`'s "public alpha (package version `0.3.0`)" line and
-   `package.json`'s version are both current as of Stage 6's push — no
-   known stale-version references remain.
+1. Define a direct concentrated residual/GMM objective and implement a
+   small LM/Gauss-Newton or `optmt`/`cmlmt` prototype in
+   `dev/experiments/convergence-anderson/`. Validate objective and
+   parameter recovery on a noiseless known-truth fixture before any
+   Monte Carlo sweep.
+2. Run a 30-seed matched pilot comparing safe Anderson, the direct
+   optimizer, and a hybrid (fast Anderson candidate followed by direct
+   refinement/fallback). Report `recErr <= .5 / 1 / 2 / 5` sensitivity,
+   wrong and nonconverged counts, objective evaluations, and wall-clock
+   time. Only
+   expand to 200 seeds if the pilot improves correctness rather than just
+   `converged==1`.
+3. Add diagnostics usable without synthetic truth: fixed-point residual,
+   multi-start endpoint agreement, objective gaps, Jacobian/Hessian rank
+   and conditioning, theory restrictions, and training-vs-held-out fit.
+   Productionization should require a defensible real-data trust signal.
+4. Use continuation as a targeted follow-up: solve linear AIDS first,
+   then gradually introduce the nonlinear price-index and QUAIDS terms.
+   Combine this with parameter-block scaling/preconditioning rather than
+   adding more undirected random starts.
+5. Before any future TVP-AIDS work, resolve the `sslib` installation
+   deliberately: resync to pinned `v1.0.0`/`ad15626`, or explicitly test
+   and adopt v2 using its supported installation/catalog path. The
+   current shared install fails the pin verifier and must not be assumed
+   reproducible.
+
+`README.md` and `package.json` both correctly report package version
+`0.3.0`; no stale package-version reference is currently known.
 
 ## Handoff Notes
 
-- **Working tree: `master` clean, up to date with `origin/master` at
-  `4129201`** (Stage 6, committed and pushed at the user's explicit
-  request — bundling every file listed in Stage 6's own Completed Work
-  entry: `src/quaidstvp.src`/`quaidstvpelas.src` renames, new
-  `src/quaidstvpfit.src`, `src/quaids.sdf`'s two new structs, new
-  `sslib.pin.json`/`scripts/sync_sslib.ps1`/`verify_sslib_pin.ps1`,
-  `scripts/verify_public_api.ps1`'s multi-file module support,
-  `tests/run_source_tests.ps1`/`run_examples_smoke.ps1` wiring, new
-  `tests/quaidstvpfit_test.e` + two guard cases,
-  `tests/quaidstvp_elas_test.e` + its three guard cases (rename), five
-  new `docs/command-reference/*.md` pages plus
-  `docs/public-api.json`/`docs/COMMAND_REFERENCE.md`, `README.md`/
-  `examples/README.md`, new `examples/14_tvp_aids_estimation.e`, the
-  version bump to `0.3.0` across `package.json`/`CITATION.cff`/
-  `CHANGELOG.md`, and `CLAUDE.md`'s sslib/optional-modules notes plus
-  three new language gotchas). Nothing uncommitted. CI confirmed
-  `success` (`gh run list`, run id `35878499421`).
-  The full release-verification pipeline has been run clean against this
-  exact working-tree state (see Next Steps item 3) — nothing here is
-  provisional or awaiting a resume step.
-- `gh run list` confirmed (as of 2026-09-16): CI runs for `086c97a`,
-  `8ed8ea3`, `a36c7a6`, `e3ef801`/`3d9f3d7` (Stage 4 + doc-sync), AND
-  `c58c511` (Stage 5) all completed with `success`. Every push so far
-  (including Stage 5's) runs with `-SkipBootstrap -SkipTVPKalman`, so CI
+- **Repository state before this status-only sync:** `master` and
+  `origin/master` both pointed to `7e98720`, the complete
+  convergence-Anderson research commit; the only working-tree change was
+  this pre-existing `PROJECT_STATUS.md` update, now reviewed and
+  reconciled. The experiment commit contains 21 research code/output/
+  handoff files, changes no shipped source, and has successful CI
+  (`36855314457`).
+- `gh run list` confirmed (as of 2026-10-01) that CI for `7e98720`, the
+  `v0.3.0` release-status commit, both Stage 6 sync commits, and the
+  earlier TVP commits completed with `success`. Earlier confirmed runs
+  include `086c97a`, `8ed8ea3`, `a36c7a6`, `e3ef801`/`3d9f3d7`
+  (Stage 4 + doc-sync), and `c58c511` (Stage 5). The push workflow runs
+  with `-SkipBootstrap -SkipTVPKalman`, so CI
   itself never actually exercises any `sslib`-dependent test — a
   reminder that CI green here means "the non-sslib suite passed," not
   "the sslib path was validated." Stages 2-4's own `sslib`-dependent
@@ -865,14 +964,11 @@ keeping in mind regardless of what's next:
   CI. Stage 5's own new test/guard cases (`quaidstvp_elas_test.e` and its
   three guards) have NO `sslib` dependency and so ARE exercised by CI
   normally, unlike Stages 2-4's.
-- `sslib`'s presence at `C:\gauss26\pkgs\sslib` was reconfirmed at this
-  session's start (real files, `lib/sslib.lcg` catalog present) — NOT
-  missing this time, unlike last session's finding. But its CONTENT had
-  silently drifted past the documented `9132c35` pin (see Known Issues'
-  new entry) — presence alone is no longer sufficient reassurance;
-  arity/signature drift is now a demonstrated real risk on top of the
-  already-documented disappearance risk. Re-verify both before relying on
-  it in a future session.
+- `sslib`'s presence was reconfirmed on 2026-10-01, but its four tracked
+  source files fail verification against the current `ad15626` pin even
+  though the installed `package.json` still reports `1.0.0`. Presence and
+  package metadata are therefore insufficient reassurance; run the pin
+  verifier before relying on it and deliberately resync or repin first.
 - Full Stage 2 functional validation (diffuse filter exact-recovers
   Stage 1's noiseless true state to ~8e-17) was done via ad hoc scratch
   scripts before being formalized into the committed-to-repo test file —
