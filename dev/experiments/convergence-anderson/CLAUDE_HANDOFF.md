@@ -1,139 +1,141 @@
-# Claude handoff: safeguarded Anderson + structured multi-start benchmark
+# Claude handoff: Phase 3 hardened -- strengthened smoke gate passed; stopped before the 30-seed pilot
 
-Last updated: 2026-10-01
+Last updated: 2026-10-05
 
 ## Start here
 
-This is experiment-only research for `gauss-aids-model`. Nothing here is
-part of the installed package or CI surface, and no shipped file under
-`src/` was changed. Read the repository-root `CLAUDE.md` and then
-`SUMMARY.md` in this directory before editing or running GAUSS code.
-Never commit or push without the user's explicit approval.
+This directory holds experiment-only research for `gauss-aids-model`.
+Nothing in it is part of the installed package or the CI surface, and
+no shipped file under `src/` was changed.
 
-The prior handoff (`CODEX_HANDOFF.md`) asked for a methodology audit. That
-audit and its recommended next step are now complete. This file records
-the current state so the work is not accidentally repeated.
+1. Read the repository-root `CLAUDE.md`.
+2. Read `SUMMARY.md`, in particular its "Phase 3 hardening (2026-10-05)"
+   section. That section supersedes several numbers and claims in the
+   "Phase 3" section above it.
+
+Never commit or push without the user's explicit approval. None of
+Phase 1, 1b, 3 or 3-hardening is committed yet. The user said they will
+review this hardened checkpoint and authorize a commit before the
+30-seed pilot begins.
 
 ## Bottom line
 
-The full 200-seed, 16-start benchmark has been completed for iterated AIDS
-and QUAIDS. Correctly maximizing `homogCrit=-ln(det(Sigma))` selects the
-same loose correct/wrong class as the synthetic oracle in 399 of 400
-seed/model cases. Selection is therefore not the demonstrated
-bottleneck; reaching a good endpoint is.
+**The strengthened Phase 3 smoke gate passes cleanly in all 4 scenarios.**
+The scenarios are AIDS seed 6 and QUAIDS seed 9, each from the Stone
+start and a far/structured start. Each passes all of the following:
+1. reaches homotopy exactly 1;
+2. stage zero genuinely converged;
+3. every accepted stage returned retcode 0;
+4. every accepted stage is feasible on re-evaluation;
+5. structErr ≤ 1 (excluding the u row);
+6. no regression versus cold LM;
+7. no regression versus safe Anderson (+0.05 tolerance).
 
-Structured multi-start improves the number of correct endpoints from 98
-to 121 for AIDS and from 56 to 69 for QUAIDS relative to safeguarded
-Anderson from Stone alone. It reduces total nonconvergence from 6 to 3
-and 33 to 9. This is useful research evidence, but not a production-ready
-fix: only 69/200 QUAIDS seeds meet the loose `recErr <= 1` threshold, and
-only 16/200 meet `recErr <= .5`. A higher `converged==1` rate would still
-hide many bad solutions on real data.
+Key numbers (structErr, all rows except u):
+- **AIDS:** continuation 0.058, cold LM 0.058, safe Anderson 1.52 (not
+  converged).
+- **QUAIDS:** continuation 0.081 from both starts, cold LM 4.02 (Stone)
+  and 12.29 (far), safe Anderson 2.16 (Stone) and 0.19 (far), both not
+  converged.
 
-## Current artifacts
+Corrections from the 2026-10-02 write-up:
+- **AIDS structural error was misreported as 0.724.** That figure was the
+  u-row error, caused by a wrong row slice. The corrected value is
+  0.058.
+- **QUAIDS continuation endpoints are not "identical."** The two starts
+  give endpoints that differ by 5.8e-9 in scaled θ and 7.6e-10 in raw
+  structural coefficients. They are numerically equivalent, not
+  bit-identical.
+- **Stage zero changed no endpoint.** It changes endpoints by ≤ 1.5e-8
+  versus the legacy schedule; only iteration counts change.
 
-- `SUMMARY.md`: authoritative narrative, methodology corrections, exact
-  result tables, and interpretation.
-- `anderson_full_multistart_benchmark.e`: final 200-seed benchmark. It is
-  configured with `nSeeds=200`, `numStarts=16`, and Anderson depth 8.
-- `anderson_full_multistart_benchmark_output.txt`: complete final output;
-  it ends with `anderson_full_multistart_benchmark.e: run complete.`
-- `quaidsfit_anderson_prototype.src`: experiment-only estimator copy. Its
-  optional `safeMode=1` path uses consecutive differences, rank-truncated
-  SVD, residual-growth restart, step-size safeguard, and true
-  fixed-point-residual stopping.
-- `anderson_safe_solver_test.e`: isolated rank-deficient-history test plus
-  a real QUAIDS seed-7 safe-fit test.
-- `anderson_seed17_repro_output.txt`: evidence for the SVD-failure
-  regression. QUAIDS seed 17 originally caused `svd2` to fail; the
-  trapped rank-zero/plain-step fallback completes it cleanly.
-- `anderson_faithfulness_check.e`: confirms `mDepth=0` remains exactly
-  identical to shipped `quaidsFit()` for the tested case.
-- `anderson_methodology_audit.e` and its output: 30-seed audit that fixed
-  the old selector-direction error and compared Anderson/plain endpoint
-  diversity.
+## Artifacts
 
-The other scripts and outputs in this directory are historical evidence.
-Do not cite the original minimized-`homogCrit` multi-start conclusion or
-the old Anderson-basin-collapse hypothesis without the superseding caveats
-in `SUMMARY.md`.
+- `direct_objective.src`: the LM solver body is now
+  `_directLMHomotopyDiag()`.
+  - It returns an extra `diagVec`: covariance-inversion failures,
+    step-inversion failures, infeasible trials, rho rejections, accepted
+    steps, and final lambda.
+  - Inversion is fail-closed: the destination is reset before every
+    `invpd()`, and the result is checked for shape and `ismiss`.
+  - New retcode 5 means a covariance-inversion failure at the current
+    point; `gnorm` is then returned as -1.
+  - It has a diagnostic-only fault hook (`faultMode`).
+  - `_directLMHomotopy()` and `_directLM()` keep their signatures and
+    are bit-identical at `faultMode=0`.
+- `phase3_smoke_gate.e` / `_output.txt`: the hardened gate.
+  - The driver solves stage zero (homotopy 0) first.
+  - The legacy schedule runs alongside it for comparison.
+  - It uses corrected error rows and has a runtime layout assertion.
+  - It reports explicit endpoint differences, threshold sensitivity at
+    .5/1/2/5, and the strengthened verdict.
+- `phase3_safeguard_diag.e` / `_output.txt`: fault-injected
+  `invpd()` failures. **14 of 14 checks pass.** The T4 check was
+  revised after a first-run failure, which turned out to be a
+  stopping-tolerance effect; SUMMARY.md documents it.
+- Phase 1b: `phase1b_audit.e` was rerun, and every numerical line
+  matches the saved `phase1b_audit_output.txt`. Only the banner and
+  timestamp lines differ. The saved file was not overwritten.
 
-## Final benchmark results
-
-| Result (of 200 seeds) | Iterated AIDS | QUAIDS |
-|---|---:|---:|
-| Stone-only safe AA: never / wrong / correct | 6 / 96 / 98 | 33 / 111 / 56 |
-| 16-start max-criterion: never / wrong / correct | 3 / 76 / 121 | 9 / 122 / 69 |
-| Oracle among converged: wrong / correct | 75 / 122 | 122 / 69 |
-| Selector misses | 1 | 0 |
-| Seeds with multiple endpoints | 71 | 119 |
-| Converged starts / 3,200 | 3,091 | 2,639 |
-| Any wrong endpoint beats truth criterion | 19 | 5 |
-| Selected `recErr <= .5 / 1 / 2 / 5` | 38 / 121 / 155 / 171 | 16 / 69 / 88 / 91 |
-
-The `recErr <= 1` split is intentionally loose. Always report the
-threshold sensitivity beside the binary correct/wrong totals.
-
-## Reproduction
-
-Run from this directory:
-
+Reproduce from this directory:
 ```powershell
-C:\gauss26\tgauss.exe -b -x anderson_safe_solver_test.e
-C:\gauss26\tgauss.exe -b -x anderson_faithfulness_check.e
-cmd /c "C:\gauss26\tgauss.exe -b -x anderson_full_multistart_benchmark.e > anderson_full_multistart_benchmark_output.txt 2>&1"
+C:\gauss26\tgauss.exe -b -x phase3_smoke_gate.e
+C:\gauss26\tgauss.exe -b -x phase3_safeguard_diag.e
+C:\gauss26\tgauss.exe -b -x phase1b_audit.e
 ```
 
-The full command performs 6,400 fits and should be run as a background or
-long-timeout job. Smoke-test any changed benchmark with a few seeds
-before restoring `nSeeds=200`. GAUSS batch execution may return a nonzero
-shell status even when the script completes; require the explicit `run
-complete` marker and inspect the output for GAUSS errors.
+## What is established
 
-The experiment scripts use absolute include paths rooted at
-`C:/Users/eclow/Documents/GitHub/gauss-aids-model`. Update those paths if
-the repository is moved. GAUSS identifiers are case-insensitive; avoid
-single-letter names that differ only by case and review the other
-language-specific constraints in root `CLAUDE.md`.
+On these two hard seeds, continuation plus LM reaches a correct
+endpoint (structErr ≤ 0.5) from both starts. The endpoint does not
+depend on the start, to within about 1e-8. Cold LM lands in wrong
+QUAIDS basins. Single-start safe Anderson does not converge.
 
-## Important implementation details
+The `invpd()` safeguards fail closed, as demonstrated by fault
+injection.
 
-`_andersonSvdMix()` intentionally returns rank zero if `svd2` fails or
-produces an unusable leading singular value. The caller rejects and
-clears that history, then uses a plain fixed-point step. Do not replace
-this with a normal-equation inverse: that was the conditioning weakness
-the safe path was introduced to remove.
+## What is NOT established
 
-The 16 start recipes are printed at the beginning of the benchmark output
-and implemented in `_benchmarkStart()`. The winning-start counts show no
-single recipe dominates enough to discard the portfolio without a proper
-ablation. Random perturbations are generated after each deterministic
-fixture seed, making the recorded sweep reproducible in the tested GAUSS
-environment.
+- Anything about success rates. The test covers one seed per model,
+  chosen as hard cases.
+- That the driver's step-halving, minimum-step and stage-zero-failure
+  paths work on real data. Nothing in this gate triggered them.
+- Comparability with the 200-seed benchmark's `recErr`. That metric is
+  `max|qOut.bS - trueParams|` on the recovered full structural matrix,
+  whereas this gate's structErr is computed on the raw reduced rows
+  excluding u. The threshold value matches; the metric does not.
+- That continuation beats Anderson's best. Anderson ran single-start
+  here, not with its 16-start portfolio.
 
-The raw-criterion replica differs from `qOut.homogCrit` by at most
-`6.05e-5` (AIDS) and `4.37e-4` (QUAIDS) in the full run. Do not use
-`symcCrit` as an interchangeable final-parameter criterion; the audit
-found material discrepancies on bad endpoints.
+## Next entry point: the 30-seed pilot (only after the user approves a checkpoint commit)
 
-## Recommended next task
+The pilot is a matched sweep on identical seeds and starts. It compares:
+- safe Anderson with its full 16-start portfolio;
+- cold LM;
+- hardened continuation plus LM (with stage zero).
 
-Do not tune Anderson depth as the next primary task. Prototype a direct
-nonlinear optimizer (LM/Gauss-Newton or the repository's `optmt`/`cmlmt`
-facilities) on a clearly defined concentrated residual/GMM objective.
-Sequence the work as follows:
+It should report:
+- never-converged, wrong and correct counts;
+- structErr **and** the benchmark-comparable `bS`-based recErr at
+  .5/1/2/5;
+- paired seed-level transitions;
+- counts of failed stages, step reductions and minimum-step exhaustion;
+- wall-clock distributions.
 
-1. Build a noiseless known-truth fixture and verify parameter/objective
-   recovery before any Monte Carlo sweep.
-2. Compare direct optimization with safe Anderson on the same starts and
-   report both convergence and threshold-sensitive recovery.
-3. Evaluate the objective on held-out draws from the same DGP; a training
-   criterion beating the finite-sample truth is not an identification
-   result.
-4. Add local Hessian/Jacobian rank and conditioning diagnostics around
-   competing endpoints.
-5. Only discuss productionization if there is a real-data diagnostic that
-   distinguishes trustworthy from converged-but-wrong solutions.
+Follow the stage-gate discipline: no 200-seed run without the pilot
+first.
 
-Keep all of that work in this experiment directory unless the user
-explicitly approves a production change.
+## Environment / gotchas
+
+See the repo-root `CLAUDE.md`. Gotchas specific to this work:
+- **Editing `/* ... */` doc comments.** Editing only part of a doc
+  comment can leave a dangling `/*` or `*/`. That produces a cascading
+  `G0008` error far from the edit, so check both ends of the comment.
+- **Row slices of `bRaw`.** Derive them from the layout
+  `alpha(nIntFull) | gamma(n1) | beta | [lambda] | u`, with
+  `ng = nIntFull + n1 + 2 + (QUAIDS)`. The 2026-10-02 slice error came
+  from an off-by-model-flag expression. Use `_phase3Errs` (in the gate)
+  or `_directBlockErrors` rather than hand-writing ranges.
+- **Capturing output.** `tgauss ... | Out-File -Encoding utf8 file`
+  captures only the script's prints. The GAUSS banner goes to the
+  console.

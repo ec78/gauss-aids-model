@@ -1,0 +1,267 @@
+﻿================================================================
+Step 0: continuation faithfulness check (homotopy=1 == original)
+================================================================
+  max abs diff, objective:       0.0000000   feasible match:       1.0000000 
+  max abs diff, residual:       0.0000000 
+  homotopy=0 vs 1 residual max abs diff (must be > 0):       11679431. 
+  PASS: homotopy=1 is bit-identical to the original objective;
+        homotopy=0 is a genuinely different objective.
+
+================================================================
+Iterated AIDS (linear): Phase 3 smoke gate, known-difficult seed6
+================================================================
+  layout: ng       8.0000000 nIntFull       2.0000000 n1       4.0000000 structural rows (excl. u)       7.0000000 
+----------------------------------------------------------
+Iterated AIDS (linear)/Stone start
+----------------------------------------------------------
+  start overall recErr vs true DGP params:       4.7696474 
+  (a) direct LM (no continuation): retcode       0.0000000 gnorm   0.00019243103 iter       4.0000000 rejected       0.0000000 wallTime(s)      0.15800000 
+      homogCrit      -5.4987359 structErr(excl.u)     0.058349684 lambdaErr      -1.0000000 uErr      0.72222994 overallErr      0.72222994 pre-fix slice      0.72222994 
+  (b) continuation+LM (hardened: stage zero at homotopy=0):
+    stage       1.0000000 homotopy->       0.0000000 retcode       0.0000000 feasible       1.0000000 f       7.7978165 gnorm   0.00017170832 iter       4.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       2.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       7.2318107 gnorm   0.00084018611 iter       10.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       3.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       6.2287920 gnorm   0.00059315618 iter       10.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       4.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       5.6350702 gnorm   0.00043717282 iter       5.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       5.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.4987232 gnorm   1.1717886e-05 iter       4.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok       1.0000000 stagesAttempted       5.0000000 stagesAccepted       5.0000000 wallTime(s)       1.1140000 
+      totalIter       33.000000 totalRejectedSteps       0.0000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.4987232 structErr(excl.u)     0.058367908 lambdaErr      -1.0000000 uErr      0.72403557 overallErr      0.72403557 pre-fix slice      0.72403557 
+      approx total evals (iter*(2k+1)+rejected, k=32):       2145.0000 
+  (b') continuation+LM (legacy: first stage at homotopy=.25):
+    stage       1.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       7.2318098 gnorm   0.00060600531 iter       11.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       2.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       6.2287920 gnorm   0.00059115890 iter       10.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       3.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       5.6350702 gnorm   0.00043718923 iter       5.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       4.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.4987232 gnorm   1.1717870e-05 iter       4.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok      -1.0000000 stagesAttempted       4.0000000 stagesAccepted       4.0000000 wallTime(s)       1.0390000 
+      totalIter       30.000000 totalRejectedSteps       0.0000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.4987232 structErr(excl.u)     0.058367908 lambdaErr      -1.0000000 uErr      0.72403557 overallErr      0.72403557 pre-fix slice      0.72403557 
+  stage-zero vs legacy endpoint: max|dTheta(scaled)|   1.4794242e-08 max|dRaw structural|   3.3286901e-10 |dObjective|   8.0824236e-14 
+  (c) safe Anderson: converged       0.0000000 iterations       100.00000 finalErr    0.0020640474 wallTime(s)     0.030000000 
+      homogCrit      -6.3859262 structErr(excl.u)       1.5182084 lambdaErr      -1.0000000 uErr      0.67244451 overallErr       1.5182084 pre-fix slice       1.5182084 
+  structErr <= threshold [.5 1 2 5]:
+    cold LM                   1.0000000        1.0000000        1.0000000        1.0000000 
+    continuation (b)          1.0000000        1.0000000        1.0000000        1.0000000 
+    continuation (b')         1.0000000        1.0000000        1.0000000        1.0000000 
+    safe Anderson             0.0000000        0.0000000        1.0000000        1.0000000 
+  VERDICT predicates:
+    reached homotopy=1 exactly                  1.0000000 
+    stage zero genuinely converged              1.0000000 
+    all accepted stages retcode 0               1.0000000 
+    all accepted stages feasible                1.0000000 
+    correct: structErr <= 1                     1.0000000 
+    no regression vs cold LM (+.05)             1.0000000 
+    no regression vs safe Anderson (+.05)       1.0000000 
+  VERDICT: CLEAN PASS
+
+----------------------------------------------------------
+Iterated AIDS (linear)/far/structured start (0.8x noise + gamma sign flip)
+----------------------------------------------------------
+  start overall recErr vs true DGP params:       4.7696474 
+  (a) direct LM (no continuation): retcode       0.0000000 gnorm   0.00019571480 iter       6.0000000 rejected       0.0000000 wallTime(s)      0.19000000 
+      homogCrit      -5.4987232 structErr(excl.u)     0.058365151 lambdaErr      -1.0000000 uErr      0.72404051 overallErr      0.72404051 pre-fix slice      0.72404051 
+  (b) continuation+LM (hardened: stage zero at homotopy=0):
+    stage       1.0000000 homotopy->       0.0000000 retcode       0.0000000 feasible       1.0000000 f       7.7978061 gnorm   2.4700604e-05 iter       5.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       2.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       7.2318107 gnorm   0.00083830307 iter       10.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       3.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       6.2287920 gnorm   0.00059314017 iter       10.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       4.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       5.6350702 gnorm   0.00043717289 iter       5.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       5.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.4987232 gnorm   1.1717902e-05 iter       4.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok       1.0000000 stagesAttempted       5.0000000 stagesAccepted       5.0000000 wallTime(s)       1.1630000 
+      totalIter       34.000000 totalRejectedSteps       0.0000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.4987232 structErr(excl.u)     0.058367908 lambdaErr      -1.0000000 uErr      0.72403557 overallErr      0.72403557 pre-fix slice      0.72403557 
+      approx total evals (iter*(2k+1)+rejected, k=32):       2210.0000 
+  (b') continuation+LM (legacy: first stage at homotopy=.25):
+    stage       1.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       7.2318106 gnorm   0.00080288456 iter       11.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       2.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       6.2287920 gnorm   0.00059283773 iter       10.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       3.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       5.6350702 gnorm   0.00043717553 iter       5.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       4.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.4987232 gnorm   1.1717939e-05 iter       4.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok      -1.0000000 stagesAttempted       4.0000000 stagesAccepted       4.0000000 wallTime(s)       1.0260000 
+      totalIter       30.000000 totalRejectedSteps       0.0000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.4987232 structErr(excl.u)     0.058367908 lambdaErr      -1.0000000 uErr      0.72403557 overallErr      0.72403557 pre-fix slice      0.72403557 
+  stage-zero vs legacy endpoint: max|dTheta(scaled)|   7.6956416e-09 max|dRaw structural|   3.8418632e-10 |dObjective|   2.3980817e-14 
+  (c) safe Anderson: converged       0.0000000 iterations       100.00000 finalErr    0.0019112812 wallTime(s)     0.030000000 
+      homogCrit      -6.3848544 structErr(excl.u)       1.5164786 lambdaErr      -1.0000000 uErr      0.67267375 overallErr       1.5164786 pre-fix slice       1.5164786 
+  structErr <= threshold [.5 1 2 5]:
+    cold LM                   1.0000000        1.0000000        1.0000000        1.0000000 
+    continuation (b)          1.0000000        1.0000000        1.0000000        1.0000000 
+    continuation (b')         1.0000000        1.0000000        1.0000000        1.0000000 
+    safe Anderson             0.0000000        0.0000000        1.0000000        1.0000000 
+  VERDICT predicates:
+    reached homotopy=1 exactly                  1.0000000 
+    stage zero genuinely converged              1.0000000 
+    all accepted stages retcode 0               1.0000000 
+    all accepted stages feasible                1.0000000 
+    correct: structErr <= 1                     1.0000000 
+    no regression vs cold LM (+.05)             1.0000000 
+    no regression vs safe Anderson (+.05)       1.0000000 
+  VERDICT: CLEAN PASS
+
+----------------------------------------------------------
+Iterated AIDS (linear): endpoint differences, Stone vs far start
+----------------------------------------------------------
+  continuation (b, stage zero): max|dTheta(scaled)|   3.5714383e-09 max|dRaw structural|   2.8280506e-10 |dObjective|   1.5099033e-14 
+    -> numerically equivalent (both diffs <= 1e-6), NOT identical
+  continuation (b', legacy):    max|dTheta(scaled)|   1.3151241e-08 max|dRaw structural|   3.0169363e-10 |dObjective|   7.1942452e-14 
+    -> numerically equivalent (both diffs <= 1e-6), NOT identical
+  cold LM (context):            max|dTheta(scaled)|      0.21263445 max|dRaw structural|   0.00049302750 |dObjective|   1.2662998e-05 
+
+================================================================
+QUAIDS: Phase 3 smoke gate, known-difficult seed9
+================================================================
+  layout: ng       9.0000000 nIntFull       2.0000000 n1       4.0000000 structural rows (excl. u)       8.0000000 
+----------------------------------------------------------
+QUAIDS/Stone start
+----------------------------------------------------------
+  start overall recErr vs true DGP params:       9.3715527 
+  (a) direct LM (no continuation): retcode       0.0000000 gnorm   0.00075663668 iter       44.000000 rejected       8.0000000 wallTime(s)       2.2570000 
+      homogCrit      -11.344578 structErr(excl.u)       4.0194095 lambdaErr     0.020134582 uErr      0.29805489 overallErr       4.0194095 pre-fix slice       4.0194095 
+  (b) continuation+LM (hardened: stage zero at homotopy=0):
+    stage       1.0000000 homotopy->       0.0000000 retcode       0.0000000 feasible       1.0000000 f       13.314302 gnorm   0.00084249609 iter       18.000000 rejected       3.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        3.0000000 
+    stage       2.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       9.7467808 gnorm   0.00096540047 iter       26.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       3.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       7.5846053 gnorm   0.00084200673 iter       20.000000 rejected       5.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        5.0000000 
+    stage       4.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       6.1040529 gnorm   0.00075010361 iter       11.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       5.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.5772838 gnorm   3.4472323e-05 iter       7.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok       1.0000000 stagesAttempted       5.0000000 stagesAccepted       5.0000000 wallTime(s)       4.2110000 
+      totalIter       82.000000 totalRejectedSteps       8.0000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        8.0000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.5772838 structErr(excl.u)     0.081498821 lambdaErr   5.8458495e-05 uErr      0.51501832 overallErr      0.51501832 pre-fix slice     0.081498821 
+      approx total evals (iter*(2k+1)+rejected, k=36):       5994.0000 
+  (b') continuation+LM (legacy: first stage at homotopy=.25):
+    stage       1.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       9.7467807 gnorm   0.00083555576 iter       31.000000 rejected       4.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        4.0000000 
+    stage       2.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       7.5846053 gnorm   0.00084238774 iter       20.000000 rejected       5.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        5.0000000 
+    stage       3.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       6.1040529 gnorm   0.00075010302 iter       11.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       4.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.5772838 gnorm   3.4471917e-05 iter       7.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok      -1.0000000 stagesAttempted       4.0000000 stagesAccepted       4.0000000 wallTime(s)       3.2570000 
+      totalIter       69.000000 totalRejectedSteps       9.0000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        9.0000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.5772838 structErr(excl.u)     0.081498821 lambdaErr   5.8458495e-05 uErr      0.51501832 overallErr      0.51501832 pre-fix slice     0.081498821 
+  stage-zero vs legacy endpoint: max|dTheta(scaled)|   5.4969123e-09 max|dRaw structural|   8.2173013e-10 |dObjective|   1.7763568e-15 
+  (c) safe Anderson: converged       0.0000000 iterations       100.00000 finalErr       8.0334861 wallTime(s)     0.049000000 
+      homogCrit      -12.123067 structErr(excl.u)       2.1630924 lambdaErr     0.010970684 uErr      0.39388578 overallErr       2.1630924 pre-fix slice       2.1630924 
+  structErr <= threshold [.5 1 2 5]:
+    cold LM                   0.0000000        0.0000000        0.0000000        1.0000000 
+    continuation (b)          1.0000000        1.0000000        1.0000000        1.0000000 
+    continuation (b')         1.0000000        1.0000000        1.0000000        1.0000000 
+    safe Anderson             0.0000000        0.0000000        0.0000000        1.0000000 
+  VERDICT predicates:
+    reached homotopy=1 exactly                  1.0000000 
+    stage zero genuinely converged              1.0000000 
+    all accepted stages retcode 0               1.0000000 
+    all accepted stages feasible                1.0000000 
+    correct: structErr <= 1                     1.0000000 
+    no regression vs cold LM (+.05)             1.0000000 
+    no regression vs safe Anderson (+.05)       1.0000000 
+  VERDICT: CLEAN PASS
+
+----------------------------------------------------------
+QUAIDS/far/structured start (0.8x noise + gamma sign flip)
+----------------------------------------------------------
+  start overall recErr vs true DGP params:       22.119169 
+  (a) direct LM (no continuation): retcode       0.0000000 gnorm   0.00089108723 iter       51.000000 rejected       14.000000 wallTime(s)       2.5690000 
+      homogCrit      -11.108556 structErr(excl.u)       12.291217 lambdaErr     0.017386140 uErr      0.49341123 overallErr       12.291217 pre-fix slice       12.291217 
+  (b) continuation+LM (hardened: stage zero at homotopy=0):
+    stage       1.0000000 homotopy->       0.0000000 retcode       0.0000000 feasible       1.0000000 f       13.147710 gnorm   0.00096717094 iter       10.000000 rejected       3.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        3.0000000 
+    stage       2.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       9.7467808 gnorm   0.00094744752 iter       24.000000 rejected       1.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        1.0000000 
+    stage       3.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       7.5846053 gnorm   0.00084206157 iter       20.000000 rejected       5.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        5.0000000 
+    stage       4.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       6.1040529 gnorm   0.00075010437 iter       11.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       5.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.5772838 gnorm   3.4472175e-05 iter       7.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok       1.0000000 stagesAttempted       5.0000000 stagesAccepted       5.0000000 wallTime(s)       3.4930000 
+      totalIter       72.000000 totalRejectedSteps       9.0000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        9.0000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.5772838 structErr(excl.u)     0.081498822 lambdaErr   5.8458494e-05 uErr      0.51501832 overallErr      0.51501832 pre-fix slice     0.081498822 
+      approx total evals (iter*(2k+1)+rejected, k=36):       5265.0000 
+  (b') continuation+LM (legacy: first stage at homotopy=.25):
+    stage       1.0000000 homotopy->      0.25000000 retcode       0.0000000 feasible       1.0000000 f       12.277982 gnorm   0.00093106750 iter       54.000000 rejected       7.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        7.0000000 
+    stage       2.0000000 homotopy->      0.50000000 retcode       0.0000000 feasible       1.0000000 f       7.5846053 gnorm   0.00064878828 iter       31.000000 rejected       6.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        6.0000000 
+    stage       3.0000000 homotopy->      0.75000000 retcode       0.0000000 feasible       1.0000000 f       6.1040529 gnorm   0.00075008091 iter       11.000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+    stage       4.0000000 homotopy->       1.0000000 retcode       0.0000000 feasible       1.0000000 f       5.5772838 gnorm   3.4471920e-05 iter       7.0000000 rejected       0.0000000 
+      [covInvFail stepInvFail infeasTrial rhoReject]       0.0000000        0.0000000        0.0000000        0.0000000 
+      reachedHomotopy=1       1.0000000 finalHomotopy       1.0000000 stage0Ok      -1.0000000 stagesAttempted       4.0000000 stagesAccepted       4.0000000 wallTime(s)       4.7700000 
+      totalIter       103.00000 totalRejectedSteps       13.000000 anyStageFailedOnce       0.0000000 stepReductions       0.0000000 minStepExhausted       0.0000000 
+      failed stages by retcode [3 infeasStart, 5 covInv, 2 maxIter, 4 stalled]:       0.0000000        0.0000000        0.0000000        0.0000000 
+      inner events [covInvFail stepInvFail infeasTrial rhoReject]:       0.0000000        0.0000000        0.0000000        13.000000 
+      allAcceptedConverged       1.0000000 allAcceptedFeasible       1.0000000 
+      homogCrit      -5.5772838 structErr(excl.u)     0.081498821 lambdaErr   5.8458494e-05 uErr      0.51501832 overallErr      0.51501832 pre-fix slice     0.081498821 
+  stage-zero vs legacy endpoint: max|dTheta(scaled)|   2.6760354e-09 max|dRaw structural|   3.9725934e-10 |dObjective|   8.8817842e-16 
+  (c) safe Anderson: converged       0.0000000 iterations       100.00000 finalErr     0.026912481 wallTime(s)     0.055000000 
+      homogCrit      -5.7736210 structErr(excl.u)      0.19293495 lambdaErr    0.0010083436 uErr      0.54351506 overallErr      0.54351506 pre-fix slice      0.19293495 
+  structErr <= threshold [.5 1 2 5]:
+    cold LM                   0.0000000        0.0000000        0.0000000        0.0000000 
+    continuation (b)          1.0000000        1.0000000        1.0000000        1.0000000 
+    continuation (b')         1.0000000        1.0000000        1.0000000        1.0000000 
+    safe Anderson             1.0000000        1.0000000        1.0000000        1.0000000 
+  VERDICT predicates:
+    reached homotopy=1 exactly                  1.0000000 
+    stage zero genuinely converged              1.0000000 
+    all accepted stages retcode 0               1.0000000 
+    all accepted stages feasible                1.0000000 
+    correct: structErr <= 1                     1.0000000 
+    no regression vs cold LM (+.05)             1.0000000 
+    no regression vs safe Anderson (+.05)       1.0000000 
+  VERDICT: CLEAN PASS
+
+----------------------------------------------------------
+QUAIDS: endpoint differences, Stone vs far start
+----------------------------------------------------------
+  continuation (b, stage zero): max|dTheta(scaled)|   5.7592526e-09 max|dRaw structural|   7.6073636e-10 |dObjective|   6.2172489e-15 
+    -> numerically equivalent (both diffs <= 1e-6), NOT identical
+  continuation (b', legacy):    max|dTheta(scaled)|   5.9589920e-09 max|dRaw structural|   1.4814823e-09 |dObjective|   8.8817842e-15 
+    -> numerically equivalent (both diffs <= 1e-6), NOT identical
+  cold LM (context):            max|dTheta(scaled)|       8.6381604 max|dRaw structural|       8.2718077 |dObjective|      0.23602170 
+
+================================================================
+Smoke gate summary: clean passes       4.0000000 of       4.0000000 
+SMOKE GATE: PASS (all scenarios clean)
+phase3_smoke_gate.e: run complete.

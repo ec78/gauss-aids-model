@@ -1,0 +1,35 @@
+﻿T0: baselines (faultMode 0)
+  full: retcode       0.0000000 iter       4.0000000 rejected       0.0000000 gnorm   0.00068426890 
+  diag [cov step infeas rho accepted lambda]:       0.0000000        0.0000000        0.0000000        0.0000000        3.0000000    0.00012500000 
+  maxIter=1: retcode       2.0000000 iter       1.0000000 accepted       1.0000000 
+  PASS: baseline converges and needs >= 3 iterations (so iteration-2 injection is meaningful)
+  PASS: wrapper _directLMHomotopy == Diag(faultMode 0), bit-identical
+  PASS: no inversion failures without injection; rejectedSteps == step+infeas+rho counters
+
+T1: faultMode 1, covariance invpd() fails at outer iteration 2
+  retcode       5.0000000 iter       2.0000000 gnorm      -1.0000000 diag:       1.0000000        0.0000000        0.0000000        0.0000000        1.0000000    0.00050000000 
+  PASS: failure trapped (no crash) and covariance-failure counter == 1
+  PASS: returns documented retcode 5 at iteration 2 (no further progress)
+  PASS: returned theta/fVal == the iteration-1 accepted point exactly (no step taken with a stale inverse)
+  PASS: gnorm reported -1 (not a stale gradient norm)
+  PASS: returned fVal is the returned point's own objective
+
+T2: faultMode 1, covariance invpd() fails at outer iteration 1
+  retcode       5.0000000 iter       1.0000000 gnorm      -1.0000000 diag:       1.0000000        0.0000000        0.0000000        0.0000000        0.0000000     0.0010000000 
+  PASS: retcode 5, counter 1, zero accepted steps, theta/fVal unchanged from start
+
+T3: faultMode 2, EVERY damped-step invpd() fails
+  retcode       4.0000000 iter       1.0000000 rejected       25.000000 diag:       0.0000000        25.000000        0.0000000        0.0000000        0.0000000    1.1258999e+12 
+  PASS: every failure trapped and counted (expected 25 = damping 1e-3 -> 1e12 by x4)
+  PASS: no failed inversion was accepted as a step: theta/fVal unchanged, 0 accepted
+  PASS: returns documented retcode 4 (stalled), no objective trial was even evaluated
+
+T4: faultMode 2, first 3 damped-step invpd() calls fail
+  retcode       0.0000000 iter       9.0000000 rejected       3.0000000 gnorm   0.00084158633 diag:       0.0000000        3.0000000        0.0000000        0.0000000        8.0000000    0.00025000000 
+  PASS: exactly 3 trapped step-inversion failures counted as rejected steps
+  PASS: solver retries with increased damping and reaches genuine convergence (retcode 0, gnorm < 1e-3, feasible, own objective)
+  info: f4 - fBase (signed):    0.0012180809  max|theta4 - thetaBase| (scaled):       1.4061317 
+  info: max|raw diff| structural rows (excl. u):     0.017696181  u row:     0.076510159 
+  info: both endpoints re-polished at gradTol 1e-6 (no injection): retcodes       0.0000000        0.0000000  |f diff|:   5.7731597e-14  max|scaled theta diff|:   1.0509189e-05 
+
+ALL 14 CHECKS PASSED

@@ -1,0 +1,49 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: phase1_objective_validation.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\experiments\convergence-anderson )
+Thu Oct  1 07:05:14 2026
+
+
+================================================================
+Iterated AIDS (linear): Phase 1 objective validation
+================================================================
+iterated fit: converged       1.0000000 iterations       41.000000 finalErr   7.7031398e-05 
+recErr (fitted bS vs true, sanity only):       11.141606 
+PASS: objective finite at truth, homogCrit-style value =       36.947004 
+PASS: objective at fitted endpoint matches qOut.homogCrit, diff =   0.00031499369 
+PASS: pack/unpack round trip is exact.
+thetaScaled at truth: min      -2.4698799 max       20.000000 max abs       20.000000 
+PASS: FD gradient stable across step sizes, relDiff(1e-4,1e-6)=   1.8880839e-07 relDiff(1e-6,1e-8)=   3.9896850e-08 
+perturbScale     0.050000000 objective (homogCrit) at theperturbed start:       12.948841 (scalmiss = infeasible already atthe start)
+after warm start: objective (minimized, -homogCrit) =      -28.657076 
+warm-start-only recovered recErr      0.10287578 
+optmt retcode       0.0000000 fct      -37.003674 iterations       88.000000 
+start recErr     0.078886516 optmt-polished recErr     0.077734465 
+best-of(warm start, warm start+optmt) recErr     0.077734465 
+PASS: direct optimization recovered truth from a nearby perturbed start.
+
+================================================================
+QUAIDS: Phase 1 objective validation
+================================================================
+iterated fit: converged       1.0000000 iterations       50.000000 finalErr   3.0463078e-05 
+recErr (fitted bS vs true, sanity only):       1299.0916 
+PASS: objective finite at truth, homogCrit-style value =       36.947004 
+PASS: objective at fitted endpoint matches qOut.homogCrit, diff =   0.00023336842 
+PASS: pack/unpack round trip is exact.
+thetaScaled at truth: min     -0.95203126 max       6.0000000 max abs       6.0000000 
+PASS: FD gradient stable across step sizes, relDiff(1e-4,1e-6)=   5.6868320e-06 relDiff(1e-6,1e-8)=   0.00040939681 
+perturbScale     0.050000000 objective (homogCrit) at theperturbed start:      -1.8327940 (scalmiss = infeasible already atthe start)
+after warm start: objective (minimized, -homogCrit) =      -6.8348995 
+warm-start-only recovered recErr      0.22548331 
+optmt retcode       0.0000000 fct   1.0000000e+08 iterations       4.0000000 
+start recErr     0.090422718 optmt-polished recErr       3671.5381 
+best-of(warm start, warm start+optmt) recErr      0.22548331 
+FAIL: direct optimization did not recover truth, best recErr =      0.22548331 
+
+================================================================
+1 CHECKS FAILED (of 10)
+phase1_objective_validation.e: run complete.

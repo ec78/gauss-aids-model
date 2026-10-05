@@ -1,0 +1,1322 @@
+/*
+** direct_objective.src
+**
+** EXPERIMENT ONLY -- Phase 1 of the direct-nonlinear-optimization
+** convergence research (see CLAUDE_HANDOFF.md / SUMMARY.md). Not part of
+** the installed package, not #included by any shipped src/ or tests/
+** file. Nothing here changes quaidsFit()'s own shipped behavior.
+**
+** === The objective ===
+**
+** quaidsFit()'s iterated AIDS/QUAIDS modes find b (a ng x n1 reduced
+** coefficient matrix: row order CONSTANT | other intercept shifters |
+** gamma (n1 rows, homogeneity-reduced price coefficients) | beta
+** (expenditure coefficient) | [lambda, QUAIDS only] | u (first-stage IV
+** residual correction), n1 = n-1 reduced "left-hand" equation columns --
+** same layout _quaidsSyntheticDGP()'s own trueParams/qOut.bS use) as a
+** FIXED POINT of successive substitution: Tb = solpd(gw, gg), where gw/gg
+** are built from b's own alpha/gamma/beta rows (via the translog price
+** index a_p and, for QUAIDS, the quadratic deflator b_p). b is a fixed
+** point exactly when it is simultaneously (a) the translog-price-index
+** parameters used to BUILD the regressors lx/lx2, and (b) the GLS
+** regression coefficients of w on [intcpt, relative prices, lx, lx2, u]
+** -- i.e. a self-consistency condition, not two separately-identified
+** blocks.
+**
+** This file scores ANY b (fixed point or not) against that same
+** self-consistency structure directly, via quaidsFit()'s own criterion
+** homogCrit = -ln(det(residCov[1:n1,1:n1])) (residCov = resid'resid/nobs,
+** resid = w - designMat*b, designMat built from b's own lx/lx2). A fixed
+** point is a STATIONARY point of this objective in b (the first-order
+** condition of the GLS criterion w.r.t. the *regression-coefficient* role
+** of b is exactly solved by construction at Tb=b; it is not necessarily a
+** stationary point w.r.t. b's *price-index* role, which is why successive
+** substitution is not literally gradient descent on this objective and
+** can converge to a self-consistent point that is a worse MINIMIZER of it
+** than a nearby non-fixed-point b -- this is the gap a direct optimizer
+** is meant to close).
+**
+** homogCrit must be MAXIMIZED (larger is better -- see the 2026-09-29
+** methodology audit in SUMMARY.md). optmt MINIMIZES, so the function
+** actually handed to optmt is -homogCrit, i.e. ln(det(residCov)).
+**
+** _quaidsDirectRawCrit() below is a renamed, otherwise byte-identical
+** copy of anderson_full_multistart_benchmark.e's own _rawBenchmarkCrit()
+** (NOT edited here -- that file stays reproducible as committed). Its
+** independent agreement with qOut.homogCrit (previously confirmed to
+** 6.05e-5 / 4.37e-4 max abs difference, AIDS/QUAIDS, across the full
+** 200-seed sweep) is re-confirmed at the specific fitted endpoints this
+** file's own validation script uses -- see phase1_objective_validation.e.
+**
+** === Preconditioning ===
+**
+** b's blocks do not share one natural scale (alpha ~ O(1), gamma ~
+** O(0.1-1), beta ~ O(0.1), lambda ~ O(0.01), the u-residual-correction
+** row is data/DGP dependent). _directObjScale() builds one scale per
+** element from a reference b (always the cheap Stone/LA-AIDS start,
+** aCtl.maxiter=1), floored at 0.05 so near-zero entries do not blow up
+** the scaled search direction -- the same floor convention already used
+** by anderson_full_multistart_benchmark.e's own _addScaledNoise(). The
+** optimizer always searches in units of this scale
+** (thetaScaled = vec(bRaw[.,1:n1]) ./ scaleVec); _directObjFn() undoes
+** the scaling before ever touching the actual GLS criterion.
+*/
+
+/*
+** === Phase 3 continuation/homotopy (2026-10-02) ===
+**
+** _directObjResidHomotopy() adds ONE continuation parameter, `homotopy`
+** (t in [0,1]), that scales the TWO sources of self-referential
+** nonlinearity in this objective: the translog price index's own
+** QUADRATIC (gamma-driven) term, and (QUAIDS only) the exponential
+** deflator's exponent. At t=0, the price index is PURELY LINEAR in
+** relative prices (a Stone-like index using alpha as weights, no gamma
+** feedback through the price index at all -- gamma still enters as an
+** ordinary linear regression coefficient on relativePrices itself, just
+** not inside the nonlinear index), and the QUAIDS deflator is neutral
+** (exp(0)=1, i.e. lx2=lx^2 exactly, no beta-driven scaling). At t=1,
+** this is EXACTLY _directObjResid()'s own original computation -- not
+** approximately: _directObjResid() is now a THIN WRAPPER calling this
+** proc at homotopy=1, so there is no possibility of the two diverging
+** (no separate code path to keep in sync, unlike testing two
+** independently-written implementations for agreement). This directly
+** satisfies Phase 3's own requirement that continuation's final stage be
+** EXACTLY the original objective, by construction rather than by
+** verification alone (`phase3_smoke_gate.e` still includes an explicit
+** numerical check of this, since "by construction" is only as good as
+** the construction).
+*/
+proc (1) = _directObjResidHomotopy(w, bRaw, intcptFull, prices, totexp, u, struct quaidsControl aCtl, homotopy);
+    local nIntFull, nGoods, nReduced, alpha, priceCoef, expendCoef,
+        relativePrices, priceIndex, realExp, expArg, expHi, expLo, expMid,
+        expScale, realExp2, designMat, fitted;
+
+    nIntFull = cols(intcptFull);
+    nGoods = cols(prices);
+    nReduced = nGoods - 1;
+    relativePrices = (prices[., 1:nReduced] - prices[., nGoods])~prices[., nGoods];
+
+    alpha = intcptFull*bRaw[1:nIntFull, 1:nReduced];
+    priceCoef = bRaw[nIntFull+1:nIntFull+nReduced, 1:nReduced]
+        |zeros(1, nReduced);
+    priceIndex = aCtl.alpha0 + prices[., nGoods]
+        + sumc((relativePrices[., 1:nReduced].*alpha)')
+        + homotopy*.5*sumc(((relativePrices*priceCoef)
+        .*relativePrices[., 1:nReduced])');
+    realExp = totexp - priceIndex;
+
+    if aCtl.linear;
+        designMat = intcptFull~relativePrices[., 1:nReduced]~realExp~u;
+    else;
+        expendCoef = bRaw[nIntFull+nReduced+1, 1:nReduced];
+        expArg = homotopy*(relativePrices[., 1:nReduced]*expendCoef');
+        expHi = expArg .> 30;
+        expLo = expArg .< -30;
+        expMid = 1 - expHi - expLo;
+        expArg = expHi*30 + expLo*(-30) + expMid.*expArg;
+        expScale = exp(expArg);
+        realExp2 = (realExp^2)./expScale;
+        designMat = intcptFull~relativePrices[., 1:nReduced]~realExp~realExp2~u;
+    endif;
+
+    fitted = designMat*bRaw;
+    retp(w - fitted);
+endp;
+
+/*
+** _directObjResid: the shared "build the residual" computation, factored
+** out (Phase 1b) so diagnostics/the LM optimizer can get at the raw
+** nobs x nGoods residual matrix directly, not just the scalar criterion.
+** A thin wrapper around _directObjResidHomotopy() at homotopy=1 (Phase
+** 3) -- see that proc's own header for why this makes "the final
+** continuation stage is exactly the original objective" true by
+** construction, not merely tested for it. _quaidsDirectRawCrit() below
+** is a further thin wrapper around THIS proc.
+*/
+proc (1) = _directObjResid(w, bRaw, intcptFull, prices, totexp, u, struct quaidsControl aCtl);
+    retp(_directObjResidHomotopy(w, bRaw, intcptFull, prices, totexp, u, aCtl, 1));
+endp;
+
+/*
+** Deliberately NOT a byte-identical copy of
+** anderson_full_multistart_benchmark.e's own _rawBenchmarkCrit() in one
+** respect: the QUAIDS deflator exponent (relativePrices*expendCoef') is
+** clipped to [-30,30] before exp(), inside _directObjResid() above.
+** Found directly (not assumed): an unclipped exponent lets optmt's very
+** first accelerated line-search step overflow exp(.) to +inf, which
+** makes designMat/fitted/residCov all missing/inf and the function value
+** an uninformative flat 1e8 plateau everywhere nearby -- optmt then
+** reports a spurious "converged" (zero numerical gradient on a flat
+** plateau) after only a handful of iterations, stuck at an
+** astronomically wrong point (see phase1_objective_validation.e's QUAIDS
+** Check 5 failure before this clip was added). exp(30)~1e13 is already
+** far outside any economically sane deflator range, so the clip only
+** ever engages on points the optimizer should be steered away from, not
+** on any point near a genuine solution -- confirmed by this file's own
+** AIDS Check 2 (linear model, unaffected by this branch at all) and
+** QUAIDS Check 2 (uses the real fitted endpoint, well inside the
+** unclipped range) both passing.
+*/
+proc (1) = _quaidsDirectRawCrit(w, bRaw, intcptFull, prices, totexp, u, struct quaidsControl aCtl);
+    local nReduced, resid, residCov, critDet;
+
+    nReduced = cols(prices) - 1;
+    resid = _directObjResid(w, bRaw, intcptFull, prices, totexp, u, aCtl);
+    residCov = resid[., 1:nReduced]'resid[., 1:nReduced]/rows(w);
+    critDet = det(residCov);
+    if critDet <= 0;
+        retp(miss(0, 0));
+    endif;
+    retp(-ln(critDet));
+endp;
+
+/* Builds the ng*n1 x 1 per-element scale vector from a reference b
+** (e.g. the Stone/LA-AIDS start). Floored at 0.05. */
+proc (1) = _directObjScale(bRef, n1);
+    local v, floorVal;
+    floorVal = 0.05;
+    v = vec(bRef[., 1:n1]);
+    retp(maxc(abs(v)' | (floorVal*ones(1, rows(v)))));
+endp;
+
+/* bRaw (ng x >=n1) -> raw (unscaled) parameter vector, ng*n1 x 1. Only
+** the first n1 columns carry free parameters -- matches
+** _quaidsDirectRawCrit()'s own column truncation. */
+proc (1) = _directObjPack(bRaw, n1);
+    retp(vec(bRaw[., 1:n1]));
+endp;
+
+/* Inverse of vec(bRaw[.,1:n1]) for a ng x n1 matrix, re-padded to ng x
+** (n1+1) with a dummy zero final column. GAUSS's reshape() fills
+** row-major (CLAUDE.md gotcha), so the correct inverse of vec() is
+** reshape(v, cols, rows)', NOT reshape(v, rows, cols). The padding is
+** required, not cosmetic: _quaidsDirectRawCrit()/_rawBenchmarkCrit's own
+** `fitted = designMat*bRaw; resid = w - fitted;` needs bRaw's column
+** count to match w's nGoods (= n1+1 always, by this codebase's own
+** reduced-equation convention) for the subtraction to be shape-
+** compatible, even though only the first n1 columns (equations) are
+** ever read into the criterion (residCov[1:n1,1:n1]) -- confirmed
+** directly via a real "Matrix dimensions are incompatible" failure
+** before this padding was added, not assumed from reading the shapes. */
+proc (1) = _directObjUnpack(bVec, ng, n1);
+    retp(reshape(bVec, n1, ng)' ~ zeros(ng, 1));
+endp;
+
+/*
+** _directObjCore (Phase 1b): the shared, non-optmt-specific evaluator
+** used by every diagnostic/optimizer added in the Phase 1b audit. Takes
+** thetaScaled DIRECTLY (no PV wrapper -- cheaper and simpler for code
+** that calls it hundreds/thousands of times, e.g. a finite-difference
+** Jacobian). Returns THREE things, not one:
+**   fVal     -- ln(det(residCov)) = -homogCrit (to MINIMIZE) when
+**               feasible, else a scalar missing code (NEVER a flat
+**               constant penalty -- that was Phase 1's own mistake,
+**               corrected here per the Phase 1b audit instruction that
+**               "a penalty endpoint can never be reported as
+**               convergence." Callers must check `feasible` and reject
+**               infeasible trial points themselves, not fall through a
+**               flat surface.)
+**   feasible -- 1/0.
+**   resid    -- the full nobs x nGoods residual matrix (not just the
+**               scalar criterion), needed by the Jacobian/
+**               Gauss-Newton-gradient machinery below so it is not
+**               recomputed from scratch at every call site.
+**
+** Phase 3 (2026-10-02): _directObjCore() is now a thin wrapper around
+** _directObjCoreHomotopy() at homotopy=1 -- same "exact final stage by
+** construction" reasoning as _directObjResid()'s own header.
+*/
+proc (3) = _directObjCoreHomotopy(thetaScaled, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, homotopy);
+    local bVec, bRaw, resid, residCov, critDet, fVal, feasible;
+
+    bVec = thetaScaled.*scaleVec;
+    bRaw = _directObjUnpack(bVec, ng, n1);
+    resid = _directObjResidHomotopy(w, bRaw, intcptFull, prices, totexp, u, aCtl, homotopy);
+    residCov = resid[., 1:n1]'resid[., 1:n1]/rows(w);
+    critDet = det(residCov);
+    if critDet <= 0;
+        feasible = 0;
+        fVal = miss(0, 0);
+    else;
+        feasible = 1;
+        fVal = ln(critDet);
+    endif;
+    retp(fVal, feasible, resid);
+endp;
+
+proc (3) = _directObjCore(thetaScaled, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec);
+    retp(_directObjCoreHomotopy(thetaScaled, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, 1));
+endp;
+
+/* optmt objective: thin wrapper around _directObjCore() for the generic
+** optmt path kept for comparison purposes only (Phase 1b's own LM
+** optimizer, below, is the primary path going forward). p carries the
+** SCALED free vector (pvUnpack(p,1) is ng*n1 x 1). An infeasible point is
+** STILL penalized with a flat 1e8 here, deliberately, ONLY because optmt
+** itself has no other way to reject a trial point -- Phase 1 already
+** documented why this makes optmt's own convergence claim untrustworthy
+** on its own; _directLM() below does not use this flat-penalty pattern
+** at all. */
+proc (1) = _directObjFn(struct PV p, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, ind);
+    local thetaScaled, fVal, feasible, resid;
+    struct modelResults mm;
+
+    thetaScaled = pvUnpack(p, 1);
+    { fVal, feasible, resid } = _directObjCore(thetaScaled, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+
+    if ind[1];
+        if feasible;
+            mm.function = fVal;
+        else;
+            mm.function = 1e8;
+        endif;
+    endif;
+    retp(mm);
+endp;
+
+/* Central finite-difference gradient of _directObjFn at thetaScaled, for
+** stability checks across step sizes (Phase 1 requirement: document
+** step-size rules/stability before trusting a numerical-derivative
+** optimizer run). h is the ABSOLUTE step in SCALED units (thetaScaled is
+** already O(1) per element by construction, so one fixed h is
+** appropriate here -- no further per-element scaling needed). */
+proc (1) = _directObjFdGrad(thetaScaled, h, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec);
+    local k, grad, i, thetaUp, thetaDn, fUp, fDn, indFn;
+    struct PV pUp, pDn;
+    struct modelResults mmUp, mmDn;
+
+    indFn = 1|0|0;
+    k = rows(thetaScaled);
+    grad = zeros(k, 1);
+    i = 1;
+    do while i <= k;
+        thetaUp = thetaScaled;
+        thetaDn = thetaScaled;
+        thetaUp[i] = thetaUp[i] + h;
+        thetaDn[i] = thetaDn[i] - h;
+
+        pUp = pvCreate;
+        pUp = pvPacki(pUp, thetaUp, "theta", 1);
+        pDn = pvCreate;
+        pDn = pvPacki(pDn, thetaDn, "theta", 1);
+
+        mmUp = _directObjFn(pUp, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, indFn);
+        mmDn = _directObjFn(pDn, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, indFn);
+        fUp = mmUp.function;
+        fDn = mmDn.function;
+        grad[i] = (fUp - fDn)/(2*h);
+        i = i+1;
+    endo;
+    retp(grad);
+endp;
+
+/*
+** ======================================================================
+** Phase 1b audit additions (2026-10-01)
+** ======================================================================
+** The Phase 1 smoke test above validated the OBJECTIVE but used a flat
+** 1e8 infeasibility penalty and a generic quasi-Newton optimizer
+** (optmt), both flagged by the Phase 1b audit as confounding the
+** recovery-gate verdict: a solver reporting retcode 0 while parked on
+** the flat penalty is not a real convergence claim, and optmt's own
+** default search was shown (Phase 1's own diagnostic,
+** phase1_quaids_diag.e) to be severely unstable on this objective's
+** local curvature independent of the penalty issue. Everything below
+** builds a proper (Gauss-Newton/Fisher-information-weighted)
+** Levenberg-Marquardt solver that NEVER reports convergence at an
+** infeasible point, rejects (not penalizes) infeasible trial steps, and
+** requires an actual/predicted-reduction test before accepting a step.
+**
+** === The correct gradient structure ===
+**
+** homogCrit's objective is f(theta) = ln(det(S(theta))),
+** S(theta) = resid[.,1:n1]'resid[.,1:n1]/nobs -- the concentrated
+** (profiled-covariance) Gaussian log-likelihood criterion for a
+** multivariate nonlinear regression, NOT an ordinary unweighted
+** nonlinear-least-squares criterion. Writing R = resid[.,1:n1] (nobs x
+** n1) and J_k = dR/dtheta_k (nobs x n1, the k-th column of the residual
+** Jacobian below, reshaped), the standard result for d/dtheta[ln det(S)]
+** (a direct consequence of d/dtheta[det(S)] = det(S)*tr(S^{-1}*dS/dtheta)
+** and dS/dtheta_k = (2/nobs)*R'J_k, since dS/dtheta_k must be symmetric)
+** is:
+**   g_k = (2/nobs) * tr(Sinv * R' * J_k)
+** -- an Sinv-WEIGHTED inner product between the residual and its own
+** Jacobian, not the plain R'J_k an unweighted-NLS gradient would use.
+** _directGNGradient() computes exactly this, using the SAME Sinv that
+** _directObjCore() itself used to build S at that point.
+**
+** The matching (Fisher-information/Gauss-Newton style) approximate
+** Hessian, standard for multivariate nonlinear GLS/SUR (ignoring the
+** smaller second-order curvature contribution from S(theta) itself,
+** exactly analogous to classical Gauss-Newton dropping the
+** residual-curvature term of a full Newton Hessian):
+**   B_kl = (2/nobs) * tr(J_k' * Sinv * J_l)
+** is always PSD by construction (Sinv is PD, each tr(.) term is a
+** quadratic form), which is exactly what makes Levenberg-Marquardt
+** damping (B + lambda*I, always PD for lambda>0) well-defined at every
+** iteration -- unlike a generic FD-Hessian, which has no such guarantee.
+**
+** Both _directGNGradient() and _directGNHessian() are validated in
+** phase1b_audit.e directly against the already-validated pure-FD
+** gradient _directObjFdGrad() (semi-analytic-vs-finite-difference
+** cross-check, per this task's own instruction) before being trusted.
+*/
+
+/*
+** _directResidJacobianFD: central-FD Jacobian of vec(resid[.,1:n1])
+** w.r.t. thetaScaled, nobs*n1 x k. Column k is vec(dResid[.,1:n1]/
+** dtheta_k) -- column-major, matching GAUSS's own vec() convention, so
+** block i (rows (i-1)*nobs+1:i*nobs) is equation i's own nobs x k
+** derivative block, the form _directGNGradient()/_directGNHessian()
+** below both rely on.
+**
+** This does NOT need the true w at all to be correct -- resid = w -
+** fitted(theta), so dResid/dtheta = -dFitted/dtheta is independent of w
+** (confirmed by construction, not assumed: the central-difference
+** subtraction below cancels any constant w term exactly). This is what
+** lets _quaidsStationaryFixtureDGP() further down compute a truth-point
+** Jacobian BEFORE the noise (and hence w itself) is even chosen.
+**
+** Phase 3 (2026-10-02): _directResidJacobianFD() is now a thin wrapper
+** around _directResidJacobianFDHomotopy() at homotopy=1, same pattern as
+** _directObjResid()/_directObjCore() above.
+*/
+proc (1) = _directResidJacobianFDHomotopy(thetaScaled, h, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, homotopy);
+    local k, nobs, J, i, thetaUp, thetaDn, fUp, fDn, feasUp, feasDn, residUp, residDn;
+
+    k = rows(thetaScaled);
+    nobs = rows(w);
+    J = zeros(nobs*n1, k);
+    i = 1;
+    do while i <= k;
+        thetaUp = thetaScaled;
+        thetaDn = thetaScaled;
+        thetaUp[i] = thetaUp[i] + h;
+        thetaDn[i] = thetaDn[i] - h;
+
+        { fUp, feasUp, residUp } = _directObjCoreHomotopy(thetaUp, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, homotopy);
+        { fDn, feasDn, residDn } = _directObjCoreHomotopy(thetaDn, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, homotopy);
+        J[., i] = vec(residUp[., 1:n1] - residDn[., 1:n1])/(2*h);
+        i = i+1;
+    endo;
+    retp(J);
+endp;
+
+proc (1) = _directResidJacobianFD(thetaScaled, h, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec);
+    retp(_directResidJacobianFDHomotopy(thetaScaled, h, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, 1));
+endp;
+
+/* Sinv-weighted gradient g_k=(2/nobs)*tr(Sinv*R'*J_k), computed via the
+** per-equation-block decomposition tr(Sinv*R'*J_k) =
+** sum_{i,j} Sinv[i,j]*R[.,i]'*J_k[.,j] (J_k[.,j] is J's column k's j-th
+** nobs-row block) -- avoids ever materializing the (nobs*n1)x(nobs*n1)
+** Kronecker-structured weight matrix this would otherwise imply. */
+/*
+** NOTE: the Jacobian parameter is named `Jmat`, not `J` -- GAUSS
+** identifiers are case-insensitive (CLAUDE.md's own documented gotcha),
+** so a parameter `J` and a loop counter `j` in the same proc are the
+** SAME identifier and collide (confirmed directly: `error G0089 :
+** Duplicate definition of local 'j'` before this rename).
+*/
+proc (1) = _directGNGradient(resid, Jmat, Sinv, nobs, n1);
+    local g, i, j, Jj;
+
+    g = zeros(cols(Jmat), 1);
+    i = 1;
+    do while i <= n1;
+        j = 1;
+        do while j <= n1;
+            Jj = Jmat[(j-1)*nobs+1:j*nobs, .];
+            g = g + Sinv[i, j]*(Jj'resid[., i]);
+            j = j+1;
+        endo;
+        i = i+1;
+    endo;
+    retp(2*g/nobs);
+endp;
+
+/* PSD Fisher-information/Gauss-Newton Hessian approximation,
+** B=(2/nobs)*sum_{i,j} Sinv[i,j]*(J_eqI'*J_eqJ), the same per-equation
+** block decomposition as _directGNGradient() above. Jacobian parameter
+** named `Jmat` for the same case-insensitivity reason as above. */
+proc (1) = _directGNHessian(Jmat, Sinv, nobs, n1);
+    local B, i, j, Ji, Jj, k;
+
+    k = cols(Jmat);
+    B = zeros(k, k);
+    i = 1;
+    do while i <= n1;
+        Ji = Jmat[(i-1)*nobs+1:i*nobs, .];
+        j = 1;
+        do while j <= n1;
+            Jj = Jmat[(j-1)*nobs+1:j*nobs, .];
+            B = B + Sinv[i, j]*(Ji'Jj);
+            j = j+1;
+        endo;
+        i = i+1;
+    endo;
+    retp(2*B/nobs);
+endp;
+
+/*
+** _directLMHomotopy: Levenberg-Marquardt trust-region-style solver on
+** _directObjCoreHomotopy()'s objective AT A FIXED homotopy level, using
+** the Gauss-Newton gradient/Hessian above. Per the Phase 1b audit's
+** explicit requirements (unchanged by Phase 3's own homotopy parameter):
+**   - an infeasible trial step is REJECTED (treated as a failed step,
+**     damping increased), never scored with a flat penalty;
+**   - a step is accepted only if it is feasible AND its actual
+**     reduction is at least 10% of the quadratic model's PREDICTED
+**     reduction (the standard trust-region acceptance ratio rho);
+**   - damping lambda grows on rejection (more conservative, more
+**     gradient-descent-like step), shrinks on a good step (more
+**     Newton-like);
+**   - convergence (retcode 0) requires BOTH a finite/feasible current
+**     point AND a small inf-norm gradient -- never just "optmt said so".
+** retcode: 0=converged (small gradient), 2=max iterations, 3=infeasible
+** START point (caller error, not this solver's fault), 4=stalled (damping
+** grew past 1e12 without finding an acceptable step -- reported
+** honestly, not silently returned as success).
+**
+** Phase 3 (2026-10-02): gained the `homotopy` parameter (threaded
+** straight through to _directObjCoreHomotopy()/
+** _directResidJacobianFDHomotopy(), held FIXED for the whole solve --
+** `phase3_smoke_gate.e`'s own continuation driver calls this once per
+** stage, warm-starting each call from the previous stage's endpoint, not
+** this proc varying homotopy internally) plus two new return values for
+** the continuation driver's own bookkeeping: `iterUsed` (outer LM
+** iterations actually run) and `rejectedSteps` (cumulative inner-loop
+** damping-growth events, i.e. trial steps that did NOT satisfy the
+** actual/predicted-reduction test) -- "evaluation count" in the stricter
+** sense (every _directObjCoreHomotopy() call, including the ones inside
+** each Jacobian's own finite differencing) is NOT separately
+** instrumented here, since doing so would require a global counter
+** touching already-validated Phase 1b code paths for a side effect
+** alone; `phase3_smoke_gate.e` reports a clearly-labeled DERIVED
+** approximation from iterUsed/rejectedSteps instead, not a precise
+** count.
+**
+** Robustness note (found directly on the QUAIDS far/structured-start
+** smoke-gate case, 2026-10-02): `_directObjCoreHomotopy()`'s own
+** feasibility test only checks the SIGN of det(residCov), which a wild
+** far-start step can satisfy (tiny positive determinant) while
+** residCov is still too ill-conditioned for invpd() to handle --
+** invpd() does not return a soft failure in that case, it raises a hard
+** `error G0121 : Matrix not positive definite` that would otherwise
+** crash the whole script, not just reject one step. Both invpd() calls
+** below are now wrapped in the same trap-based pattern this codebase
+** already uses elsewhere for exactly this class of failure (see
+** anderson_full_multistart_benchmark.e's own prototype's
+** `_andersonSvdMix()`) -- a trapped failure is treated as an
+** INFEASIBLE/rejected step (increase damping), never a crash, and never
+** silently treated as success either.
+**
+** Phase 3 hardening (2026-10-05): the solver body moved to
+** _directLMHomotopyDiag() below, which adds per-failure-mode counters
+** and a fault-injection hook used ONLY by phase3_safeguard_diag.e; this
+** proc is now a thin wrapper at faultMode=0 (no injection), with
+** unchanged arguments and unchanged 6 return values. With faultMode=0
+** the arithmetic is the same as before; the only behavioral change is
+** that a covariance-inversion failure at the CURRENT point now returns
+** its own retcode 5 instead of sharing retcode 4 ("stalled") -- that
+** path was never hit in any recorded Phase 1b/3 run.
+*/
+proc (6) = _directLMHomotopy(theta0, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, maxIter, gradTol, h, verbose, homotopy);
+    local theta, fVal, retcode, gnorm, iterUsed, rejectedSteps, diagVec;
+    { theta, fVal, retcode, gnorm, iterUsed, rejectedSteps, diagVec } =
+        _directLMHomotopyDiag(theta0, w, intcptFull, prices, totexp, u,
+        aCtl, ng, n1, scaleVec, maxIter, gradTol, h, verbose, homotopy,
+        0, 0, 0);
+    retp(theta, fVal, retcode, gnorm, iterUsed, rejectedSteps);
+endp;
+
+/*
+** _directLMHomotopyDiag: the instrumented LM solver body (see
+** _directLMHomotopy()'s header above for the algorithm).
+**
+** retcode: 0 = converged (feasible current point AND inf-norm GN
+**              gradient < gradTol)
+**          2 = maxIter reached
+**          3 = infeasible START point (no iteration run)
+**          4 = stalled: damping reached 1e12 without an acceptable step
+**              (every trial was infeasible, failed the rho test, or its
+**              damped-system inversion failed)
+**          5 = covariance-inversion failure at the CURRENT (last
+**              accepted) point -- the gradient cannot be formed, so the
+**              solver stops; gnorm is returned as -1 ("not computed at
+**              the returned point") rather than a stale value.
+** The returned theta/fVal are ALWAYS the last ACCEPTED point (or theta0)
+** and fVal is always that point's own objective.
+**
+** diagVec (6x1): [1] covariance-inversion failures (trapped)
+**                [2] damped-step inversion failures (trapped)
+**                [3] infeasible trial points
+**                [4] feasible trials rejected by the rho > .1 test
+**                [5] accepted steps
+**                [6] final lambda
+** rejectedSteps (return 6) == diagVec[2]+diagVec[3]+diagVec[4].
+**
+** Fail-closed details: before every invpd() attempt the destination is
+** reset to a missing value and the result is checked for shape AND any
+** missing element (ismiss), so a failed inversion can never silently
+** reuse the previous iteration's inverse, and a failed damped-system
+** inversion never moves theta.
+**
+** Fault injection (diagnostic only; production callers pass 0,0,0):
+**   faultMode 0: none.
+**   faultMode 1: at outer iteration faultIter, invpd() is handed
+**                -eye(n1) (genuinely not PD) instead of residCov.
+**   faultMode 2: the first faultCount damped-system inversions are
+**                handed -eye(k) instead of B+lambda*I.
+** Both inject a REAL invpd() failure through the real trap path; neither
+** bypasses or relaxes any safeguard.
+*/
+proc (7) = _directLMHomotopyDiag(theta0, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, maxIter, gradTol, h, verbose, homotopy, faultMode, faultIter, faultCount);
+    local theta, nobs, fVal, feasible, resid, J, Sinv, residCov, g, B,
+        lambda, k, step, thetaTry, fTry, feasTry, residTry, predRed, rho,
+        accepted, iter, gnorm, retcode, done, rejectedSteps, oldtrp,
+        SinvOk, stepOk, nCovFail, nStepFail, nInfeasTrial, nRhoReject,
+        nAccepted, nStepAttempts, covIn, dampIn, invTry;
+
+    nobs = rows(w);
+    theta = theta0;
+    nCovFail = 0;
+    nStepFail = 0;
+    nInfeasTrial = 0;
+    nRhoReject = 0;
+    nAccepted = 0;
+    nStepAttempts = 0;
+    lambda = 1e-3;
+    { fVal, feasible, resid } = _directObjCoreHomotopy(theta, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, homotopy);
+    gnorm = -1;
+    rejectedSteps = 0;
+    if not feasible;
+        retp(theta, fVal, 3, gnorm, 0, 0, zeros(5,1)|lambda);
+    endif;
+
+    k = rows(theta);
+    iter = 1;
+    retcode = 2;
+    done = 0;
+    do while iter <= maxIter and not done;
+        J = _directResidJacobianFDHomotopy(theta, h, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, homotopy);
+        residCov = resid[., 1:n1]'resid[., 1:n1]/nobs;
+
+        covIn = residCov;
+        if faultMode == 1 and iter == faultIter;
+            covIn = -eye(n1);
+        endif;
+        Sinv = miss(0, 0);
+        invTry = miss(0, 0);
+        oldtrp = trapchk(1);
+        trap 1,1;
+        invTry = invpd(covIn);
+        trap oldtrp,1;
+        SinvOk = 0;
+        if rows(invTry) == n1 and cols(invTry) == n1;
+            SinvOk = not ismiss(invTry);
+        endif;
+
+        if not SinvOk;
+            /* The CURRENT point's own residual covariance cannot be
+               inverted -- this outer iteration cannot proceed at all
+               (not merely "this trial step rejected"). Stop with its
+               own status; theta/fVal stay at the last accepted point. */
+            nCovFail = nCovFail+1;
+            gnorm = -1;
+            retcode = 5;
+            done = 1;
+        else;
+        Sinv = invTry;
+        g = _directGNGradient(resid, J, Sinv, nobs, n1);
+        B = _directGNHessian(J, Sinv, nobs, n1);
+        gnorm = maxc(abs(g));
+
+        if gnorm < gradTol;
+            retcode = 0;
+            done = 1;
+        else;
+            accepted = 0;
+            do while not accepted and lambda < 1e12;
+                nStepAttempts = nStepAttempts+1;
+                dampIn = B + lambda*eye(k);
+                if faultMode == 2 and nStepAttempts <= faultCount;
+                    dampIn = -eye(k);
+                endif;
+                step = miss(0, 0);
+                invTry = miss(0, 0);
+                oldtrp = trapchk(1);
+                trap 1,1;
+                invTry = invpd(dampIn);
+                trap oldtrp,1;
+                stepOk = 0;
+                if rows(invTry) == k and cols(invTry) == k;
+                    stepOk = not ismiss(invTry);
+                endif;
+
+                if stepOk;
+                    step = -invTry*g;
+                    thetaTry = theta + step;
+                    { fTry, feasTry, residTry } = _directObjCoreHomotopy(thetaTry, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, homotopy);
+
+                    if feasTry and not scalmiss(fTry);
+                        predRed = -(g'step + .5*step'B*step);
+                        if predRed > 0;
+                            rho = (fVal-fTry)/predRed;
+                        else;
+                            rho = -1;
+                        endif;
+                    else;
+                        rho = -1;
+                        nInfeasTrial = nInfeasTrial+1;
+                    endif;
+
+                    if rho > .1;
+                        theta = thetaTry;
+                        fVal = fTry;
+                        resid = residTry;
+                        accepted = 1;
+                        nAccepted = nAccepted+1;
+                        if verbose;
+                            print "    LM iter" iter "fVal" fVal "gnorm" gnorm
+                                "lambda" lambda "rho" rho "homotopy" homotopy;
+                        endif;
+                        if rho > .75;
+                            lambda = lambda*.5;
+                        endif;
+                    else;
+                        if feasTry and not scalmiss(fTry);
+                            nRhoReject = nRhoReject+1;
+                        endif;
+                        lambda = lambda*4;
+                        rejectedSteps = rejectedSteps+1;
+                    endif;
+                else;
+                    /* invpd(B+lambda*I) itself failed -- treat exactly
+                       like a rejected step (increase damping, retry),
+                       never a crash, and theta is NOT moved. */
+                    nStepFail = nStepFail+1;
+                    lambda = lambda*4;
+                    rejectedSteps = rejectedSteps+1;
+                endif;
+            endo;
+            if not accepted;
+                retcode = 4;
+                done = 1;
+            endif;
+        endif;
+        endif;
+        iter = iter+1;
+    endo;
+
+    retp(theta, fVal, retcode, gnorm, iter-1, rejectedSteps,
+        nCovFail|nStepFail|nInfeasTrial|nRhoReject|nAccepted|lambda);
+endp;
+
+/* _directLM: thin wrapper around _directLMHomotopy() at homotopy=1 --
+** same "exact final stage by construction" reasoning as
+** _directObjResid()'s own header. Existing Phase 1b call sites
+** (phase1b_smoke.e, phase1b_audit.e) were updated for the two new
+** trailing return values (iterUsed, rejectedSteps) but are otherwise
+** unaffected -- this proc's own required arguments are unchanged. */
+proc (6) = _directLM(theta0, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, maxIter, gradTol, h, verbose);
+    retp(_directLMHomotopy(theta0, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, maxIter, gradTol, h, verbose, 1));
+endp;
+
+/*
+** _directJacobianSvdReport: prints singular values (largest/smallest),
+** numerical rank at rankTol, and condition number of a residual Jacobian
+** (or, passed J'*the Cholesky-type whitening, an effective
+** information-weighted Jacobian -- this file always passes the PLAIN
+** Jmat and reports its own rank/conditioning, which already reflects
+** local identification of the residual function itself, independent of
+** the Sinv weighting used by the GN gradient/Hessian). Uses svd2(), the
+** same rank-revealing decomposition already validated in this directory
+** (anderson_safe_solver_test.e's own rank-deficient-history check).
+** Always returns 1 (dummy) so it can be used as a plain statement.
+*/
+proc (1) = _directJacobianSvdReport(Jmat, rankTol);
+    local leftVecs, singMat, rightVecs, singVals, rankUse, condNum;
+
+    { leftVecs, singMat, rightVecs } = svd2(Jmat);
+    singVals = diag(singMat);
+
+    rankUse = sumc(singVals .> rankTol*singVals[1]);
+    if singVals[rows(singVals)] > 0;
+        condNum = singVals[1]/singVals[rows(singVals)];
+    else;
+        condNum = miss(0, 0);
+    endif;
+
+    print "    Jacobian: rows" rows(Jmat) "cols" cols(Jmat);
+    print "    largest singular value:" singVals[1] "smallest:"
+        singVals[rows(singVals)];
+    print "    numerical rank (tol" rankTol $+ "):" rankUse "of" cols(Jmat);
+    print "    condition number (largest/smallest):" condNum;
+    retp(1);
+endp;
+
+/*
+** _directWeakDirectionReport: for the nWeak smallest-singular-value
+** right-singular-vectors of a residual Jacobian (columns of rightVecs
+** closest to the END, since svd2 orders singular values descending),
+** reports which structural BLOCK (alpha/gamma/beta/lambda/u) carries
+** most of that direction's loading (sum of squared entries, normalized
+** to 1 per direction) -- answers "which parameters are weakly
+** identified", not just "how weak is the weakest direction overall".
+**
+** theta (and hence each right-singular-vector) is vec(bRaw[.,1:n1]) --
+** COLUMN-MAJOR, i.e. all ng rows of equation 1, then all ng rows of
+** equation 2, etc. -- NOT one contiguous span per block. A first draft
+** of this proc assumed contiguous spans and was caught (before being
+** trusted) by checking its own block-membership vector's length against
+** k by hand; fixed by building a per-ROW category label (length ng) and
+** repeating (kron-ing) it n1 times to match vec()'s own column-stacking,
+** exactly the same repeat pattern _directObjUnpack()'s own reshape/
+** transpose inverse relies on. */
+proc (1) = _directWeakDirectionReport(rightVecs, singVals, nIntFull, n1, linear, ng, nWeak);
+    local k, d, v, rowCat, cat, aLoad, gLoad, betaLoad, lambdaLoad, uLoad,
+        betaRow, lambdaRow, total;
+
+    k = rows(rightVecs);
+    betaRow = nIntFull+n1+1;
+    rowCat = zeros(ng, 1);
+    rowCat[1:nIntFull] = ones(nIntFull, 1)*1;
+    rowCat[nIntFull+1:nIntFull+n1] = ones(n1, 1)*2;
+    rowCat[betaRow] = 3;
+    if not linear;
+        lambdaRow = betaRow+1;
+        rowCat[lambdaRow] = 4;
+        rowCat[lambdaRow+1:ng] = ones(ng-lambdaRow, 1)*5;
+    else;
+        rowCat[betaRow+1:ng] = ones(ng-betaRow, 1)*5;
+    endif;
+    cat = ones(n1, 1).*.rowCat;
+
+    d = 0;
+    do while d < nWeak;
+        v = rightVecs[., k-d];
+        aLoad = sumc((v.^2).*(cat.==1));
+        gLoad = sumc((v.^2).*(cat.==2));
+        betaLoad = sumc((v.^2).*(cat.==3));
+        lambdaLoad = sumc((v.^2).*(cat.==4));
+        uLoad = sumc((v.^2).*(cat.==5));
+        total = aLoad+gLoad+betaLoad+lambdaLoad+uLoad;
+
+        print "    weak direction" d+1 "(singular value" singVals[k-d] $+
+            "): alpha" aLoad/total "gamma" gLoad/total "beta"
+            betaLoad/total "lambda" lambdaLoad/total "u" uLoad/total;
+        d = d+1;
+    endo;
+    retp(1);
+endp;
+
+/*
+** _directLineProfile: prints the objective at nPoints equally spaced
+** points on the line from thetaA to thetaB (inclusive of both
+** endpoints). An infeasible point prints "infeasible" rather than
+** aborting -- the whole point of this diagnostic is to see WHERE
+** feasibility is lost along a path, not just at the two endpoints.
+** Always returns 1 (dummy).
+*/
+proc (1) = _directLineProfile(thetaA, thetaB, nPoints, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec);
+    local i, frac, thetaPt, fVal, feasible, residDummy;
+
+    i = 0;
+    do while i <= nPoints-1;
+        frac = i/(nPoints-1);
+        thetaPt = (1-frac)*thetaA + frac*thetaB;
+        { fVal, feasible, residDummy } = _directObjCore(thetaPt, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+        if feasible;
+            print "    t=" frac "fVal=" fVal;
+        else;
+            print "    t=" frac "INFEASIBLE";
+        endif;
+        i = i+1;
+    endo;
+    retp(1);
+endp;
+
+/*
+** _directBlockErrors: prints max-abs-diff recovery error broken out by
+** structural block, per the Phase 1b audit's instruction not to let one
+** overall max (which the weakly-identified u-row can dominate or mask)
+** stand as the sole structural-recovery verdict. bHat/bTrue are both
+** ng x (>=n1); only the first n1 columns are compared, matching every
+** other block in this file's own column-truncation convention. Always
+** returns 1 (dummy) so it can be called as a plain expression statement.
+*/
+proc (1) = _directBlockErrors(bHat, bTrue, nIntFull, n1, linear);
+    local aErr, gErr, betaErr, lambdaErr, uErr, structErr, overallErr,
+        betaRow, lambdaRow, uRowStart, bH, bT;
+
+    bH = bHat[., 1:n1];
+    bT = bTrue[., 1:n1];
+
+    aErr = maxc(maxc(abs(bH[1:nIntFull, .] - bT[1:nIntFull, .])));
+    gErr = maxc(maxc(abs(bH[nIntFull+1:nIntFull+n1, .] - bT[nIntFull+1:nIntFull+n1, .])));
+    betaRow = nIntFull+n1+1;
+    betaErr = maxc(abs(bH[betaRow, .] - bT[betaRow, .]));
+    if not linear;
+        lambdaRow = betaRow+1;
+        lambdaErr = maxc(abs(bH[lambdaRow, .] - bT[lambdaRow, .]));
+        uRowStart = lambdaRow+1;
+    else;
+        lambdaErr = miss(0, 0);
+        uRowStart = betaRow+1;
+    endif;
+    uErr = maxc(maxc(abs(bH[uRowStart:rows(bH), .] - bT[uRowStart:rows(bT), .])));
+    structErr = maxc(maxc(abs(bH[1:uRowStart-1, .] - bT[1:uRowStart-1, .])));
+    overallErr = maxc(maxc(abs(bH - bT)));
+
+    print "    alpha block err:" aErr;
+    print "    gamma block err:" gErr;
+    print "    beta row err:" betaErr;
+    if not linear;
+        print "    lambda row err:" lambdaErr;
+    endif;
+    print "    u-row (correction) err:" uErr;
+    print "    structural (excl. u) err:" structErr;
+    print "    overall max err:" overallErr;
+    retp(1);
+endp;
+
+/*
+** _directObjGradDescent: a small backtracking-gradient-descent warm
+** start, run BEFORE handing a start point to optmt. Added after a direct
+** diagnostic (not a guess) found that optmt's own default quasi-Newton
+** search, started from a genuinely feasible, near-truth QUAIDS point,
+** moved the objective from -4.93 to +1e8 within 1-3 iterations -- a
+** follow-up manual steepest-descent probe at that SAME point confirmed a
+** real descent direction exists but only within an extremely narrow
+** step-size window (improvement held from alpha=1e-8 to ~1e-6, then
+** reversed and blew up by alpha=1e-4) -- i.e. a genuinely, severely
+** ill-conditioned local curvature along the raw gradient direction
+** (consistent with quaidscurvature.src's own documented finding that
+** QUAIDS's analogous outer loop is "measurably less stable" than AIDS's
+** -- the SAME translog/quadratic-deflator nonlinearity is the common
+** cause), not a bug in this file's objective or gradient (Check 4 in
+** phase1_objective_validation.e already confirms the FD gradient itself
+** is numerically stable for both models). optmt's own default initial
+** step is calibrated for a well-conditioned quadratic model and has no
+** way to know this; a short, strictly-monotone-improving, self-shrinking
+** warm start gets the point into a region optmt itself can finish
+** polishing. This is a crude, hand-rolled trust-region/continuation
+** step, in the same spirit as -- but much cruder than -- Phase 3's own
+** planned continuation/homotopy strategy; it is a Phase 1 smoke-test
+** safeguard only, not a substitute for Phase 3.
+*/
+proc (2) = _directObjGradDescent(theta0, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, maxSteps, h);
+    local theta, f0, grad, alpha, thetaTry, fTry, indFn, accepted, step, i;
+    struct PV p, pTry;
+    struct modelResults mm, mmTry;
+
+    indFn = 1|0|0;
+    theta = theta0;
+    p = pvCreate;
+    p = pvPacki(p, theta, "theta", 1);
+    mm = _directObjFn(p, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, indFn);
+    f0 = mm.function;
+
+    alpha = 1e-6;
+    i = 1;
+    do while i <= maxSteps;
+        grad = _directObjFdGrad(theta, h, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+        accepted = 0;
+        step = 1;
+        do while step <= 20 and not accepted;
+            thetaTry = theta - alpha*grad;
+            pTry = pvCreate;
+            pTry = pvPacki(pTry, thetaTry, "theta", 1);
+            mmTry = _directObjFn(pTry, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec, indFn);
+            fTry = mmTry.function;
+            if not scalmiss(fTry) and fTry < f0 - 1e-10;
+                theta = thetaTry;
+                f0 = fTry;
+                alpha = alpha*1.5;
+                accepted = 1;
+            else;
+                alpha = alpha*.5;
+            endif;
+            step = step+1;
+        endo;
+        i = i+1;
+    endo;
+
+    retp(theta, f0);
+endp;
+
+/*
+** _quaidsNoiselessDGP: a near-noiseless, exogenous (ro=0) variant of
+** tests/quaidsfixtures.src's _quaidsSyntheticDGP(), kept here (not in
+** tests/) per this research task's own instruction to stay out of
+** shipped/tested files. Same N=5-good structure, same trueParams row
+** layout (al|al1|ga|be|[la]|ro-row, ro always 0 here), same intcpt/
+** prices/instr construction, so quaidsFit() and _quaidsDirectRawCrit()
+** can both be exercised exactly as on the real fixture. totexp is
+** (near-)exogenous -- no u*ro endogeneity term -- so the IV first-stage
+** correction is nearly irrelevant to recovery, but it is NOT a literal
+** deterministic multiple of instr: that was tried first and found
+** (directly, via a real "Matrix not positive definite" failure inside
+** quaidsFit()'s own iteration, src/quaids.src's solpd(gw,gg) call) to
+** make the first-stage residual u a column of EXACT zeros, which makes
+** the moment matrix gg singular (a zero-variance regressor) rather than
+** merely ill-conditioned. totexp therefore keeps the same tiny-epsScale
+** noise floor as the equation errors below.
+**
+** The noise is NOT exactly zero anywhere in this DGP -- a tiny iid floor
+** (epsScale = 1e-2 below) is used throughout instead. Confirmed directly
+** (not assumed): literal zero equation noise makes the reduced-block
+** residual covariance EXACTLY SINGULAR at the true parameters, so
+** homogCrit=-ln(det(.)) diverges to +infinity (or returns the
+** _quaidsDirectRawCrit() miss-code on the wrong side of floating-point
+** roundoff) rather than being meaningfully "finite at truth" -- an
+** unstable edge case, not a useful validation target.
+**
+** epsScale was first tried at 1e-4 and found, directly, to be too small
+** in a DIFFERENT way: it makes residCov's determinant astronomically
+** tiny (~1e-32 for a 4x4 block), so ln(det(.)) becomes hypersensitive --
+** a relative difference as small as 1e-6 in two otherwise-matching
+** residual-covariance computations can move homogCrit by O(1), which
+** made the Check-2 criterion-replica comparison in
+** phase1_objective_validation.e fail at the ~0.03 level (far above the
+** already-validated ~1e-4 benchmark-scale agreement) for a reason
+** unrelated to any bug in the replica -- pure numerical conditioning of
+** the log-det criterion itself at that noise floor. It also made
+** optmt's line search blow up the QUAIDS exponential deflator
+** (exp(relativePrices*expendCoef')) on the very first large accelerated
+** step and get stuck returning this file's infeasibility penalty.
+** epsScale=1e-2 keeps every relevant covariance genuinely well-
+** conditioned (not just positive definite) while still leaving
+** structural recovery essentially exact -- "near-noiseless known-truth",
+** not a relaxation of the recovery claim; see
+** phase1_objective_validation.e for the confirmed recovered error.
+*/
+proc (6) = _quaidsNoiselessDGP(tobs, seed, quadratic);
+
+    local N, al, al1, ga, be, la, prices, instr, intcpt, totexp, epsScale,
+        a_p, lx, b_p, lx2, w, trueParams, e;
+
+    N = 5;
+    epsScale = 1e-2;
+
+    al = round(rndns(1, N-1, seed)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1, N-1, seed)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1, N-1, seed)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1, N-1, seed)*10)/10;
+    be = be~(-sumc(be'));
+    la = .01*round(rndns(1, N-1, seed)*10)/10;
+    la = la~(-sumc(la'));
+    if not quadratic;
+        la = zeros(1, N);
+    endif;
+
+    prices = 1+rndns(tobs, N, seed);
+    instr = 5+5*rndns(tobs, 1, seed);
+    intcpt = 2+2*rndns(tobs, 1, seed);
+    totexp = .85*instr + epsScale*rndns(tobs, 1, seed);
+    e = epsScale*rndns(tobs, N-1, seed);
+    e = e~(-sumc(e'));
+
+    a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    trueParams = al|al1|ga|be;
+    if quadratic;
+        trueParams = trueParams|la;
+    endif;
+    trueParams = trueParams|zeros(1, N);
+
+    retp(w, intcpt, prices, totexp, instr, trueParams);
+endp;
+
+/* Slices a qOut.bS-shaped trueParams matrix down to the ng x n reduced
+** "bRaw" layout _quaidsDirectRawCrit()/the fixed-point iteration both
+** use, exactly mirroring anderson_full_multistart_benchmark.e's own
+** trueRaw construction (not duplicated there -- this is the shared,
+** reusable version for Phase 1+ scripts). */
+proc (1) = _directTrueRaw(trueParams, nIntFull, nReduced, nGoods);
+    retp(trueParams[1:nIntFull, .]
+        |trueParams[nIntFull+1:nIntFull+nReduced, .]
+        |trueParams[nIntFull+nGoods+1:rows(trueParams), .]);
+endp;
+
+/*
+** ======================================================================
+** Phase 1b audit fixtures (2026-10-01)
+** ======================================================================
+** _quaidsNoiselessDGP() above is KEPT, unmodified, exactly as Phase 1
+** used it -- its own documented result stands. The Phase 1b audit found
+** it conflated two different things under one "near-noiseless recovery"
+** label: shrinking totexp's own noise (via the shared epsScale) to keep
+** the GLS criterion well-conditioned ALSO shrank the first-stage
+** residual u's own variance, making the u-row coefficient inherently
+** weakly identified in ANY finite sample (a near-zero-variance
+** regressor has high-variance OLS/GLS coefficients, independent of
+** whether the true endogeneity correlation ro is 0) -- the fixture was
+** grading a row it had itself made hard to estimate well. The two
+** fixtures below separate that confound and are used by
+** phase1b_audit.e instead.
+**
+** Both also use INDEPENDENT per-draw seeds (seed+1, seed+2, ...) rather
+** than reusing one bare `seed` for every rndns() call -- the pattern
+** _quaidsSyntheticDGP()/_quaidsNoiselessDGP() both use, which the audit
+** also flagged: GAUSS's rndns(rows,cols,seed) re-seeds its state from
+** `seed` on every call, so two calls of the SAME shape with the SAME
+** seed give IDENTICAL draws -- confirmed directly to be why
+** phase1_objective_validation_output.txt's AIDS and QUAIDS blocks report
+** the bit-identical "objective finite at truth" value (36.947004) at
+** seed=4242: every rndns() call up to the shared "e" draw has the same
+** shape in both models (la's own draw happens regardless of the
+** `quadratic` flag), so the equation-noise realization was never
+** actually independent between the two models at a given seed.
+*/
+
+/*
+** _quaidsStatFixtureDGP: the corrected FINITE-SAMPLE statistical
+** counterpart to _quaidsNoiselessDGP() -- truth is the POPULATION
+** parameter of a genuine finite-sample draw, not a numerically exact
+** stationary point (see _quaidsStationaryFixtureDGP() below for that).
+** The only structural change from _quaidsNoiselessDGP(): the first-stage
+** residual (uResid, what becomes `u` after quaidsFit()'s own first-stage
+** regression) is drawn at a NORMAL, informative scale (.1*rndns(...),
+** matching tests/quaidsfixtures.src's own _quaidsSyntheticDGP()), fully
+** decoupled from the small epsScale used for the EQUATION-level noise
+** that keeps ln(det(residCov)) well-conditioned. ro stays 0 (no actual
+** endogeneity correlation), so the u-row's TRUE coefficient is still
+** exactly 0 -- but it is now estimated from a properly-scaled regressor,
+** not a near-degenerate one.
+*/
+proc (6) = _quaidsStatFixtureDGP(tobs, seed, quadratic);
+
+    local N, al, al1, ga, be, la, prices, instr, intcpt, uResid, totexp,
+        epsScale, a_p, lx, b_p, lx2, w, trueParams, e,
+        s1, s2, s3, s4, s5, s6, s7, s8, s9, s10;
+
+    N = 5;
+    epsScale = 1e-2;
+
+    /* Each seed offset MUST be precomputed into its own plain variable.
+       Confirmed directly (isolated repro before touching this file):
+       rndns(rows,cols,seed) works, and rndns(rows,cols,s2) with
+       s2=seed+1 precomputed works, but rndns(rows,cols,seed+1) -- the
+       offset written INLINE as an expression in the call -- fails with
+       `error G0287 : Seed not updated` even though the two forms
+       compute the identical seed VALUE. A real, previously-undocumented
+       GAUSS-26 gotcha, not a typo. */
+    s1 = seed+1;
+    s2 = seed+2;
+    s3 = seed+3;
+    s4 = seed+4;
+    s5 = seed+5;
+    s6 = seed+6;
+    s7 = seed+7;
+    s8 = seed+8;
+    s9 = seed+9;
+    s10 = seed+10;
+
+    al = round(rndns(1, N-1, s1)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1, N-1, s2)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1, N-1, s3)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1, N-1, s4)*10)/10;
+    be = be~(-sumc(be'));
+    la = .01*round(rndns(1, N-1, s5)*10)/10;
+    la = la~(-sumc(la'));
+    if not quadratic;
+        la = zeros(1, N);
+    endif;
+
+    prices = 1+rndns(tobs, N, s6);
+    instr = 5+5*rndns(tobs, 1, s7);
+    intcpt = 2+2*rndns(tobs, 1, s8);
+    uResid = .1*rndns(tobs, 1, s9);
+    totexp = .85*instr + uResid;
+    e = epsScale*rndns(tobs, N-1, s10);
+    e = e~(-sumc(e'));
+
+    a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+
+    w = al + prices*ga + lx*be + e + intcpt*al1 + lx2*la;
+
+    trueParams = al|al1|ga|be;
+    if quadratic;
+        trueParams = trueParams|la;
+    endif;
+    trueParams = trueParams|zeros(1, N);
+
+    retp(w, intcpt, prices, totexp, instr, trueParams);
+endp;
+
+/*
+** _quaidsStationaryFixtureDGP: a NEAR-stationary-point numerical
+** fixture -- NOT exactly stationary, confirmed directly, not merely
+** hedged: the observed ||FD gradient||_inf at truth is 0.084 (AIDS) and
+** 0.183 (QUAIDS), genuinely nonzero (an earlier draft of this comment
+** claimed "exactly zero up to FD precision", which overstated this).
+** Rather than relying on small iid noise to make truth APPROXIMATELY a
+** stationary point of the objective (what
+** _quaidsNoiselessDGP()/_quaidsStatFixtureDGP() both do), this
+** ORTHOGONALIZES the equation-level noise against the true residual
+** Jacobian before adding it to the deterministic fitted component -- the
+** standard OLS-residual orthogonality identity guarantees this exactly
+** FOR THE JACOBIAN USED IN THE PROJECTION, but that Jacobian is itself
+** only a finite-difference approximation to the true derivative, AND
+** the gradient actually evaluated by phase1b_audit.e's own diagnostics
+** goes through _directObjCore() (the clipped QUAIDS deflator exponent,
+** quaidsFit()'s own fitted `u` from a real IV first-stage regression on
+** the constructed data) rather than the exact DGP functions used to
+** build the orthogonalization -- two real, unquantified gaps, not one.
+** The residual covariance stays genuinely positive definite regardless
+** (the noise still has nobs*n1 - k effective degrees of freedom after
+** projecting out a k-dimensional subspace, k~32-36 << nobs*n1~2000 at
+** tobs=500).
+**
+** Key fact this construction relies on (confirmed directly in this
+** file's own _directResidJacobianFD() header, not assumed): resid(theta)
+** = w - fitted(theta), so dResid/dtheta = -dFitted/dtheta does NOT
+** depend on w at all. This lets the true-point Jacobian be computed
+** BEFORE any noise (and hence w itself) is chosen, using the
+** deterministic fitted component as a harmless placeholder for w (the
+** central-difference subtraction cancels any constant exactly).
+**
+** uResid is still drawn at a normal, informative scale (same fix as
+** _quaidsStatFixtureDGP()), and ro stays 0. scaleVec/thetaTrue are
+** rebuilt by the caller via _directObjScale(bRawTrue,...)/
+** _directObjPack(...) -- NOT returned here, to keep this proc's return
+** signature identical to every other fixture in this file (callers
+** needing them, e.g. phase1b_audit.e's own gradient-at-truth check,
+** recompute them in two cheap lines).
+*/
+proc (6) = _quaidsStationaryFixtureDGP(tobs, seed, quadratic);
+
+    local N, al, al1, ga, be, la, prices, instr, intcpt, uResid, totexp,
+        a_p, lx, b_p, lx2, wFitted, trueParams, nIntFull, nGoods, nReduced,
+        intcptFull, bRawTrue, ng, scaleVec, thetaTrue, h, Jtrue, eRaw,
+        eRawVec, eOrthVec, eOrth, eOrthFull, w,
+        s1, s2, s3, s4, s5, s6, s7, s8, s9, s10,
+        leftVecsJ, singMatJ, rightVecsJ, singValsJ, rankUse, Qbasis;
+    struct quaidsControl aCtl;
+
+    N = 5;
+
+    /* See _quaidsStatFixtureDGP()'s own comment: each seed offset must
+       be precomputed into a plain variable -- rndns(rows,cols,seed+k)
+       with the offset written inline fails with `error G0287 : Seed not
+       updated`, confirmed directly via an isolated repro. */
+    s1 = seed+1;
+    s2 = seed+2;
+    s3 = seed+3;
+    s4 = seed+4;
+    s5 = seed+5;
+    s6 = seed+6;
+    s7 = seed+7;
+    s8 = seed+8;
+    s9 = seed+9;
+    s10 = seed+10;
+
+    al = round(rndns(1, N-1, s1)*10)/10;
+    al = al~(1-sumc(al'));
+    al1 = .5*round(rndns(1, N-1, s2)*10)/10;
+    al1 = al1~(-sumc(al1'));
+    ga = round(rndns(N-1, N-1, s3)*10)/10;
+    ga = xpnd(vech(ga));
+    ga = ga|(-sumc(ga)');
+    ga = ga~(-sumc(ga'));
+    be = .5*round(rndns(1, N-1, s4)*10)/10;
+    be = be~(-sumc(be'));
+    la = .01*round(rndns(1, N-1, s5)*10)/10;
+    la = la~(-sumc(la'));
+    if not quadratic;
+        la = zeros(1, N);
+    endif;
+
+    prices = 1+rndns(tobs, N, s6);
+    instr = 5+5*rndns(tobs, 1, s7);
+    intcpt = 2+2*rndns(tobs, 1, s8);
+    uResid = .1*rndns(tobs, 1, s9);
+    totexp = .85*instr + uResid;
+
+    a_p = sumc((prices.*(al+intcpt*al1))') + .5*sumc(((prices*ga).*prices)');
+    lx = totexp - a_p;
+    b_p = prices*be';
+    lx2 = (lx^2)./exp(b_p);
+    wFitted = al + prices*ga + lx*be + intcpt*al1 + lx2*la;
+
+    trueParams = al|al1|ga|be;
+    if quadratic;
+        trueParams = trueParams|la;
+    endif;
+    trueParams = trueParams|zeros(1, N);
+
+    nGoods = N;
+    nReduced = N-1;
+    intcptFull = ones(tobs, 1)~intcpt;
+    nIntFull = cols(intcptFull);
+    bRawTrue = _directTrueRaw(trueParams, nIntFull, nReduced, nGoods);
+    ng = rows(bRawTrue);
+
+    aCtl = quaidsControlCreate;
+    aCtl.linear = 1-quadratic;
+    aCtl.homogenous = 1;
+
+    scaleVec = _directObjScale(bRawTrue, nReduced);
+    thetaTrue = _directObjPack(bRawTrue, nReduced)./scaleVec;
+
+    h = 1e-5;
+    Jtrue = _directResidJacobianFD(thetaTrue, h, wFitted, intcptFull,
+        prices, totexp, uResid, aCtl, ng, nReduced, scaleVec);
+
+    /* rndns() with an explicit (precomputed, see above) seed -- not
+       rndseed+rndn -- for the same reason every other draw in this proc
+       uses it: confirmed directly that `rndseed seed+10;` inside this
+       proc raised a real `error G0287 : Seed not updated` (reproducible,
+       and NOT fixed merely by precomputing the offset the way the inline
+       rndns(...,seed+10) issue was -- rndseed itself appears to dislike
+       being called from inside a proc here at all), while the
+       explicit-seed rndns() form has no such statefulness to trip over. */
+    eRaw = .3*rndns(tobs, nReduced, s10);
+    eRawVec = vec(eRaw);
+
+    /* Orthogonal projection onto col(Jtrue) via svd2()'s own left
+       singular vectors (already the validated rank-revealing
+       decomposition this file's own _directJacobianSvdReport() and
+       anderson_safe_solver_test.e both use), NOT invpd(Jtrue'Jtrue)'s
+       normal-equation approach. An invpd-based projection would square
+       Jtrue's own condition number (observed ~1000-4000 at truth, so
+       ~1e6-1.6e7 squared -- still safely invertible in double precision,
+       but not the best available option here); the SVD/orthonormal-basis
+       form needs no matrix inversion at all (Qbasis'Qbasis=I exactly),
+       so it was used instead once the choice was pointed out as worth
+       revisiting, rather than merely documenting the invpd form as
+       "acceptable". rankTol matches _directJacobianSvdReport()'s own
+       default. */
+    { leftVecsJ, singMatJ, rightVecsJ } = svd2(Jtrue);
+    singValsJ = diag(singMatJ);
+    rankUse = sumc(singValsJ .> 1e-10*singValsJ[1]);
+    Qbasis = leftVecsJ[., 1:rankUse];
+    eOrthVec = eRawVec - Qbasis*(Qbasis'eRawVec);
+
+    eOrth = reshape(eOrthVec, nReduced, tobs)';
+    eOrthFull = eOrth~(-sumc(eOrth'));
+
+    w = wFitted + eOrthFull;
+
+    retp(w, intcpt, prices, totexp, instr, trueParams);
+endp;

@@ -69,12 +69,86 @@ wired into the installed package or CI test surface; no shipped `src/`
 file changed. See the Completed Work entry and the experiment's
 `SUMMARY.md`/`CLAUDE_HANDOFF.md` for the evidence and handoff.
 
-**No implementation is currently in progress.** The recommended next
-research objective is a small, validated direct-nonlinear-optimization
-pilot, not further Anderson-depth tuning: define the concentrated
-residual/GMM objective, verify it on a noiseless known-truth fixture, and
-then compare safe Anderson, direct LM/Gauss-Newton, and a hybrid on 30
-seeds before deciding whether a full 200-seed run is justified.
+**Phase 1 of that direct-nonlinear-optimization follow-up (define and
+validate the objective) completed, then a Phase 1b audit corrected its
+own headline conclusion.** Both uncommitted, in the same experiment
+directory. Phase 1 (`direct_objective.src`'s initial objective/pack/
+scale machinery, `phase1_objective_validation.e`) validated the
+objective cleanly but reported a NEGATIVE recovery-gate result for
+QUAIDS using a generic optimizer and a flat infeasibility penalty.
+**Phase 1b found that result was confounded** by (1) a fixture whose
+first-stage IV residual was itself made weakly identified by the same
+noise-shrinking used to keep the GLS criterion well-conditioned, and (2)
+an optimizer with no real safeguards (a flat `1e8` penalty that a
+generic solver could mistake for a converged plateau). With a corrected
+fixture and a real Levenberg-Marquardt solver (`_directLM`, Sinv-weighted
+Gauss-Newton gradient/Hessian validated against finite differences to
+~1e-9, rejects infeasible steps, requires an actual/predicted-reduction
+test), direct optimization recovered the true structural parameters to
+~0.001-0.002 accuracy (excluding a still-weakly-identified but
+non-rank-deficient nuisance correction row) in EVERY ONE of 8 trials
+(both models, 1%/5% perturbations, 2 independent STARTING-POINT
+perturbations each -- one stationary-fixture dataset per model, not an
+independent data redraw per trial) -- the Jacobian is full numerical
+rank at truth in both models; no weak identification was found outside
+the nuisance row, on this one fixture draw per model and this file's
+documented parameter scaling. The fixture's truth point is NEAR- rather
+than exactly stationary (observed ||FD gradient||_inf 0.084 AIDS / 0.183
+QUAIDS, not zero).
+
+**Phase 3's continuation/homotopy smoke gate then ran and PASSED on both
+models**, answering Phase 1b's own open question (does a validated
+direct optimizer work from far/structured starts on real noisy data, not
+just Phase 1b's near-stationary fixture). On known-difficult seeds (AIDS
+seed=6, QUAIDS seed=9 -- both seeds where ALL 16 structured starts x
+safeguarded Anderson already failed in the completed 200-seed benchmark),
+from both a Stone start and an aggressively perturbed/sign-flipped far
+start: AIDS sees continuation tie cold direct LM (both beat safe
+Anderson, which did not converge); QUAIDS (the harder case) sees
+continuation reach a dramatically better, remarkably consistent solution
+(structural recovery error 0.081, vs. cold LM's 4.02/12.29 and safe
+Anderson's 2.16/0.19 depending on start) from BOTH starting points,
+while cold LM lands on a different, worse, converged-but-wrong point
+depending on the start. A real robustness bug (an unguarded `invpd()`
+that could crash, not just mis-score, on a wild far-start step) was
+found and fixed along the way, confirmed via two independent byte-for-
+byte regression checks not to have changed Phase 1b's own results.
+
+**Phase 3 hardening (2026-10-05) is done, and the strengthened smoke gate
+passes cleanly in all 4 scenarios.**
+
+What changed:
+- The continuation driver now solves the real homotopy=0 problem before
+  advancing.
+- Failure modes have separate counters, and a new LM retcode 5 marks
+  covariance-inversion failure.
+- `invpd()` is fail-closed and was validated by fault injection
+  (`phase3_safeguard_diag.e`, 14 of 14 checks pass).
+- Endpoint differences are now reported explicitly.
+- The verdict now requires an absolute correctness condition,
+  structErr ≤ 1 (excluding u), with sensitivity reported at .5/1/2/5.
+
+Corrected numbers:
+- **AIDS structural error is 0.058, not 0.724.** The earlier figure was
+  the u-row error, caused by a wrong row slice in the gate.
+- **QUAIDS continuation endpoints are numerically equivalent, not
+  identical.** The two starts differ by 5.8e-9 in scaled θ.
+- **Stage zero changed no endpoint** (≤ 1.5e-8), only iteration counts.
+
+Phase 1b's audit was rerun, and every numerical line is identical.
+
+**No implementation is in progress, and the 30-seed pilot has NOT been
+started.** Next step: the user reviews this hardened checkpoint and
+decides whether to commit it. After that, run the matched 30-seed pilot
+described in `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
+It should report the 200-seed benchmark's own `bS`-based recErr
+alongside structErr, because the two metrics differ.
+
+Limitations:
+- Only one seed per model was tested.
+- The driver's step-halving and minimum-step paths were never triggered
+  on real data.
+- Safe Anderson ran single-start only.
 
 ## Completed Work
 
