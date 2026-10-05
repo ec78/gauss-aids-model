@@ -6,6 +6,8 @@ other CI/release path. This is scratch research output, kept for a
 handoff, not production code. See the repo-root `CLAUDE.md`/
 `PROJECT_STATUS.md` for the actual shipped state of the library.
 
+**Latest result:** see "Matched 30-seed pilot (2026-10-05)" below.
+
 ## Phase 1: direct-optimization objective validation (2026-10-01)
 
 > **Corrected by the Phase 1b audit below (2026-10-01).** This section's
@@ -834,6 +836,351 @@ was left as is.
 The hardened checkpoint awaits the user's review and an explicit commit
 decision. After that, the next step is the 30-seed matched pilot, which
 was **not started**. Its design is in CLAUDE_HANDOFF.md.
+
+> Superseded: the hardened checkpoint was committed (`a776717`), and the
+> pilot was then run. See "Matched 30-seed pilot (2026-10-05)" below.
+
+## Matched 30-seed pilot (2026-10-05)
+
+**Read this section first.** It is the latest result in this directory
+and supersedes the "Next entry point" of the Phase 3 hardening section
+above.
+
+The pilot compares three methods on identical DGP seeds (1-30,
+tobs=3000) and on the 200-seed benchmark's 16 start recipes, for both
+iterated AIDS and QUAIDS:
+- safeguarded Anderson with its full 16-start portfolio;
+- cold direct LM;
+- hardened continuation + LM (stage zero at homotopy 0).
+
+That is 2,880 cells (model × seed × method × start). Every cell finished.
+
+The definitions were frozen in `PILOT_PROTOCOL.md` before any result was
+examined. The primary class is selected `bsErr` ≤ 1, the benchmark's own
+`max|bS − trueParams|`. The secondary class is selected `rawStructErr`
+≤ 1, which covers all reduced rows except u and includes lambda.
+
+**Selection** takes the largest exact homotopy-1 objective among
+genuinely converged endpoints. **Oracle** results are diagnostic only.
+
+### Files
+
+| File | Role |
+|---|---|
+| `PILOT_PROTOCOL.md` | Frozen protocol, tolerances, and 3 recorded deviations (2 validation-tolerance fixes, 1 observation). |
+| `pilot_lib.src` | Verbatim copies of the benchmark's start recipes and of `_phase3Errs`; `_pilotContinuation` (a copy of `_phase3Continuation` with 2 extra info fields); `_pilotRecoverBS` (raw → `bS` through `quaidsFit()`'s own post-processing chain); CSV writer. |
+| `pilot_harness_core.src` | Resumable cell loop. One CSV row is appended per finished cell; finished keys are skipped on rerun. |
+| `pilot_validate.e` | Stage A Part 1 checks plus the harness on seeds 1, 6, 9 → `pilot_validation/`. |
+| `pilot_resume_test.e`, `.ps1`, `_output.txt` | V6 resume test. |
+| `pilot_run_m0.e`, `pilot_run_m1.e` | Stage B (seeds 1-30) → `pilot_out/`. |
+| `pilot_analyze.py` | All selection, deduplication and aggregation from disk: `--selftest`, `--validate DIR`, `--compare A B`, `--report DIR`. |
+| `pilot_out/pilot_report.md`, `pilot_seed_table.csv` | Full tables, including a 180-row seed table and the anomaly table. |
+| `pilot_bs_diag.e`, `_output.txt` | Post-pilot diagnostic of where `bS` error comes from. |
+| `pilot_posthoc_pooled.py`, `pilot_out/pilot_posthoc_pooled_output.txt` | Post-hoc exploratory pooling. Not prespecified. |
+
+`pilot_out/` is 6.4 MB of raw CSV plus logs.
+
+### Commands
+
+Run from this directory. Outputs were captured as shown.
+
+```powershell
+C:\gauss26\tgauss.exe -b -x pilot_validate.e      # > pilot_validation\pilot_validate_console.txt
+powershell -ExecutionPolicy Bypass -File pilot_resume_test.ps1
+python pilot_analyze.py --validate pilot_validation   # > pilot_validation\pilot_analyze_validate_output.txt
+C:\gauss26\tgauss.exe -b -x pilot_run_m0.e        # > pilot_out\pilot_run_m0_console.txt   (~40 min)
+C:\gauss26\tgauss.exe -b -x pilot_run_m1.e        # > pilot_out\pilot_run_m1_console.txt   (~2.5 h)
+python pilot_analyze.py --validate pilot_out          # > pilot_out\pilot_analyze_validate_output.txt
+python pilot_analyze.py --compare pilot_validation pilot_out   # > pilot_out\determinism_check.txt
+python pilot_analyze.py --report pilot_out
+C:\gauss26\tgauss.exe -b -x pilot_bs_diag.e       # -> pilot_bs_diag_output.txt
+python pilot_posthoc_pooled.py                     # > pilot_out\pilot_posthoc_pooled_output.txt
+```
+
+The two Stage B scripts ran concurrently as two processes, one per
+model, on a 12-thread machine. The AIDS process finished first. Wall
+times include that mild contention. Validation seed 1 QUAIDS took 418 s
+there and 355 s in the pilot, so contention did not visibly inflate
+timings.
+
+### Stage A gate: PASSED, with no change to the comparison
+
+| Check | Result |
+|---|---|
+| V1 `bS` conversion | `_pilotRecoverBS` reproduces `quaidsFit()`'s `homogB`, `bS`, `recErr` and `homogCrit` to ≤ 5e-10 in 12 of 12 cases (3 seeds × 2 models × 2 points), at the same (index, coefficient) pair. `_quaidsFitAnderson(mDepth 0)` and `quaidsFit()` give identical `bS`. A polished fixed point (AIDS seed 9) confirms that the direct (b,b) representation equals `quaidsFit()`'s own `bS` (Δ 3.7e-14). The other five polishing attempts diverged under plain iteration, which is the known instability of plain iteration, and were not scored. Across converged Anderson pilot cells, `bS(b,b)` vs `qOut.bS` differs by median 4e-7 and at most 0.021: the one-iteration index/coefficient gap at Anderson's 1e-4 stop. |
+| V2 | Error-helper layout: u excluded, lambda included, column n ignored. |
+| V3a | Start pack/unpack round trip ≤ 3.6e-15; starts are deterministic. |
+| V3b | The pilot's Anderson arm reproduces the 200-seed benchmark's per-seed line on **all 60 seed/model cases**: converged starts, distinct endpoints, selected start, selected and oracle `recErr`, truth criterion. This proves start/RNG equivalence. |
+| V3c | Start-1 cold-LM and continuation cells reproduce `phase3_smoke_gate_output.txt` (crit, structErr, iterations, rejected steps). |
+| V4 | `critExact` equals the returned objective exactly for every LM and every continuation cell that reached homotopy 1. For converged Anderson endpoints, `critExact` vs `qOut.homogCrit` differs by < 1e-2. |
+| V5 | Selection direction, eligibility, tie and dedup unit tests: 8 of 8. |
+| V6 | Resume: 6 of 6. |
+| V7 | Keys unique and complete; counter columns present. |
+| Totals | `--validate`: 58 of 58 on `pilot_validation`, 377 of 377 on `pilot_out`. |
+| Determinism | The 288 cells shared by `pilot_validation` and `pilot_out` are bit-identical apart from wall time. |
+| Regression | `phase3_safeguard_diag.e` is unchanged (14 of 14; output identical apart from a BOM). `direct_objective.src` was not modified. |
+
+Deviations (`PILOT_PROTOCOL.md`):
+- Two reference-comparison tolerances (V3c, then V3b) were changed from
+  an absolute 1e-6/5e-9 to a relative 1e-7. The cause was the 8
+  significant digits of the printed reference values; every failing
+  value matched in all printed digits.
+- QUAIDS seed 1 Anderson: selection by `critExact` picks start 12 instead
+  of the benchmark's start 7. The two are in the same basin, ~1e-9
+  apart, and give the same error.
+- No pilot definition changed.
+
+### Results (30 seeds; never / wrong / correct)
+
+| Model | Method | Stone-only bS | 16-start selected bS | oracle bS (diag.) | Stone-only raw | 16-start selected raw | converged starts |
+|---|---|---|---|---|---|---|---:|
+| AIDS | Anderson | 3/12/15 | 2/9/19 | 2/8/20 | 3/10/17 | 2/6/22 | 431/480 |
+| AIDS | cold LM | 0/4/26 | 0/3/27 | 0/2/28 | 0/0/30 | 0/0/30 | 480/480 |
+| AIDS | continuation | 0/4/26 | 0/4/26 | 0/4/26 | 0/0/30 | 0/0/30 | 480/480 |
+| QUAIDS | Anderson | 5/17/8 | 1/19/10 | 1/19/10 | 5/15/10 | 1/16/13 | 372/480 |
+| QUAIDS | cold LM | 4/9/17 | 0/7/23 | 0/7/23 | 4/3/23 | 0/1/29 | 379/480 |
+| QUAIDS | continuation | 0/9/21 | 0/7/23 | 0/7/23 | 0/3/27 | 0/1/29 | 476/480 |
+
+Anderson's selected correct rate on these 30 seeds (AIDS 19/30, QUAIDS
+10/30) matches its 200-seed rate (60.5%, 34.5%), so the seeds are not
+unusually easy or hard for Anderson.
+
+**Threshold sensitivity** (selected error ≤ .5 / 1 / 2 / 5):
+
+| Model | Method | bS | raw |
+|---|---|---|---|
+| AIDS | Anderson | 4/19/21/25 | 19/22/23/27 |
+| AIDS | cold LM | 6/27/30/30 | 30/30/30/30 |
+| AIDS | continuation | 6/26/30/30 | 30/30/30/30 |
+| QUAIDS | Anderson | 3/10/13/14 | 13/13/14/19 |
+| QUAIDS | cold LM | 8/23/28/29 | 29/29/29/29 |
+| QUAIDS | continuation | 7/23/28/30 | 29/29/30/30 |
+
+**Paired transitions** (primary bS class):
+
+| Model | Pair | Improved to correct | Regressed |
+|---|---|---|---|
+| AIDS | Anderson → continuation | 8 (seeds 5, 6, 10, 13, 15, 16, 17, 24) | 1 (26) |
+| AIDS | cold LM → continuation | 0 | 1 (26) |
+| QUAIDS | Anderson → continuation | 14 (1, 3, 4, 6, 9, 10, 11, 13, 17, 18, 21, 23, 24, 28) | 1 (29) |
+| QUAIDS | cold LM → continuation | 1 (17) | 1 (5) |
+
+Anderson → cold LM is the same as Anderson → continuation in both
+models, except that seed 26 does not regress for AIDS.
+
+Both "regressions" against Anderson are u-row cutoff effects, not wrong
+basins:
+- AIDS seed 26 has continuation bsErr 1.012 against cold LM ≤ 1, and raw
+  0.085 for both.
+- QUAIDS seed 29 has continuation bsErr 1.08, raw 0.036; the u row is
+  1.08.
+
+**Objective-selected vs oracle.** Solution selection is **not** the
+remaining problem. Selected and oracle classes agree everywhere except
+two AIDS cases:
+- AIDS seed 10, Anderson: selected 4.03, while the oracle reached 0.999.
+- AIDS seed 22, cold LM: selected 1.006 vs oracle 0.994, a cutoff
+  margin.
+
+In QUAIDS no method has a selection failure. The continuation
+selected-minus-oracle gap is at most 5.8e-6 in QUAIDS and 0.116 in AIDS.
+
+**Cost** (wall seconds per seed; min / median / 90% / max):
+
+| Model | Method | Stone-only | 16-start | Total over 30 seeds |
+|---|---|---|---|---:|
+| AIDS | Anderson | 0.006 / 0.014 / 0.045 / 0.14 | 0.13 / 0.37 / 0.69 / 2.1 | 14.5 s |
+| AIDS | cold LM | 0.19 / 0.32 / 0.54 / 4.9 | 4.3 / 6.1 / 9.0 / 15 | 205 s |
+| AIDS | continuation | 1.0 / 1.8 / 3.9 / 9.9 | 18 / 33 / 53 / 112 | 1,150 s |
+| QUAIDS | Anderson | 0.009 / 0.026 / 0.065 / 0.40 | 0.15 / 0.49 / 0.89 / 1.5 | 15.5 s |
+| QUAIDS | cold LM | 0.00 / 0.40 / 1.6 / 2.5 | 1.1 / 8.2 / 19 / 23 | 323 s |
+| QUAIDS | continuation | 1.6 / 6.2 / 25 / 26 | 28 / 98 / 338 / 448 | 4,310 s |
+
+Median iterations per cell (QUAIDS) are 27 for Anderson, 8 for cold LM
+and 106 for continuation (all stages). The derived approximate
+evaluation counts are 27, 584 and 7,750.
+
+**Failure and safeguard counters.** There were no inversion failures
+in AIDS, and no failed or reduced stages.
+
+QUAIDS cold LM status counts:
+
+| Retcode | Meaning | Cells |
+|---:|---|---:|
+| 0 | converged | 379 |
+| 3 | infeasible start at homotopy 1 | 53 |
+| 4 | stalled | 4 |
+| 5 | covariance inversion failed | 44 |
+
+QUAIDS cold LM inner events: 44 covariance-inversion failures, 178
+step-inversion failures, 28 infeasible trials and 558 rho rejections.
+
+QUAIDS continuation:
+- **Status:** 476 genuine; 2 with stage zero failing (seed 21, starts
+  2 and 7); 2 with the minimum step exhausted (seed 17, starts 9 and 10,
+  which stopped at homotopy .969 and .812).
+- **Stages:** 10 step reductions and 12 stalled (rc 4) stages; no rc
+  2/3/5 stage failures.
+- **Inner events:** 85 step-inversion failures, 3 infeasible trials,
+  5,144 rho rejections.
+- **First real-data exercise:** the step-halving, minimum-step and
+  stage-zero-failure paths had never been triggered on real data before
+  this pilot. They all behaved as designed, reporting honestly and never
+  advancing past a failed stage.
+
+The `bS` chain (`_pilotRecoverBS`) failed on 3 QUAIDS cold-LM cells (J
+not invertible); those cells keep their raw error, and their `bsErr` is
+missing. The symmetry projection used `quaidsFit()`'s own unprojected
+fallback on 101 cold-LM, 2 continuation and 92 Anderson cells (QUAIDS),
+and on 3 Anderson cells (AIDS).
+
+**Basins** (raw structural, tolerance 0.05):
+- **Continuation** finds a single converged basin on 30 of 30 AIDS seeds
+  and 28 of 30 QUAIDS seeds.
+- **Cold LM** finds more than one basin on 3 AIDS and 10 QUAIDS seeds.
+- **Anderson** finds more than one basin on 7 AIDS and 14 QUAIDS seeds.
+
+### Why bS and raw disagree (`pilot_bs_diag.e`)
+
+Every direct-method seed that is "wrong" on bS but correct on raw sits
+in the right basin:
+- raw structural error ≤ 0.09;
+- the selected objective is **better than the truth's** on the same
+  sample, which is finite-sample overfit at the right optimum.
+
+The diagnostic splits the `bS` error by block. It compares the
+pilot's projected `bS` with an unprojected recovery (homogeneity and
+adding-up only) of the same raw endpoint. The unprojected formula
+agrees with `_pilotRecoverBS` to 5.7e-14 on a symmetry-fallback cell.
+
+| Cause | Seeds | Effect |
+|---|---|---|
+| Symmetry projection | QUAIDS 15, 16, 20 | Projected `bS` error is 1.72, 2.18 and 1.15, all in the alpha block. Unprojected it is 0.38, 0.33 and 0.54. `quaidsFit()`'s delta-method projection metric is evaluated at a point that is not a fixed point of its map, and it moves alpha by 1-2. |
+| Projection and u row | AIDS 29 | Projected `bS` error is 1.19 (gamma block). Unprojected it is 1.10, from the u row. |
+| u row ≈ 1.0-1.2 | AIDS 22, 25, 26; QUAIDS 22, 25, 29 | The nuisance u row is at the cutoff, projected or not. |
+
+So the benchmark-compatible `bS ≤ 1` rule understates the direct methods
+on 6 of 7 QUAIDS seeds and on all 3 or 4 AIDS seeds where they are
+classed wrong. The `bS` conversion itself is correct: it reproduces
+`quaidsFit()` exactly (V1). The issue is that the projection's weighting
+matrix comes from the fixed-point estimator's delta method. That is not
+the right covariance for a direct-optimizer endpoint.
+
+### Genuine wrong-basin failures of the direct methods
+
+Only two seeds have direct-method failures with raw error > 1:
+- **QUAIDS seed 5 (continuation).** All 16 starts converge to the
+  **same wrong basin** (critExact −8.04, raw 1.31). Cold LM reaches the
+  right basin (−5.52, raw 0.045) from 10 of 16 starts. The homotopy path
+  itself leads to the wrong basin, so the start portfolio cannot help.
+- **QUAIDS seed 17 (cold LM).** Only 1 of 16 starts converges, and it
+  lands in a wrong basin (−17.33, raw 49). Continuation converges from
+  14 starts:
+  - 13 of them land in that same wrong basin;
+  - only start 5 finds the right one (−5.61, raw 0.051);
+  - the objective correctly selects start 5.
+
+Continuation's start-independence works in both directions. When the
+path is right, 15 extra starts are redundant. When it is wrong (seed 5),
+they all fail together. Cold LM's failures are different ones.
+
+### Post-hoc exploratory pooling (NOT prespecified)
+
+`pilot_posthoc_pooled.py` applies the same selection rule to the pooled
+converged candidates of several configurations.
+
+| QUAIDS configuration | bS ≤ .5/1/2/5 | raw ≤ .5/1/2/5 | median / max wall per seed |
+|---|---|---|---|
+| cold LM, Stone only | 6/17/22/23 | 23/23/24/25 | 0.4 / 2.5 s |
+| continuation, Stone only | 7/21/26/28 | 27/27/28/28 | 6.8 / 26 s |
+| cold LM + continuation, Stone only (2 solves) | 8/23/28/29 | 29/29/29/29 | 7.5 / 29 s |
+| cold LM, 16 starts | 8/23/28/29 | 29/29/29/29 | 8.3 / 23 s |
+| continuation, 16 starts | 7/23/28/30 | 29/29/30/30 | 108 / 448 s |
+| cold LM 16 + continuation 16 | 8/24/29/30 | **30/30/30/30** | 116 / 465 s |
+
+For AIDS:
+- Cold LM Stone-only already reaches raw 30/30 at every cutoff, and bS
+  26/30, at a median of 0.3 s per seed.
+- No configuration exceeds bS 27/30.
+- The remaining bS failures are the u-row and projection cases above.
+
+### Interpretation (per the prespecified rules)
+
+- **AIDS.** Continuation gains nothing over cold LM:
+  - both are at raw 30/30 at every cutoff;
+  - bS is 26 vs 27/30, with the one-seed difference a u-row margin;
+  - continuation costs about 5.6× more.
+
+  Both direct methods are a **genuine solver improvement** over
+  Anderson: selected and oracle both improve, bS 19 → 26/27 and raw
+  22 → 30. Cold LM even from the Stone start alone is the efficient
+  choice here.
+- **QUAIDS.** Both selected and oracle results improve materially over
+  Anderson: bS 10 → 23, raw 13 → 29, 14 seeds improved and 1 regressed.
+  That is a **genuine solver improvement**. It is shared by cold LM and
+  continuation at 16 starts, which tie (23/23 bS, 29/29 raw, one seed
+  each way).
+
+  Continuation's distinctive advantage is **per-start robustness**:
+  - Stone-only bS 21 vs 17 and raw 27 vs 23;
+  - 476/480 vs 379/480 genuinely converged;
+  - a single basin on 28 of 30 seeds.
+
+  The cost is a median of 98 s per seed for 16 starts.
+- **Solution selection is not the bottleneck.** It matches the oracle
+  class on 178 of 180 seed/model/method cases.
+- **Remaining problems:**
+  1. The `bS` metric for direct endpoints: the projection convention and
+     the u row.
+  2. Rare path-determined wrong basins for continuation (seed 5) and
+     reachability failures for cold LM (seed 17). These are
+     complementary.
+- **Model-specific hybrid.** Explicitly evaluated, and the evidence
+  favours it:
+  - AIDS: cold LM.
+  - QUAIDS: continuation, or a small pool of cold LM plus continuation.
+    The post-hoc 2-solve Stone pool already matches cold LM's 16-start
+    result.
+
+  One method for both models is not required. Cold LM with 16 starts is
+  a reasonable single default, but it misses QUAIDS seed 17.
+- **No population-wide claim.** All of the above is 30 seeds. The
+  continuation-vs-cold-LM differences are 1-4 seeds and not
+  distinguishable from noise. The Anderson-vs-direct differences (QUAIDS
+  14 improved vs 1 regressed) are large.
+
+### Recommendation and next entry point
+
+Do **not** launch 200 seeds as the very next step. Two decisions should
+be made first, because each changes what a 200-seed run would measure:
+
+1. **Fix the correctness metric for direct endpoints**, before any
+   scale-up. Choose one of:
+   - (a) impose symmetry inside the direct objective (optimize over the
+     symmetric parametrization), so no post-hoc projection is needed and
+     `bS` comes from homogeneity and adding-up only;
+   - (b) prespecify the unprojected recovery, or `bsErrExclU`, as the
+     direct-method primary metric and keep projected `bS` as
+     benchmark-compatible context;
+   - (c) derive the direct estimator's own sandwich covariance for the
+     projection.
+
+   Option (a) is the cleanest and matches what a shipped estimator
+   would need.
+2. **Prespecify the hybrid to scale up.** For example: AIDS cold LM
+   Stone + k starts; QUAIDS pooled cold LM + continuation from a small
+   start set. Include a seed-5-type check (a continuation-wide wrong
+   basin) as a reported failure mode.
+
+After that, a 200-seed run of the chosen hybrid is justified. The
+Anderson-vs-direct gap is large and consistent on these 30 seeds, and
+Anderson's 30-seed rates match its 200-seed rates. More work on
+solution selection is not indicated.
+
+To resume or extend: the harness is resumable per cell. For example,
+set `pilotSeeds = seqa(31,1,170)` in a copy of `pilot_run_m*.e` with the
+same `pilotOutDir`. `pilot_analyze.py --report` recomputes everything
+from disk.
 
 ## Second-opinion methodology audit (2026-09-29)
 

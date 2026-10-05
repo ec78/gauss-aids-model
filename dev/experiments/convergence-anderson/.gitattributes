@@ -1,0 +1,11 @@
+# Raw pilot cell outputs: store byte-exact (no CRLF conversion, so the
+# analysis reproduces from a fresh checkout) and keep them out of text
+# diffs. git already zlib-compresses them (7.2 MB raw -> ~2.3 MB).
+pilot_*/cells_m*.csv -text -diff linguist-generated
+
+# Verbatim GAUSS console/output captures: GAUSS print pads lines with
+# trailing spaces. Raw outputs are never edited, so exempt them from
+# git's whitespace check instead.
+*_output.txt -whitespace
+*_console.txt -whitespace
+pilot_resume_test/run_*.txt -whitespace

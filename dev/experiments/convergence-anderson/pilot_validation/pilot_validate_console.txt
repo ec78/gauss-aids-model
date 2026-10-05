@@ -1,0 +1,436 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: pilot_validate.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\experiments\convergence-anderson )
+Mon Oct  5 06:46:09 2026
+
+
+================================================================
+V2: _pilotErrs layout on synthetic matrices
+================================================================
+  PASS V2 linear=       1.0000000  structErr     0.070000000 (= last non-u row,       7.0000000 rows) lambdaErr      -1.0000000 uErr       100.00000 
+  PASS V2 linear=       0.0000000  structErr     0.080000000 (= last non-u row,       8.0000000 rows) lambdaErr     0.080000000 uErr       100.00000 
+
+================================================================
+V1/V3a: model       0.0000000 seed       1.0000000 
+================================================================
+  PASS V3a start round trip, 16 starts: max abs diff   4.4408921e-16 
+  PASS V3a starts are deterministic (redraw identical)
+  X =start 2
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   2.1316282e-14 
+    |recErr_helper-recErr_quaidsFit|   1.7763568e-14  |crit_helper-homogCrit|       0.0000000 
+    recErr(quaidsFit bS)       4.6898267  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  X =Stone-start Anderson endpoint (converged=1)
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   4.6762594e-13 
+    |recErr_helper-recErr_quaidsFit|   4.6718185e-13  |crit_helper-homogCrit|   8.8817842e-16 
+    recErr(quaidsFit bS)       7.7609932  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  shared fixed-point endpoint (polished, converged=       0.0000000 finalErr       14.614095 iterations       500.00000 )
+    direct representation (b,b) vs quaidsFit: max|dbS|       2.5316860  |dRecErr|       1.6428106  recErr       7.4310785 
+    INFO V1 shared endpoint: plain iteration did not reach 1e-12 from this endpoint; not scored
+
+================================================================
+V1/V3a: model       0.0000000 seed       6.0000000 
+================================================================
+  PASS V3a start round trip, 16 starts: max abs diff   8.8817842e-16 
+  PASS V3a starts are deterministic (redraw identical)
+  X =start 2
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   4.6815885e-12 
+    |recErr_helper-recErr_quaidsFit|   8.9350749e-13  |crit_helper-homogCrit|   1.7763568e-15 
+    recErr(quaidsFit bS)       4.9923065  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  X =Stone-start Anderson endpoint (converged=0)
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   7.9891649e-13 
+    |recErr_helper-recErr_quaidsFit|   6.3238303e-13  |crit_helper-homogCrit|   3.5527137e-15 
+    recErr(quaidsFit bS)       1.2517803  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  shared fixed-point endpoint (polished, converged=       0.0000000 finalErr       42.420276 iterations       500.00000 )
+    direct representation (b,b) vs quaidsFit: max|dbS|      0.51827476  |dRecErr|      0.21875546  recErr       3.7786804 
+    INFO V1 shared endpoint: plain iteration did not reach 1e-12 from this endpoint; not scored
+
+================================================================
+V1/V3a: model       0.0000000 seed       9.0000000 
+================================================================
+  PASS V3a start round trip, 16 starts: max abs diff   8.8817842e-16 
+  PASS V3a starts are deterministic (redraw identical)
+  X =start 2
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   2.1405100e-13 
+    |recErr_helper-recErr_quaidsFit|   3.1086245e-15  |crit_helper-homogCrit|       0.0000000 
+    recErr(quaidsFit bS)      0.95625755  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  X =Stone-start Anderson endpoint (converged=1)
+    quaidsFit iterations       1.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   2.7045033e-13 
+    |recErr_helper-recErr_quaidsFit|   3.5527137e-15  |crit_helper-homogCrit|       0.0000000 
+    recErr(quaidsFit bS)      0.75865946  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  shared fixed-point endpoint (polished, converged=       1.0000000 finalErr   9.6424325e-13 iterations       78.000000 )
+    direct representation (b,b) vs quaidsFit: max|dbS|   3.7303494e-14  |dRecErr|   1.5543122e-15  recErr      0.75866194 
+    PASS V1 shared endpoint (tol 1e-6; residual index/coef gap is the 1e-12 stopping rule)
+
+================================================================
+V1/V3a: model       1.0000000 seed       1.0000000 
+================================================================
+  PASS V3a start round trip, 16 starts: max abs diff   3.5527137e-15 
+  PASS V3a starts are deterministic (redraw identical)
+  X =start 2
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|       0.0000000 
+    |recErr_helper-recErr_quaidsFit|       0.0000000  |crit_helper-homogCrit|       0.0000000 
+    recErr(quaidsFit bS)       110.82413  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  X =Stone-start Anderson endpoint (converged=1)
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|       0.0000000 
+    |recErr_helper-recErr_quaidsFit|       0.0000000  |crit_helper-homogCrit|       0.0000000 
+    recErr(quaidsFit bS)       82.434969  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  shared fixed-point endpoint (polished, converged=       0.0000000 finalErr       178.09595 iterations       500.00000 )
+    direct representation (b,b) vs quaidsFit: max|dbS|       27.950586  |dRecErr|       2.1592822  recErr       36.473704 
+    INFO V1 shared endpoint: plain iteration did not reach 1e-12 from this endpoint; not scored
+
+================================================================
+V1/V3a: model       1.0000000 seed       6.0000000 
+================================================================
+  PASS V3a start round trip, 16 starts: max abs diff   8.8817842e-16 
+  PASS V3a starts are deterministic (redraw identical)
+  X =start 2
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   4.8234128e-10 
+    |recErr_helper-recErr_quaidsFit|   4.8234128e-10  |crit_helper-homogCrit|   3.5527137e-15 
+    recErr(quaidsFit bS)       18.636556  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  X =Stone-start Anderson endpoint (converged=0)
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   1.6808555e-11 
+    |recErr_helper-recErr_quaidsFit|   5.2668980e-12  |crit_helper-homogCrit|   1.1546319e-14 
+    recErr(quaidsFit bS)      0.89874030  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  shared fixed-point endpoint (polished, converged=       0.0000000 finalErr       19.878616 iterations       500.00000 )
+    direct representation (b,b) vs quaidsFit: max|dbS|       3.2903192  |dRecErr|       2.6567558  recErr       13.409166 
+    INFO V1 shared endpoint: plain iteration did not reach 1e-12 from this endpoint; not scored
+
+================================================================
+V1/V3a: model       1.0000000 seed       9.0000000 
+================================================================
+  PASS V3a start round trip, 16 starts: max abs diff   1.7763568e-15 
+  PASS V3a starts are deterministic (redraw identical)
+  X =start 2
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   9.7233332e-12 
+    |recErr_helper-recErr_quaidsFit|   1.6129320e-12  |crit_helper-homogCrit|   5.3290705e-15 
+    recErr(quaidsFit bS)       12.323052  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  X =Stone-start Anderson endpoint (converged=0)
+    quaidsFit iterations       2.0000000 symValid       1.0000000 helper ok/symValid       1.0000000        1.0000000 
+    max|Tb_helper-homogB|       0.0000000  max|bS_helper-bS|   9.2192920e-12 
+    |recErr_helper-recErr_quaidsFit|   9.2228447e-12  |crit_helper-homogCrit|   5.3290705e-15 
+    recErr(quaidsFit bS)       23.307888  max|bS_Anderson(mDepth0)-bS_quaidsFit|       0.0000000 
+    PASS V1 exact reproduction (tol   1.0000000e-08 )
+  shared fixed-point endpoint (polished, converged=       0.0000000 finalErr       110.52635 iterations       500.00000 )
+    direct representation (b,b) vs quaidsFit: max|dbS|       21.859070  |dRecErr|       3.1679497  recErr       20.925136 
+    INFO V1 shared endpoint: plain iteration did not reach 1e-12 from this endpoint; not scored
+
+================================================================
+PART 1 (V1/V2/V3a): ALL       27.000000 CHECKS PASSED
+================================================================
+
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8424106 rawStruct       2.9157727 bsErr       7.7610825 wall    0.0070000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733603 rawStruct     0.082433087 bsErr      0.79854768 wall      0.23700000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       3.6890000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423925 rawStruct       2.9157710 bsErr       7.7610063 wall    0.0070000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733612 rawStruct     0.082281554 bsErr      0.79455186 wall      0.21700000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       3.3740000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423928 rawStruct       2.9157719 bsErr       7.7610134 wall    0.0070000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733617 rawStruct     0.082205793 bsErr      0.79323362 wall      0.22700000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       2.9400000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423915 rawStruct       2.9157606 bsErr       7.7609381 wall    0.0070000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733622 rawStruct     0.082146442 bsErr      0.78999472 wall      0.21900000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       3.3340000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423954 rawStruct       2.9157786 bsErr       7.7610634 wall     0.011000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733618 rawStruct     0.082190557 bsErr      0.79535263 wall      0.24300000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       3.1650000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423924 rawStruct       2.9157710 bsErr       7.7610062 wall     0.029000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733585 rawStruct     0.082902958 bsErr      0.81146872 wall      0.44300000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       3.0440000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423949 rawStruct       2.9157797 bsErr       7.7610694 wall    0.0060000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733763 rawStruct     0.081283199 bsErr      0.75698706 wall      0.22300000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       3.2520000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423920 rawStruct       2.9157699 bsErr       7.7609981 wall    0.0070000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733699 rawStruct     0.081385404 bsErr      0.76943458 wall      0.21800000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       3.1600000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423922 rawStruct       2.9157704 bsErr       7.7610016 wall    0.0090000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733611 rawStruct     0.082294886 bsErr      0.79380091 wall      0.64000000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       2.9900000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -7.8423922 rawStruct       2.9157702 bsErr       7.7610006 wall    0.0080000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733623 rawStruct     0.082119508 bsErr      0.78967510 wall      0.20300000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       2.7950000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4765115 rawStruct     0.089178803 bsErr      0.66749815 wall     0.039000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733628 rawStruct     0.082071205 bsErr      0.78917778 wall      0.21200000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       2.9130000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -7.8423922 rawStruct       2.9157702 bsErr       7.7610008 wall    0.0090000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733614 rawStruct     0.082241111 bsErr      0.79366099 wall      0.28000000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       3.7630000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -7.8423923 rawStruct       2.9157677 bsErr       7.7609856 wall     0.014000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733582 rawStruct     0.083144779 bsErr      0.81782182 wall      0.46000000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       3.5500000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -7.8423898 rawStruct       2.9157690 bsErr       7.7609845 wall    0.0060000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733583 rawStruct     0.083005535 bsErr      0.81423970 wall      0.24200000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       3.9460000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -7.8423923 rawStruct       2.9157690 bsErr       7.7609943 wall    0.0080000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733582 rawStruct     0.083125914 bsErr      0.81709731 wall      0.38900000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       4.3830000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.4765122 rawStruct     0.089176194 bsErr      0.66762113 wall     0.029000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -8.9067447 rawStruct       3.8942938 bsErr       14.710919 wall      0.78500000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       3.3640000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       1.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3857332 rawStruct       1.5182084 bsErr       1.2526327 wall     0.043000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987359 rawStruct     0.058349684 bsErr      0.75204328 wall      0.20500000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       4.2290000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       2.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3831283 rawStruct       1.5141274 bsErr       1.2490444 wall      0.10500000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987242 rawStruct     0.058375430 bsErr      0.75352150 wall      0.65300000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       2.4420000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       3.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3798983 rawStruct       1.5087980 bsErr       1.2442128 wall     0.040000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987255 rawStruct     0.058335601 bsErr      0.75320587 wall      0.23600000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.6860000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       4.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3772968 rawStruct       1.5045143 bsErr       1.2402581 wall     0.040000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987240 rawStruct     0.058416212 bsErr      0.75350644 wall      0.42900000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.5200000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       5.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3832409 rawStruct       1.5143135 bsErr       1.2492113 wall     0.042000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058374752 bsErr      0.75369272 wall      0.33400000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.8570000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       6.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3872035 rawStruct       1.5206166 bsErr       1.2547434 wall     0.044000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987235 rawStruct     0.058376208 bsErr      0.75360539 wall      0.30000000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       2.2590000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       7.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3879533 rawStruct       1.5218457 bsErr       1.2558126 wall     0.080000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987362 rawStruct     0.058373097 bsErr      0.75169042 wall      0.20700000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       2.0400000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       8.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3834330 rawStruct       1.5146308 bsErr       1.2494956 wall      0.10000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987373 rawStruct     0.058287610 bsErr      0.75185329 wall      0.20900000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       2.0990000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       9.0000000 conv       0.0000000 status       2.0000000 critExact      -6.3871270 rawStruct       1.5204914 bsErr       1.2546341 wall     0.071000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987239 rawStruct     0.058367718 bsErr      0.75351143 wall      0.27900000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.9840000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       10.000000 conv       0.0000000 status       2.0000000 critExact      -6.3836136 rawStruct       1.5147397 bsErr       1.2495564 wall     0.040000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987240 rawStruct     0.058373603 bsErr      0.75372047 wall      0.21700000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.5880000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       11.000000 conv       0.0000000 status       2.0000000 critExact      -6.3805812 rawStruct       1.5099238 bsErr       1.2452417 wall     0.038000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987377 rawStruct     0.058352988 bsErr      0.75196127 wall      0.17400000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.8960000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       12.000000 conv       0.0000000 status       2.0000000 critExact      -6.3860356 rawStruct       1.5187035 bsErr       1.2530683 wall     0.039000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058369480 bsErr      0.75367066 wall      0.30700000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.6250000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       13.000000 conv       0.0000000 status       2.0000000 critExact      -6.3857943 rawStruct       1.5183084 bsErr       1.2527207 wall     0.040000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987682 rawStruct     0.058277943 bsErr      0.75025036 wall      0.26200000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.5780000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       14.000000 conv       0.0000000 status       2.0000000 critExact      -6.3886389 rawStruct       1.5232475 bsErr       1.2570817 wall     0.040000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987240 rawStruct     0.058424336 bsErr      0.75338543 wall      0.33100000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.7590000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       15.000000 conv       0.0000000 status       2.0000000 critExact      -6.3866441 rawStruct       1.5197002 bsErr       1.2539426 wall     0.069000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987233 rawStruct     0.058396158 bsErr      0.75355413 wall      0.27900000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       1.8740000 
+cell m       0.0000000 seed       6.0000000 method       1.0000000 start       16.000000 conv       0.0000000 status       2.0000000 critExact      -6.3847141 rawStruct       1.5167484 bsErr       1.2513842 wall     0.044000000 
+cell m       0.0000000 seed       6.0000000 method       2.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058377819 bsErr      0.75368459 wall      0.37900000 
+cell m       0.0000000 seed       6.0000000 method       3.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.4987232 rawStruct     0.058367908 bsErr      0.75371586 wall       2.3650000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874212 rawStruct      0.10099100 bsErr      0.75866142 wall     0.038000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814836 rawStruct     0.089648583 bsErr      0.77339703 wall      0.49100000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516163 wall       2.0200000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874218 rawStruct      0.10099226 bsErr      0.75866034 wall    0.0080000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814936 rawStruct     0.088887891 bsErr      0.71364339 wall      0.14200000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       2.8460000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874206 rawStruct      0.10098972 bsErr      0.75866199 wall     0.010000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814842 rawStruct     0.089646272 bsErr      0.75458193 wall      0.25200000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       1.6870000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874221 rawStruct      0.10099306 bsErr      0.75866076 wall    0.0090000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814870 rawStruct     0.089664923 bsErr      0.76949715 wall      0.20300000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       2.2030000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874207 rawStruct      0.10098979 bsErr      0.75866261 wall     0.022000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814937 rawStruct     0.089602467 bsErr      0.79304330 wall      0.95100000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       1.9530000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874207 rawStruct      0.10098989 bsErr      0.75866199 wall     0.011000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5815219 rawStruct     0.089547432 bsErr      0.87612374 wall      0.26100000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       1.9600000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874223 rawStruct      0.10099490 bsErr      0.75865213 wall    0.0080000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814836 rawStruct     0.089708069 bsErr      0.77296529 wall      0.36800000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       1.8100000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874196 rawStruct      0.10098795 bsErr      0.75866056 wall    0.0090000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814835 rawStruct     0.089645262 bsErr      0.77759979 wall      0.30800000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       2.0590000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5874207 rawStruct      0.10099004 bsErr      0.75866190 wall     0.011000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814836 rawStruct     0.089632601 bsErr      0.77271912 wall      0.22600000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516163 wall       1.9160000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.5874207 rawStruct      0.10098984 bsErr      0.75866211 wall    0.0080000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814838 rawStruct     0.089810273 bsErr      0.77079937 wall      0.29800000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       2.1470000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.5874212 rawStruct      0.10099124 bsErr      0.75866009 wall     0.051000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814836 rawStruct     0.089662445 bsErr      0.77396737 wall       1.4440000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       2.0570000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.5874216 rawStruct      0.10099195 bsErr      0.75866063 wall     0.010000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814835 rawStruct     0.089640203 bsErr      0.77599243 wall      0.25600000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       1.8370000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.5874239 rawStruct      0.10099735 bsErr      0.75865316 wall     0.011000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814835 rawStruct     0.089645800 bsErr      0.77783877 wall      0.25300000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       1.7520000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.5874207 rawStruct      0.10098905 bsErr      0.75866710 wall    0.0090000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814835 rawStruct     0.089588762 bsErr      0.78009038 wall      0.27100000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516163 wall       1.8290000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.5874206 rawStruct      0.10098990 bsErr      0.75866102 wall     0.024000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089945127 bsErr      0.77479159 wall      0.27300000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516162 wall       3.0150000 
+cell m       0.0000000 seed       9.0000000 method       1.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.5874259 rawStruct      0.10100242 bsErr      0.75864603 wall    0.0080000000 
+cell m       0.0000000 seed       9.0000000 method       2.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814836 rawStruct     0.089708697 bsErr      0.77218735 wall      0.45400000 
+cell m       0.0000000 seed       9.0000000 method       3.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.5814837 rawStruct     0.089680854 bsErr      0.77516163 wall       4.3450000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985098 rawStruct       11.570431 bsErr       82.434821 wall     0.043000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -12.651884 rawStruct       1.9986742 bsErr       7.9887186 wall       1.7840000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       40.193000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570417 bsErr       82.434904 wall     0.020000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059346783 bsErr      0.43689190 wall      0.63200000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349234 bsErr      0.43689089 wall       98.275000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570412 bsErr       82.434926 wall     0.021000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059351484 bsErr      0.43689281 wall      0.80600000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349234 bsErr      0.43689088 wall       42.141000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570421 bsErr       82.434900 wall     0.021000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059346951 bsErr      0.43689127 wall       1.7760000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       25.426000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570404 bsErr       82.434960 wall     0.062000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059346629 bsErr      0.43689179 wall       3.1260000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       34.112000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570419 bsErr       82.434902 wall     0.016000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       6.0000000 conv       0.0000000 status       5.0000000 critExact      -191.47679 rawStruct       32.503121 bsErr       39.088585 wall     0.053000000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       17.680000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985098 rawStruct       11.570412 bsErr       82.434912 wall     0.018000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -12.651884 rawStruct       1.9985790 bsErr       7.9883322 wall       1.6710000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689087 wall       16.717000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570415 bsErr       82.434908 wall     0.015000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059347122 bsErr      0.43688967 wall      0.87700000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       12.204000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570413 bsErr       82.434911 wall     0.014000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059346695 bsErr      0.43689178 wall      0.57000000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       13.199000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570431 bsErr       82.434901 wall     0.015000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059374577 bsErr      0.43669829 wall      0.77000000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689087 wall       14.239000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570421 bsErr       82.434901 wall     0.019000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059350539 bsErr      0.43689046 wall       1.6740000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       14.698000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570423 bsErr       82.435051 wall     0.014000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059350206 bsErr      0.43689014 wall      0.54300000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       16.201000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570419 bsErr       82.434904 wall     0.021000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059348930 bsErr      0.43689148 wall      0.73900000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       15.381000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570419 bsErr       82.434900 wall     0.016000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -12.651884 rawStruct       1.9986129 bsErr       7.9884737 wall       1.7550000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349234 bsErr      0.43689089 wall       14.216000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570416 bsErr       82.434905 wall     0.014000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       15.000000 conv       0.0000000 status       3.0000000 critExact               . rawStruct       30.865905 bsErr       63.164402 wall       0.0000000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       12.382000 
+cell m       1.0000000 seed       1.0000000 method       1.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -16.985097 rawStruct       11.570426 bsErr       82.434880 wall     0.017000000 
+cell m       1.0000000 seed       1.0000000 method       2.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -12.651884 rawStruct       1.9984520 bsErr       7.9878243 wall       1.5260000 
+cell m       1.0000000 seed       1.0000000 method       3.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.4772048 rawStruct     0.059349233 bsErr      0.43689088 wall       12.056000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       1.0000000 conv       0.0000000 status       2.0000000 critExact      -6.1205262 rawStruct      0.22333301 bsErr      0.81092068 wall     0.057000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419331 bsErr      0.76843189 wall      0.51900000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.4030000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       2.0000000 conv       0.0000000 status       2.0000000 critExact      -11.327279 rawStruct       1.9252450 bsErr       6.6314607 wall     0.057000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063416882 bsErr      0.76843006 wall      0.89000000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       5.0490000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       3.0000000 conv       0.0000000 status       2.0000000 critExact      -11.597249 rawStruct       2.2521797 bsErr       7.4655778 wall     0.059000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063417115 bsErr      0.76842253 wall      0.60600000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.8430000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -6.3655489 rawStruct      0.36182084 bsErr       1.0481973 wall     0.038000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -10.285871 rawStruct       2.3856269 bsErr       5.2641171 wall       1.5610000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.6040000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       5.0000000 conv       0.0000000 status       2.0000000 critExact      -11.573268 rawStruct       2.6204759 bsErr       7.4144738 wall     0.058000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419455 bsErr      0.76843354 wall      0.86900000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.2620000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       6.0000000 conv       0.0000000 status       2.0000000 critExact      -7.7902186 rawStruct      0.30084233 bsErr      0.74534171 wall     0.059000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       6.0000000 conv       0.0000000 status       5.0000000 critExact      -103.76503 rawStruct       9.1707741 bsErr       27.933874 wall     0.053000000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.9830000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       7.0000000 conv       0.0000000 status       2.0000000 critExact      -11.575538 rawStruct       2.2944756 bsErr       7.1021774 wall     0.055000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419933 bsErr      0.76843371 wall      0.63100000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.4230000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -11.359553 rawStruct       2.0085441 bsErr       7.4282780 wall     0.039000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063406180 bsErr      0.76841367 wall      0.52400000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.2040000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -11.359560 rawStruct       2.0085403 bsErr       7.4282907 wall     0.041000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063415586 bsErr      0.76842350 wall      0.50500000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.5090000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       10.000000 conv       0.0000000 status       2.0000000 critExact      -11.885137 rawStruct       2.1052548 bsErr       7.2377197 wall     0.054000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063410112 bsErr      0.76842153 wall      0.45500000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.5840000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       11.000000 conv       0.0000000 status       2.0000000 critExact      -13.303116 rawStruct       1.9953913 bsErr       5.6861398 wall     0.067000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419139 bsErr      0.76843345 wall      0.39800000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.4980000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       12.000000 conv       0.0000000 status       2.0000000 critExact      -11.301767 rawStruct       2.1402709 bsErr       6.3421114 wall     0.056000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419318 bsErr      0.76843332 wall      0.80500000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.2980000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -11.359554 rawStruct       2.0085445 bsErr       7.4282788 wall     0.042000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063422971 bsErr      0.76843374 wall      0.62800000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.6360000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       14.000000 conv       0.0000000 status       2.0000000 critExact      -24.764867 rawStruct       3.8528736 bsErr       12.045203 wall     0.058000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419377 bsErr      0.76843316 wall       1.1020000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.9730000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       15.000000 conv       0.0000000 status       2.0000000 critExact      -11.606054 rawStruct       2.0095967 bsErr       6.8496779 wall     0.068000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063420424 bsErr      0.76843452 wall       1.7130000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       5.1810000 
+cell m       1.0000000 seed       6.0000000 method       1.0000000 start       16.000000 conv       0.0000000 status       2.0000000 critExact      -6.1205262 rawStruct      0.22333301 bsErr      0.81092068 wall     0.056000000 
+cell m       1.0000000 seed       6.0000000 method       2.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419661 bsErr      0.76843349 wall      0.70500000 
+cell m       1.0000000 seed       6.0000000 method       3.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.4972012 rawStruct     0.063419865 bsErr      0.76843364 wall       4.5570000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       1.0000000 conv       0.0000000 status       2.0000000 critExact      -12.536947 rawStruct       2.1630924 bsErr       4.6084779 wall     0.055000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -11.344578 rawStruct       4.0194095 bsErr       19.048097 wall       2.5360000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498821 bsErr      0.66330554 wall       4.7560000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       2.0000000 conv       0.0000000 status       2.0000000 critExact      -5.7297108 rawStruct      0.16155412 bsErr      0.97565332 wall     0.064000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081499011 bsErr      0.66329979 wall      0.46400000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       4.2370000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       3.0000000 conv       0.0000000                     status       2.0000000                     critExact      -11.728521                     rawStruct       1.2798170                     bsErr       7.2441489                     wall     0.063000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498545 bsErr      0.66311562 wall       1.0840000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       3.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       5.8800000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       4.0000000 conv       0.0000000 status       2.0000000 critExact      -5.7497020 rawStruct      0.17586832 bsErr      0.96391191 wall     0.058000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -11.344578 rawStruct       4.0193908 bsErr       19.048180 wall       1.7190000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       4.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       4.4340000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       5.0000000 conv       0.0000000 status       2.0000000 critExact      -5.8040255 rawStruct      0.19703608 bsErr       1.4420005 wall     0.060000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081497833 bsErr      0.66329482 wall      0.94000000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       5.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       6.2840000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       6.0000000 conv       0.0000000 status       2.0000000 critExact      -5.7476835 rawStruct      0.17417743 bsErr      0.96535040 wall     0.055000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       6.0000000 conv       0.0000000 status       3.0000000 critExact               . rawStruct       16.887932 bsErr       16.887932 wall       0.0000000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       6.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498821 bsErr      0.66330554 wall       7.4050000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       7.0000000 conv       0.0000000 status       2.0000000 critExact      -5.7421453 rawStruct      0.17107583 bsErr      0.96776769 wall     0.054000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081500551 bsErr      0.66329759 wall      0.61300000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       7.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       6.4350000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       8.0000000 conv       0.0000000 status       2.0000000 critExact      -5.8050956 rawStruct      0.21297002 bsErr      0.93752857 wall     0.062000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -11.344578 rawStruct       4.0196737 bsErr       19.046848 wall       3.7660000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       8.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       4.6250000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       9.0000000 conv       0.0000000 status       2.0000000 critExact      -5.7666205 rawStruct      0.18450937 bsErr      0.95878962 wall     0.057000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5773606 rawStruct     0.081553777 bsErr      0.43191066 wall      0.98900000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       9.0000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       4.5980000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       10.000000 conv       0.0000000 status       2.0000000 critExact      -5.7262057 rawStruct      0.15414202 bsErr      0.98133507 wall     0.062000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498830 bsErr      0.66329768 wall       1.2330000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       10.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498821 bsErr      0.66330554 wall       4.6950000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       11.000000 conv       0.0000000 status       2.0000000 critExact      -5.7152383 rawStruct      0.15214325 bsErr      0.98387133 wall     0.055000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -11.189386 rawStruct       2.2943064 bsErr       24.700347 wall       1.7040000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       11.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       4.1870000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       12.000000 conv       0.0000000                     status       2.0000000                     critExact      -7.5752239                     rawStruct      0.67943671                     bsErr       1.8216327                     wall     0.057000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498739 bsErr      0.66330531 wall      0.51400000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       12.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498821 bsErr      0.66330554 wall       4.4720000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       13.000000 conv       0.0000000 status       2.0000000 critExact      -5.7385892 rawStruct      0.16864701 bsErr      0.96967639 wall     0.053000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772839 rawStruct     0.081500182 bsErr      0.66068778 wall       1.4330000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       13.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       6.1280000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       14.000000 conv       0.0000000 status       2.0000000 critExact      -5.7573300 rawStruct      0.17707235 bsErr       1.3232838 wall     0.066000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       14.000000 conv       0.0000000 status       5.0000000 critExact      -91.916966 rawStruct       11.073263 bsErr       14.692947 wall     0.060000000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       14.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       4.6000000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       15.000000 conv       0.0000000 status       2.0000000 critExact      -12.073395 rawStruct       5.5689080 bsErr       22.219767 wall     0.065000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081500303 bsErr      0.66331126 wall      0.65500000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       15.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       10.828000 
+cell m       1.0000000 seed       9.0000000 method       1.0000000 start       16.000000 conv       0.0000000 status       2.0000000 critExact      -5.7528919 rawStruct      0.17763077 bsErr      0.96249831 wall     0.063000000 
+cell m       1.0000000 seed       9.0000000 method       2.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -11.108556 rawStruct       12.289383 bsErr       43.230002 wall       2.6500000 
+cell m       1.0000000 seed       9.0000000 method       3.0000000 start       16.000000 conv       1.0000000 status       0.0000000 critExact      -5.5772838 rawStruct     0.081498822 bsErr      0.66330554 wall       6.1730000 
+PILOT CORE DONE: cells run       288.00000 cells skipped (already on disk)       0.0000000 
+pilot_validate.e: run complete.

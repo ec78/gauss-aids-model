@@ -1,0 +1,7 @@
+﻿PASS V6 first run writes 6 cells  rows=6; PILOT CORE DONE: cells run       6.0000000 cells skipped (already on disk)       0.0000000
+PASS V6 rerun adds no rows  rows=6; PILOT CORE DONE: cells run       0.0000000 cells skipped (already on disk)       6.0000000
+PASS V6 rerun leaves file byte-identical  
+PASS V6 resume restores 6 rows  rows=6; PILOT CORE DONE: cells run       2.0000000 cells skipped (already on disk)       4.0000000
+PASS V6 keys unique after resume  
+PASS V6 recomputed cells identical except wallTime  
+RESUME TEST: ALL 6 CHECKS PASSED

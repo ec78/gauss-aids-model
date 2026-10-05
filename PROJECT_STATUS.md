@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-01_
+_Last updated: 2026-10-05_
 
 ## Current Objective
 
@@ -137,18 +137,64 @@ Corrected numbers:
 
 Phase 1b's audit was rerun, and every numerical line is identical.
 
-**No implementation is in progress, and the 30-seed pilot has NOT been
-started.** Next step: the user reviews this hardened checkpoint and
-decides whether to commit it. After that, run the matched 30-seed pilot
-described in `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
-It should report the 200-seed benchmark's own `bS`-based recErr
-alongside structErr, because the two metrics differ.
+The hardened Phase 3 checkpoint was committed as `a776717`. The pilot
+work below is **uncommitted**.
+
+**Update (2026-10-05): the matched 30-seed pilot is complete.**
+
+The pilot covers seeds 1-30, both models, and the benchmark's 16 starts.
+It compares safe Anderson with its full portfolio against cold direct LM
+and against hardened continuation + LM. Every one of the 2,880 cells
+finished.
+
+The Stage A harness and metric gate passed before the run:
+- 27/27 Part 1 checks;
+- 58/58 analysis checks;
+- 6/6 resume checks;
+- 377/377 checks on the final 30-seed output.
+
+The pilot's Anderson arm reproduces the 200-seed benchmark's per-seed
+results on all 60 seed/model cases. Two validation-only tolerance fixes
+are recorded in `PILOT_PROTOCOL.md`; no pilot definition changed.
+
+Selected correct counts out of 30 (benchmark-compatible `bS` ≤ 1 /
+raw structural ≤ 1, excluding u):
+
+| | Anderson | cold LM | continuation |
+|---|---|---|---|
+| AIDS | 19 / 22 | 27 / 30 | 26 / 30 |
+| QUAIDS | 10 / 13 | 23 / 29 | 23 / 29 |
+
+What the results show:
+- **Direct LM is a genuine solver improvement over Anderson.** The
+  selected and oracle results both improve.
+- **Continuation ties cold LM at 16 starts.** It is more robust per start
+  (QUAIDS Stone-only raw 27 vs 23; 476/480 vs 379/480 converged) at about
+  12× the wall time (QUAIDS median 98 s vs 8 s per seed).
+- **Solution selection is not the bottleneck.** Selected and oracle agree
+  on 178 of 180 cases.
+- **Most remaining `bS` failures are right-basin optima.** They fail on
+  the nuisance u row, or because `quaidsFit()`'s symmetry projection is
+  applied at non-fixed-point endpoints.
+- **The genuine wrong-basin cases are complementary.** On QUAIDS seed 5
+  continuation fails; on seed 17 cold LM fails.
+
+**Recommendation:**
+- Use a model-specific hybrid: cold LM for AIDS, and continuation (or a
+  cold LM plus continuation pool) for QUAIDS.
+- Decide the direct-endpoint correctness metric before any 200-seed run.
+  The preferred option is to impose symmetry inside the direct
+  objective.
+- Do not run 200 seeds yet.
+
+Full account: `dev/experiments/convergence-anderson/SUMMARY.md`, section
+"Matched 30-seed pilot". Next entry point:
+`dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
 
 Limitations:
-- Only one seed per model was tested.
-- The driver's step-halving and minimum-step paths were never triggered
-  on real data.
-- Safe Anderson ran single-start only.
+- 30 seeds; no population-wide claim.
+- The continuation vs cold-LM differences are 1-4 seeds.
+- The post-hoc pooling result is exploratory.
 
 ## Completed Work
 
@@ -984,18 +1030,19 @@ Limitations:
 convergence correctness for iterated AIDS/QUAIDS.** This is a recommendation,
 not active implementation or approved production scope.
 
-1. Define a direct concentrated residual/GMM objective and implement a
-   small LM/Gauss-Newton or `optmt`/`cmlmt` prototype in
-   `dev/experiments/convergence-anderson/`. Validate objective and
-   parameter recovery on a noiseless known-truth fixture before any
-   Monte Carlo sweep.
-2. Run a 30-seed matched pilot comparing safe Anderson, the direct
-   optimizer, and a hybrid (fast Anderson candidate followed by direct
-   refinement/fallback). Report `recErr <= .5 / 1 / 2 / 5` sensitivity,
-   wrong and nonconverged counts, objective evaluations, and wall-clock
-   time. Only
-   expand to 200 seeds if the pilot improves correctness rather than just
-   `converged==1`.
+1. Done: the direct objective and its LM solver were defined and
+   validated (Phases 1, 1b, 3), and continuation was added (Phase 3 and
+   its hardening).
+2. Done (2026-10-05): the matched 30-seed pilot comparing safe Anderson,
+   cold LM and continuation. See the Current Objective update above.
+
+   **Next:**
+   - Fix the direct-endpoint correctness metric. Preferably impose
+     symmetry inside the direct objective, so `bS` needs no post-hoc
+     projection.
+   - Then prespecify the model-specific hybrid: cold LM for AIDS;
+     continuation, or a cold LM plus continuation pool, for QUAIDS.
+   - Only then run it on 200 seeds.
 3. Add diagnostics usable without synthetic truth: fixed-point residual,
    multi-start endpoint agreement, objective gaps, Jacobian/Hessian rank
    and conditioning, theory restrictions, and training-vs-held-out fit.
@@ -1015,6 +1062,15 @@ not active implementation or approved production scope.
 
 ## Handoff Notes
 
+- **Current state (2026-10-05):** `master` is at `a776717`. The working
+  tree contains the uncommitted matched-pilot work:
+  - only new files under `dev/experiments/convergence-anderson/`, plus
+    edits to that directory's `SUMMARY.md` and `CLAUDE_HANDOFF.md`;
+  - this file.
+
+  No shipped file changed. The user has not yet approved a commit. Next
+  clean-session entry point:
+  `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
 - **Repository state before this status-only sync:** `master` and
   `origin/master` both pointed to `7e98720`, the complete
   convergence-Anderson research commit; the only working-tree change was

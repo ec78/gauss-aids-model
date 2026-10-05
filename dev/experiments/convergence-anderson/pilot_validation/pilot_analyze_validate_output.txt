@@ -1,0 +1,65 @@
+PASS V7 keys unique  288 rows
+PASS V7 complete grid  288 of 288
+PASS V7 counter column 'covInvFail' present and non-missing
+PASS V7 counter column 'stepInvFail' present and non-missing
+PASS V7 counter column 'infeasTrial' present and non-missing
+PASS V7 counter column 'rhoReject' present and non-missing
+PASS V7 counter column 'wallTime' present and non-missing
+PASS V7 counter column 'iterations' present and non-missing
+PASS V7 counter column 'status' present and non-missing
+PASS V7 continuation column 'cStage0Ok' present and non-missing
+PASS V7 continuation column 'cStepReductions' present and non-missing
+PASS V7 continuation column 'cMinStepExhausted' present and non-missing
+PASS V7 continuation column 'cFailRc2' present and non-missing
+PASS V7 continuation column 'cFailRc3' present and non-missing
+PASS V7 continuation column 'cFailRc4' present and non-missing
+PASS V7 continuation column 'cFailRc5' present and non-missing
+PASS V7 continuation column 'cFinalGnorm' present and non-missing
+PASS V4 cold LM: critExact == returned objective  max |diff| 0
+PASS V4 continuation (reached 1): critExact == returned objective  max |diff| 0
+PASS V4 Anderson converged: |critExact - qOut.homogCrit| small (<1e-2)  max 1.66e-05, median 2.77e-07
+INFO V1 Anderson converged endpoints: max|bS(b,b) - qOut.bS| median 2.97e-06, 90% 0.000293, max 0.000879; max |bsHelperErr - bsErr| 0.000879
+PASS V3b AIDS seed 1 converged starts  16 vs 16
+PASS V3b AIDS seed 1 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 1 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 1 selected recErr  0.66749815 vs 0.66749815
+PASS V3b AIDS seed 1 oracle recErr  0.66749815 vs 0.66749815
+PASS V3b AIDS seed 1 truth criterion  -5.4870216 vs -5.4870216 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 1: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 6 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b AIDS seed 9 converged starts  16 vs 16
+PASS V3b AIDS seed 9 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 9 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 9 selected recErr  0.75866056 vs 0.75866056
+PASS V3b AIDS seed 9 oracle recErr  0.75864603 vs 0.75864603
+PASS V3b AIDS seed 9 truth criterion  -5.5976587 vs -5.5976587 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 9: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 1 converged starts  16 vs 16
+PASS V3b QUAIDS seed 1 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 1 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 1 selected recErr  82.434912 vs 82.434912
+PASS V3b QUAIDS seed 1 oracle recErr  82.434821 vs 82.434821
+PASS V3b QUAIDS seed 1 truth criterion  -5.4870216 vs -5.4870216 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 1: exact-objective selection picks start 12 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 6 converged starts  4 vs 4
+PASS V3b QUAIDS seed 6 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 6 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 6 selected recErr  1.0481973 vs 1.0481973
+PASS V3b QUAIDS seed 6 oracle recErr  1.0481973 vs 1.0481973
+PASS V3b QUAIDS seed 6 truth criterion  -5.5079982 vs -5.5079982 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 6: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 9 no converged start (benchmark: none)  pilot nConv 0
+PASS V3c smoke gate AIDS seed 6 cold LM start 1  crit -5.4987359 vs -5.4987359; structErr 0.058349684 vs 0.058349684; iter 4 vs 4; rejected 0 vs 0
+PASS V3c smoke gate AIDS seed 6 continuation start 1  crit -5.4987232 vs -5.4987232; structErr 0.058367908 vs 0.058367908; iter 33 vs 33; rejected 0 vs 0
+PASS V3c smoke gate QUAIDS seed 9 cold LM start 1  crit -11.344578 vs -11.344578; structErr 4.0194095 vs 4.0194095; iter 44 vs 44; rejected 8 vs 8
+PASS V3c smoke gate QUAIDS seed 9 continuation start 1  crit -5.5772838 vs -5.5772838; structErr 0.081498821 vs 0.081498821; iter 82 vs 82; rejected 8 vs 8
+PASS V5 largest critExact selected (-5.47 over -6.0, -7.84)
+PASS V5 sign reversal would pick the worst basin; rule does not
+PASS V5 non-converged better objective excluded
+PASS V5 tie -> lowest start
+PASS V5 no converged start -> never (None)
+PASS V5 NaN objective skipped
+PASS V5 oracle smallest error among converged
+PASS V5 basin dedup leader clustering (0,.04 | .06 | 1,1.03)
+
+VALIDATION: ALL 58 CHECKS PASSED

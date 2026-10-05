@@ -1,0 +1,318 @@
+/*
+** pilot_harness_core.src
+**
+** EXPERIMENT ONLY. Top-level code (no procs) for the matched pilot. It is
+** #included by an entry script (pilot_validate.e, pilot_run_m0.e,
+** pilot_run_m1.e), because tgauss has no way to pass job parameters to a
+** script. The entry script sets:
+**   pilotModels   column vector of model flags (0 AIDS, 1 QUAIDS)
+**   pilotSeeds    column vector of DGP seeds
+**   pilotStarts   column vector of start-recipe indices (subset of 1..16)
+**   pilotMethods  column vector of methods (1 Anderson, 2 cold LM,
+**                 3 continuation+LM)
+**   pilotOutDir   output directory (must already exist)
+**   pilotVerbose  1 prints continuation stages
+**
+** One CELL = (model, seed, method, start). Each finished cell is
+** appended immediately as one CSV row to <pilotOutDir>/cells_m<model>.csv
+** (no header; the column names are in <pilotOutDir>/columns.txt). On
+** start-up the existing file is read, and any cell whose
+** (seed, method, start) key is already present is skipped, so an
+** interrupted run resumes without recomputing or duplicating a finished
+** cell. Nothing in a row depends on other cells, so the order in which
+** cells finish does not matter.
+**
+** Frozen settings (see PILOT_PROTOCOL.md): tobs=3000; the 200-seed
+** benchmark's 16 start recipes, RNG seed and Anderson settings; direct
+** LM maxIter 500, gradTol 1e-3, FD step 1e-6; continuation step .25,
+** minStep .01, 500 iterations per stage, stage zero ON.
+*/
+
+pilotTobs = 3000;
+pilotNumStarts = 16;
+pilotAnDepth = 8;
+pilotRankTol = 1e-10;
+pilotResidualGrowth = 10;
+pilotStepFactor = 10;
+pilotLMMaxIter = 500;
+pilotGradTol = 1e-3;
+pilotFdStep = 1e-6;
+pilotStep0 = .25;
+pilotMinStep = .01;
+
+pilotColNames = "model" $| "seed" $| "method" $| "start" $| "conv" $|
+    "status" $| "exactFeasible" $| "critExact" $| "critMethod" $|
+    "critTrue" $| "rawStructErr" $| "rawLambdaErr" $| "rawUErr" $|
+    "rawOverallErr" $| "bsErr" $| "bsErrExclU" $| "bsOk" $|
+    "bsSymValid" $| "bsHelperDiff" $| "bsHelperErr" $| "iterations" $|
+    "rejectedSteps" $| "approxEvals" $| "gnorm" $| "wallTime" $|
+    "andFinalErr" $| "covInvFail" $| "stepInvFail" $| "infeasTrial" $|
+    "rhoReject" $| "lmAccepted" $| "lmFinalLambda" $|
+    "cReached" $| "cStage0Ok" $| "cStagesAttempted" $|
+    "cStagesAccepted" $| "cTotalIter" $| "cTotalRejected" $|
+    "cAnyStageFailed" $| "cFailRc3" $| "cFailRc5" $| "cFailRc2" $|
+    "cFailRc4" $| "cStepReductions" $| "cMinStepExhausted" $|
+    "cAllAccConverged" $| "cAllAccFeasible" $| "cCovInvFail" $|
+    "cStepInvFail" $| "cInfeasTrial" $| "cRhoReject" $| "cFinalStep" $|
+    "cFinalGnorm" $| "cLastHomotopyTried" $| "finalHomotopy" $|
+    "startRawStructErr" $| "ng" $| "n1";
+pilotNMeta = rows(pilotColNames);
+
+fhCols = fopen(pilotOutDir $+ "/columns.txt", "w");
+call fputs(fhCols, strjoin(pilotColNames', ",") $+
+    ",raw[ng*n1 vec(bRaw[.,1:n1]) column-major],bS[(ng+1)*n vec(bS) column-major]\n");
+call close(fhCols);
+
+struct quaidsControl pCtl;
+struct quaidsControl pCtlStone;
+struct quaidsControl pCtlAnd;
+struct quaidsOut pOutStone;
+struct quaidsOut pOutAnd;
+
+pilotCellsRun = 0;
+pilotCellsSkipped = 0;
+
+pmi = 1;
+do while pmi <= rows(pilotModels);
+    pModel = pilotModels[pmi];
+    pCellFile = pilotOutDir $+ "/cells_m" $+ ftos(pModel, "%*.*lf", 1, 0) $+ ".csv";
+
+    /* ---- resume: keys of cells already on disk ---- */
+    if filesa(pCellFile) $/= "";
+        pDone = csvReadM(pCellFile, 1);
+        pDoneKeys = pDone[., 2:4];
+        clear pDone;
+        print "RESUME: " $+ pCellFile $+ " has" rows(pDoneKeys) "finished cells.";
+    else;
+        pDoneKeys = -ones(1, 3);
+    endif;
+
+    psi = 1;
+    do while psi <= rows(pilotSeeds);
+        pSeed = pilotSeeds[psi];
+
+        /* skip the seed's setup entirely if every requested cell is done */
+        pTodo = 0;
+        pmj = 1;
+        do while pmj <= rows(pilotMethods);
+            pti = 1;
+            do while pti <= rows(pilotStarts);
+                pKey = pSeed~pilotMethods[pmj]~pilotStarts[pti];
+                if sumc(sumc((pDoneKeys .== pKey)') .== 3) == 0;
+                    pTodo = pTodo+1;
+                endif;
+                pti = pti+1;
+            endo;
+            pmj = pmj+1;
+        endo;
+        if pTodo == 0;
+            pilotCellsSkipped = pilotCellsSkipped + rows(pilotMethods)*rows(pilotStarts);
+            psi = psi+1;
+            continue;
+        endif;
+
+        /* ---- seed setup: identical to the 200-seed benchmark ---- */
+        pCtl = quaidsControlCreate;
+        pCtl.linear = 1-pModel;
+        pCtl.maxiter = 100;
+        pCtl.err = .0001;
+        pCtl.homogenous = 1;
+
+        { pw, pIntcpt, pPrices, pTotexp, pInstr, pTrue } =
+            _quaidsSyntheticDGP(pilotTobs, pSeed, pModel, 1);
+
+        pCtlStone = pCtl;
+        pCtlStone.maxiter = 1;
+        pOutStone = quaidsFit(pw, pIntcpt, pPrices, pTotexp, pInstr, pCtlStone);
+        pbStone = pOutStone.homogB;
+        pIntFull = pOutStone.intcptFull;
+        pNIntFull = cols(pIntFull);
+        pNGoods = cols(pPrices);
+        pN1 = pNGoods-1;
+        pNg = pOutStone.ng;
+        pU = pOutStone.u;
+        pLinear = pCtl.linear;
+        if pNg /= pNIntFull+pN1+1+(1-pLinear)+1;
+            print "PILOT LAYOUT MISMATCH: ng" pNg "-- STOP.";
+            end;
+        endif;
+        pTrueRaw = _directTrueRaw(pTrue, pNIntFull, pN1, pNGoods);
+        pScale = _directObjScale(pbStone, pN1);
+        pK = pNg*pN1;
+
+        { pfT, pfeasT, presT } = _directObjCoreHomotopy(
+            _directObjPack(pTrueRaw, pN1)./pScale, pw, pIntFull, pPrices,
+            pTotexp, pU, pCtl, pNg, pN1, pScale, 1);
+        if pfeasT;
+            pCritTrue = -pfT;
+        else;
+            pCritTrue = miss(0, 0);
+        endif;
+
+        pStarts = _pilotAllStarts(pbStone, pNIntFull, pN1, pModel, pSeed,
+            pilotNumStarts);
+
+        pti = 1;
+        do while pti <= rows(pilotStarts);
+            pStartIdx = pilotStarts[pti];
+            pbStart = pStarts[(pStartIdx-1)*pNg+1:pStartIdx*pNg, .];
+            /* Start representation: Anderson receives the full ng x n
+               matrix bStart (as in the benchmark); the direct methods
+               receive its free parameters vec(bStart[.,1:n1]), scaled
+               by the Stone-based scale vector. Column n is not a free
+               parameter of the direct objective (see PILOT_PROTOCOL.md). */
+            pTheta0 = _directObjPack(pbStart, pN1)./pScale;
+            { pStartStruct, pd1, pd2, pd3, pd4 } =
+                _pilotErrs(pbStart, pTrueRaw, pNIntFull, pN1, pLinear);
+
+            pmj = 1;
+            do while pmj <= rows(pilotMethods);
+                pMethod = pilotMethods[pmj];
+                pKey = pSeed~pMethod~pStartIdx;
+                if sumc(sumc((pDoneKeys .== pKey)') .== 3) > 0;
+                    pilotCellsSkipped = pilotCellsSkipped+1;
+                    pmj = pmj+1;
+                    continue;
+                endif;
+
+                pMeta = miss(zeros(pilotNMeta, 1), 0);
+                pMeta[1:4] = pModel|pSeed|pMethod|pStartIdx;
+                pMeta[10] = pCritTrue;
+                pMeta[56] = pStartStruct;
+                pMeta[57] = pNg;
+                pMeta[58] = pN1;
+                pFinalHom = 1;
+
+                if pMethod == 1;
+                    /* ---- safeguarded Anderson, exactly the benchmark ---- */
+                    pCtlAnd = pCtl;
+                    pCtlAnd.b0 = pbStart;
+                    pT0 = hsec;
+                    pOutAnd = _quaidsFitAnderson(pw, pIntcpt, pPrices,
+                        pTotexp, pInstr, pCtlAnd, 0, pilotAnDepth, 1, 1,
+                        pilotRankTol, pilotResidualGrowth, pilotStepFactor);
+                    pWall = (hsec-pT0)/100;
+                    pbEnd = pOutAnd.homogB;
+                    pThetaEnd = _directObjPack(pbEnd, pN1)./pScale;
+                    pbS = pOutAnd.bS;
+                    pbsOk = 1;
+                    pSymValid = pOutAnd.symValid;
+                    { pbSH, pokH, psymH, pTbH, pcritH } = _pilotRecoverBS(pw,
+                        pIntcpt, pPrices, pTotexp, pInstr, pCtl, pbEnd, pbEnd);
+                    if pokH;
+                        pMeta[19] = maxc(maxc(abs(pbSH-pbS)));
+                        pMeta[20] = maxc(maxc(abs(pbSH-pTrue)));
+                    endif;
+                    pConvRaw = pOutAnd.converged;
+                    pMeta[6] = 2*(1-pOutAnd.converged);
+                    pMeta[9] = pOutAnd.homogCrit;
+                    pMeta[21] = pOutAnd.iterations;
+                    pMeta[23] = pOutAnd.iterations;
+                    pMeta[26] = pOutAnd.finalErr;
+
+                elseif pMethod == 2;
+                    /* ---- cold direct LM at homotopy=1 ---- */
+                    pT0 = hsec;
+                    { pThetaEnd, pfEnd, prc, pgn, pit, prej, pdiag } =
+                        _directLMHomotopyDiag(pTheta0, pw, pIntFull, pPrices,
+                        pTotexp, pU, pCtl, pNg, pN1, pScale, pilotLMMaxIter,
+                        pilotGradTol, pilotFdStep, 0, 1, 0, 0, 0);
+                    pWall = (hsec-pT0)/100;
+                    pbEnd = _directObjUnpack(pThetaEnd.*pScale, pNg, pN1);
+                    { pbS, pbsOk, pSymValid, pTbH, pcritH } = _pilotRecoverBS(pw,
+                        pIntcpt, pPrices, pTotexp, pInstr, pCtl, pbEnd, pbEnd);
+                    pConvRaw = (prc == 0);
+                    pMeta[6] = prc;
+                    pMeta[9] = -pfEnd;
+                    pMeta[21] = pit;
+                    pMeta[22] = prej;
+                    pMeta[23] = pit*(2*pK+1)+prej;
+                    pMeta[24] = pgn;
+                    pMeta[27:32] = pdiag;
+
+                else;
+                    /* ---- hardened continuation + LM (stage zero) ---- */
+                    { pThetaEnd, pfEnd, pFinalHom, pWall, pInfo } =
+                        _pilotContinuation(pTheta0, pw, pIntFull, pPrices,
+                        pTotexp, pU, pCtl, pNg, pN1, pScale, pilotLMMaxIter,
+                        pilotGradTol, pilotFdStep, pilotStep0, pilotMinStep,
+                        1, pilotVerbose);
+                    pbEnd = _directObjUnpack(pThetaEnd.*pScale, pNg, pN1);
+                    { pbS, pbsOk, pSymValid, pTbH, pcritH } = _pilotRecoverBS(pw,
+                        pIntcpt, pPrices, pTotexp, pInstr, pCtl, pbEnd, pbEnd);
+                    pConvRaw = (pInfo[1] == 1) and (pFinalHom == 1)
+                        and (pInfo[2] == 1) and (pInfo[14] == 1)
+                        and (pInfo[15] == 1);
+                    if pConvRaw;
+                        pMeta[6] = 0;
+                    elseif pInfo[2] /= 1;
+                        pMeta[6] = 1;
+                    elseif pInfo[13] == 1;
+                        pMeta[6] = 2;
+                    else;
+                        pMeta[6] = 3;
+                    endif;
+                    if scalmiss(pfEnd);
+                        pMeta[9] = miss(0, 0);
+                    else;
+                        pMeta[9] = -pfEnd;
+                    endif;
+                    pMeta[21] = pInfo[5];
+                    pMeta[22] = pInfo[6];
+                    pMeta[23] = pInfo[5]*(2*pK+1)+pInfo[6];
+                    pMeta[24] = pInfo[21];
+                    pMeta[27:30] = pInfo[16:19];
+                    pMeta[33:54] = pInfo;
+                endif;
+
+                /* ---- exact target objective (homotopy=1) at the
+                   returned endpoint, for EVERY method ---- */
+                { pfE, pfeasE, presE } = _directObjCoreHomotopy(pThetaEnd, pw,
+                    pIntFull, pPrices, pTotexp, pU, pCtl, pNg, pN1, pScale, 1);
+                pfeasE = pfeasE and not scalmiss(pfE);
+                pMeta[7] = pfeasE;
+                if pfeasE;
+                    pMeta[8] = -pfE;
+                endif;
+                pMeta[5] = pConvRaw and pfeasE;
+                pMeta[25] = pWall;
+                pMeta[55] = pFinalHom;
+
+                { pse, ple, pue, poe, ppf } = _pilotErrs(pbEnd, pTrueRaw,
+                    pNIntFull, pN1, pLinear);
+                pMeta[11:14] = pse|ple|pue|poe;
+                pMeta[17] = pbsOk;
+                pMeta[18] = pSymValid;
+                if pbsOk;
+                    pMeta[15] = maxc(maxc(abs(pbS-pTrue)));
+                    pMeta[16] = maxc(maxc(abs(pbS[1:pNg, .]-pTrue[1:pNg, .])));
+                    pbSVec = vec(pbS);
+                else;
+                    pbSVec = miss(zeros((pNg+1)*pNGoods, 1), 0);
+                endif;
+                if pMethod /= 1 and pbsOk;
+                    pMeta[19] = 0;
+                    pMeta[20] = pMeta[15];
+                endif;
+
+                call _pilotAppendRow(pCellFile,
+                    pMeta | vec(pbEnd[., 1:pN1]) | pbSVec);
+                pDoneKeys = pDoneKeys | pKey;
+                pilotCellsRun = pilotCellsRun+1;
+
+                print "cell m" pModel "seed" pSeed "method" pMethod "start"
+                    pStartIdx "conv" pMeta[5] "status" pMeta[6] "critExact"
+                    pMeta[8] "rawStruct" pMeta[11] "bsErr" pMeta[15]
+                    "wall" pWall;
+
+                pmj = pmj+1;
+            endo;
+            pti = pti+1;
+        endo;
+        psi = psi+1;
+    endo;
+    pmi = pmi+1;
+endo;
+
+print "PILOT CORE DONE: cells run" pilotCellsRun "cells skipped (already on disk)"
+    pilotCellsSkipped;

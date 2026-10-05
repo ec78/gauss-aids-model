@@ -1,0 +1,495 @@
+/*
+** pilot_lib.src
+**
+** EXPERIMENT ONLY -- shared procs for the matched 30-seed pilot
+** (pilot_harness_core.src, pilot_validate.e, pilot_run_m0.e/_m1.e).
+** Not part of the installed package; no shipped src/ file is changed.
+** Requires (before this file): src/quaids.sdf, quaidsutil.src,
+** quaidsiv.src, quaids.src, quaidsfit_anderson_prototype.src,
+** direct_objective.src.
+**
+** The .e scripts that own the reference copies of the helpers below
+** (anderson_full_multistart_benchmark.e, phase3_smoke_gate.e) cannot be
+** #included because they execute top-level code. The procs marked
+** VERBATIM are therefore copied without any change to their arithmetic,
+** under a _pilot prefix. Their equivalence is checked by
+** pilot_validate.e, not assumed:
+**   - start recipes: the pilot's Anderson portfolio must reproduce the
+**     200-seed benchmark's per-seed line (converged starts, distinct
+**     endpoints, selected start, selected/oracle recErr) on seeds
+**     1, 6 and 9;
+**   - error helper and continuation driver: the pilot's Stone-start
+**     cold-LM and continuation cells must reproduce
+**     phase3_smoke_gate_output.txt on AIDS seed 6 and QUAIDS seed 9.
+*/
+
+/* ---- VERBATIM copy of anderson_full_multistart_benchmark.e's
+   _addScaledNoise(). ---- */
+proc (1) = _pilotAddScaledNoise(block, noiseScale);
+    local blockRms, scaleFloor;
+    blockRms = sqrt(meanc(vec(block^2)));
+    scaleFloor = maxc(blockRms|0.05);
+    retp(block + noiseScale*(abs(block)+scaleFloor)
+        .*rndn(rows(block), cols(block)));
+endp;
+
+/* ---- VERBATIM copy of anderson_full_multistart_benchmark.e's
+   _benchmarkStart() (only the noise helper's name differs). ---- */
+proc (1) = _pilotBenchmarkStart(bStone, startIdx, nIntFull, nReduced, quadratic);
+    local bStart, alphaRows, priceRows, betaRow, quadRow, coreLast;
+
+    bStart = bStone;
+    alphaRows = seqa(1, 1, nIntFull);
+    priceRows = seqa(nIntFull+1, 1, nReduced);
+    betaRow = nIntFull+nReduced+1;
+    quadRow = betaRow+1;
+    coreLast = betaRow+quadratic;
+
+    if startIdx == 1;
+        bStart = bStone;
+    elseif startIdx == 2;
+        bStart = bStone + .3*abs(bStone).*rndn(rows(bStone), cols(bStone));
+    elseif startIdx == 3;
+        bStart = bStone + .8*abs(bStone).*rndn(rows(bStone), cols(bStone));
+    elseif startIdx == 4;
+        bStart = _pilotAddScaledNoise(bStone, .1);
+    elseif startIdx == 5;
+        bStart = _pilotAddScaledNoise(bStone, .3);
+    elseif startIdx == 6;
+        bStart = _pilotAddScaledNoise(bStone, .6);
+    elseif startIdx == 7;
+        bStart[alphaRows, .] = _pilotAddScaledNoise(bStone[alphaRows, .], .3);
+    elseif startIdx == 8;
+        bStart[alphaRows, .] = _pilotAddScaledNoise(bStone[alphaRows, .], .8);
+    elseif startIdx == 9;
+        bStart[priceRows, .] = _pilotAddScaledNoise(bStone[priceRows, .], .3);
+    elseif startIdx == 10;
+        bStart[priceRows, .] = _pilotAddScaledNoise(bStone[priceRows, .], .8);
+    elseif startIdx == 11;
+        bStart[priceRows, .] = -bStone[priceRows, .];
+    elseif startIdx == 12;
+        bStart[betaRow, .] = _pilotAddScaledNoise(bStone[betaRow, .], .5);
+    elseif startIdx == 13;
+        bStart[betaRow, .] = -bStone[betaRow, .];
+    elseif startIdx == 14;
+        bStart[1:coreLast, .] = _pilotAddScaledNoise(bStone[1:coreLast, .], .3);
+    elseif startIdx == 15;
+        bStart[1:coreLast, .] = _pilotAddScaledNoise(bStone[1:coreLast, .], .8);
+    else;
+        if quadratic;
+            bStart[quadRow, .] = _pilotAddScaledNoise(bStone[quadRow, .], .8);
+        else;
+            bStart[priceRows, .] = -bStone[priceRows, .];
+            bStart[betaRow, .] = -bStone[betaRow, .];
+        endif;
+    endif;
+
+    retp(bStart);
+endp;
+
+/* All 16 benchmark starts for one seed, drawn in the benchmark's own
+   order from the benchmark's own seed (rndseed 100000*modelFlag +
+   100*seed, set immediately after the Stone fit). The benchmark drew
+   each start just before fitting it; the fits consume no random
+   numbers, so drawing all 16 first gives the same starts. That claim is
+   validated, not assumed (see this file's header). Returned as a
+   stacked (16*ng) x n matrix; start s is rows (s-1)*ng+1 : s*ng. */
+proc (1) = _pilotAllStarts(bStone, nIntFull, nReduced, modelFlag, seed, numStarts);
+    local starts, s;
+    rndseed 100000*modelFlag + 100*seed;
+    starts = {};
+    s = 1;
+    do while s <= numStarts;
+        starts = starts | _pilotBenchmarkStart(bStone, s, nIntFull, nReduced, modelFlag);
+        s = s+1;
+    endo;
+    retp(starts);
+endp;
+
+/* ---- VERBATIM copy of phase3_smoke_gate.e's _phase3Errs() (the
+   single validated raw-error helper; layout
+   alpha (nIntFull) | gamma (n1) | beta | [lambda] | u (1 row)).
+   Returns structural (all rows except u; includes lambda for QUAIDS),
+   lambda (-1 when linear), u, overall, and the pre-fix slice. ---- */
+proc (5) = _pilotErrs(bHat, bTrue, nIntFull, n1, linear);
+    local nStruct, bH, bT, structErr, lamErr, uErr, overallErr, preFixErr,
+        preFixRows;
+    nStruct = nIntFull+n1+1+(1-linear);
+    bH = bHat[., 1:n1];
+    bT = bTrue[., 1:n1];
+    if rows(bH) /= nStruct+1;
+        print "  LAYOUT ERROR: rows(bHat)=" rows(bH) " expected" nStruct+1;
+        end;
+    endif;
+    structErr = maxc(maxc(abs(bH[1:nStruct, .] - bT[1:nStruct, .])));
+    if linear;
+        lamErr = -1;
+    else;
+        lamErr = maxc(maxc(abs(bH[nStruct, .] - bT[nStruct, .])));
+    endif;
+    uErr = maxc(maxc(abs(bH[nStruct+1, .] - bT[nStruct+1, .])));
+    overallErr = maxc(maxc(abs(bH - bT)));
+    preFixRows = nIntFull+n1+2-(1-linear);
+    preFixErr = maxc(maxc(abs(bH[1:preFixRows, .] - bT[1:preFixRows, .])));
+    retp(structErr, lamErr, uErr, overallErr, preFixErr);
+endp;
+
+/* ---- Copy of phase3_smoke_gate.e's _phase3Continuation(). The
+   control flow and arithmetic are unchanged. Differences:
+     (1) stage printing is behind a `verbose` flag;
+     (2) info grows from 20 to 22 entries:
+           21 gnorm returned by the last ACCEPTED stage (-1 if none)
+           22 homotopy level of the last ATTEMPTED stage
+   so per-cell output can record them. Entries 1-20 keep the smoke
+   gate's meanings (see phase3_smoke_gate.e). ---- */
+proc (5) = _pilotContinuation(theta0, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, maxIterPerStage, gradTol, h, step0, minStep, doStageZero, verbose);
+    local homotopy, step, theta, info, fFinal, tStart, wallTime, stopNow,
+        firstStage, homotopyTry, thetaTry, fTry, retcodeTry, gnormTry,
+        iterTry, rejTry, diagTry, fChk, feasChk, residChk, feasOk;
+
+    tStart = hsec;
+    homotopy = 0;
+    step = step0;
+    theta = theta0;
+    fFinal = miss(0, 0);
+    info = zeros(22, 1);
+    info[2] = -1;
+    info[14] = 1;
+    info[15] = 1;
+    info[21] = -1;
+    firstStage = doStageZero;
+    stopNow = 0;
+
+    do while not stopNow;
+        if firstStage;
+            homotopyTry = 0;
+        else;
+            if homotopy >= 1;
+                break;
+            endif;
+            if step < minStep;
+                info[13] = 1;
+                if verbose;
+                    print "    continuation STOPPED: step" step "< minStep" minStep
+                        "at homotopy" homotopy "-- reported as NOT reaching 1.";
+                endif;
+                break;
+            endif;
+            homotopyTry = homotopy+step;
+            if homotopyTry >= 1-1e-12;
+                homotopyTry = 1;
+            endif;
+        endif;
+
+        { thetaTry, fTry, retcodeTry, gnormTry, iterTry, rejTry, diagTry } =
+            _directLMHomotopyDiag(theta, w, intcptFull, prices, totexp, u,
+            aCtl, ng, n1, scaleVec, maxIterPerStage, gradTol, h, 0,
+            homotopyTry, 0, 0, 0);
+        { fChk, feasChk, residChk } = _directObjCoreHomotopy(thetaTry, w,
+            intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec,
+            homotopyTry);
+        feasOk = feasChk and not scalmiss(fChk);
+
+        info[3] = info[3]+1;
+        info[5] = info[5]+iterTry;
+        info[6] = info[6]+rejTry;
+        info[16:19] = info[16:19]+diagTry[1:4];
+        info[22] = homotopyTry;
+
+        if verbose;
+            print "    stage" info[3] "homotopy->" homotopyTry "retcode" retcodeTry
+                "feasible" feasOk "f" fTry "gnorm" gnormTry "iter" iterTry
+                "rejected" rejTry;
+        endif;
+
+        if retcodeTry == 0;
+            theta = thetaTry;
+            fFinal = fTry;
+            homotopy = homotopyTry;
+            info[4] = info[4]+1;
+            info[15] = info[15] and feasOk;
+            info[21] = gnormTry;
+            if firstStage;
+                info[2] = 1;
+            endif;
+            if homotopy >= 1;
+                info[1] = 1;
+            endif;
+        else;
+            info[7] = 1;
+            if retcodeTry == 3;
+                info[8] = info[8]+1;
+            elseif retcodeTry == 5;
+                info[9] = info[9]+1;
+            elseif retcodeTry == 2;
+                info[10] = info[10]+1;
+            elseif retcodeTry == 4;
+                info[11] = info[11]+1;
+            endif;
+            if firstStage;
+                info[2] = 0;
+                stopNow = 1;
+            else;
+                step = step/2;
+                info[12] = info[12]+1;
+            endif;
+        endif;
+        firstStage = 0;
+    endo;
+
+    if info[4] == 0;
+        info[14] = 0;
+        info[15] = 0;
+    endif;
+    info[20] = step;
+    wallTime = (hsec-tStart)/100;
+    retp(theta, fFinal, homotopy, wallTime, info);
+endp;
+
+/*
+** _pilotRecoverBS: maps a raw reduced coefficient matrix to the full
+** recovered structural matrix bS, using quaidsFit()'s own
+** post-estimation chain (delta-method variance -> symmetry-constrained
+** minimum-distance projection -> absolute-price recovery), copied from
+** quaidsfit_anderson_prototype.src (whose mDepth=0 path matches
+** quaidsFit()). Homogeneous, unweighted case only, which is all the
+** pilot uses.
+**
+** In quaidsFit() the final iterate has two roles that can differ by one
+** iteration: the INDEX matrix (bIdx) builds the price index lx and, for
+** QUAIDS, the deflator b_p and lx2; the COEFFICIENT matrix (bCoef) is
+** the GLS solve at that index. Both are inputs here so that the copy
+** can be checked EXACTLY against quaidsFit()/_quaidsFitAnderson()
+** output (pilot_validate.e, check V1). For a direct-LM or continuation
+** endpoint bD, the pilot uses bIdx = bCoef = bD: "the bS quaidsFit()
+** would report if its final iterate were bD".
+**
+** One generalization, needed for bCoef that is not the GLS solve at
+** bIdx: S uses the actual residual cross-product
+** ww - b'gw - gw'b + b'gg*b, which equals quaidsFit()'s ww - b'gw when
+** gg*b = gw (V1 checks the two agree to rounding).
+**
+** Only columns 1:n-1 of bIdx/bCoef are read; column n is not used.
+**
+** Returns:
+**   bS       (ng+1) x n recovered structural matrix (missing if !ok)
+**   ok       1 if J and the variance chain inverted; 0 otherwise
+**   symValid 1 if the symmetry projection's invpd() calls succeeded
+**            (0 = quaidsFit()'s own fallback: unprojected b)
+**   Tb       ng x n GLS solve at bIdx (the next fixed-point iterate)
+**   crit     -ln(det(S[1:n-1,1:n-1])) at (bIdx, bCoef)
+*/
+proc (5) = _pilotRecoverBS(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, bIdx, bCoef);
+    local nobs, n, n1, nint, isWeighted, weight, rawWeightSum, effN, rootWt,
+        u, zzi, m1, nz, nu, enam, bIV, stderr, t, pvt, cor, tv, df, rsq,
+        rbsq, sse, stdest, fstat, pvf, stone, lx, endog, nendog, m, ng, gg,
+        gw, Tb, alpha, gama, a_p, _beta, b_p, lx2, b, J, nr, mi, ma, ii, g,
+        y1, y2, lambda, iw, ww, S, D, iu, R, O, Sgma, Ji, v, ic, ig, R1, k,
+        X, vi, xvix, oldtrp, b_s, v_s, ok, symValid, crit, i;
+
+    nobs = rows(w);
+    n = cols(prices);
+    n1 = n - 1;
+    ok = 1;
+    symValid = 1;
+
+    { isWeighted, weight, rawWeightSum, effN } =
+        _quaidsNormalizeWeight(0, nobs, "_pilotRecoverBS");
+    rootWt = sqrt(weight);
+
+    if intcpt == 0;
+        intcpt = ones(nobs, 1);
+        nint = 0;
+    else;
+        nint = cols(intcpt);
+        intcpt = ones(nobs, 1)~intcpt;
+    endif;
+
+    { prices, u, zzi, m1, nz, nu, enam,
+        bIV, stderr, t, pvt, cor, tv, df, rsq, rbsq, sse, stdest, fstat, pvf }
+        = _quaidsIVFirstStage(intcpt, prices, instr, totexp, n, weight);
+
+    /* Starting moment matrix exactly as quaidsFit() builds it (Stone
+       index); the endog rows/cols are then overwritten below exactly as
+       one pass of quaidsFit()'s iteration loop does. */
+    stone = (prices[., 1:n-1] + prices[., n])~prices[., n];
+    stone = stone*meanc(w);
+    lx = totexp - stone;
+    if not aCtl.linear;
+        endog = lx~lx^2;
+    else;
+        endog = lx;
+    endif;
+    nendog = cols(endog);
+    m = moment(rootWt.*(intcpt~prices[., 1:n1]~endog~u~w), 0);
+    ng = 1+nint+n1+nendog+nu;
+
+    /* index from bIdx (copy of the loop body) */
+    alpha = intcpt*bIdx[1:1+nint, 1:n-1];
+    gama = bIdx[1+nint+1:1+nint+n1, 1:n-1] | zeros(1, n-1);
+    a_p = aCtl.alpha0 + prices[., n]
+        + sumc((prices[., 1:n-1].*alpha)')
+        + .5*sumc(((prices*gama).*prices[., 1:n-1])');
+    lx = totexp - a_p;
+    if not aCtl.linear;
+        _beta = bIdx[1+nint+n1+1, 1:n-1];
+        b_p = exp(prices[., 1:n-1]*_beta');
+        lx2 = (lx^2)./b_p;
+        endog = lx~lx2;
+    else;
+        endog = lx;
+    endif;
+    m[1+nint+n1+1:1+nint+n1+nendog, .]
+        = endog'(weight.*(intcpt~prices[., 1:n1]~endog~u~w));
+    m[., 1+nint+n1+1:1+nint+n1+nendog]
+        = m[1+nint+n1+1:1+nint+n1+nendog, .]';
+    gg = m[1:ng, 1:ng];
+    gw = m[1:ng, ng+1:ng+n];
+    Tb = solpd(gw, gg);
+
+    b = bCoef;
+
+    /* VARIANCE (copy of the maxiter > 1 branch) */
+    J = eye(n-1).*.gg;
+    _beta = b[1+nint+n1+1, 1:n-1];
+    nr = 500;
+    mi = 1;
+    ma = minc(nr|nobs);
+    do while mi<=nobs;
+        ii = seqa(mi, 1, ma-mi+1);
+        g = weight[ii].*(intcpt[ii, .]~prices[ii, 1:n1]~endog[ii, .]~u[ii, .]);
+        y1 = intcpt[ii, .]~.5*prices[ii, 1:n1];
+        y2 = prices[ii, 1:n-1]*~(y1~zeros(ma-mi+1, nendog+nu));
+        J = J - _beta'.*.(g'y2);
+        if not aCtl.linear;
+            lambda = b[1+nint+n1+2, 1:n-1];
+            y2 = prices[ii, 1:n-1]*~( 2*y1.*lx[ii, .]./b_p[ii, .] ~ lx2[ii, .] ~ zeros(ma-mi+1, 1+nu) );
+            J = J - lambda'.*.( g'y2);
+        endif;
+        mi = ma+1;
+        ma = minc(ma+nr|nobs);
+    endo;
+
+    iw = seqa(ng+1, 1, n);
+    ww = m[iw, iw];
+    sse = ww - b'gw - gw'b + b'gg*b;
+    S = sse/nobs;
+    crit = -ln(det(S[1:n-1, 1:n-1]));
+    D = m1[1:1+nint+n1, 1:nz]
+        |endog'(weight.*(intcpt~prices~instr));
+    D = D|zeros(nu, nz);
+    iu = seqa(ng-nu+1, 1, nu);
+    R = b[iu, 1:n-1];
+    O = R'm[iu, iu]/nobs*R;
+    Sgma = S[1:n-1, 1:n-1].*.gg + O.*.(D*zzi*D');
+
+    Ji = miss(0, 0);
+    oldtrp = trapchk(1);
+    trap 1,1;
+    Ji = inv(J);
+    trap oldtrp,1;
+    if rows(Ji) /= rows(J) or cols(Ji) /= cols(J);
+        ok = 0;
+    elseif ismiss(Ji);
+        ok = 0;
+    endif;
+    if not ok;
+        retp(miss(0, 0), 0, 0, Tb, crit);
+    endif;
+    v = Ji'Sgma*Ji;
+
+    ii = -ones(1, n-1).*.eye(ng);
+    v = (v|ii*v)~(v*ii'|ii*v*ii');
+
+    /* SYMMETRY-CONSTRAINED ESTIMATION (copy) */
+    ic = seqa(1, 1, 1+nint)|seqa(1+nint+n1+1, 1, nendog+nu);
+    ig = seqa(1+nint+1, 1, n1);
+    ic = vec(ic+seqa(0, ng, n1)');
+    ig = vec(ig+seqa(0, ng, n1)');
+    i = ic|ig;
+    i = sortind(i);
+
+    R1 = design(vec(xpnd(seqa(1, 1, n1*(n1+1)/2))));
+    k = (ng-n1)*n1;
+    X = ( eye(k)          ~zeros(k, cols(R1)) )|
+        ( zeros(rows(R1), k)~     R1           );
+    X = X[i, .];
+
+    xvix = 0;
+    vi = miss(0, 0);
+    oldtrp = trapchk(1);
+    trap 1,1;
+    vi = invpd(v[1:n1*ng, 1:n1*ng]);
+    trap oldtrp,1;
+
+    if not scalmiss(vi);
+        oldtrp = trapchk(1);
+        trap 1,1;
+        xvix = invpd(X'vi*X);
+        trap oldtrp,1;
+    endif;
+
+    if scalmiss(vi) or scalmiss(xvix);
+        symValid = 0;
+        b_s = vec(b[., 1:n1]);
+        v_s = v[1:n1*ng, 1:n1*ng];
+    else;
+        v_s = X*xvix*X';
+        b_s = v_s*vi*vec(b[., 1:n1]);
+    endif;
+
+    ii = -ones(1, n-1).*.eye(ng);
+    b_s = b_s|ii*b_s;
+    b_s = reshape(b_s, n, ng)';
+    b_s[1, n] = 1 + b_s[1, n];
+
+    /* RECOVERS ABSOLUTE PRICE EFFECTS FROM RELATIVE (homogeneous branch,
+       copy; only b_s is carried) */
+    ic = seqa(1, 1, 1+nint)|(1+nint+n1+seqa(1, 1, 2-aCtl.linear+nu));
+    ig = seqa(1+nint+1, 1, n1);
+    ic = vec(ic+seqa(0, ng, n)');
+    ig = vec(ig+seqa(0, ng, n)');
+    i = ic|ig;
+    i = sortind(i);
+
+    R1 =  eye(n1) |
+        -ones(1, n1);
+    R1 = eye(n).*.R1;
+
+    k = (ng-n1)*n;
+    X = ( eye(k)          ~zeros(k, cols(R1)) )|
+        ( zeros(rows(R1), k)~     R1           );
+    X = X[., i];
+
+    ic = seqa(1, 1, 1+nint)|(1+nint+n+seqa(1, 1, 2-aCtl.linear+nu));
+    ig = seqa(1+nint+1, 1, n);
+    ic = vec(ic+seqa(0, ng+1, n)');
+    ig = vec(ig+seqa(0, ng+1, n)');
+    i = ic|ig;
+    i = sortind(i);
+    X = X[i, .];
+
+    b_s = X*vec(b_s);
+    b_s = reshape(b_s, n, ng+1)';
+
+    retp(b_s, ok, symValid, Tb, crit);
+endp;
+
+/* One numeric row -> one CSV line, full double precision (%.17g);
+   missing values are written as "." and read back as missing by
+   csvReadM(). */
+proc (1) = _pilotRowToCsv(x);
+    retp(strjoin(sprintf("%.17g", vec(x))', ","));
+endp;
+
+proc (1) = _pilotAppendRow(fname, x);
+    local fh;
+    fh = fopen(fname, "a");
+    if fh == -1;
+        print "PILOT I/O ERROR: cannot open" fname "for append -- STOP.";
+        end;
+    endif;
+    call fputs(fh, _pilotRowToCsv(x) $+ "\n");
+    call close(fh);
+    retp(1);
+endp;

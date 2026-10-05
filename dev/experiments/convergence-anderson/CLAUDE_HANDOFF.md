@@ -1,141 +1,181 @@
-# Claude handoff: Phase 3 hardened -- strengthened smoke gate passed; stopped before the 30-seed pilot
+# Claude handoff: matched 30-seed pilot complete (2026-10-05); next step is a metric decision, not 200 seeds
 
 Last updated: 2026-10-05
 
 ## Start here
 
 This directory holds experiment-only research for `gauss-aids-model`.
-Nothing in it is part of the installed package or the CI surface, and
-no shipped file under `src/` was changed.
+Nothing in it is part of the installed package or the CI surface. No
+shipped file under `src/` was changed, and `direct_objective.src` was not
+changed by the pilot either.
 
 1. Read the repository-root `CLAUDE.md`.
-2. Read `SUMMARY.md`, in particular its "Phase 3 hardening (2026-10-05)"
-   section. That section supersedes several numbers and claims in the
-   "Phase 3" section above it.
+2. Read `SUMMARY.md`, section "Matched 30-seed pilot (2026-10-05)". It
+   is the latest result. Read the "Phase 3 hardening" section for the
+   solver details.
+3. Read `PILOT_PROTOCOL.md` for the frozen definitions and the recorded
+   deviations.
 
-Never commit or push without the user's explicit approval. None of
-Phase 1, 1b, 3 or 3-hardening is committed yet. The user said they will
-review this hardened checkpoint and authorize a commit before the
-30-seed pilot begins.
+Never commit or push without the user's explicit approval. The Phase 3
+hardened checkpoint is committed as `a776717`. **Everything from the
+pilot is uncommitted.**
 
 ## Bottom line
 
-**The strengthened Phase 3 smoke gate passes cleanly in all 4 scenarios.**
-The scenarios are AIDS seed 6 and QUAIDS seed 9, each from the Stone
-start and a far/structured start. Each passes all of the following:
-1. reaches homotopy exactly 1;
-2. stage zero genuinely converged;
-3. every accepted stage returned retcode 0;
-4. every accepted stage is feasible on re-evaluation;
-5. structErr ≤ 1 (excluding the u row);
-6. no regression versus cold LM;
-7. no regression versus safe Anderson (+0.05 tolerance).
+**Stage A gate.** It passed with no change to the comparison:
+- `pilot_validate.e` Part 1: 27 of 27.
+- `pilot_analyze.py --validate pilot_validation`: 58 of 58.
+- Resume test: 6 of 6.
+- `--validate pilot_out`: 377 of 377.
 
-Key numbers (structErr, all rows except u):
-- **AIDS:** continuation 0.058, cold LM 0.058, safe Anderson 1.52 (not
-  converged).
-- **QUAIDS:** continuation 0.081 from both starts, cold LM 4.02 (Stone)
-  and 12.29 (far), safe Anderson 2.16 (Stone) and 0.19 (far), both not
-  converged.
+Two of those reference-comparison tolerances were loosened to match the
+8-significant-digit printed references; this is recorded in
+`PILOT_PROTOCOL.md`.
 
-Corrections from the 2026-10-02 write-up:
-- **AIDS structural error was misreported as 0.724.** That figure was the
-  u-row error, caused by a wrong row slice. The corrected value is
-  0.058.
-- **QUAIDS continuation endpoints are not "identical."** The two starts
-  give endpoints that differ by 5.8e-9 in scaled θ and 7.6e-10 in raw
-  structural coefficients. They are numerically equivalent, not
-  bit-identical.
-- **Stage zero changed no endpoint.** It changes endpoints by ≤ 1.5e-8
-  versus the legacy schedule; only iteration counts change.
+The pilot's Anderson arm reproduces the 200-seed benchmark's per-seed
+results on all 60 seed/model cases. This proves start and RNG
+equivalence.
 
-## Artifacts
+**Stage B.** All 2,880 cells completed: seeds 1-30, both models, 3
+methods × 16 starts.
 
-- `direct_objective.src`: the LM solver body is now
-  `_directLMHomotopyDiag()`.
-  - It returns an extra `diagVec`: covariance-inversion failures,
-    step-inversion failures, infeasible trials, rho rejections, accepted
-    steps, and final lambda.
-  - Inversion is fail-closed: the destination is reset before every
-    `invpd()`, and the result is checked for shape and `ismiss`.
-  - New retcode 5 means a covariance-inversion failure at the current
-    point; `gnorm` is then returned as -1.
-  - It has a diagnostic-only fault hook (`faultMode`).
-  - `_directLMHomotopy()` and `_directLM()` keep their signatures and
-    are bit-identical at `faultMode=0`.
-- `phase3_smoke_gate.e` / `_output.txt`: the hardened gate.
-  - The driver solves stage zero (homotopy 0) first.
-  - The legacy schedule runs alongside it for comparison.
-  - It uses corrected error rows and has a runtime layout assertion.
-  - It reports explicit endpoint differences, threshold sensitivity at
-    .5/1/2/5, and the strengthened verdict.
-- `phase3_safeguard_diag.e` / `_output.txt`: fault-injected
-  `invpd()` failures. **14 of 14 checks pass.** The T4 check was
-  revised after a first-run failure, which turned out to be a
-  stopping-tolerance effect; SUMMARY.md documents it.
-- Phase 1b: `phase1b_audit.e` was rerun, and every numerical line
-  matches the saved `phase1b_audit_output.txt`. Only the banner and
-  timestamp lines differ. The saved file was not overwritten.
+Results are given as selected correct counts out of 30. "bS" is primary
+(benchmark-compatible, ≤ 1) and "raw" is secondary (all rows except u):
 
-Reproduce from this directory:
-```powershell
-C:\gauss26\tgauss.exe -b -x phase3_smoke_gate.e
-C:\gauss26\tgauss.exe -b -x phase3_safeguard_diag.e
-C:\gauss26\tgauss.exe -b -x phase1b_audit.e
-```
+| | Anderson | cold LM | continuation |
+|---|---|---|---|
+| AIDS bS / raw | 19 / 22 | 27 / 30 | 26 / 30 |
+| QUAIDS bS / raw | 10 / 13 | 23 / 29 | 23 / 29 |
+| QUAIDS Stone-only bS / raw | 8 / 10 | 17 / 23 | 21 / 27 |
 
-## What is established
+What the results show:
+- **Direct LM (cold or continuation) is a genuine solver improvement over
+  Anderson.** The selected and oracle results both improve. In QUAIDS,
+  14 seeds improved and 1 regressed; the regression is a u-row cutoff
+  effect.
+- **Continuation ties cold LM at 16 starts.** Its value is per-start
+  robustness:
+  - QUAIDS Stone-only 27 vs 23 raw correct;
+  - 476/480 vs 379/480 starts genuinely converged;
+  - a single basin on 28 of 30 seeds.
+- **Continuation costs much more.** The median per seed with 16 starts is
+  98 s for QUAIDS, against 8 s for cold LM.
+- **Solution selection is not the bottleneck.** Selected and oracle
+  agree in class on 178 of 180 seed/model/method cases.
+- **Most remaining bS "wrong" seeds for the direct methods are
+  right-basin optima.** Raw error is ≤ 0.09 and the objective beats the
+  truth's. They fail the benchmark's `bS` cutoff because of the u row,
+  or because `quaidsFit()`'s symmetry projection moves alpha or gamma by
+  1-2. `pilot_bs_diag.e` shows this. The projection uses a delta-method
+  covariance built for the fixed-point estimator.
+- **Genuine wrong basins:**
+  - QUAIDS seed 5, continuation: all 16 starts go to the same wrong
+    basin, while cold LM finds the right one.
+  - QUAIDS seed 17, cold LM: only 1 start converges, and it is wrong;
+    continuation finds the right basin from 1 start.
 
-On these two hard seeds, continuation plus LM reaches a correct
-endpoint (structErr ≤ 0.5) from both starts. The endpoint does not
-depend on the start, to within about 1e-8. Cold LM lands in wrong
-QUAIDS basins. Single-start safe Anderson does not converge.
+  The failures are complementary. Post-hoc pooling of both methods'
+  candidates (exploratory, not prespecified) reaches raw 30/30 on
+  QUAIDS.
 
-The `invpd()` safeguards fail closed, as demonstrated by fault
-injection.
+## Recommendation
 
-## What is NOT established
+1. **Model-specific hybrid.** Cold LM for AIDS; continuation, or a small
+   pool of cold LM plus continuation, for QUAIDS.
+2. **No more solution-selection work.**
+3. **Before any 200-seed run, decide the direct-endpoint correctness
+   metric.** The preferred option is to impose symmetry inside the
+   direct objective, so `bS` needs no post-hoc projection. The
+   alternatives are to prespecify an unprojected `bS` or `bsErrExclU`,
+   or to derive a sandwich covariance.
+4. **Then prespecify the hybrid and scale up.**
 
-- Anything about success rates. The test covers one seed per model,
-  chosen as hard cases.
-- That the driver's step-halving, minimum-step and stage-zero-failure
-  paths work on real data. Nothing in this gate triggered them.
-- Comparability with the 200-seed benchmark's `recErr`. That metric is
-  `max|qOut.bS - trueParams|` on the recovered full structural matrix,
-  whereas this gate's structErr is computed on the raw reduced rows
-  excluding u. The threshold value matches; the metric does not.
-- That continuation beats Anderson's best. Anderson ran single-start
-  here, not with its 16-start portfolio.
+30 seeds support no population-wide claim.
 
-## Next entry point: the 30-seed pilot (only after the user approves a checkpoint commit)
+## Artifacts (all new, uncommitted)
 
-The pilot is a matched sweep on identical seeds and starts. It compares:
-- safe Anderson with its full 16-start portfolio;
-- cold LM;
-- hardened continuation plus LM (with stage zero).
+- `PILOT_PROTOCOL.md`
+- `pilot_lib.src`, `pilot_harness_core.src`
+- `pilot_validate.e`
+- `pilot_run_m0.e`, `pilot_run_m1.e`
+- `pilot_resume_test.e`, `pilot_resume_test.ps1`, `pilot_resume_test_output.txt`
+- `pilot_analyze.py`
+- `pilot_bs_diag.e`, `pilot_bs_diag_output.txt`
+- `pilot_posthoc_pooled.py`
+- `pilot_validation/` (Stage A cells and logs)
+- `pilot_resume_test/`
+- `pilot_out/`:
+  - Stage B cells (6.4 MB of CSV) and console logs;
+  - `pilot_report.md` and `pilot_seed_table.csv`;
+  - validate, determinism and post-hoc outputs.
 
-It should report:
-- never-converged, wrong and correct counts;
-- structErr **and** the benchmark-comparable `bS`-based recErr at
-  .5/1/2/5;
-- paired seed-level transitions;
-- counts of failed stages, step reductions and minimum-step exhaustion;
-- wall-clock distributions.
+Exact commands are in SUMMARY.md, "Matched 30-seed pilot", "Commands".
 
-Follow the stage-gate discipline: no 200-seed run without the pilot
-first.
+The harness resumes per cell: rerun the same entry script and finished
+`(seed, method, start)` keys are skipped. To extend seeds, copy
+`pilot_run_m*.e` and change `pilotSeeds`.
+
+## Independent review of the pilot (Claude, 2026-10-05)
+
+The review found no correctness problems.
+
+**What was checked:**
+- **Harness:** the column indices, the `bS` and raw row ranges, and the
+  convergence eligibility.
+- **Analysis:** the selection direction, the oracle, the dedup and the
+  classification rules all match `PILOT_PROTOCOL.md`.
+- **Validators rerun:** selftest, 58 of 58 and 377 of 377.
+- **Report regenerated from the raw cells:** the seed table is
+  byte-identical, and the report differs only in its directory header.
+- **Handoff numbers:** every headline number matches.
+- **Silent misclassification:** none of the 101 symmetry-projection
+  fallbacks or the 3 `bS` chain failures falls on a selected (converged)
+  cell.
+
+The pilot was not re-solved. The review relies on the saved
+determinism check: 288 cells, 0 differences.
+
+**Interpretation notes:**
+- **Cold LM's QUAIDS per-start failures are mostly start-point
+  failures:** 53 infeasible at homotopy 1, and 44 covariance-inversion
+  failures. Continuation's per-start robustness largely comes from
+  starting at homotopy 0.
+- **A promising cheap hybrid (post hoc).** Running cold LM and
+  continuation once each from the Stone start gives QUAIDS raw 29/30 at
+  a median 7.5 s per seed. That matches cold LM with 16 starts. Treat
+  it as a candidate to prespecify, not as a result.
+
+**Raw outputs are committed as plain CSV,** not zipped. git already
+compresses them to about 2.3 MB, against 2.28 MB as a zip. Plain CSV
+keeps GAUSS resume and `pilot_bs_diag.e` working. `.gitattributes` marks
+the cells `-text -diff`.
+
+## Historical corrections still in force
+
+- **AIDS structural error in the 2026-10-02 Phase 3 write-up was
+  misreported as 0.724.** That figure was the u-row error. The correct
+  value is 0.058, and the pilot reproduces it (V3c).
+- **QUAIDS continuation endpoints from the two smoke-gate starts are
+  numerically equivalent (5.8e-9), not identical.**
 
 ## Environment / gotchas
 
 See the repo-root `CLAUDE.md`. Gotchas specific to this work:
-- **Editing `/* ... */` doc comments.** Editing only part of a doc
-  comment can leave a dangling `/*` or `*/`. That produces a cascading
-  `G0008` error far from the edit, so check both ends of the comment.
-- **Row slices of `bRaw`.** Derive them from the layout
-  `alpha(nIntFull) | gamma(n1) | beta | [lambda] | u`, with
-  `ng = nIntFull + n1 + 2 + (QUAIDS)`. The 2026-10-02 slice error came
-  from an off-by-model-flag expression. Use `_phase3Errs` (in the gate)
-  or `_directBlockErrors` rather than hand-writing ranges.
-- **Capturing output.** `tgauss ... | Out-File -Encoding utf8 file`
-  captures only the script's prints. The GAUSS banner goes to the
-  console.
+- **Reserved words.** `line`, `key` and `le` are reserved in GAUSS and
+  fail as variable names (`G0276`, `G0136`). Watch for other operator
+  words too (`ge`, `eq`, `ne`, `lt`, `gt`).
+- **CSV I/O.** GAUSS 26 has no `getenv` and no `fclose`; use `close`.
+  - Write a numeric row with `strjoin(sprintf("%.17g", vec(x))', ",")`.
+    A column vector is required; a row vector concatenates the values
+    with no separator.
+  - `csvReadM(file, 1)` round-trips this exactly, with `.` read back as
+    missing.
+- **Passing job parameters.** Because there is no `getenv`, the entry
+  scripts set variables and then `#include pilot_harness_core.src`
+  (top-level code). Do not `#include` that file twice in one script.
+- **Editing `/* ... */` doc comments.** A partial edit can leave a
+  dangling `/*` or `*/`, producing a cascading `G0008` far from the edit.
+- **Row slices of `bRaw`.** Use `_pilotErrs` or `_phase3Errs`, not
+  hand-written ranges.
+- **Capturing output.** `tgauss ... > file` in bash captures the banner
+  too; PowerShell `Out-File` captures only the script's prints.
