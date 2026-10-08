@@ -1,4 +1,4 @@
-# Convergence-failure research: Anderson acceleration + multi-start (uncommitted experiment)
+# Convergence-failure research: Anderson acceleration + multi-start (experiment only)
 
 Status: **exploratory, not shipped**. Nothing in this directory is wired
 into `package.json`'s `src` array, `tests/run_source_tests.ps1`, or any
@@ -838,7 +838,8 @@ decision. After that, the next step is the 30-seed matched pilot, which
 was **not started**. Its design is in CLAUDE_HANDOFF.md.
 
 > Superseded: the hardened checkpoint was committed (`a776717`), and the
-> pilot was then run. See "Matched 30-seed pilot (2026-10-05)" below.
+> pilot was then run and committed and pushed as `e90a568`. See
+> "Matched 30-seed pilot (2026-10-05)" below.
 
 ## Matched 30-seed pilot (2026-10-05)
 

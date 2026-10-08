@@ -1,6 +1,6 @@
-# Claude handoff: matched 30-seed pilot complete (2026-10-05); next step is a metric decision, not 200 seeds
+# Claude handoff: confirmation protocol FROZEN (2026-10-08); E2 not run and not yet authorized
 
-Last updated: 2026-10-05
+Last updated: 2026-10-08
 
 ## Start here
 
@@ -15,10 +15,15 @@ changed by the pilot either.
    solver details.
 3. Read `PILOT_PROTOCOL.md` for the frozen definitions and the recorded
    deviations.
+4. Read `CORRECTNESS_VALIDATION_PROTOCOL.md` (FROZEN v4, 2026-10-08)
+   and the 2026-10-08 update below. They define the next step, E2, which
+   needs separate explicit user approval.
 
 Never commit or push without the user's explicit approval. The Phase 3
-hardened checkpoint is committed as `a776717`. **Everything from the
-pilot is uncommitted.**
+hardened checkpoint is committed as `a776717`. **The matched 30-seed
+pilot is committed and pushed as `e90a568`** (`HEAD`, `master`,
+`origin/master`). It is experiment-only and not shipped, and it does not
+authorize a 200-seed scale-up.
 
 ## Bottom line
 
@@ -92,7 +97,71 @@ What the results show:
 
 30 seeds support no population-wide claim.
 
-## Artifacts (all new, uncommitted)
+**Update (2026-10-07; historical, superseded by the 2026-10-08 freeze
+below):** `CORRECTNESS_VALIDATION_PROTOCOL.md` (then a draft) designs the pre-200-seed validation. It sets a projection-free
+primary metric, acceptance criteria A1-A7 on held-out seeds 31-200, and a
+trust-flag calibration. E0, the no-solver re-score, has run (protocol
+section 9). The truth gate passed with 21,594 of 21,594 values exact, and
+all 6 predictions held. No truth-free trust flag met the selection rule.
+Section 10 records that the shipped quaidsFit imposes symmetry by a
+post-iteration minimum-distance step, not inside the objective. Protocol
+v3 adds an adversarial pre-freeze review, which recommends "do not freeze
+yet". The E2 analysis script must be written and must reproduce the
+seeds 1-30 results first, and the owner must decide scope items R2 and R3.
+Nothing is frozen.
+
+**Update (2026-10-07, v4):** the owner accepted the limited scope, and A3
+is now descriptive. The gates are A1, A2 and A4. The analysis script
+(`confirm_analyze.py`, `confirm_config.json`) passes 24/24 tests and
+reproduces E0 exactly. The E2 entry scripts are written but not run.
+`FREEZE_MANIFEST.json` was then a pre-freeze candidate (34 files).
+
+**Update (2026-10-08): protocol v4 is FROZEN.** The user explicitly
+approved the freeze under the limited scope: synthetic returned-answer
+accuracy for this DGP, no truth-free reliability signal, and A3
+descriptive only.
+- Protocol section 15 is ticked.
+- The final manifest (34 files) was regenerated and verified. Its SHA-256
+  is in the sidecar `FREEZE_MANIFEST.sha256` and in the freeze commit
+  message.
+- The freeze is one local commit on top of `e90a568`. It is **not
+  pushed**.
+- **E2 has not been run and is not authorized.** It needs a separate
+  explicit user approval.
+
+Before E2, run `python make_freeze_manifest.py --verify` and
+`sha256sum -c FREEZE_MANIFEST.sha256`, then follow protocol section 14.4.
+
+**Line-ending caveat (known at freeze; fails closed).** This machine has
+`core.autocrlf=true` at the system level.
+- **The current working tree verifies all 34 manifest files.**
+- **A fresh-checkout simulation verifies 27 of 34**, plus the manifest
+  and the sidecar. It was a `git checkout-index` export taken after
+  `dev/experiments/convergence-anderson/.gitattributes` marked the
+  experiment package `-text`.
+- **The 7 that do not verify** are production and reference files
+  outside the experiment package:
+  - `src/quaids.sdf`
+  - `src/quaids.src`
+  - `src/quaidselas.src`
+  - `src/quaidsiv.src`
+  - `src/quaidsslutzky.src`
+  - `src/quaidsutil.src`
+  - `tests/quaidsfixtures.src`
+
+  Their git blobs and the current working copies are LF, which is what
+  the manifest hashed. A fresh Windows checkout under
+  `core.autocrlf=true` rewrites them as CRLF, so their hashes change.
+- **This fails closed.** `make_freeze_manifest.py --verify` and
+  `confirm_analyze.py --mode confirm` then refuse to run; they never
+  pass silently.
+- **E2 must run from the currently verified LF working tree, or from a
+  checkout made with `core.autocrlf=false` or `input`,** and it must be
+  re-verified before execution.
+- No root-level `.gitattributes` or production-file checkout behavior
+  was changed at freeze. That was a deliberate scope decision.
+
+## Artifacts (all added in `e90a568`)
 
 - `PILOT_PROTOCOL.md`
 - `pilot_lib.src`, `pilot_harness_core.src`

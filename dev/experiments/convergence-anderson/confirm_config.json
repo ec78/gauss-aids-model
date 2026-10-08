@@ -1,0 +1,35 @@
+{
+  "protocol": "CORRECTNESS_VALIDATION_PROTOCOL.md (v4 candidate)",
+  "models": {"0": "AIDS", "1": "QUAIDS"},
+  "methods": {"1": "Anderson", "2": "cold LM", "3": "continuation"},
+  "starts": [1, 16],
+  "dev_seeds": [1, 30],
+  "confirm_seeds": [31, 200],
+  "configurations": {
+    "A16": {"1": [1, 16]},
+    "L1": {"2": [1, 1]},
+    "C1": {"3": [1, 1]},
+    "L1+C1": {"2": [1, 1], "3": [1, 1]},
+    "L16": {"2": [1, 16]},
+    "C16": {"3": [1, 16]},
+    "L16+C1": {"2": [1, 16], "3": [1, 1]},
+    "L16+C16": {"2": [1, 16], "3": [1, 16]}
+  },
+  "primary": {"0": "L16", "1": "L16+C16"},
+  "advisory": {"1": "L16+C1"},
+  "reference": "A16",
+  "tie_order": "method ascending (cold LM=2 before continuation=3), then start ascending",
+  "primary_cutoff": 1.0,
+  "sensitivity_cutoffs": [0.25, 0.5, 1.0, 2.0, 5.0],
+  "borderline_band": [0.25, 2.0],
+  "basin_tol": 0.05,
+  "near_tie_eps": 0.01,
+  "a2": {
+    "interval": "exact Clopper-Pearson two-sided 95% interval; criterion on its lower limit",
+    "alpha_two_sided": 0.05,
+    "target_lower_limit": {"0": 0.90, "1": 0.85}
+  },
+  "a4": {"max_returned_wrong": 1, "alpha_two_sided": 0.05},
+  "a3_descriptive": {"test": "exact one-sided conditional McNemar (binomial on discordant pairs)", "gating": false},
+  "a7": {"median_wall_target_s": {"0": 30, "1": 180}, "slow_cell_s": 900}
+}

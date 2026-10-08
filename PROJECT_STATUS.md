@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-05_
+_Last updated: 2026-10-08_
 
 ## Current Objective
 
@@ -59,8 +59,12 @@ see Decisions for why. Stage 3 is still Q-only MLE (H stays caller-fixed)
 before Stage 3 was written, not assumed.
 
 **The latest completed work is the AIDS/QUAIDS convergence-correctness
-research** in `dev/experiments/convergence-anderson/`, committed and
-pushed as `7e98720`. The methodology audit corrected the original
+research** in `dev/experiments/convergence-anderson/`. Its latest
+checkpoint is the matched 30-seed pilot, committed and pushed as
+`e90a568` (`HEAD`, `master`, `origin/master`). It remains
+experiment-only and is not shipped (see the 2026-10-05 update below).
+The original Anderson research and benchmark were committed and pushed
+earlier as `7e98720`. The methodology audit corrected the original
 multi-start selector direction, added a numerically safer experimental
 Anderson path, and completed the recommended 200-seed x 16-start
 benchmark for both iterated AIDS and QUAIDS. The push-triggered CI run
@@ -71,8 +75,9 @@ file changed. See the Completed Work entry and the experiment's
 
 **Phase 1 of that direct-nonlinear-optimization follow-up (define and
 validate the objective) completed, then a Phase 1b audit corrected its
-own headline conclusion.** Both uncommitted, in the same experiment
-directory. Phase 1 (`direct_objective.src`'s initial objective/pack/
+own headline conclusion.** Both are in the same experiment directory,
+committed with the Phase 3 checkpoint `a776717`. Phase 1
+(`direct_objective.src`'s initial objective/pack/
 scale machinery, `phase1_objective_validation.e`) validated the
 objective cleanly but reported a NEGATIVE recovery-gate result for
 QUAIDS using a generic optimizer and a flat infeasibility penalty.
@@ -137,8 +142,10 @@ Corrected numbers:
 
 Phase 1b's audit was rerun, and every numerical line is identical.
 
-The hardened Phase 3 checkpoint was committed as `a776717`. The pilot
-work below is **uncommitted**.
+The hardened Phase 3 checkpoint was committed as `a776717`. The matched
+pilot below is committed and pushed as `e90a568` (`HEAD`, `master`,
+`origin/master`). It is experiment-only and not shipped, and it does not
+authorize a 200-seed scale-up.
 
 **Update (2026-10-05): the matched 30-seed pilot is complete.**
 
@@ -190,6 +197,48 @@ What the results show:
 Full account: `dev/experiments/convergence-anderson/SUMMARY.md`, section
 "Matched 30-seed pilot". Next entry point:
 `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
+
+**Update (2026-10-08): the confirmation protocol is frozen; the
+confirmation run has not been run.**
+
+`dev/experiments/convergence-anderson/CORRECTNESS_VALIDATION_PROTOCOL.md`
+(FROZEN v4) was approved by the user on 2026-10-08 under a limited scope:
+- it measures synthetic returned-answer accuracy for this data generator;
+- it establishes **no** truth-free production reliability signal;
+- the A3 comparison with Anderson is descriptive only.
+
+What it fixes:
+- **Primary metric:** projection-free structural error, which E0
+  validated on seeds 1-30 with a no-solver re-score (21,594 of 21,594
+  truth values exact).
+- **Selection rule.**
+- **Gates on held-out seeds 31-200:** A1 integrity; A2, the two-sided
+  95% Clopper-Pearson lower limit (AIDS ≥ 161, QUAIDS ≥ 154 of 170);
+  A4, at most 1 returned-wrong answer.
+
+Supporting implementation:
+- The analysis script `confirm_analyze.py` passes 24/24 tests with
+  `ResourceWarning` as an error, and reproduces E0 exactly.
+- `FREEZE_MANIFEST.json` hashes 34 files. Its SHA-256 is in
+  `FREEZE_MANIFEST.sha256` and in the freeze commit message.
+- The freeze is one local commit, **not pushed**.
+- **E2 (the 170-seed confirmation run) has not been run and needs
+  separate explicit approval.** No shipped `src/` file changed.
+- **Line-ending caveat (fails closed).** The current working tree
+  verifies all 34 manifest files. A fresh-checkout simulation (a
+  `git checkout-index` export) verifies 27 of 34, plus the manifest and
+  its sidecar.
+  - The 7 exceptions are `src/quaids.sdf`, `src/quaids.src`,
+    `src/quaidselas.src`, `src/quaidsiv.src`, `src/quaidsslutzky.src`,
+    `src/quaidsutil.src` and `tests/quaidsfixtures.src`.
+  - Their blobs and current working copies are LF, but a fresh Windows
+    checkout under the system's `core.autocrlf=true` rewrites them as
+    CRLF.
+  - The manifest then fails closed: verification and
+    `confirm_analyze.py --mode confirm` refuse to run.
+  - E2 must run from the verified LF working tree, or from a
+    `core.autocrlf=false`/`input` checkout re-verified before execution.
+  - Root-level checkout behavior was deliberately left unchanged.
 
 Limitations:
 - 30 seeds; no population-wide claim.
@@ -1036,13 +1085,17 @@ not active implementation or approved production scope.
 2. Done (2026-10-05): the matched 30-seed pilot comparing safe Anderson,
    cold LM and continuation. See the Current Objective update above.
 
-   **Next:**
-   - Fix the direct-endpoint correctness metric. Preferably impose
-     symmetry inside the direct objective, so `bS` needs no post-hoc
-     projection.
-   - Then prespecify the model-specific hybrid: cold LM for AIDS;
-     continuation, or a cold LM plus continuation pool, for QUAIDS.
-   - Only then run it on 200 seeds.
+   The pilot's open items were then resolved:
+   - The metric was fixed: projection-free scoring was validated by E0,
+     and in-objective symmetry was waived for the protocol.
+   - The model-specific hybrid was prespecified: AIDS `L16`; QUAIDS
+     `L16+C16`.
+   - Both are frozen in `CORRECTNESS_VALIDATION_PROTOCOL.md` (FROZEN v4,
+     2026-10-08).
+
+   **Next:** E2, the 170-seed confirmation run on held-out seeds 31-200
+   (protocol section 14.4). It runs only with the user's separate
+   explicit approval.
 3. Add diagnostics usable without synthetic truth: fixed-point residual,
    multi-start endpoint agreement, objective gaps, Jacobian/Hessian rank
    and conditioning, theory restrictions, and training-vs-held-out fit.
@@ -1062,16 +1115,19 @@ not active implementation or approved production scope.
 
 ## Handoff Notes
 
-- **Current state (2026-10-05):** `master` is at `a776717`. The working
-  tree contains the uncommitted matched-pilot work:
-  - only new files under `dev/experiments/convergence-anderson/`, plus
-    edits to that directory's `SUMMARY.md` and `CLAUDE_HANDOFF.md`;
-  - this file.
+- **Current state (2026-10-08):** local `master` has one freeze commit
+  on top of `e90a568`, which adds the frozen confirmation protocol and
+  its analysis package. It is **not pushed**; `origin/master` is still
+  `e90a568`, the committed and pushed matched 30-seed pilot. No shipped
+  `src/` file changed.
 
-  No shipped file changed. The user has not yet approved a commit. Next
-  clean-session entry point:
-  `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
-- **Repository state before this status-only sync:** `master` and
+  The research remains experiment-only and not shipped. E2 (the 170-seed
+  confirmation run) is **not** authorized yet. Next clean-session entry
+  point: `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
+- **Previous state (2026-10-06; superseded by the entry above).** `HEAD`,
+  `master` and `origin/master` were at `e90a568`.
+- **Historical (2026-10-01; superseded by the entry above).**
+  Repository state before that day's status-only sync: `master` and
   `origin/master` both pointed to `7e98720`, the complete
   convergence-Anderson research commit; the only working-tree change was
   this pre-existing `PROJECT_STATUS.md` update, now reviewed and

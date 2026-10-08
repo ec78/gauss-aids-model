@@ -1,0 +1,71 @@
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: e0_truth_dump.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\experiments\convergence-anderson )
+Wed Oct  7 06:27:07 2026
+
+
+truth m       0.0000000 seed       1.0000000 critTrue      -5.4870216 critStone      -7.8726141 
+truth m       0.0000000 seed       2.0000000 critTrue      -5.5438747 critStone      -8.2896217 
+truth m       0.0000000 seed       3.0000000 critTrue      -5.4985268 critStone      -6.9797360 
+truth m       0.0000000 seed       4.0000000 critTrue      -5.5818653 critStone      -9.2165489 
+truth m       0.0000000 seed       5.0000000 critTrue      -5.5303312 critStone      -9.2292654 
+truth m       0.0000000 seed       6.0000000 critTrue      -5.5079982 critStone      -8.7698861 
+truth m       0.0000000 seed       7.0000000 critTrue      -5.5248842 critStone      -6.6663106 
+truth m       0.0000000 seed       8.0000000 critTrue      -5.5091970 critStone      -6.7782180 
+truth m       0.0000000 seed       9.0000000 critTrue      -5.5976587 critStone      -7.0018485 
+truth m       0.0000000 seed       10.000000 critTrue      -5.5073714 critStone      -8.6047768 
+truth m       0.0000000 seed       11.000000 critTrue      -5.5180438 critStone      -6.7301639 
+truth m       0.0000000 seed       12.000000 critTrue      -5.5619659 critStone      -6.2530645 
+truth m       0.0000000 seed       13.000000 critTrue      -5.5889423 critStone      -9.0982414 
+truth m       0.0000000 seed       14.000000 critTrue      -5.4317890 critStone      -6.7226716 
+truth m       0.0000000 seed       15.000000 critTrue      -5.5367442 critStone      -9.4253868 
+truth m       0.0000000 seed       16.000000 critTrue      -5.5180330 critStone      -9.1084762 
+truth m       0.0000000 seed       17.000000 critTrue      -5.6251287 critStone      -10.589640 
+truth m       0.0000000 seed       18.000000 critTrue      -5.5720292 critStone      -9.5341468 
+truth m       0.0000000 seed       19.000000 critTrue      -5.4412848 critStone      -6.6402027 
+truth m       0.0000000 seed       20.000000 critTrue      -5.6648235 critStone      -7.4596277 
+truth m       0.0000000 seed       21.000000 critTrue      -5.5315149 critStone      -10.553135 
+truth m       0.0000000 seed       22.000000 critTrue      -5.5764942 critStone      -7.9243374 
+truth m       0.0000000 seed       23.000000 critTrue      -5.4529731 critStone      -7.3601256 
+truth m       0.0000000 seed       24.000000 critTrue      -5.4647389 critStone      -9.9381985 
+truth m       0.0000000 seed       25.000000 critTrue      -5.5830583 critStone      -8.2810504 
+truth m       0.0000000 seed       26.000000 critTrue      -5.5943883 critStone      -6.1136731 
+truth m       0.0000000 seed       27.000000 critTrue      -5.5445021 critStone      -6.8023490 
+truth m       0.0000000 seed       28.000000 critTrue      -5.5001373 critStone      -7.8080950 
+truth m       0.0000000 seed       29.000000 critTrue      -5.4566088 critStone      -8.5028230 
+truth m       0.0000000 seed       30.000000 critTrue      -5.5673630 critStone      -5.7354932 
+truth m       1.0000000 seed       1.0000000 critTrue      -5.4870216 critStone      -20.595318 
+truth m       1.0000000 seed       2.0000000 critTrue      -5.5438747 critStone      -16.043472 
+truth m       1.0000000 seed       3.0000000 critTrue      -5.4985268 critStone      -19.749518 
+truth m       1.0000000 seed       4.0000000 critTrue      -5.5818653 critStone      -36.463478 
+truth m       1.0000000 seed       5.0000000 critTrue      -5.5303312 critStone      -41.795107 
+truth m       1.0000000 seed       6.0000000 critTrue      -5.5079982 critStone      -25.073523 
+truth m       1.0000000 seed       7.0000000 critTrue      -5.5248842 critStone      -15.169143 
+truth m       1.0000000 seed       8.0000000 critTrue      -5.5091970 critStone      -11.798232 
+truth m       1.0000000 seed       9.0000000 critTrue      -5.5976587 critStone      -26.199200 
+truth m       1.0000000 seed       10.000000 critTrue      -5.5073714 critStone      -16.464172 
+truth m       1.0000000 seed       11.000000 critTrue      -5.5180438 critStone      -16.478254 
+truth m       1.0000000 seed       12.000000 critTrue      -5.5619659 critStone      -10.678245 
+truth m       1.0000000 seed       13.000000 critTrue      -5.5889423 critStone      -23.391059 
+truth m       1.0000000 seed       14.000000 critTrue      -5.4317890 critStone      -10.180515 
+truth m       1.0000000 seed       15.000000 critTrue      -5.5367442 critStone      -34.544151 
+truth m       1.0000000 seed       16.000000 critTrue      -5.5180330 critStone      -22.041894 
+truth m       1.0000000 seed       17.000000 critTrue      -5.6251287 critStone               . 
+truth m       1.0000000 seed       18.000000 critTrue      -5.5720292 critStone               . 
+truth m       1.0000000 seed       19.000000 critTrue      -5.4412848 critStone      -9.0737331 
+truth m       1.0000000 seed       20.000000 critTrue      -5.6648235 critStone      -31.258315 
+truth m       1.0000000 seed       21.000000 critTrue      -5.5315149 critStone               . 
+truth m       1.0000000 seed       22.000000 critTrue      -5.5764942 critStone      -10.686664 
+truth m       1.0000000 seed       23.000000 critTrue      -5.4529731 critStone      -19.366167 
+truth m       1.0000000 seed       24.000000 critTrue      -5.4647389 critStone               . 
+truth m       1.0000000 seed       25.000000 critTrue      -5.5830583 critStone      -13.535005 
+truth m       1.0000000 seed       26.000000 critTrue      -5.5943883 critStone      -6.8557299 
+truth m       1.0000000 seed       27.000000 critTrue      -5.5445021 critStone      -12.729889 
+truth m       1.0000000 seed       28.000000 critTrue      -5.5001373 critStone      -25.860208 
+truth m       1.0000000 seed       29.000000 critTrue      -5.4566088 critStone      -19.687483 
+truth m       1.0000000 seed       30.000000 critTrue      -5.5673630 critStone      -9.5433143 
+e0_truth_dump.e: run complete.

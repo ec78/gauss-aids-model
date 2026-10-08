@@ -1,0 +1,3 @@
+AIDS [informational: dev mode, n=30]: A2 FAIL (k=30/30), A4 PASS (W=0)
+QUAIDS [informational: dev mode, n=30]: A2 PASS (k=30/30), A4 PASS (W=0)
+wrote confirm_dev_out

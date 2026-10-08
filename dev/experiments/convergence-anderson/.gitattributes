@@ -9,3 +9,48 @@ pilot_*/cells_m*.csv -text -diff linguist-generated
 *_output.txt -whitespace
 *_console.txt -whitespace
 pilot_resume_test/run_*.txt -whitespace
+
+# Frozen confirmation package (CORRECTNESS_VALIDATION_PROTOCOL.md, FROZEN
+# v4, 2026-10-08). FREEZE_MANIFEST.json records the SHA-256 of these
+# files' exact bytes, and FREEZE_MANIFEST.sha256 records the manifest's
+# own digest. Store them byte-exact (no CRLF conversion under
+# core.autocrlf), so a fresh checkout still verifies. Explicit paths only:
+# the manifest-covered files in this directory, plus the manifest and
+# its sidecar. whitespace=cr-at-eol: several of these files are CRLF, and
+# with -text git would otherwise flag every line's CR as trailing
+# whitespace; genuine trailing spaces are still flagged.
+FREEZE_MANIFEST.json -text whitespace=cr-at-eol
+FREEZE_MANIFEST.sha256 -text whitespace=cr-at-eol
+CORRECTNESS_VALIDATION_PROTOCOL.md -text whitespace=cr-at-eol
+PILOT_PROTOCOL.md -text whitespace=cr-at-eol
+confirm_analyze.py -text whitespace=cr-at-eol
+confirm_config.json -text whitespace=cr-at-eol
+test_confirm_analyze.py -text whitespace=cr-at-eol
+pilot_analyze.py -text whitespace=cr-at-eol
+make_freeze_manifest.py -text whitespace=cr-at-eol
+pilot_harness_core.src -text whitespace=cr-at-eol
+pilot_lib.src -text whitespace=cr-at-eol
+direct_objective.src -text whitespace=cr-at-eol
+quaidsfit_anderson_prototype.src -text whitespace=cr-at-eol
+e2_run_m0.e -text whitespace=cr-at-eol
+e2_run_m1.e -text whitespace=cr-at-eol
+e2_truth_dump.e -text whitespace=cr-at-eol
+e2_determinism.e -text whitespace=cr-at-eol
+pilot_resume_test.e -text whitespace=cr-at-eol
+pilot_resume_test.ps1 -text whitespace=cr-at-eol
+anderson_full_multistart_benchmark_output.txt -text
+pilot_out/columns.txt -text whitespace=cr-at-eol
+e0_out/truth_m0.csv -text whitespace=cr-at-eol
+e0_out/truth_m1.csv -text whitespace=cr-at-eol
+e0_out/e0_cells_pferr.csv -text whitespace=cr-at-eol
+confirm_dev_out/results.json -text whitespace=cr-at-eol
+confirm_dev_out/selected.csv -text whitespace=cr-at-eol
+confirm_dev_out/report.md -text whitespace=cr-at-eol
+
+# Intentional or generated whitespace, never edited: markdown hard-break
+# trailing spaces in the Codex audit report, and the trailing blank line
+# the frozen report generators write (editing the generated reports would
+# break their reproducibility).
+CODEX_PILOT_REVIEW.md -whitespace
+confirm_dev_out/report.md -whitespace
+e0_out/e0_report.md -whitespace

@@ -1,0 +1,99 @@
+{
+ "environment": {
+  "gauss_banner_from_stage_A": "GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit",
+  "git_head": "e90a5686c625c3c648ad43f40dea56aea577e0ce",
+  "numpy": "2.5.1",
+  "pandas": "3.0.3",
+  "python": "3.12.0",
+  "scipy": "1.18.0"
+ },
+ "files": {
+  "dev/experiments/convergence-anderson/CORRECTNESS_VALIDATION_PROTOCOL.md": "c67913f4ad751a8a49edae10f6de7960c6d81a38f938459470dd403ae785fdbb",
+  "dev/experiments/convergence-anderson/PILOT_PROTOCOL.md": "89762c7d1653619edc2c5aa57a8e15c657eee6a94e5efc638f6f91de9c12c316",
+  "dev/experiments/convergence-anderson/anderson_full_multistart_benchmark_output.txt": "e9c047e359de729ea5cd73ef0c48a4a3cc5f3a6076d26fd6b242f2d18b3e830b",
+  "dev/experiments/convergence-anderson/confirm_analyze.py": "658ee6bf68e7eea88575e4743d12dc52b7b0bafd76121a5be816d3115b59c093",
+  "dev/experiments/convergence-anderson/confirm_config.json": "452e9ec40372be3aa68debce16cbd5744c19f7502f17a05bcc4e63d966dd4e4c",
+  "dev/experiments/convergence-anderson/confirm_dev_out/report.md": "97881738a45096b3a2d94be682ca79de8d1e5555b1d69a93b939edb8f29737bf",
+  "dev/experiments/convergence-anderson/confirm_dev_out/results.json": "d4553ffcae02e8bf9cfaa2fdc82077fc64df8eacd66e3b3212c8a64a7899d2ad",
+  "dev/experiments/convergence-anderson/confirm_dev_out/selected.csv": "08948af87068bcc47f6ed6015c0b7a515508fe3d61121ab6a480137fac9d5b60",
+  "dev/experiments/convergence-anderson/direct_objective.src": "5d0b761f81a50d69f9631455ca8cd099e27eeb60fd71b7030860e53df24f3b8e",
+  "dev/experiments/convergence-anderson/e0_out/e0_cells_pferr.csv": "593c32ccd9e90eb459259724f29a2150eb399492b762fd04a119821d71db9b73",
+  "dev/experiments/convergence-anderson/e0_out/truth_m0.csv": "a255101bb87a6d029583396eb2fa9a78318e98a356db26216e4e92de5bd90c79",
+  "dev/experiments/convergence-anderson/e0_out/truth_m1.csv": "40f9ff141c1c139e5f9f67d5aa522f44f66e211c596cb8ce31b3b801b8ff7cc5",
+  "dev/experiments/convergence-anderson/e2_determinism.e": "a620b647b5c71a2aed72fef84a89aae8892c3b09cef07e5d6a32766ab90a427d",
+  "dev/experiments/convergence-anderson/e2_run_m0.e": "ae6ce42c1b704953dafc63bf9ff984bf667edac9c6a9090484a5414788b72b67",
+  "dev/experiments/convergence-anderson/e2_run_m1.e": "259668878b1779850dbb79a1a0b2b384b7659501f1664b02dd85e6c8fa1349a3",
+  "dev/experiments/convergence-anderson/e2_truth_dump.e": "3e6d86b1847ef67ce9afac1d1eb2d2de0258693b6a45c4777e70b3a4de9fcb79",
+  "dev/experiments/convergence-anderson/make_freeze_manifest.py": "228b9699b284d029dd68548950317879664453ed7cd50aa566c8b7553df1eb23",
+  "dev/experiments/convergence-anderson/pilot_analyze.py": "509953f67b5d1f5d27ddcbc96ea4bd7dbb38f8bdf33bd0ab384496878f7f379d",
+  "dev/experiments/convergence-anderson/pilot_harness_core.src": "d04b2225359a42794a857c0be57e9e089e4515b057ea604e1dcd8ade987bae58",
+  "dev/experiments/convergence-anderson/pilot_lib.src": "55361d219e663f12cfd3cf8b9a839cbd7079c969388886a1e0ffc2112450e498",
+  "dev/experiments/convergence-anderson/pilot_out/cells_m0.csv": "e867ded59191c0ccb3f28891a76c74d058e4ef81315407c380e658cbb7fcaf3a",
+  "dev/experiments/convergence-anderson/pilot_out/cells_m1.csv": "fdd7f9194dedc7af5032fad3ee2870a857c73d2efe94d287575ccf1d7082012c",
+  "dev/experiments/convergence-anderson/pilot_out/columns.txt": "7baafbcc6bf7435c0fe5ada33f6c41e31fac6b2703aa4a2e52cf6bbb4b3e0a0f",
+  "dev/experiments/convergence-anderson/pilot_resume_test.e": "a148704d84f745c8b8c7b99fd96d82cbb2baacca5653e4974070d16b50b1aa23",
+  "dev/experiments/convergence-anderson/pilot_resume_test.ps1": "4e52d34185ba1897210791863782eb66990e92a76129c45bd6dd571237460192",
+  "dev/experiments/convergence-anderson/quaidsfit_anderson_prototype.src": "93eb97d7611dd81e9bf8f442db697c3ab4ea07a0c16f204b4ad5325080433474",
+  "dev/experiments/convergence-anderson/test_confirm_analyze.py": "f4f922c1a61404f12edb22fed1e4894dd846b660fd7d160c8dddd7fd96e7fe60",
+  "src/quaids.sdf": "2aa00bffadc647111ed221005264072705f473dd10d9a465fde2726531205402",
+  "src/quaids.src": "25144c2cd19a552e896d390a59bbcd28ed11ba0fe7517c24bb93cc81f773d1af",
+  "src/quaidselas.src": "f957c56103653800f6bdc347fb24aa5854bd2e62cd4ca3b4cec505dc69493862",
+  "src/quaidsiv.src": "a2116024212210e54232ab7771b2861fbd18044a348442b987670261f074d735",
+  "src/quaidsslutzky.src": "8a0599390f7baddd69c75b13acf08cf15640f2a25ce4a1dcdd55f298ff1f15b6",
+  "src/quaidsutil.src": "c52995bb10d8b1ffbb0646efb89ca6432a3a59dacbd4a49325da99f70c360983",
+  "tests/quaidsfixtures.src": "ef253477e473bce4bd5f97babcda9652bec22f6c376a4338f4d4039e1e07ff2e"
+ },
+ "groups": {
+  "E2_entry_scripts": [
+   "dev/experiments/convergence-anderson/e2_determinism.e",
+   "dev/experiments/convergence-anderson/e2_run_m0.e",
+   "dev/experiments/convergence-anderson/e2_run_m1.e",
+   "dev/experiments/convergence-anderson/e2_truth_dump.e",
+   "dev/experiments/convergence-anderson/pilot_resume_test.e",
+   "dev/experiments/convergence-anderson/pilot_resume_test.ps1"
+  ],
+  "analysis": [
+   "dev/experiments/convergence-anderson/confirm_analyze.py",
+   "dev/experiments/convergence-anderson/confirm_config.json",
+   "dev/experiments/convergence-anderson/make_freeze_manifest.py",
+   "dev/experiments/convergence-anderson/pilot_analyze.py",
+   "dev/experiments/convergence-anderson/test_confirm_analyze.py"
+  ],
+  "dev_analysis_inputs": [
+   "dev/experiments/convergence-anderson/e0_out/e0_cells_pferr.csv",
+   "dev/experiments/convergence-anderson/e0_out/truth_m0.csv",
+   "dev/experiments/convergence-anderson/e0_out/truth_m1.csv",
+   "dev/experiments/convergence-anderson/pilot_out/cells_m0.csv",
+   "dev/experiments/convergence-anderson/pilot_out/cells_m1.csv",
+   "dev/experiments/convergence-anderson/pilot_out/columns.txt"
+  ],
+  "dev_canonical_outputs": [
+   "dev/experiments/convergence-anderson/confirm_dev_out/report.md",
+   "dev/experiments/convergence-anderson/confirm_dev_out/results.json",
+   "dev/experiments/convergence-anderson/confirm_dev_out/selected.csv"
+  ],
+  "harness_executed_by_E2": [
+   "dev/experiments/convergence-anderson/direct_objective.src",
+   "dev/experiments/convergence-anderson/pilot_harness_core.src",
+   "dev/experiments/convergence-anderson/pilot_lib.src",
+   "dev/experiments/convergence-anderson/quaidsfit_anderson_prototype.src",
+   "src/quaids.sdf",
+   "src/quaids.src",
+   "src/quaidselas.src",
+   "src/quaidsiv.src",
+   "src/quaidsslutzky.src",
+   "src/quaidsutil.src",
+   "tests/quaidsfixtures.src"
+  ],
+  "protocol": [
+   "dev/experiments/convergence-anderson/CORRECTNESS_VALIDATION_PROTOCOL.md",
+   "dev/experiments/convergence-anderson/PILOT_PROTOCOL.md"
+  ],
+  "reference_outputs": [
+   "dev/experiments/convergence-anderson/anderson_full_multistart_benchmark_output.txt"
+  ]
+ },
+ "manifest_version": 1,
+ "repo_root_rel": "../../..",
+ "status": "PRE-FREEZE CANDIDATE until the protocol's section 15 is ticked; regenerate with --write after the approval edit -- that regenerated manifest is the frozen record."
+}
