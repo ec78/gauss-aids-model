@@ -1,0 +1,3 @@
+AIDS: A2 PASS (k=170/170), A4 PASS (W=0)
+QUAIDS: A2 PASS (k=160/170), A4 PASS (W=0)
+wrote confirm_e2_out

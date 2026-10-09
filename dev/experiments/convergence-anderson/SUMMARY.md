@@ -6,7 +6,8 @@ other CI/release path. This is scratch research output, kept for a
 handoff, not production code. See the repo-root `CLAUDE.md`/
 `PROJECT_STATUS.md` for the actual shipped state of the library.
 
-**Latest result:** see "Matched 30-seed pilot (2026-10-05)" below.
+**Latest result:** see "E2 confirmation (2026-10-08/09)" below, which is summarized from
+`E2_RESULTS.md`. The frozen rules are in `CORRECTNESS_VALIDATION_PROTOCOL.md`.
 
 ## Phase 1: direct-optimization objective validation (2026-10-01)
 
@@ -1152,6 +1153,13 @@ For AIDS:
 
 ### Recommendation and next entry point
 
+> **Superseded (2026-10-08/09).** Both decisions below were made:
+> - the metric is `pfErr`, validated in E0;
+> - the hybrid was prespecified and frozen in
+>   `CORRECTNESS_VALIDATION_PROTOCOL.md`.
+>
+> The held-out confirmation then ran. See "E2 confirmation" below.
+
 Do **not** launch 200 seeds as the very next step. Two decisions should
 be made first, because each changes what a 200-seed run would measure:
 
@@ -1182,6 +1190,95 @@ To resume or extend: the harness is resumable per cell. For example,
 set `pilotSeeds = seqa(31,1,170)` in a copy of `pilot_run_m*.e` with the
 same `pilotOutDir`. `pilot_analyze.py --report` recomputes everything
 from disk.
+
+## E2 confirmation (2026-10-08/09)
+
+**Read this section first.** The authoritative record is `E2_RESULTS.md`
+(results, limitations, evidence index and next work), together with
+`e2_logs/E2_RUN_LOG.md` (every command and its exit status). This section
+is a summary of them.
+
+### How it was run
+
+- **Design.** Pre-specified in `CORRECTNESS_VALIDATION_PROTOCOL.md`
+  (FROZEN v4) and frozen at commit `ad986fc`, before any held-out
+  direct-method result existed.
+  - E0 first validated the projection-free primary metric `pfErr` with a
+    no-solver re-score of the pilot (21,594/21,594 truth values exact).
+  - The analysis script `confirm_analyze.py` (24 tests) reproduced E0
+    exactly.
+- **Run.** Section 14.4 of the protocol was executed on held-out seeds
+  31-200 (n = 170 per model), with the full grid of Anderson, cold LM and
+  continuation, each from 16 starts. That is 16,320 cells, plus a
+  288-cell determinism re-solve.
+- **Manifest.** Verified 34/34 before and after the run.
+
+### Binding gates
+
+| Model | Primary | A1 | A2: correct / 170 (CP lower vs target) | A4: wrong answers returned |
+|---|---|---|---|---|
+| AIDS | `L16` cold LM, 16 starts | PASS | **170** (0.9785 vs 0.90): PASS | **0**: PASS |
+| QUAIDS | `L16+C16` cold LM + continuation | PASS | **160** (0.8945 vs 0.85): PASS | **0**: PASS |
+
+A1 comprises four parts, all of which pass:
+- `pilot_analyze.py --validate`: 2,023 PASS, 0 FAIL, including 340/340
+  benchmark reproductions;
+- confirm-mode analysis integrity;
+- determinism: 0 differences;
+- resume: 6/6.
+
+### Required and descriptive results
+
+- **A5:** no regressions against Anderson.
+- **A3 (descriptive only; the reference arm was not blind):**
+  improved/regressed/tied 44/0/126 for AIDS and 86/0/84 for QUAIDS.
+- **A6:** the verdicts are unchanged under raw error and at `pfErr`
+  cutoffs 0.5 and 2.
+- **Anderson (`A16`) on the same seeds:** correct on 126/170 (AIDS) and
+  74/170 (QUAIDS), with 43 and 88 returned-wrong answers respectively.
+  This is consistent with its 200-seed benchmark rates on the projected
+  metric.
+
+### The 10 QUAIDS no-result seeds
+
+The seeds are 43, 112, 125, 134, 151, 160, 167, 182, 187 and 190. These
+are visible failures, not wrong answers. On each of them:
+- every cold-LM start was infeasible (retcode 3) or inversion-failed
+  (retcode 5);
+- every continuation run failed at stage zero or exhausted the minimum
+  step.
+
+**Anderson failed all 10 as well,** with no result on 5 and a wildly
+wrong answer (`pfErr` 380-3,855) on 5.
+
+### What it establishes, and what it does not
+
+On this synthetic DGP, the prespecified model-specific direct-LM
+configurations meet their accuracy and returned-wrong-answer gates on
+held-out seeds:
+- for AIDS with no failures of any kind;
+- for QUAIDS with roughly 6% visible no-result seeds and no silent
+  failures.
+
+It does **not** establish:
+- a truth-free reliability signal: a real-data user still cannot detect
+  a returned wrong answer;
+- anything about real data or other DGPs;
+- a speed result: wall times are descriptive (AIDS median 4.2 s per
+  seed, QUAIDS 79.5 s);
+- a production symmetry design. Shipped `quaidsFit()` imposes symmetry
+  by a post-iteration projection, which misbehaves at direct endpoints.
+
+### Next work (recommended; none started)
+
+1. Preserve the evidence.
+2. Prototype AIDS direct LM as an opt-in mode, keeping the shipped
+   default unchanged.
+3. Investigate the 10 QUAIDS no-result seeds under a new, separately
+   prespecified exploratory protocol.
+4. Resolve symmetry before shipping QUAIDS direct LM. The protocol's E1
+   design is a ready-made smoke gate for in-objective symmetry.
+5. Benchmark speed separately.
 
 ## Second-opinion methodology audit (2026-09-29)
 

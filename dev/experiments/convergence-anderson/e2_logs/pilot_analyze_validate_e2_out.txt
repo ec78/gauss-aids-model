@@ -1,0 +1,2361 @@
+PASS V7 keys unique  16320 rows
+PASS V7 complete grid  16320 of 16320
+PASS V7 counter column 'covInvFail' present and non-missing
+PASS V7 counter column 'stepInvFail' present and non-missing
+PASS V7 counter column 'infeasTrial' present and non-missing
+PASS V7 counter column 'rhoReject' present and non-missing
+PASS V7 counter column 'wallTime' present and non-missing
+PASS V7 counter column 'iterations' present and non-missing
+PASS V7 counter column 'status' present and non-missing
+PASS V7 continuation column 'cStage0Ok' present and non-missing
+PASS V7 continuation column 'cStepReductions' present and non-missing
+PASS V7 continuation column 'cMinStepExhausted' present and non-missing
+PASS V7 continuation column 'cFailRc2' present and non-missing
+PASS V7 continuation column 'cFailRc3' present and non-missing
+PASS V7 continuation column 'cFailRc4' present and non-missing
+PASS V7 continuation column 'cFailRc5' present and non-missing
+PASS V7 continuation column 'cFinalGnorm' present and non-missing
+PASS V4 cold LM: critExact == returned objective  max |diff| 0
+PASS V4 continuation (reached 1): critExact == returned objective  max |diff| 0
+PASS V4 Anderson converged: |critExact - qOut.homogCrit| small (<1e-2)  max 0.000437, median 2.09e-07
+INFO V1 Anderson converged endpoints: max|bS(b,b) - qOut.bS| median 5.12e-07, 90% 0.000182, max 2.32; max |bsHelperErr - bsErr| 0.353
+PASS V3b AIDS seed 31 converged starts  16 vs 16
+PASS V3b AIDS seed 31 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 31 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 31 selected recErr  4.2171064 vs 4.2171064
+PASS V3b AIDS seed 31 oracle recErr  4.2171 vs 4.2171
+PASS V3b AIDS seed 31 truth criterion  -5.4854647 vs -5.4854647 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 31: exact-objective selection picks start 9 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 32 converged starts  16 vs 16
+PASS V3b AIDS seed 32 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 32 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 32 selected recErr  1.8369592 vs 1.8369592
+PASS V3b AIDS seed 32 oracle recErr  1.8369564 vs 1.8369564
+PASS V3b AIDS seed 32 truth criterion  -5.5475038 vs -5.5475038 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 32: exact-objective selection picks start 16 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 33 converged starts  16 vs 16
+PASS V3b AIDS seed 33 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 33 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 33 selected recErr  3.6620218 vs 3.6620218
+PASS V3b AIDS seed 33 oracle recErr  3.6620218 vs 3.6620218
+PASS V3b AIDS seed 33 truth criterion  -5.5821728 vs -5.5821728 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 33: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 34 converged starts  16 vs 16
+PASS V3b AIDS seed 34 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 34 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 34 selected recErr  0.84507257 vs 0.84507257
+PASS V3b AIDS seed 34 oracle recErr  0.84507257 vs 0.84507257
+PASS V3b AIDS seed 34 truth criterion  -5.5677184 vs -5.5677184 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 34: exact-objective selection picks start 11 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 35 converged starts  16 vs 16
+PASS V3b AIDS seed 35 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 35 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 35 selected recErr  0.52327687 vs 0.52327687
+PASS V3b AIDS seed 35 oracle recErr  0.52327428 vs 0.52327428
+PASS V3b AIDS seed 35 truth criterion  -5.5240066 vs -5.5240066 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 35: exact-objective selection picks start 3 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 36 converged starts  16 vs 16
+PASS V3b AIDS seed 36 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 36 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 36 selected recErr  0.57658119 vs 0.57658119
+PASS V3b AIDS seed 36 oracle recErr  0.57658119 vs 0.57658119
+PASS V3b AIDS seed 36 truth criterion  -5.60154 vs -5.60154 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 36: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 37 converged starts  16 vs 16
+PASS V3b AIDS seed 37 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 37 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 37 selected recErr  0.61685536 vs 0.61685536
+PASS V3b AIDS seed 37 oracle recErr  0.61682977 vs 0.61682977
+PASS V3b AIDS seed 37 truth criterion  -5.5091667 vs -5.5091667 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 37: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 38 converged starts  16 vs 16
+PASS V3b AIDS seed 38 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 38 selected start (by homogCrit)  4 vs 4
+PASS V3b AIDS seed 38 selected recErr  0.33140284 vs 0.33140284
+PASS V3b AIDS seed 38 oracle recErr  0.33140131 vs 0.33140131
+PASS V3b AIDS seed 38 truth criterion  -5.6505941 vs -5.6505941 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 38: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b AIDS seed 39 converged starts  16 vs 16
+PASS V3b AIDS seed 39 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 39 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 39 selected recErr  0.424034 vs 0.424034
+PASS V3b AIDS seed 39 oracle recErr  0.42403205 vs 0.42403205
+PASS V3b AIDS seed 39 truth criterion  -5.6263217 vs -5.6263217 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 39: exact-objective selection picks start 1 (benchmark homogCrit selection 1)
+PASS V3b AIDS seed 40 converged starts  15 vs 15
+PASS V3b AIDS seed 40 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 40 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 40 selected recErr  2.8679268 vs 2.8679268
+PASS V3b AIDS seed 40 oracle recErr  2.8679268 vs 2.8679268
+PASS V3b AIDS seed 40 truth criterion  -5.5515182 vs -5.5515182 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 40: exact-objective selection picks start 1 (benchmark homogCrit selection 1)
+PASS V3b AIDS seed 41 converged starts  16 vs 16
+PASS V3b AIDS seed 41 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 41 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 41 selected recErr  8.6698962 vs 8.6698962
+PASS V3b AIDS seed 41 oracle recErr  8.6698962 vs 8.6698962
+PASS V3b AIDS seed 41 truth criterion  -5.5269479 vs -5.5269479 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 41: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 42 converged starts  16 vs 16
+PASS V3b AIDS seed 42 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b AIDS seed 42 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 42 selected recErr  0.46326707 vs 0.46326707
+PASS V3b AIDS seed 42 oracle recErr  0.46314954 vs 0.46314954
+PASS V3b AIDS seed 42 truth criterion  -5.5429204 vs -5.5429204 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 42: exact-objective selection picks start 9 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 43 converged starts  16 vs 16
+PASS V3b AIDS seed 43 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 43 selected start (by homogCrit)  12 vs 12
+PASS V3b AIDS seed 43 selected recErr  0.52621103 vs 0.52621103
+PASS V3b AIDS seed 43 oracle recErr  0.52621103 vs 0.52621103
+PASS V3b AIDS seed 43 truth criterion  -5.5322581 vs -5.5322581 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 43: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b AIDS seed 44 converged starts  16 vs 16
+PASS V3b AIDS seed 44 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 44 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 44 selected recErr  9.0424063 vs 9.0424063
+PASS V3b AIDS seed 44 oracle recErr  9.0424063 vs 9.0424063
+PASS V3b AIDS seed 44 truth criterion  -5.5642541 vs -5.5642541 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 44: exact-objective selection picks start 10 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 45 converged starts  16 vs 16
+PASS V3b AIDS seed 45 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 45 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 45 selected recErr  0.55038827 vs 0.55038827
+PASS V3b AIDS seed 45 oracle recErr  0.55038827 vs 0.55038827
+PASS V3b AIDS seed 45 truth criterion  -5.4787319 vs -5.4787319 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 45: exact-objective selection picks start 11 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 46 converged starts  16 vs 16
+PASS V3b AIDS seed 46 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 46 selected start (by homogCrit)  13 vs 13
+PASS V3b AIDS seed 46 selected recErr  0.68153854 vs 0.68153854
+PASS V3b AIDS seed 46 oracle recErr  0.68153854 vs 0.68153854
+PASS V3b AIDS seed 46 truth criterion  -5.6751673 vs -5.6751673 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 46: exact-objective selection picks start 8 (benchmark homogCrit selection 13)
+PASS V3b AIDS seed 47 converged starts  16 vs 16
+PASS V3b AIDS seed 47 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 47 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 47 selected recErr  0.61457363 vs 0.61457363
+PASS V3b AIDS seed 47 oracle recErr  0.61457363 vs 0.61457363
+PASS V3b AIDS seed 47 truth criterion  -5.5264758 vs -5.5264758 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 47: exact-objective selection picks start 13 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 48 converged starts  16 vs 16
+PASS V3b AIDS seed 48 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 48 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 48 selected recErr  1.0210784 vs 1.0210784
+PASS V3b AIDS seed 48 oracle recErr  1.0210784 vs 1.0210784
+PASS V3b AIDS seed 48 truth criterion  -5.6048691 vs -5.6048691 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 48: exact-objective selection picks start 15 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 49 converged starts  16 vs 16
+PASS V3b AIDS seed 49 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 49 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 49 selected recErr  5.4582048 vs 5.4582048
+PASS V3b AIDS seed 49 oracle recErr  5.4582048 vs 5.4582048
+PASS V3b AIDS seed 49 truth criterion  -5.5215172 vs -5.5215172 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 49: exact-objective selection picks start 5 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 50 converged starts  16 vs 16
+PASS V3b AIDS seed 50 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 50 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 50 selected recErr  0.47846957 vs 0.47846957
+PASS V3b AIDS seed 50 oracle recErr  0.47846901 vs 0.47846901
+PASS V3b AIDS seed 50 truth criterion  -5.5689 vs -5.5689 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 50: exact-objective selection picks start 1 (benchmark homogCrit selection 1)
+PASS V3b AIDS seed 51 converged starts  16 vs 16
+PASS V3b AIDS seed 51 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 51 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 51 selected recErr  0.95014756 vs 0.95014756
+PASS V3b AIDS seed 51 oracle recErr  0.9501435 vs 0.9501435
+PASS V3b AIDS seed 51 truth criterion  -5.4464678 vs -5.4464678 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 51: exact-objective selection picks start 13 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 52 converged starts  16 vs 16
+PASS V3b AIDS seed 52 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 52 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 52 selected recErr  0.4829297 vs 0.4829297
+PASS V3b AIDS seed 52 oracle recErr  0.48292963 vs 0.48292963
+PASS V3b AIDS seed 52 truth criterion  -5.5693074 vs -5.5693074 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 52: exact-objective selection picks start 2 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 53 converged starts  16 vs 16
+PASS V3b AIDS seed 53 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 53 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 53 selected recErr  0.80439256 vs 0.80439256
+PASS V3b AIDS seed 53 oracle recErr  0.80439253 vs 0.80439253
+PASS V3b AIDS seed 53 truth criterion  -5.4710326 vs -5.4710326 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 53: exact-objective selection picks start 16 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 54 converged starts  16 vs 16
+PASS V3b AIDS seed 54 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 54 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 54 selected recErr  0.65707984 vs 0.65707984
+PASS V3b AIDS seed 54 oracle recErr  0.65707984 vs 0.65707984
+PASS V3b AIDS seed 54 truth criterion  -5.4906932 vs -5.4906932 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 54: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 55 converged starts  16 vs 16
+PASS V3b AIDS seed 55 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 55 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 55 selected recErr  8.3860258 vs 8.3860258
+PASS V3b AIDS seed 55 oracle recErr  8.3860258 vs 8.3860258
+PASS V3b AIDS seed 55 truth criterion  -5.5014598 vs -5.5014598 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 55: exact-objective selection picks start 8 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 56 converged starts  16 vs 16
+PASS V3b AIDS seed 56 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 56 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 56 selected recErr  0.6666929 vs 0.6666929
+PASS V3b AIDS seed 56 oracle recErr  0.6666929 vs 0.6666929
+PASS V3b AIDS seed 56 truth criterion  -5.5541884 vs -5.5541884 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 56: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 57 converged starts  16 vs 16
+PASS V3b AIDS seed 57 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 57 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 57 selected recErr  0.42325403 vs 0.42325403
+PASS V3b AIDS seed 57 oracle recErr  0.42325403 vs 0.42325403
+PASS V3b AIDS seed 57 truth criterion  -5.5541498 vs -5.5541498 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 57: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 58 converged starts  16 vs 16
+PASS V3b AIDS seed 58 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 58 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 58 selected recErr  2.7457598 vs 2.7457598
+PASS V3b AIDS seed 58 oracle recErr  2.7457598 vs 2.7457598
+PASS V3b AIDS seed 58 truth criterion  -5.5607351 vs -5.5607351 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 58: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 59 converged starts  16 vs 16
+PASS V3b AIDS seed 59 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 59 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 59 selected recErr  0.74773745 vs 0.74773745
+PASS V3b AIDS seed 59 oracle recErr  0.74773745 vs 0.74773745
+PASS V3b AIDS seed 59 truth criterion  -5.5756827 vs -5.5756827 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 59: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 60 converged starts  16 vs 16
+PASS V3b AIDS seed 60 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 60 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 60 selected recErr  0.81077547 vs 0.81077547
+PASS V3b AIDS seed 60 oracle recErr  0.810775 vs 0.810775
+PASS V3b AIDS seed 60 truth criterion  -5.5358219 vs -5.5358219 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 60: exact-objective selection picks start 7 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 61 converged starts  16 vs 16
+PASS V3b AIDS seed 61 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 61 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 61 selected recErr  1.4523105 vs 1.4523105
+PASS V3b AIDS seed 61 oracle recErr  1.4523103 vs 1.4523103
+PASS V3b AIDS seed 61 truth criterion  -5.4726997 vs -5.4726997 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 61: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 62 converged starts  16 vs 16
+PASS V3b AIDS seed 62 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 62 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 62 selected recErr  0.56146535 vs 0.56146535
+PASS V3b AIDS seed 62 oracle recErr  0.56146505 vs 0.56146505
+PASS V3b AIDS seed 62 truth criterion  -5.5106776 vs -5.5106776 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 62: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 63 converged starts  16 vs 16
+PASS V3b AIDS seed 63 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 63 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 63 selected recErr  5.298933 vs 5.298933
+PASS V3b AIDS seed 63 oracle recErr  5.298933 vs 5.298933
+PASS V3b AIDS seed 63 truth criterion  -5.5255736 vs -5.5255736 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 63: exact-objective selection picks start 9 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 64 converged starts  16 vs 16
+PASS V3b AIDS seed 64 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 64 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 64 selected recErr  0.67422457 vs 0.67422457
+PASS V3b AIDS seed 64 oracle recErr  0.67422457 vs 0.67422457
+PASS V3b AIDS seed 64 truth criterion  -5.5040598 vs -5.5040598 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 64: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 65 converged starts  16 vs 16
+PASS V3b AIDS seed 65 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 65 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 65 selected recErr  0.3211904 vs 0.3211904
+PASS V3b AIDS seed 65 oracle recErr  0.32118897 vs 0.32118897
+PASS V3b AIDS seed 65 truth criterion  -5.5650866 vs -5.5650866 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 65: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 66 converged starts  16 vs 16
+PASS V3b AIDS seed 66 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 66 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 66 selected recErr  0.51048342 vs 0.51048342
+PASS V3b AIDS seed 66 oracle recErr  0.51048334 vs 0.51048334
+PASS V3b AIDS seed 66 truth criterion  -5.4797174 vs -5.4797174 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 66: exact-objective selection picks start 13 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 67 converged starts  16 vs 16
+PASS V3b AIDS seed 67 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 67 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 67 selected recErr  0.29421102 vs 0.29421102
+PASS V3b AIDS seed 67 oracle recErr  0.29420197 vs 0.29420197
+PASS V3b AIDS seed 67 truth criterion  -5.6329348 vs -5.6329348 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 67: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 68 converged starts  16 vs 16
+PASS V3b AIDS seed 68 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 68 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 68 selected recErr  0.39965342 vs 0.39965342
+PASS V3b AIDS seed 68 oracle recErr  0.39964903 vs 0.39964903
+PASS V3b AIDS seed 68 truth criterion  -5.5687128 vs -5.5687128 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 68: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 69 converged starts  16 vs 16
+PASS V3b AIDS seed 69 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 69 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 69 selected recErr  0.74773018 vs 0.74773018
+PASS V3b AIDS seed 69 oracle recErr  0.74772357 vs 0.74772357
+PASS V3b AIDS seed 69 truth criterion  -5.5200097 vs -5.5200097 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 69: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 70 converged starts  16 vs 16
+PASS V3b AIDS seed 70 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 70 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 70 selected recErr  0.31429356 vs 0.31429356
+PASS V3b AIDS seed 70 oracle recErr  0.31429118 vs 0.31429118
+PASS V3b AIDS seed 70 truth criterion  -5.5290394 vs -5.5290394 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 70: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 71 converged starts  16 vs 16
+PASS V3b AIDS seed 71 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 71 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 71 selected recErr  1.8655188 vs 1.8655188
+PASS V3b AIDS seed 71 oracle recErr  1.8655188 vs 1.8655188
+PASS V3b AIDS seed 71 truth criterion  -5.5005027 vs -5.5005027 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 71: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 72 converged starts  16 vs 16
+PASS V3b AIDS seed 72 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 72 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 72 selected recErr  9.4854102 vs 9.4854102
+PASS V3b AIDS seed 72 oracle recErr  9.4853015 vs 9.4853015
+PASS V3b AIDS seed 72 truth criterion  -5.4986421 vs -5.4986421 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 72: exact-objective selection picks start 15 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 73 converged starts  16 vs 16
+PASS V3b AIDS seed 73 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 73 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 73 selected recErr  0.89770771 vs 0.89770771
+PASS V3b AIDS seed 73 oracle recErr  0.89770771 vs 0.89770771
+PASS V3b AIDS seed 73 truth criterion  -5.4959779 vs -5.4959779 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 73: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 74 converged starts  16 vs 16
+PASS V3b AIDS seed 74 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 74 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 74 selected recErr  1.021509 vs 1.021509
+PASS V3b AIDS seed 74 oracle recErr  1.021509 vs 1.021509
+PASS V3b AIDS seed 74 truth criterion  -5.5152623 vs -5.5152623 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 74: exact-objective selection picks start 16 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 75 converged starts  16 vs 16
+PASS V3b AIDS seed 75 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 75 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 75 selected recErr  1.0376185 vs 1.0376185
+PASS V3b AIDS seed 75 oracle recErr  1.0376183 vs 1.0376183
+PASS V3b AIDS seed 75 truth criterion  -5.6248419 vs -5.6248419 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 75: exact-objective selection picks start 7 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 76 converged starts  16 vs 16
+PASS V3b AIDS seed 76 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 76 selected start (by homogCrit)  13 vs 13
+PASS V3b AIDS seed 76 selected recErr  0.4138927 vs 0.4138927
+PASS V3b AIDS seed 76 oracle recErr  0.413884 vs 0.413884
+PASS V3b AIDS seed 76 truth criterion  -5.5329761 vs -5.5329761 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 76: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b AIDS seed 77 converged starts  16 vs 16
+PASS V3b AIDS seed 77 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 77 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 77 selected recErr  0.52426385 vs 0.52426385
+PASS V3b AIDS seed 77 oracle recErr  0.52426359 vs 0.52426359
+PASS V3b AIDS seed 77 truth criterion  -5.6221322 vs -5.6221322 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 77: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 78 converged starts  16 vs 16
+PASS V3b AIDS seed 78 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 78 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 78 selected recErr  2.5306139 vs 2.5306139
+PASS V3b AIDS seed 78 oracle recErr  2.5305894 vs 2.5305894
+PASS V3b AIDS seed 78 truth criterion  -5.5467105 vs -5.5467105 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 78: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 79 converged starts  15 vs 15
+PASS V3b AIDS seed 79 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 79 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 79 selected recErr  1.6190012 vs 1.6190012
+PASS V3b AIDS seed 79 oracle recErr  1.6190012 vs 1.6190012
+PASS V3b AIDS seed 79 truth criterion  -5.5176087 vs -5.5176087 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 79: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 80 converged starts  16 vs 16
+PASS V3b AIDS seed 80 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 80 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 80 selected recErr  0.61208571 vs 0.61208571
+PASS V3b AIDS seed 80 oracle recErr  0.61207989 vs 0.61207989
+PASS V3b AIDS seed 80 truth criterion  -5.5041003 vs -5.5041003 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 80: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 81 converged starts  16 vs 16
+PASS V3b AIDS seed 81 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 81 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 81 selected recErr  12.373605 vs 12.373605
+PASS V3b AIDS seed 81 oracle recErr  12.373602 vs 12.373602
+PASS V3b AIDS seed 81 truth criterion  -5.5065229 vs -5.5065229 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 81: exact-objective selection picks start 9 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 82 converged starts  16 vs 16
+PASS V3b AIDS seed 82 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 82 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 82 selected recErr  0.65341246 vs 0.65341246
+PASS V3b AIDS seed 82 oracle recErr  0.65341246 vs 0.65341246
+PASS V3b AIDS seed 82 truth criterion  -5.56544 vs -5.56544 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 82: exact-objective selection picks start 15 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 83 converged starts  16 vs 16
+PASS V3b AIDS seed 83 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 83 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 83 selected recErr  1.1574404 vs 1.1574404
+PASS V3b AIDS seed 83 oracle recErr  1.1574403 vs 1.1574403
+PASS V3b AIDS seed 83 truth criterion  -5.4798324 vs -5.4798324 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 83: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 84 converged starts  16 vs 16
+PASS V3b AIDS seed 84 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 84 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 84 selected recErr  0.22208456 vs 0.22208456
+PASS V3b AIDS seed 84 oracle recErr  0.22208456 vs 0.22208456
+PASS V3b AIDS seed 84 truth criterion  -5.5687974 vs -5.5687974 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 84: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 85 converged starts  16 vs 16
+PASS V3b AIDS seed 85 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 85 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 85 selected recErr  0.33214717 vs 0.33214717
+PASS V3b AIDS seed 85 oracle recErr  0.33214714 vs 0.33214714
+PASS V3b AIDS seed 85 truth criterion  -5.4589109 vs -5.4589109 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 85: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 86 converged starts  16 vs 16
+PASS V3b AIDS seed 86 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 86 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 86 selected recErr  8.586848 vs 8.586848
+PASS V3b AIDS seed 86 oracle recErr  8.5868265 vs 8.5868265
+PASS V3b AIDS seed 86 truth criterion  -5.5547252 vs -5.5547252 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 86: exact-objective selection picks start 2 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 87 converged starts  16 vs 16
+PASS V3b AIDS seed 87 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 87 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 87 selected recErr  0.71146852 vs 0.71146852
+PASS V3b AIDS seed 87 oracle recErr  0.71146852 vs 0.71146852
+PASS V3b AIDS seed 87 truth criterion  -5.6944 vs -5.6944 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 87: exact-objective selection picks start 9 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 88 converged starts  16 vs 16
+PASS V3b AIDS seed 88 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 88 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 88 selected recErr  1.0391094 vs 1.0391094
+PASS V3b AIDS seed 88 oracle recErr  1.0390923 vs 1.0390923
+PASS V3b AIDS seed 88 truth criterion  -5.5796088 vs -5.5796088 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 88: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 89 converged starts  16 vs 16
+PASS V3b AIDS seed 89 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 89 selected start (by homogCrit)  13 vs 13
+PASS V3b AIDS seed 89 selected recErr  1.9201286 vs 1.9201286
+PASS V3b AIDS seed 89 oracle recErr  1.9201286 vs 1.9201286
+PASS V3b AIDS seed 89 truth criterion  -5.5102933 vs -5.5102933 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 89: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b AIDS seed 90 converged starts  16 vs 16
+PASS V3b AIDS seed 90 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 90 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 90 selected recErr  1.2559769 vs 1.2559769
+PASS V3b AIDS seed 90 oracle recErr  1.2559766 vs 1.2559766
+PASS V3b AIDS seed 90 truth criterion  -5.4984978 vs -5.4984978 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 90: exact-objective selection picks start 11 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 91 converged starts  16 vs 16
+PASS V3b AIDS seed 91 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 91 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 91 selected recErr  1.1244037 vs 1.1244037
+PASS V3b AIDS seed 91 oracle recErr  1.1244036 vs 1.1244036
+PASS V3b AIDS seed 91 truth criterion  -5.6130503 vs -5.6130503 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 91: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 92 converged starts  16 vs 16
+PASS V3b AIDS seed 92 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 92 selected start (by homogCrit)  12 vs 12
+PASS V3b AIDS seed 92 selected recErr  0.53142918 vs 0.53142918
+PASS V3b AIDS seed 92 oracle recErr  0.53142796 vs 0.53142796
+PASS V3b AIDS seed 92 truth criterion  -5.5629232 vs -5.5629232 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 92: exact-objective selection picks start 7 (benchmark homogCrit selection 12)
+PASS V3b AIDS seed 93 converged starts  16 vs 16
+PASS V3b AIDS seed 93 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 93 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 93 selected recErr  11.593222 vs 11.593222
+PASS V3b AIDS seed 93 oracle recErr  11.59322 vs 11.59322
+PASS V3b AIDS seed 93 truth criterion  -5.6108636 vs -5.6108636 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 93: exact-objective selection picks start 4 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 94 converged starts  16 vs 16
+PASS V3b AIDS seed 94 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 94 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 94 selected recErr  6.5583458 vs 6.5583458
+PASS V3b AIDS seed 94 oracle recErr  6.5583458 vs 6.5583458
+PASS V3b AIDS seed 94 truth criterion  -5.4658259 vs -5.4658259 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 94: exact-objective selection picks start 14 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 95 converged starts  16 vs 16
+PASS V3b AIDS seed 95 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 95 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 95 selected recErr  0.42302297 vs 0.42302297
+PASS V3b AIDS seed 95 oracle recErr  0.42302141 vs 0.42302141
+PASS V3b AIDS seed 95 truth criterion  -5.5828321 vs -5.5828321 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 95: exact-objective selection picks start 7 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 96 converged starts  16 vs 16
+PASS V3b AIDS seed 96 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 96 selected start (by homogCrit)  12 vs 12
+PASS V3b AIDS seed 96 selected recErr  0.35000524 vs 0.35000524
+PASS V3b AIDS seed 96 oracle recErr  0.34999941 vs 0.34999941
+PASS V3b AIDS seed 96 truth criterion  -5.5020578 vs -5.5020578 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 96: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b AIDS seed 97 converged starts  16 vs 16
+PASS V3b AIDS seed 97 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b AIDS seed 97 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 97 selected recErr  0.86196461 vs 0.86196461
+PASS V3b AIDS seed 97 oracle recErr  0.49406338 vs 0.49406338
+PASS V3b AIDS seed 97 truth criterion  -5.471088 vs -5.471088 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 97: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 98 converged starts  16 vs 16
+PASS V3b AIDS seed 98 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 98 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 98 selected recErr  0.78105571 vs 0.78105571
+PASS V3b AIDS seed 98 oracle recErr  0.78105571 vs 0.78105571
+PASS V3b AIDS seed 98 truth criterion  -5.5199237 vs -5.5199237 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 98: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 99 converged starts  16 vs 16
+PASS V3b AIDS seed 99 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 99 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 99 selected recErr  0.7400892 vs 0.7400892
+PASS V3b AIDS seed 99 oracle recErr  0.7400892 vs 0.7400892
+PASS V3b AIDS seed 99 truth criterion  -5.530895 vs -5.530895 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 99: exact-objective selection picks start 7 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 100 converged starts  16 vs 16
+PASS V3b AIDS seed 100 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 100 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 100 selected recErr  3.5893123 vs 3.5893123
+PASS V3b AIDS seed 100 oracle recErr  3.5893123 vs 3.5893123
+PASS V3b AIDS seed 100 truth criterion  -5.4124933 vs -5.4124933 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 100: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 101 converged starts  16 vs 16
+PASS V3b AIDS seed 101 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 101 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 101 selected recErr  14.060469 vs 14.060469
+PASS V3b AIDS seed 101 oracle recErr  14.060469 vs 14.060469
+PASS V3b AIDS seed 101 truth criterion  -5.6394503 vs -5.6394503 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 101: exact-objective selection picks start 10 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 102 converged starts  16 vs 16
+PASS V3b AIDS seed 102 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b AIDS seed 102 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 102 selected recErr  1.2692576 vs 1.2692576
+PASS V3b AIDS seed 102 oracle recErr  1.2692576 vs 1.2692576
+PASS V3b AIDS seed 102 truth criterion  -5.4368042 vs -5.4368042 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 102: exact-objective selection picks start 3 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 103 converged starts  16 vs 16
+PASS V3b AIDS seed 103 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 103 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 103 selected recErr  1.2229928 vs 1.2229928
+PASS V3b AIDS seed 103 oracle recErr  1.2229904 vs 1.2229904
+PASS V3b AIDS seed 103 truth criterion  -5.5459433 vs -5.5459433 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 103: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 104 converged starts  16 vs 16
+PASS V3b AIDS seed 104 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 104 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 104 selected recErr  0.4778026 vs 0.4778026
+PASS V3b AIDS seed 104 oracle recErr  0.47780141 vs 0.47780141
+PASS V3b AIDS seed 104 truth criterion  -5.5524949 vs -5.5524949 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 104: exact-objective selection picks start 5 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 105 converged starts  16 vs 16
+PASS V3b AIDS seed 105 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 105 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 105 selected recErr  0.58298433 vs 0.58298433
+PASS V3b AIDS seed 105 oracle recErr  0.58298226 vs 0.58298226
+PASS V3b AIDS seed 105 truth criterion  -5.4745968 vs -5.4745968 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 105: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 106 converged starts  16 vs 16
+PASS V3b AIDS seed 106 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 106 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 106 selected recErr  0.68771326 vs 0.68771326
+PASS V3b AIDS seed 106 oracle recErr  0.68771313 vs 0.68771313
+PASS V3b AIDS seed 106 truth criterion  -5.5055422 vs -5.5055422 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 106: exact-objective selection picks start 3 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 107 converged starts  16 vs 16
+PASS V3b AIDS seed 107 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 107 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 107 selected recErr  3.1709388 vs 3.1709388
+PASS V3b AIDS seed 107 oracle recErr  3.1709388 vs 3.1709388
+PASS V3b AIDS seed 107 truth criterion  -5.5018552 vs -5.5018552 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 107: exact-objective selection picks start 9 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 108 converged starts  16 vs 16
+PASS V3b AIDS seed 108 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 108 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 108 selected recErr  1.1069579 vs 1.1069579
+PASS V3b AIDS seed 108 oracle recErr  1.1069579 vs 1.1069579
+PASS V3b AIDS seed 108 truth criterion  -5.5640126 vs -5.5640126 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 108: exact-objective selection picks start 3 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 109 converged starts  16 vs 16
+PASS V3b AIDS seed 109 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 109 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 109 selected recErr  0.25285154 vs 0.25285154
+PASS V3b AIDS seed 109 oracle recErr  0.25285154 vs 0.25285154
+PASS V3b AIDS seed 109 truth criterion  -5.5818216 vs -5.5818216 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 109: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 110 converged starts  16 vs 16
+PASS V3b AIDS seed 110 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 110 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 110 selected recErr  0.86384875 vs 0.86384875
+PASS V3b AIDS seed 110 oracle recErr  0.86384875 vs 0.86384875
+PASS V3b AIDS seed 110 truth criterion  -5.4489811 vs -5.4489811 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 110: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 111 converged starts  14 vs 14
+PASS V3b AIDS seed 111 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 111 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 111 selected recErr  3.9854264 vs 3.9854264
+PASS V3b AIDS seed 111 oracle recErr  3.9853908 vs 3.9853908
+PASS V3b AIDS seed 111 truth criterion  -5.5183118 vs -5.5183118 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 111: exact-objective selection picks start 12 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 112 converged starts  16 vs 16
+PASS V3b AIDS seed 112 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 112 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 112 selected recErr  0.75195212 vs 0.75195212
+PASS V3b AIDS seed 112 oracle recErr  0.75195212 vs 0.75195212
+PASS V3b AIDS seed 112 truth criterion  -5.4951767 vs -5.4951767 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 112: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 113 converged starts  16 vs 16
+PASS V3b AIDS seed 113 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 113 selected start (by homogCrit)  4 vs 4
+PASS V3b AIDS seed 113 selected recErr  0.80262512 vs 0.80262512
+PASS V3b AIDS seed 113 oracle recErr  0.80262456 vs 0.80262456
+PASS V3b AIDS seed 113 truth criterion  -5.568252 vs -5.568252 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 113: exact-objective selection picks start 14 (benchmark homogCrit selection 4)
+PASS V3b AIDS seed 114 converged starts  16 vs 16
+PASS V3b AIDS seed 114 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 114 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 114 selected recErr  1.0058085 vs 1.0058085
+PASS V3b AIDS seed 114 oracle recErr  1.0058085 vs 1.0058085
+PASS V3b AIDS seed 114 truth criterion  -5.5327024 vs -5.5327024 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 114: exact-objective selection picks start 9 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 115 converged starts  16 vs 16
+PASS V3b AIDS seed 115 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 115 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 115 selected recErr  0.73738129 vs 0.73738129
+PASS V3b AIDS seed 115 oracle recErr  0.73736964 vs 0.73736964
+PASS V3b AIDS seed 115 truth criterion  -5.6189089 vs -5.6189089 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 115: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 116 converged starts  16 vs 16
+PASS V3b AIDS seed 116 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 116 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 116 selected recErr  6.3044344 vs 6.3044344
+PASS V3b AIDS seed 116 oracle recErr  6.3044344 vs 6.3044344
+PASS V3b AIDS seed 116 truth criterion  -5.5289768 vs -5.5289768 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 116: exact-objective selection picks start 7 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 117 converged starts  16 vs 16
+PASS V3b AIDS seed 117 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 117 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 117 selected recErr  7.7037555 vs 7.7037555
+PASS V3b AIDS seed 117 oracle recErr  7.7037533 vs 7.7037533
+PASS V3b AIDS seed 117 truth criterion  -5.5503839 vs -5.5503839 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 117: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 118 converged starts  16 vs 16
+PASS V3b AIDS seed 118 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 118 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 118 selected recErr  1.2470508 vs 1.2470508
+PASS V3b AIDS seed 118 oracle recErr  1.2470508 vs 1.2470508
+PASS V3b AIDS seed 118 truth criterion  -5.544196 vs -5.544196 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 118: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 119 converged starts  16 vs 16
+PASS V3b AIDS seed 119 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 119 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 119 selected recErr  0.59626433 vs 0.59626433
+PASS V3b AIDS seed 119 oracle recErr  0.59625607 vs 0.59625607
+PASS V3b AIDS seed 119 truth criterion  -5.5971372 vs -5.5971372 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 119: exact-objective selection picks start 9 (benchmark homogCrit selection 1)
+PASS V3b AIDS seed 120 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b AIDS seed 121 converged starts  16 vs 16
+PASS V3b AIDS seed 121 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 121 selected start (by homogCrit)  12 vs 12
+PASS V3b AIDS seed 121 selected recErr  0.5317971 vs 0.5317971
+PASS V3b AIDS seed 121 oracle recErr  0.5317971 vs 0.5317971
+PASS V3b AIDS seed 121 truth criterion  -5.6082995 vs -5.6082995 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 121: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b AIDS seed 122 converged starts  16 vs 16
+PASS V3b AIDS seed 122 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 122 selected start (by homogCrit)  4 vs 4
+PASS V3b AIDS seed 122 selected recErr  0.64353174 vs 0.64353174
+PASS V3b AIDS seed 122 oracle recErr  0.6435308 vs 0.6435308
+PASS V3b AIDS seed 122 truth criterion  -5.5684757 vs -5.5684757 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 122: exact-objective selection picks start 6 (benchmark homogCrit selection 4)
+PASS V3b AIDS seed 123 converged starts  16 vs 16
+PASS V3b AIDS seed 123 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 123 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 123 selected recErr  0.75799418 vs 0.75799418
+PASS V3b AIDS seed 123 oracle recErr  0.75799411 vs 0.75799411
+PASS V3b AIDS seed 123 truth criterion  -5.5045457 vs -5.5045457 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 123: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 124 converged starts  16 vs 16
+PASS V3b AIDS seed 124 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 124 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 124 selected recErr  0.62536063 vs 0.62536063
+PASS V3b AIDS seed 124 oracle recErr  0.62536058 vs 0.62536058
+PASS V3b AIDS seed 124 truth criterion  -5.5992681 vs -5.5992681 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 124: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 125 converged starts  16 vs 16
+PASS V3b AIDS seed 125 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 125 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 125 selected recErr  0.6374041 vs 0.6374041
+PASS V3b AIDS seed 125 oracle recErr  0.6374041 vs 0.6374041
+PASS V3b AIDS seed 125 truth criterion  -5.5348965 vs -5.5348965 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 125: exact-objective selection picks start 5 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 126 converged starts  16 vs 16
+PASS V3b AIDS seed 126 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 126 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 126 selected recErr  0.34136175 vs 0.34136175
+PASS V3b AIDS seed 126 oracle recErr  0.34136166 vs 0.34136166
+PASS V3b AIDS seed 126 truth criterion  -5.4718816 vs -5.4718816 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 126: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 127 converged starts  16 vs 16
+PASS V3b AIDS seed 127 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 127 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 127 selected recErr  8.5186429 vs 8.5186429
+PASS V3b AIDS seed 127 oracle recErr  8.5186429 vs 8.5186429
+PASS V3b AIDS seed 127 truth criterion  -5.5517079 vs -5.5517079 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 127: exact-objective selection picks start 6 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 128 converged starts  16 vs 16
+PASS V3b AIDS seed 128 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 128 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 128 selected recErr  1.4456104 vs 1.4456104
+PASS V3b AIDS seed 128 oracle recErr  1.4456104 vs 1.4456104
+PASS V3b AIDS seed 128 truth criterion  -5.4958539 vs -5.4958539 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 128: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 129 converged starts  16 vs 16
+PASS V3b AIDS seed 129 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 129 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 129 selected recErr  0.37847895 vs 0.37847895
+PASS V3b AIDS seed 129 oracle recErr  0.37847895 vs 0.37847895
+PASS V3b AIDS seed 129 truth criterion  -5.5703687 vs -5.5703687 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 129: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 130 converged starts  16 vs 16
+PASS V3b AIDS seed 130 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 130 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 130 selected recErr  2.8153832 vs 2.8153832
+PASS V3b AIDS seed 130 oracle recErr  2.8153832 vs 2.8153832
+PASS V3b AIDS seed 130 truth criterion  -5.508963 vs -5.508963 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 130: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 131 converged starts  16 vs 16
+PASS V3b AIDS seed 131 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 131 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 131 selected recErr  0.81010259 vs 0.81010259
+PASS V3b AIDS seed 131 oracle recErr  0.81010213 vs 0.81010213
+PASS V3b AIDS seed 131 truth criterion  -5.5226779 vs -5.5226779 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 131: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 132 converged starts  16 vs 16
+PASS V3b AIDS seed 132 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 132 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 132 selected recErr  5.1629177 vs 5.1629177
+PASS V3b AIDS seed 132 oracle recErr  5.1629177 vs 5.1629177
+PASS V3b AIDS seed 132 truth criterion  -5.4670968 vs -5.4670968 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 132: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 133 converged starts  16 vs 16
+PASS V3b AIDS seed 133 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 133 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 133 selected recErr  1.1480036 vs 1.1480036
+PASS V3b AIDS seed 133 oracle recErr  1.1479949 vs 1.1479949
+PASS V3b AIDS seed 133 truth criterion  -5.6073554 vs -5.6073554 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 133: exact-objective selection picks start 15 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 134 converged starts  16 vs 16
+PASS V3b AIDS seed 134 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 134 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 134 selected recErr  0.99119261 vs 0.99119261
+PASS V3b AIDS seed 134 oracle recErr  0.99119241 vs 0.99119241
+PASS V3b AIDS seed 134 truth criterion  -5.4819281 vs -5.4819281 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 134: exact-objective selection picks start 13 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 135 converged starts  15 vs 15
+PASS V3b AIDS seed 135 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 135 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 135 selected recErr  0.55351984 vs 0.55351984
+PASS V3b AIDS seed 135 oracle recErr  0.55351984 vs 0.55351984
+PASS V3b AIDS seed 135 truth criterion  -5.5565972 vs -5.5565972 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 135: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 136 converged starts  16 vs 16
+PASS V3b AIDS seed 136 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 136 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 136 selected recErr  0.25979623 vs 0.25979623
+PASS V3b AIDS seed 136 oracle recErr  0.25979623 vs 0.25979623
+PASS V3b AIDS seed 136 truth criterion  -5.4953741 vs -5.4953741 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 136: exact-objective selection picks start 3 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 137 converged starts  16 vs 16
+PASS V3b AIDS seed 137 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 137 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 137 selected recErr  12.022162 vs 12.022162
+PASS V3b AIDS seed 137 oracle recErr  12.022162 vs 12.022162
+PASS V3b AIDS seed 137 truth criterion  -5.4870446 vs -5.4870446 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 137: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 138 converged starts  16 vs 16
+PASS V3b AIDS seed 138 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 138 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 138 selected recErr  0.59289017 vs 0.59289017
+PASS V3b AIDS seed 138 oracle recErr  0.592889 vs 0.592889
+PASS V3b AIDS seed 138 truth criterion  -5.4506485 vs -5.4506485 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 138: exact-objective selection picks start 1 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 139 converged starts  3 vs 3
+PASS V3b AIDS seed 139 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 139 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 139 selected recErr  0.35268059 vs 0.35268059
+PASS V3b AIDS seed 139 oracle recErr  0.35268059 vs 0.35268059
+PASS V3b AIDS seed 139 truth criterion  -5.5278923 vs -5.5278923 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 139: exact-objective selection picks start 3 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 140 converged starts  12 vs 12
+PASS V3b AIDS seed 140 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 140 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 140 selected recErr  0.61901831 vs 0.61901831
+PASS V3b AIDS seed 140 oracle recErr  0.61901831 vs 0.61901831
+PASS V3b AIDS seed 140 truth criterion  -5.486403 vs -5.486403 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 140: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 141 converged starts  16 vs 16
+PASS V3b AIDS seed 141 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 141 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 141 selected recErr  0.57281831 vs 0.57281831
+PASS V3b AIDS seed 141 oracle recErr  0.57281803 vs 0.57281803
+PASS V3b AIDS seed 141 truth criterion  -5.5311248 vs -5.5311248 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 141: exact-objective selection picks start 15 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 142 converged starts  16 vs 16
+PASS V3b AIDS seed 142 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 142 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 142 selected recErr  1.2279177 vs 1.2279177
+PASS V3b AIDS seed 142 oracle recErr  1.2279168 vs 1.2279168
+PASS V3b AIDS seed 142 truth criterion  -5.5650585 vs -5.5650585 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 142: exact-objective selection picks start 8 (benchmark homogCrit selection 1)
+PASS V3b AIDS seed 143 converged starts  16 vs 16
+PASS V3b AIDS seed 143 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 143 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 143 selected recErr  5.898746 vs 5.898746
+PASS V3b AIDS seed 143 oracle recErr  5.8987429 vs 5.8987429
+PASS V3b AIDS seed 143 truth criterion  -5.5763365 vs -5.5763365 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 143: exact-objective selection picks start 5 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 144 converged starts  16 vs 16
+PASS V3b AIDS seed 144 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 144 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 144 selected recErr  0.4872416 vs 0.4872416
+PASS V3b AIDS seed 144 oracle recErr  0.48723859 vs 0.48723859
+PASS V3b AIDS seed 144 truth criterion  -5.5555226 vs -5.5555226 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 144: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 145 converged starts  14 vs 14
+PASS V3b AIDS seed 145 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 145 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 145 selected recErr  1.8787195 vs 1.8787195
+PASS V3b AIDS seed 145 oracle recErr  1.8787195 vs 1.8787195
+PASS V3b AIDS seed 145 truth criterion  -5.4439498 vs -5.4439498 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 145: exact-objective selection picks start 1 (benchmark homogCrit selection 1)
+PASS V3b AIDS seed 146 converged starts  16 vs 16
+PASS V3b AIDS seed 146 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 146 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 146 selected recErr  1.0056832 vs 1.0056832
+PASS V3b AIDS seed 146 oracle recErr  1.0056829 vs 1.0056829
+PASS V3b AIDS seed 146 truth criterion  -5.5721046 vs -5.5721046 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 146: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 147 converged starts  16 vs 16
+PASS V3b AIDS seed 147 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 147 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 147 selected recErr  0.41063994 vs 0.41063994
+PASS V3b AIDS seed 147 oracle recErr  0.41063856 vs 0.41063856
+PASS V3b AIDS seed 147 truth criterion  -5.5250713 vs -5.5250713 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 147: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 148 converged starts  16 vs 16
+PASS V3b AIDS seed 148 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 148 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 148 selected recErr  0.21340484 vs 0.21340484
+PASS V3b AIDS seed 148 oracle recErr  0.21340302 vs 0.21340302
+PASS V3b AIDS seed 148 truth criterion  -5.5454447 vs -5.5454447 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 148: exact-objective selection picks start 9 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 149 converged starts  16 vs 16
+PASS V3b AIDS seed 149 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 149 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 149 selected recErr  0.65851171 vs 0.65851171
+PASS V3b AIDS seed 149 oracle recErr  0.65851171 vs 0.65851171
+PASS V3b AIDS seed 149 truth criterion  -5.4987679 vs -5.4987679 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 149: exact-objective selection picks start 3 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 150 converged starts  16 vs 16
+PASS V3b AIDS seed 150 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b AIDS seed 150 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 150 selected recErr  0.78797365 vs 0.78797365
+PASS V3b AIDS seed 150 oracle recErr  0.78797365 vs 0.78797365
+PASS V3b AIDS seed 150 truth criterion  -5.5605196 vs -5.5605196 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 150: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 151 converged starts  16 vs 16
+PASS V3b AIDS seed 151 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 151 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 151 selected recErr  9.9247439 vs 9.9247439
+PASS V3b AIDS seed 151 oracle recErr  9.9246593 vs 9.9246593
+PASS V3b AIDS seed 151 truth criterion  -5.5545289 vs -5.5545289 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 151: exact-objective selection picks start 15 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 152 converged starts  16 vs 16
+PASS V3b AIDS seed 152 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 152 selected start (by homogCrit)  13 vs 13
+PASS V3b AIDS seed 152 selected recErr  1.1077334 vs 1.1077334
+PASS V3b AIDS seed 152 oracle recErr  1.1077334 vs 1.1077334
+PASS V3b AIDS seed 152 truth criterion  -5.4907073 vs -5.4907073 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 152: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b AIDS seed 153 converged starts  16 vs 16
+PASS V3b AIDS seed 153 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 153 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 153 selected recErr  0.43733951 vs 0.43733951
+PASS V3b AIDS seed 153 oracle recErr  0.4373393 vs 0.4373393
+PASS V3b AIDS seed 153 truth criterion  -5.5202376 vs -5.5202376 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 153: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 154 converged starts  16 vs 16
+PASS V3b AIDS seed 154 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 154 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 154 selected recErr  0.95386407 vs 0.95386407
+PASS V3b AIDS seed 154 oracle recErr  0.95386351 vs 0.95386351
+PASS V3b AIDS seed 154 truth criterion  -5.5565677 vs -5.5565677 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 154: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 155 converged starts  16 vs 16
+PASS V3b AIDS seed 155 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 155 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 155 selected recErr  2.5226273 vs 2.5226273
+PASS V3b AIDS seed 155 oracle recErr  2.5226273 vs 2.5226273
+PASS V3b AIDS seed 155 truth criterion  -5.4228594 vs -5.4228594 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 155: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 156 converged starts  16 vs 16
+PASS V3b AIDS seed 156 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b AIDS seed 156 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 156 selected recErr  1.0129772 vs 1.0129772
+PASS V3b AIDS seed 156 oracle recErr  1.0129772 vs 1.0129772
+PASS V3b AIDS seed 156 truth criterion  -5.5806361 vs -5.5806361 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 156: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 157 converged starts  16 vs 16
+PASS V3b AIDS seed 157 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 157 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 157 selected recErr  0.37427463 vs 0.37427463
+PASS V3b AIDS seed 157 oracle recErr  0.37426788 vs 0.37426788
+PASS V3b AIDS seed 157 truth criterion  -5.4867246 vs -5.4867246 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 157: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 158 converged starts  16 vs 16
+PASS V3b AIDS seed 158 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 158 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 158 selected recErr  1.1156485 vs 1.1156485
+PASS V3b AIDS seed 158 oracle recErr  1.1156485 vs 1.1156485
+PASS V3b AIDS seed 158 truth criterion  -5.6250961 vs -5.6250961 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 158: exact-objective selection picks start 3 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 159 converged starts  16 vs 16
+PASS V3b AIDS seed 159 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 159 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 159 selected recErr  0.60846228 vs 0.60846228
+PASS V3b AIDS seed 159 oracle recErr  0.60846136 vs 0.60846136
+PASS V3b AIDS seed 159 truth criterion  -5.6212968 vs -5.6212968 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 159: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 160 converged starts  16 vs 16
+PASS V3b AIDS seed 160 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 160 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 160 selected recErr  14.079292 vs 14.079292
+PASS V3b AIDS seed 160 oracle recErr  14.079255 vs 14.079255
+PASS V3b AIDS seed 160 truth criterion  -5.4701028 vs -5.4701028 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 160: exact-objective selection picks start 13 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 161 converged starts  16 vs 16
+PASS V3b AIDS seed 161 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 161 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 161 selected recErr  0.48795891 vs 0.48795891
+PASS V3b AIDS seed 161 oracle recErr  0.48794599 vs 0.48794599
+PASS V3b AIDS seed 161 truth criterion  -5.5462041 vs -5.5462041 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 161: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 162 converged starts  16 vs 16
+PASS V3b AIDS seed 162 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 162 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 162 selected recErr  1.0133828 vs 1.0133828
+PASS V3b AIDS seed 162 oracle recErr  1.0133828 vs 1.0133828
+PASS V3b AIDS seed 162 truth criterion  -5.5865406 vs -5.5865406 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 162: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 163 converged starts  16 vs 16
+PASS V3b AIDS seed 163 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 163 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 163 selected recErr  0.35635753 vs 0.35635753
+PASS V3b AIDS seed 163 oracle recErr  0.35635489 vs 0.35635489
+PASS V3b AIDS seed 163 truth criterion  -5.5072612 vs -5.5072612 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 163: exact-objective selection picks start 6 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 164 converged starts  16 vs 16
+PASS V3b AIDS seed 164 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 164 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 164 selected recErr  0.6652355 vs 0.6652355
+PASS V3b AIDS seed 164 oracle recErr  0.66523457 vs 0.66523457
+PASS V3b AIDS seed 164 truth criterion  -5.4193443 vs -5.4193443 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 164: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 165 converged starts  4 vs 4
+PASS V3b AIDS seed 165 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 165 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 165 selected recErr  2.2868555 vs 2.2868555
+PASS V3b AIDS seed 165 oracle recErr  2.2868555 vs 2.2868555
+PASS V3b AIDS seed 165 truth criterion  -5.4654506 vs -5.4654506 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 165: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 166 converged starts  16 vs 16
+PASS V3b AIDS seed 166 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 166 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 166 selected recErr  0.7208109 vs 0.7208109
+PASS V3b AIDS seed 166 oracle recErr  0.72080718 vs 0.72080718
+PASS V3b AIDS seed 166 truth criterion  -5.5380273 vs -5.5380273 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 166: exact-objective selection picks start 10 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 167 converged starts  16 vs 16
+PASS V3b AIDS seed 167 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 167 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 167 selected recErr  8.5337637 vs 8.5337637
+PASS V3b AIDS seed 167 oracle recErr  8.5337637 vs 8.5337637
+PASS V3b AIDS seed 167 truth criterion  -5.5496359 vs -5.5496359 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 167: exact-objective selection picks start 6 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 168 converged starts  16 vs 16
+PASS V3b AIDS seed 168 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 168 selected start (by homogCrit)  16 vs 16
+PASS V3b AIDS seed 168 selected recErr  1.7287513 vs 1.7287513
+PASS V3b AIDS seed 168 oracle recErr  1.7287513 vs 1.7287513
+PASS V3b AIDS seed 168 truth criterion  -5.537973 vs -5.537973 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 168: exact-objective selection picks start 3 (benchmark homogCrit selection 16)
+PASS V3b AIDS seed 169 converged starts  16 vs 16
+PASS V3b AIDS seed 169 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 169 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 169 selected recErr  0.71580328 vs 0.71580328
+PASS V3b AIDS seed 169 oracle recErr  0.71580328 vs 0.71580328
+PASS V3b AIDS seed 169 truth criterion  -5.6088851 vs -5.6088851 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 169: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 170 converged starts  16 vs 16
+PASS V3b AIDS seed 170 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 170 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 170 selected recErr  0.49389283 vs 0.49389283
+PASS V3b AIDS seed 170 oracle recErr  0.49387508 vs 0.49387508
+PASS V3b AIDS seed 170 truth criterion  -5.4628493 vs -5.4628493 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 170: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 171 converged starts  16 vs 16
+PASS V3b AIDS seed 171 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 171 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 171 selected recErr  0.43491143 vs 0.43491143
+PASS V3b AIDS seed 171 oracle recErr  0.43491133 vs 0.43491133
+PASS V3b AIDS seed 171 truth criterion  -5.5705619 vs -5.5705619 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 171: exact-objective selection picks start 8 (benchmark homogCrit selection 1)
+PASS V3b AIDS seed 172 converged starts  16 vs 16
+PASS V3b AIDS seed 172 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 172 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 172 selected recErr  0.55381663 vs 0.55381663
+PASS V3b AIDS seed 172 oracle recErr  0.55381551 vs 0.55381551
+PASS V3b AIDS seed 172 truth criterion  -5.5815529 vs -5.5815529 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 172: exact-objective selection picks start 3 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 173 converged starts  16 vs 16
+PASS V3b AIDS seed 173 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 173 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 173 selected recErr  1.1133417 vs 1.1133417
+PASS V3b AIDS seed 173 oracle recErr  1.1133378 vs 1.1133378
+PASS V3b AIDS seed 173 truth criterion  -5.6132916 vs -5.6132916 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 173: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 174 converged starts  16 vs 16
+PASS V3b AIDS seed 174 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 174 selected start (by homogCrit)  2 vs 2
+PASS V3b AIDS seed 174 selected recErr  0.49254123 vs 0.49254123
+PASS V3b AIDS seed 174 oracle recErr  0.49254123 vs 0.49254123
+PASS V3b AIDS seed 174 truth criterion  -5.5743232 vs -5.5743232 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 174: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b AIDS seed 175 converged starts  16 vs 16
+PASS V3b AIDS seed 175 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 175 selected start (by homogCrit)  4 vs 4
+PASS V3b AIDS seed 175 selected recErr  0.35985735 vs 0.35985735
+PASS V3b AIDS seed 175 oracle recErr  0.3598573 vs 0.3598573
+PASS V3b AIDS seed 175 truth criterion  -5.5753645 vs -5.5753645 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 175: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b AIDS seed 176 converged starts  16 vs 16
+PASS V3b AIDS seed 176 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 176 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 176 selected recErr  8.7621624 vs 8.7621624
+PASS V3b AIDS seed 176 oracle recErr  8.762159 vs 8.762159
+PASS V3b AIDS seed 176 truth criterion  -5.4898895 vs -5.4898895 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 176: exact-objective selection picks start 9 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 177 converged starts  16 vs 16
+PASS V3b AIDS seed 177 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 177 selected start (by homogCrit)  12 vs 12
+PASS V3b AIDS seed 177 selected recErr  0.69399897 vs 0.69399897
+PASS V3b AIDS seed 177 oracle recErr  0.69399897 vs 0.69399897
+PASS V3b AIDS seed 177 truth criterion  -5.5556387 vs -5.5556387 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 177: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b AIDS seed 178 converged starts  16 vs 16
+PASS V3b AIDS seed 178 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 178 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 178 selected recErr  0.71989159 vs 0.71989159
+PASS V3b AIDS seed 178 oracle recErr  0.71989159 vs 0.71989159
+PASS V3b AIDS seed 178 truth criterion  -5.5143073 vs -5.5143073 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 178: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 179 converged starts  16 vs 16
+PASS V3b AIDS seed 179 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 179 selected start (by homogCrit)  5 vs 5
+PASS V3b AIDS seed 179 selected recErr  1.127251 vs 1.127251
+PASS V3b AIDS seed 179 oracle recErr  1.1272476 vs 1.1272476
+PASS V3b AIDS seed 179 truth criterion  -5.571716 vs -5.571716 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 179: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b AIDS seed 180 converged starts  16 vs 16
+PASS V3b AIDS seed 180 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 180 selected start (by homogCrit)  12 vs 12
+PASS V3b AIDS seed 180 selected recErr  0.51303992 vs 0.51303992
+PASS V3b AIDS seed 180 oracle recErr  0.51303766 vs 0.51303766
+PASS V3b AIDS seed 180 truth criterion  -5.4642708 vs -5.4642708 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 180: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b AIDS seed 181 converged starts  16 vs 16
+PASS V3b AIDS seed 181 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 181 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 181 selected recErr  0.90038249 vs 0.90038249
+PASS V3b AIDS seed 181 oracle recErr  0.90038249 vs 0.90038249
+PASS V3b AIDS seed 181 truth criterion  -5.6008753 vs -5.6008753 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 181: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 182 converged starts  16 vs 16
+PASS V3b AIDS seed 182 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b AIDS seed 182 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 182 selected recErr  1.5346136 vs 1.5346136
+PASS V3b AIDS seed 182 oracle recErr  1.5345856 vs 1.5345856
+PASS V3b AIDS seed 182 truth criterion  -5.5217935 vs -5.5217935 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 182: exact-objective selection picks start 10 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 183 converged starts  16 vs 16
+PASS V3b AIDS seed 183 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 183 selected start (by homogCrit)  8 vs 8
+PASS V3b AIDS seed 183 selected recErr  0.99542637 vs 0.99542637
+PASS V3b AIDS seed 183 oracle recErr  0.99542511 vs 0.99542511
+PASS V3b AIDS seed 183 truth criterion  -5.6051278 vs -5.6051278 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 183: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b AIDS seed 184 converged starts  16 vs 16
+PASS V3b AIDS seed 184 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 184 selected start (by homogCrit)  9 vs 9
+PASS V3b AIDS seed 184 selected recErr  0.6822763 vs 0.6822763
+PASS V3b AIDS seed 184 oracle recErr  0.68227479 vs 0.68227479
+PASS V3b AIDS seed 184 truth criterion  -5.5441922 vs -5.5441922 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 184: exact-objective selection picks start 9 (benchmark homogCrit selection 9)
+PASS V3b AIDS seed 185 converged starts  8 vs 8
+PASS V3b AIDS seed 185 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b AIDS seed 185 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 185 selected recErr  0.90141869 vs 0.90141869
+PASS V3b AIDS seed 185 oracle recErr  0.90141869 vs 0.90141869
+PASS V3b AIDS seed 185 truth criterion  -5.6451683 vs -5.6451683 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 185: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 186 converged starts  16 vs 16
+PASS V3b AIDS seed 186 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 186 selected start (by homogCrit)  15 vs 15
+PASS V3b AIDS seed 186 selected recErr  0.34398791 vs 0.34398791
+PASS V3b AIDS seed 186 oracle recErr  0.34397538 vs 0.34397538
+PASS V3b AIDS seed 186 truth criterion  -5.5857833 vs -5.5857833 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 186: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b AIDS seed 187 converged starts  16 vs 16
+PASS V3b AIDS seed 187 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 187 selected start (by homogCrit)  12 vs 12
+PASS V3b AIDS seed 187 selected recErr  1.9876612 vs 1.9876612
+PASS V3b AIDS seed 187 oracle recErr  1.9876612 vs 1.9876612
+PASS V3b AIDS seed 187 truth criterion  -5.6141902 vs -5.6141902 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 187: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b AIDS seed 188 converged starts  16 vs 16
+PASS V3b AIDS seed 188 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 188 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 188 selected recErr  0.61503022 vs 0.61503022
+PASS V3b AIDS seed 188 oracle recErr  0.61502925 vs 0.61502925
+PASS V3b AIDS seed 188 truth criterion  -5.5955093 vs -5.5955093 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 188: exact-objective selection picks start 10 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 189 converged starts  16 vs 16
+PASS V3b AIDS seed 189 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 189 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 189 selected recErr  0.7573469 vs 0.7573469
+PASS V3b AIDS seed 189 oracle recErr  0.7573469 vs 0.7573469
+PASS V3b AIDS seed 189 truth criterion  -5.4642793 vs -5.4642793 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 189: exact-objective selection picks start 3 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 190 converged starts  16 vs 16
+PASS V3b AIDS seed 190 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b AIDS seed 190 selected start (by homogCrit)  10 vs 10
+PASS V3b AIDS seed 190 selected recErr  2.1309427 vs 2.1309427
+PASS V3b AIDS seed 190 oracle recErr  2.1309427 vs 2.1309427
+PASS V3b AIDS seed 190 truth criterion  -5.5335165 vs -5.5335165 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 190: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b AIDS seed 191 converged starts  16 vs 16
+PASS V3b AIDS seed 191 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 191 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 191 selected recErr  0.66839035 vs 0.66839035
+PASS V3b AIDS seed 191 oracle recErr  0.66839035 vs 0.66839035
+PASS V3b AIDS seed 191 truth criterion  -5.5241191 vs -5.5241191 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 191: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 192 converged starts  16 vs 16
+PASS V3b AIDS seed 192 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 192 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 192 selected recErr  0.35768821 vs 0.35768821
+PASS V3b AIDS seed 192 oracle recErr  0.35768821 vs 0.35768821
+PASS V3b AIDS seed 192 truth criterion  -5.5066394 vs -5.5066394 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 192: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 193 converged starts  16 vs 16
+PASS V3b AIDS seed 193 distinct endpoints (bS, 1e-4)  7 vs 7
+PASS V3b AIDS seed 193 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 193 selected recErr  1.526463 vs 1.526463
+PASS V3b AIDS seed 193 oracle recErr  1.526463 vs 1.526463
+PASS V3b AIDS seed 193 truth criterion  -5.5790365 vs -5.5790365 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 193: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 194 converged starts  16 vs 16
+PASS V3b AIDS seed 194 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 194 selected start (by homogCrit)  7 vs 7
+PASS V3b AIDS seed 194 selected recErr  0.7314582 vs 0.7314582
+PASS V3b AIDS seed 194 oracle recErr  0.73145423 vs 0.73145423
+PASS V3b AIDS seed 194 truth criterion  -5.5076267 vs -5.5076267 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 194: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b AIDS seed 195 converged starts  16 vs 16
+PASS V3b AIDS seed 195 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 195 selected start (by homogCrit)  11 vs 11
+PASS V3b AIDS seed 195 selected recErr  13.418689 vs 13.418689
+PASS V3b AIDS seed 195 oracle recErr  13.418689 vs 13.418689
+PASS V3b AIDS seed 195 truth criterion  -5.5452666 vs -5.5452666 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 195: exact-objective selection picks start 9 (benchmark homogCrit selection 11)
+PASS V3b AIDS seed 196 converged starts  16 vs 16
+PASS V3b AIDS seed 196 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 196 selected start (by homogCrit)  6 vs 6
+PASS V3b AIDS seed 196 selected recErr  0.64654542 vs 0.64654542
+PASS V3b AIDS seed 196 oracle recErr  0.64653891 vs 0.64653891
+PASS V3b AIDS seed 196 truth criterion  -5.5143293 vs -5.5143293 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 196: exact-objective selection picks start 6 (benchmark homogCrit selection 6)
+PASS V3b AIDS seed 197 converged starts  16 vs 16
+PASS V3b AIDS seed 197 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 197 selected start (by homogCrit)  14 vs 14
+PASS V3b AIDS seed 197 selected recErr  0.88171142 vs 0.88171142
+PASS V3b AIDS seed 197 oracle recErr  0.88170955 vs 0.88170955
+PASS V3b AIDS seed 197 truth criterion  -5.5330657 vs -5.5330657 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 197: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b AIDS seed 198 converged starts  16 vs 16
+PASS V3b AIDS seed 198 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 198 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 198 selected recErr  0.77145012 vs 0.77145012
+PASS V3b AIDS seed 198 oracle recErr  0.77144694 vs 0.77144694
+PASS V3b AIDS seed 198 truth criterion  -5.4958697 vs -5.4958697 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 198: exact-objective selection picks start 3 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 199 converged starts  16 vs 16
+PASS V3b AIDS seed 199 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b AIDS seed 199 selected start (by homogCrit)  3 vs 3
+PASS V3b AIDS seed 199 selected recErr  12.556002 vs 12.556002
+PASS V3b AIDS seed 199 oracle recErr  12.556002 vs 12.556002
+PASS V3b AIDS seed 199 truth criterion  -5.5301526 vs -5.5301526 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 199: exact-objective selection picks start 14 (benchmark homogCrit selection 3)
+PASS V3b AIDS seed 200 converged starts  16 vs 16
+PASS V3b AIDS seed 200 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b AIDS seed 200 selected start (by homogCrit)  1 vs 1
+PASS V3b AIDS seed 200 selected recErr  0.53650625 vs 0.53650625
+PASS V3b AIDS seed 200 oracle recErr  0.53650596 vs 0.53650596
+PASS V3b AIDS seed 200 truth criterion  -5.4779142 vs -5.4779142 (direct objective clips exp; replica tol)
+INFO V3b AIDS seed 200: exact-objective selection picks start 1 (benchmark homogCrit selection 1)
+PASS V3b QUAIDS seed 31 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 32 converged starts  16 vs 16
+PASS V3b QUAIDS seed 32 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 32 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 32 selected recErr  1.82972 vs 1.82972
+PASS V3b QUAIDS seed 32 oracle recErr  1.82972 vs 1.82972
+PASS V3b QUAIDS seed 32 truth criterion  -5.5475038 vs -5.5475038 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 32: exact-objective selection picks start 2 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 33 converged starts  16 vs 16
+PASS V3b QUAIDS seed 33 distinct endpoints (bS, 1e-4)  11 vs 11
+PASS V3b QUAIDS seed 33 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 33 selected recErr  309.58938 vs 309.58938
+PASS V3b QUAIDS seed 33 oracle recErr  206.8061 vs 206.8061
+PASS V3b QUAIDS seed 33 truth criterion  -5.5821728 vs -5.5821728 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 33: exact-objective selection picks start 14 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 34 converged starts  12 vs 12
+PASS V3b QUAIDS seed 34 distinct endpoints (bS, 1e-4)  11 vs 11
+PASS V3b QUAIDS seed 34 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 34 selected recErr  426.47489 vs 426.47489
+PASS V3b QUAIDS seed 34 oracle recErr  183.13806 vs 183.13806
+PASS V3b QUAIDS seed 34 truth criterion  -5.5677184 vs -5.5677184 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 34: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 35 converged starts  16 vs 16
+PASS V3b QUAIDS seed 35 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b QUAIDS seed 35 selected start (by homogCrit)  3 vs 3
+PASS V3b QUAIDS seed 35 selected recErr  0.51614081 vs 0.51614081
+PASS V3b QUAIDS seed 35 oracle recErr  0.51613268 vs 0.51613268
+PASS V3b QUAIDS seed 35 truth criterion  -5.5240066 vs -5.5240066 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 35: exact-objective selection picks start 1 (benchmark homogCrit selection 3)
+PASS V3b QUAIDS seed 36 converged starts  16 vs 16
+PASS V3b QUAIDS seed 36 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 36 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 36 selected recErr  74.970467 vs 74.970467
+PASS V3b QUAIDS seed 36 oracle recErr  74.970467 vs 74.970467
+PASS V3b QUAIDS seed 36 truth criterion  -5.60154 vs -5.60154 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 36: exact-objective selection picks start 15 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 37 converged starts  16 vs 16
+PASS V3b QUAIDS seed 37 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 37 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 37 selected recErr  0.72478191 vs 0.72478191
+PASS V3b QUAIDS seed 37 oracle recErr  0.72476121 vs 0.72476121
+PASS V3b QUAIDS seed 37 truth criterion  -5.5091667 vs -5.5091667 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 37: exact-objective selection picks start 5 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 38 converged starts  16 vs 16
+PASS V3b QUAIDS seed 38 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 38 selected start (by homogCrit)  8 vs 8
+PASS V3b QUAIDS seed 38 selected recErr  1.6854568 vs 1.6854568
+PASS V3b QUAIDS seed 38 oracle recErr  1.6854562 vs 1.6854562
+PASS V3b QUAIDS seed 38 truth criterion  -5.6505941 vs -5.6505941 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 38: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 39 converged starts  15 vs 15
+PASS V3b QUAIDS seed 39 distinct endpoints (bS, 1e-4)  7 vs 7
+PASS V3b QUAIDS seed 39 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 39 selected recErr  19.986007 vs 19.986007
+PASS V3b QUAIDS seed 39 oracle recErr  19.985643 vs 19.985643
+PASS V3b QUAIDS seed 39 truth criterion  -5.6263217 vs -5.6263217 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 39: exact-objective selection picks start 6 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 40 converged starts  7 vs 7
+PASS V3b QUAIDS seed 40 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 40 selected start (by homogCrit)  16 vs 16
+PASS V3b QUAIDS seed 40 selected recErr  27.92329 vs 27.92329
+PASS V3b QUAIDS seed 40 oracle recErr  27.923042 vs 27.923042
+PASS V3b QUAIDS seed 40 truth criterion  -5.5515182 vs -5.5515182 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 40: exact-objective selection picks start 8 (benchmark homogCrit selection 16)
+PASS V3b QUAIDS seed 41 converged starts  16 vs 16
+PASS V3b QUAIDS seed 41 distinct endpoints (bS, 1e-4)  14 vs 14
+PASS V3b QUAIDS seed 41 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 41 selected recErr  96.102187 vs 96.102187
+PASS V3b QUAIDS seed 41 oracle recErr  92.925532 vs 92.925532
+PASS V3b QUAIDS seed 41 truth criterion  -5.5269479 vs -5.5269479 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 41: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 42 converged starts  16 vs 16
+PASS V3b QUAIDS seed 42 distinct endpoints (bS, 1e-4)  16 vs 16
+PASS V3b QUAIDS seed 42 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 42 selected recErr  294.94957 vs 294.94957
+PASS V3b QUAIDS seed 42 oracle recErr  143.79584 vs 143.79584
+PASS V3b QUAIDS seed 42 truth criterion  -5.5429204 vs -5.5429204 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 42: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 43 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 44 converged starts  15 vs 15
+PASS V3b QUAIDS seed 44 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 44 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 44 selected recErr  81.988297 vs 81.988297
+PASS V3b QUAIDS seed 44 oracle recErr  72.940195 vs 72.940195
+PASS V3b QUAIDS seed 44 truth criterion  -5.5642541 vs -5.5642541 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 44: exact-objective selection picks start 8 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 45 converged starts  16 vs 16
+PASS V3b QUAIDS seed 45 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 45 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 45 selected recErr  0.48869486 vs 0.48869486
+PASS V3b QUAIDS seed 45 oracle recErr  0.4886462 vs 0.4886462
+PASS V3b QUAIDS seed 45 truth criterion  -5.4787319 vs -5.4787319 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 45: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 46 converged starts  16 vs 16
+PASS V3b QUAIDS seed 46 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 46 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 46 selected recErr  0.67890816 vs 0.67890816
+PASS V3b QUAIDS seed 46 oracle recErr  0.67890748 vs 0.67890748
+PASS V3b QUAIDS seed 46 truth criterion  -5.6751673 vs -5.6751673 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 46: exact-objective selection picks start 6 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 47 converged starts  16 vs 16
+PASS V3b QUAIDS seed 47 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 47 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 47 selected recErr  0.63217104 vs 0.63217104
+PASS V3b QUAIDS seed 47 oracle recErr  0.63217104 vs 0.63217104
+PASS V3b QUAIDS seed 47 truth criterion  -5.5264758 vs -5.5264758 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 47: exact-objective selection picks start 6 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 48 converged starts  16 vs 16
+PASS V3b QUAIDS seed 48 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 48 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 48 selected recErr  1.0147055 vs 1.0147055
+PASS V3b QUAIDS seed 48 oracle recErr  1.0147055 vs 1.0147055
+PASS V3b QUAIDS seed 48 truth criterion  -5.6048691 vs -5.6048691 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 48: exact-objective selection picks start 3 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 49 converged starts  12 vs 12
+PASS V3b QUAIDS seed 49 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 49 selected start (by homogCrit)  1 vs 1
+PASS V3b QUAIDS seed 49 selected recErr  14.238476 vs 14.238476
+PASS V3b QUAIDS seed 49 oracle recErr  14.23845 vs 14.23845
+PASS V3b QUAIDS seed 49 truth criterion  -5.5215172 vs -5.5215172 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 49: exact-objective selection picks start 6 (benchmark homogCrit selection 1)
+PASS V3b QUAIDS seed 50 converged starts  16 vs 16
+PASS V3b QUAIDS seed 50 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 50 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 50 selected recErr  0.47416273 vs 0.47416273
+PASS V3b QUAIDS seed 50 oracle recErr  0.47416119 vs 0.47416119
+PASS V3b QUAIDS seed 50 truth criterion  -5.5689 vs -5.5689 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 50: exact-objective selection picks start 10 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 51 converged starts  16 vs 16
+PASS V3b QUAIDS seed 51 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 51 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 51 selected recErr  0.95671924 vs 0.95671924
+PASS V3b QUAIDS seed 51 oracle recErr  0.95671924 vs 0.95671924
+PASS V3b QUAIDS seed 51 truth criterion  -5.4464678 vs -5.4464678 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 51: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 52 converged starts  16 vs 16
+PASS V3b QUAIDS seed 52 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 52 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 52 selected recErr  0.4923127 vs 0.4923127
+PASS V3b QUAIDS seed 52 oracle recErr  0.49229563 vs 0.49229563
+PASS V3b QUAIDS seed 52 truth criterion  -5.5693074 vs -5.5693074 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 52: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 53 converged starts  16 vs 16
+PASS V3b QUAIDS seed 53 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 53 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 53 selected recErr  0.75831016 vs 0.75831016
+PASS V3b QUAIDS seed 53 oracle recErr  0.75830624 vs 0.75830624
+PASS V3b QUAIDS seed 53 truth criterion  -5.4710326 vs -5.4710326 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 53: exact-objective selection picks start 1 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 54 converged starts  14 vs 14
+PASS V3b QUAIDS seed 54 distinct endpoints (bS, 1e-4)  10 vs 10
+PASS V3b QUAIDS seed 54 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 54 selected recErr  143.26299 vs 143.26299
+PASS V3b QUAIDS seed 54 oracle recErr  89.111745 vs 89.111745
+PASS V3b QUAIDS seed 54 truth criterion  -5.4906932 vs -5.4906932 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 54: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 55 converged starts  16 vs 16
+PASS V3b QUAIDS seed 55 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b QUAIDS seed 55 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 55 selected recErr  19.672627 vs 19.672627
+PASS V3b QUAIDS seed 55 oracle recErr  15.719797 vs 15.719797
+PASS V3b QUAIDS seed 55 truth criterion  -5.5014598 vs -5.5014598 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 55: exact-objective selection picks start 13 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 56 converged starts  14 vs 14
+PASS V3b QUAIDS seed 56 distinct endpoints (bS, 1e-4)  13 vs 13
+PASS V3b QUAIDS seed 56 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 56 selected recErr  1276.1739 vs 1276.1739
+PASS V3b QUAIDS seed 56 oracle recErr  962.18417 vs 962.18417
+PASS V3b QUAIDS seed 56 truth criterion  -5.5541884 vs -5.5541884 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 56: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 57 converged starts  15 vs 15
+PASS V3b QUAIDS seed 57 distinct endpoints (bS, 1e-4)  13 vs 13
+PASS V3b QUAIDS seed 57 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 57 selected recErr  152.43102 vs 152.43102
+PASS V3b QUAIDS seed 57 oracle recErr  152.42921 vs 152.42921
+PASS V3b QUAIDS seed 57 truth criterion  -5.5541498 vs -5.5541498 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 57: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 58 converged starts  16 vs 16
+PASS V3b QUAIDS seed 58 distinct endpoints (bS, 1e-4)  11 vs 11
+PASS V3b QUAIDS seed 58 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 58 selected recErr  254.12901 vs 254.12901
+PASS V3b QUAIDS seed 58 oracle recErr  254.12763 vs 254.12763
+PASS V3b QUAIDS seed 58 truth criterion  -5.5607351 vs -5.5607351 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 58: exact-objective selection picks start 15 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 59 converged starts  16 vs 16
+PASS V3b QUAIDS seed 59 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 59 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 59 selected recErr  0.77184485 vs 0.77184485
+PASS V3b QUAIDS seed 59 oracle recErr  0.77184485 vs 0.77184485
+PASS V3b QUAIDS seed 59 truth criterion  -5.5756827 vs -5.5756827 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 59: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 60 converged starts  16 vs 16
+PASS V3b QUAIDS seed 60 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b QUAIDS seed 60 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 60 selected recErr  100.8156 vs 100.8156
+PASS V3b QUAIDS seed 60 oracle recErr  68.409106 vs 68.409106
+PASS V3b QUAIDS seed 60 truth criterion  -5.5358219 vs -5.5358219 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 60: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 61 converged starts  16 vs 16
+PASS V3b QUAIDS seed 61 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 61 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 61 selected recErr  1.4633715 vs 1.4633715
+PASS V3b QUAIDS seed 61 oracle recErr  1.4633643 vs 1.4633643
+PASS V3b QUAIDS seed 61 truth criterion  -5.4726997 vs -5.4726997 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 61: exact-objective selection picks start 10 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 62 converged starts  16 vs 16
+PASS V3b QUAIDS seed 62 distinct endpoints (bS, 1e-4)  13 vs 13
+PASS V3b QUAIDS seed 62 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 62 selected recErr  42.941488 vs 42.941488
+PASS V3b QUAIDS seed 62 oracle recErr  18.499633 vs 18.499633
+PASS V3b QUAIDS seed 62 truth criterion  -5.5106776 vs -5.5106776 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 62: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 63 converged starts  16 vs 16
+PASS V3b QUAIDS seed 63 distinct endpoints (bS, 1e-4)  9 vs 9
+PASS V3b QUAIDS seed 63 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 63 selected recErr  97.654204 vs 97.654204
+PASS V3b QUAIDS seed 63 oracle recErr  97.654204 vs 97.654204
+PASS V3b QUAIDS seed 63 truth criterion  -5.5255736 vs -5.5255736 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 63: exact-objective selection picks start 4 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 64 converged starts  16 vs 16
+PASS V3b QUAIDS seed 64 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 64 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 64 selected recErr  0.65011235 vs 0.65011235
+PASS V3b QUAIDS seed 64 oracle recErr  0.65010687 vs 0.65010687
+PASS V3b QUAIDS seed 64 truth criterion  -5.5040598 vs -5.5040598 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 64: exact-objective selection picks start 1 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 65 converged starts  15 vs 15
+PASS V3b QUAIDS seed 65 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 65 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 65 selected recErr  1.1757971 vs 1.1757971
+PASS V3b QUAIDS seed 65 oracle recErr  1.1757326 vs 1.1757326
+PASS V3b QUAIDS seed 65 truth criterion  -5.5650866 vs -5.5650866 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 65: exact-objective selection picks start 3 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 66 converged starts  16 vs 16
+PASS V3b QUAIDS seed 66 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 66 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 66 selected recErr  0.48693622 vs 0.48693622
+PASS V3b QUAIDS seed 66 oracle recErr  0.48692444 vs 0.48692444
+PASS V3b QUAIDS seed 66 truth criterion  -5.4797174 vs -5.4797174 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 66: exact-objective selection picks start 11 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 67 converged starts  13 vs 13
+PASS V3b QUAIDS seed 67 distinct endpoints (bS, 1e-4)  12 vs 12
+PASS V3b QUAIDS seed 67 selected start (by homogCrit)  1 vs 1
+PASS V3b QUAIDS seed 67 selected recErr  904.91602 vs 904.91602
+PASS V3b QUAIDS seed 67 oracle recErr  904.88356 vs 904.88356
+PASS V3b QUAIDS seed 67 truth criterion  -5.6329348 vs -5.6329348 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 67: exact-objective selection picks start 13 (benchmark homogCrit selection 1)
+PASS V3b QUAIDS seed 68 converged starts  16 vs 16
+PASS V3b QUAIDS seed 68 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 68 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 68 selected recErr  12.872839 vs 12.872839
+PASS V3b QUAIDS seed 68 oracle recErr  12.872807 vs 12.872807
+PASS V3b QUAIDS seed 68 truth criterion  -5.5687128 vs -5.5687128 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 68: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 69 converged starts  16 vs 16
+PASS V3b QUAIDS seed 69 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 69 selected start (by homogCrit)  16 vs 16
+PASS V3b QUAIDS seed 69 selected recErr  0.99859103 vs 0.99859103
+PASS V3b QUAIDS seed 69 oracle recErr  0.99859103 vs 0.99859103
+PASS V3b QUAIDS seed 69 truth criterion  -5.5200097 vs -5.5200097 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 69: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b QUAIDS seed 70 converged starts  16 vs 16
+PASS V3b QUAIDS seed 70 distinct endpoints (bS, 1e-4)  8 vs 8
+PASS V3b QUAIDS seed 70 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 70 selected recErr  138.13238 vs 138.13238
+PASS V3b QUAIDS seed 70 oracle recErr  59.780796 vs 59.780796
+PASS V3b QUAIDS seed 70 truth criterion  -5.5290394 vs -5.5290394 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 70: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 71 converged starts  1 vs 1
+PASS V3b QUAIDS seed 71 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 71 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 71 selected recErr  491.38903 vs 491.38903
+PASS V3b QUAIDS seed 71 oracle recErr  491.38903 vs 491.38903
+PASS V3b QUAIDS seed 71 truth criterion  -5.5005027 vs -5.5005027 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 71: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 72 converged starts  11 vs 11
+PASS V3b QUAIDS seed 72 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 72 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 72 selected recErr  41.138324 vs 41.138324
+PASS V3b QUAIDS seed 72 oracle recErr  41.138274 vs 41.138274
+PASS V3b QUAIDS seed 72 truth criterion  -5.4986421 vs -5.4986421 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 72: exact-objective selection picks start 7 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 73 converged starts  16 vs 16
+PASS V3b QUAIDS seed 73 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 73 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 73 selected recErr  0.88933266 vs 0.88933266
+PASS V3b QUAIDS seed 73 oracle recErr  0.88933004 vs 0.88933004
+PASS V3b QUAIDS seed 73 truth criterion  -5.4959779 vs -5.4959779 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 73: exact-objective selection picks start 14 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 74 converged starts  16 vs 16
+PASS V3b QUAIDS seed 74 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 74 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 74 selected recErr  0.97601217 vs 0.97601217
+PASS V3b QUAIDS seed 74 oracle recErr  0.9760112 vs 0.9760112
+PASS V3b QUAIDS seed 74 truth criterion  -5.5152623 vs -5.5152623 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 74: exact-objective selection picks start 10 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 75 converged starts  16 vs 16
+PASS V3b QUAIDS seed 75 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 75 selected start (by homogCrit)  16 vs 16
+PASS V3b QUAIDS seed 75 selected recErr  8.5854658 vs 8.5854658
+PASS V3b QUAIDS seed 75 oracle recErr  8.5854658 vs 8.5854658
+PASS V3b QUAIDS seed 75 truth criterion  -5.6248419 vs -5.6248419 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 75: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b QUAIDS seed 76 converged starts  8 vs 8
+PASS V3b QUAIDS seed 76 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b QUAIDS seed 76 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 76 selected recErr  7.3747811 vs 7.3747811
+PASS V3b QUAIDS seed 76 oracle recErr  7.3735665 vs 7.3735665
+PASS V3b QUAIDS seed 76 truth criterion  -5.5329761 vs -5.5329761 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 76: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 77 converged starts  16 vs 16
+PASS V3b QUAIDS seed 77 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 77 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 77 selected recErr  0.56344865 vs 0.56344865
+PASS V3b QUAIDS seed 77 oracle recErr  0.56344865 vs 0.56344865
+PASS V3b QUAIDS seed 77 truth criterion  -5.6221322 vs -5.6221322 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 77: exact-objective selection picks start 14 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 78 converged starts  13 vs 13
+PASS V3b QUAIDS seed 78 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 78 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 78 selected recErr  52.712921 vs 52.712921
+PASS V3b QUAIDS seed 78 oracle recErr  52.712431 vs 52.712431
+PASS V3b QUAIDS seed 78 truth criterion  -5.5467105 vs -5.5467105 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 78: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 79 converged starts  4 vs 4
+PASS V3b QUAIDS seed 79 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 79 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 79 selected recErr  76.327097 vs 76.327097
+PASS V3b QUAIDS seed 79 oracle recErr  76.327062 vs 76.327062
+PASS V3b QUAIDS seed 79 truth criterion  -5.5176087 vs -5.5176087 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 79: exact-objective selection picks start 12 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 80 converged starts  16 vs 16
+PASS V3b QUAIDS seed 80 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 80 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 80 selected recErr  0.79056993 vs 0.79056993
+PASS V3b QUAIDS seed 80 oracle recErr  0.36224272 vs 0.36224272
+PASS V3b QUAIDS seed 80 truth criterion  -5.5041003 vs -5.5041003 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 80: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 81 converged starts  1 vs 1
+PASS V3b QUAIDS seed 81 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 81 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 81 selected recErr  1160.0692 vs 1160.0692
+PASS V3b QUAIDS seed 81 oracle recErr  1160.0692 vs 1160.0692
+PASS V3b QUAIDS seed 81 truth criterion  -5.5065229 vs -5.5065229 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 81: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 82 converged starts  16 vs 16
+PASS V3b QUAIDS seed 82 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 82 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 82 selected recErr  0.64082626 vs 0.64082626
+PASS V3b QUAIDS seed 82 oracle recErr  0.64082614 vs 0.64082614
+PASS V3b QUAIDS seed 82 truth criterion  -5.56544 vs -5.56544 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 82: exact-objective selection picks start 4 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 83 converged starts  10 vs 10
+PASS V3b QUAIDS seed 83 distinct endpoints (bS, 1e-4)  7 vs 7
+PASS V3b QUAIDS seed 83 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 83 selected recErr  48.482728 vs 48.482728
+PASS V3b QUAIDS seed 83 oracle recErr  48.48103 vs 48.48103
+PASS V3b QUAIDS seed 83 truth criterion  -5.4798324 vs -5.4798324 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 83: exact-objective selection picks start 5 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 84 converged starts  1 vs 1
+PASS V3b QUAIDS seed 84 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 84 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 84 selected recErr  0.24247155 vs 0.24247155
+PASS V3b QUAIDS seed 84 oracle recErr  0.24247155 vs 0.24247155
+PASS V3b QUAIDS seed 84 truth criterion  -5.5687974 vs -5.5687974 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 84: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 85 converged starts  16 vs 16
+PASS V3b QUAIDS seed 85 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 85 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 85 selected recErr  0.3809368 vs 0.3809368
+PASS V3b QUAIDS seed 85 oracle recErr  0.38093572 vs 0.38093572
+PASS V3b QUAIDS seed 85 truth criterion  -5.4589109 vs -5.4589109 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 85: exact-objective selection picks start 11 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 86 converged starts  3 vs 3
+PASS V3b QUAIDS seed 86 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 86 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 86 selected recErr  52.106589 vs 52.106589
+PASS V3b QUAIDS seed 86 oracle recErr  52.106589 vs 52.106589
+PASS V3b QUAIDS seed 86 truth criterion  -5.5547252 vs -5.5547252 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 86: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 87 converged starts  16 vs 16
+PASS V3b QUAIDS seed 87 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b QUAIDS seed 87 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 87 selected recErr  0.80520769 vs 0.80520769
+PASS V3b QUAIDS seed 87 oracle recErr  0.80519759 vs 0.80519759
+PASS V3b QUAIDS seed 87 truth criterion  -5.6944 vs -5.6944 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 87: exact-objective selection picks start 5 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 88 converged starts  16 vs 16
+PASS V3b QUAIDS seed 88 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 88 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 88 selected recErr  1.0198143 vs 1.0198143
+PASS V3b QUAIDS seed 88 oracle recErr  1.0197989 vs 1.0197989
+PASS V3b QUAIDS seed 88 truth criterion  -5.5796088 vs -5.5796088 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 88: exact-objective selection picks start 15 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 89 converged starts  8 vs 8
+PASS V3b QUAIDS seed 89 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 89 selected start (by homogCrit)  1 vs 1
+PASS V3b QUAIDS seed 89 selected recErr  48.338275 vs 48.338275
+PASS V3b QUAIDS seed 89 oracle recErr  48.338275 vs 48.338275
+PASS V3b QUAIDS seed 89 truth criterion  -5.5102933 vs -5.5102933 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 89: exact-objective selection picks start 14 (benchmark homogCrit selection 1)
+PASS V3b QUAIDS seed 90 converged starts  16 vs 16
+PASS V3b QUAIDS seed 90 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 90 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 90 selected recErr  1.26075 vs 1.26075
+PASS V3b QUAIDS seed 90 oracle recErr  1.2607497 vs 1.2607497
+PASS V3b QUAIDS seed 90 truth criterion  -5.4984978 vs -5.4984978 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 90: exact-objective selection picks start 6 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 91 converged starts  16 vs 16
+PASS V3b QUAIDS seed 91 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 91 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 91 selected recErr  1.1303045 vs 1.1303045
+PASS V3b QUAIDS seed 91 oracle recErr  1.1302999 vs 1.1302999
+PASS V3b QUAIDS seed 91 truth criterion  -5.6130503 vs -5.6130503 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 91: exact-objective selection picks start 1 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 92 converged starts  16 vs 16
+PASS V3b QUAIDS seed 92 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 92 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 92 selected recErr  0.56966124 vs 0.56966124
+PASS V3b QUAIDS seed 92 oracle recErr  0.56966124 vs 0.56966124
+PASS V3b QUAIDS seed 92 truth criterion  -5.5629232 vs -5.5629232 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 92: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 93 converged starts  16 vs 16
+PASS V3b QUAIDS seed 93 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 93 selected start (by homogCrit)  3 vs 3
+PASS V3b QUAIDS seed 93 selected recErr  12.087211 vs 12.087211
+PASS V3b QUAIDS seed 93 oracle recErr  12.087197 vs 12.087197
+PASS V3b QUAIDS seed 93 truth criterion  -5.6108636 vs -5.6108636 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 93: exact-objective selection picks start 12 (benchmark homogCrit selection 3)
+PASS V3b QUAIDS seed 94 converged starts  16 vs 16
+PASS V3b QUAIDS seed 94 distinct endpoints (bS, 1e-4)  7 vs 7
+PASS V3b QUAIDS seed 94 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 94 selected recErr  22.518474 vs 22.518474
+PASS V3b QUAIDS seed 94 oracle recErr  8.24956 vs 8.24956
+PASS V3b QUAIDS seed 94 truth criterion  -5.4658259 vs -5.4658259 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 94: exact-objective selection picks start 7 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 95 converged starts  5 vs 5
+PASS V3b QUAIDS seed 95 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 95 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 95 selected recErr  0.40447853 vs 0.40447853
+PASS V3b QUAIDS seed 95 oracle recErr  0.40447735 vs 0.40447735
+PASS V3b QUAIDS seed 95 truth criterion  -5.5828321 vs -5.5828321 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 95: exact-objective selection picks start 11 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 96 converged starts  2 vs 2
+PASS V3b QUAIDS seed 96 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 96 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 96 selected recErr  25.452217 vs 25.452217
+PASS V3b QUAIDS seed 96 oracle recErr  25.452107 vs 25.452107
+PASS V3b QUAIDS seed 96 truth criterion  -5.5020578 vs -5.5020578 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 96: exact-objective selection picks start 6 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 97 converged starts  16 vs 16
+PASS V3b QUAIDS seed 97 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 97 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 97 selected recErr  0.82594558 vs 0.82594558
+PASS V3b QUAIDS seed 97 oracle recErr  0.82594558 vs 0.82594558
+PASS V3b QUAIDS seed 97 truth criterion  -5.471088 vs -5.471088 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 97: exact-objective selection picks start 4 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 98 converged starts  16 vs 16
+PASS V3b QUAIDS seed 98 distinct endpoints (bS, 1e-4)  10 vs 10
+PASS V3b QUAIDS seed 98 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 98 selected recErr  2.1041094 vs 2.1041094
+PASS V3b QUAIDS seed 98 oracle recErr  2.1041094 vs 2.1041094
+PASS V3b QUAIDS seed 98 truth criterion  -5.5199237 vs -5.5199237 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 98: exact-objective selection picks start 7 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 99 converged starts  16 vs 16
+PASS V3b QUAIDS seed 99 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 99 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 99 selected recErr  0.80851068 vs 0.80851068
+PASS V3b QUAIDS seed 99 oracle recErr  0.80850916 vs 0.80850916
+PASS V3b QUAIDS seed 99 truth criterion  -5.530895 vs -5.530895 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 99: exact-objective selection picks start 2 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 100 converged starts  16 vs 16
+PASS V3b QUAIDS seed 100 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 100 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 100 selected recErr  17.268878 vs 17.268878
+PASS V3b QUAIDS seed 100 oracle recErr  17.26886 vs 17.26886
+PASS V3b QUAIDS seed 100 truth criterion  -5.4124933 vs -5.4124933 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 100: exact-objective selection picks start 13 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 101 converged starts  11 vs 11
+PASS V3b QUAIDS seed 101 distinct endpoints (bS, 1e-4)  10 vs 10
+PASS V3b QUAIDS seed 101 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 101 selected recErr  1615.6383 vs 1615.6383
+PASS V3b QUAIDS seed 101 oracle recErr  921.65428 vs 921.65428
+PASS V3b QUAIDS seed 101 truth criterion  -5.6394503 vs -5.6394503 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 101: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 102 converged starts  15 vs 15
+PASS V3b QUAIDS seed 102 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 102 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 102 selected recErr  0.60788535 vs 0.60788535
+PASS V3b QUAIDS seed 102 oracle recErr  0.60788535 vs 0.60788535
+PASS V3b QUAIDS seed 102 truth criterion  -5.4368042 vs -5.4368042 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 102: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 103 converged starts  14 vs 14
+PASS V3b QUAIDS seed 103 distinct endpoints (bS, 1e-4)  12 vs 12
+PASS V3b QUAIDS seed 103 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 103 selected recErr  3827.7628 vs 3827.7628
+PASS V3b QUAIDS seed 103 oracle recErr  3827.7383 vs 3827.7383
+PASS V3b QUAIDS seed 103 truth criterion  -5.5459433 vs -5.5459433 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 103: exact-objective selection picks start 10 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 104 converged starts  16 vs 16
+PASS V3b QUAIDS seed 104 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 104 selected start (by homogCrit)  3 vs 3
+PASS V3b QUAIDS seed 104 selected recErr  0.49108304 vs 0.49108304
+PASS V3b QUAIDS seed 104 oracle recErr  0.49107384 vs 0.49107384
+PASS V3b QUAIDS seed 104 truth criterion  -5.5524949 vs -5.5524949 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 104: exact-objective selection picks start 13 (benchmark homogCrit selection 3)
+PASS V3b QUAIDS seed 105 converged starts  16 vs 16
+PASS V3b QUAIDS seed 105 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 105 selected start (by homogCrit)  1 vs 1
+PASS V3b QUAIDS seed 105 selected recErr  0.57253695 vs 0.57253695
+PASS V3b QUAIDS seed 105 oracle recErr  0.57253618 vs 0.57253618
+PASS V3b QUAIDS seed 105 truth criterion  -5.4745968 vs -5.4745968 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 105: exact-objective selection picks start 4 (benchmark homogCrit selection 1)
+PASS V3b QUAIDS seed 106 converged starts  16 vs 16
+PASS V3b QUAIDS seed 106 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 106 selected start (by homogCrit)  8 vs 8
+PASS V3b QUAIDS seed 106 selected recErr  16.507705 vs 16.507705
+PASS V3b QUAIDS seed 106 oracle recErr  16.507405 vs 16.507405
+PASS V3b QUAIDS seed 106 truth criterion  -5.5055422 vs -5.5055422 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 106: exact-objective selection picks start 9 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 107 converged starts  16 vs 16
+PASS V3b QUAIDS seed 107 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 107 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 107 selected recErr  11.581052 vs 11.581052
+PASS V3b QUAIDS seed 107 oracle recErr  11.580955 vs 11.580955
+PASS V3b QUAIDS seed 107 truth criterion  -5.5018552 vs -5.5018552 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 107: exact-objective selection picks start 7 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 108 converged starts  16 vs 16
+PASS V3b QUAIDS seed 108 distinct endpoints (bS, 1e-4)  8 vs 8
+PASS V3b QUAIDS seed 108 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 108 selected recErr  10.913222 vs 10.913222
+PASS V3b QUAIDS seed 108 oracle recErr  10.912902 vs 10.912902
+PASS V3b QUAIDS seed 108 truth criterion  -5.5640126 vs -5.5640126 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 108: exact-objective selection picks start 14 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 109 converged starts  16 vs 16
+PASS V3b QUAIDS seed 109 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 109 selected start (by homogCrit)  3 vs 3
+PASS V3b QUAIDS seed 109 selected recErr  0.26455551 vs 0.26455551
+PASS V3b QUAIDS seed 109 oracle recErr  0.26455524 vs 0.26455524
+PASS V3b QUAIDS seed 109 truth criterion  -5.5818216 vs -5.5818216 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 109: exact-objective selection picks start 2 (benchmark homogCrit selection 3)
+PASS V3b QUAIDS seed 110 converged starts  16 vs 16
+PASS V3b QUAIDS seed 110 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 110 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 110 selected recErr  0.84779587 vs 0.84779587
+PASS V3b QUAIDS seed 110 oracle recErr  0.84779294 vs 0.84779294
+PASS V3b QUAIDS seed 110 truth criterion  -5.4489811 vs -5.4489811 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 110: exact-objective selection picks start 8 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 111 converged starts  16 vs 16
+PASS V3b QUAIDS seed 111 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b QUAIDS seed 111 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 111 selected recErr  10.661031 vs 10.661031
+PASS V3b QUAIDS seed 111 oracle recErr  10.660986 vs 10.660986
+PASS V3b QUAIDS seed 111 truth criterion  -5.5183118 vs -5.5183118 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 111: exact-objective selection picks start 14 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 112 converged starts  1 vs 1
+PASS V3b QUAIDS seed 112 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 112 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 112 selected recErr  5726.3741 vs 5726.3741
+PASS V3b QUAIDS seed 112 oracle recErr  5726.3741 vs 5726.3741
+PASS V3b QUAIDS seed 112 truth criterion  -5.4951767 vs -5.4951767 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 112: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 113 converged starts  16 vs 16
+PASS V3b QUAIDS seed 113 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b QUAIDS seed 113 selected start (by homogCrit)  9 vs 9
+PASS V3b QUAIDS seed 113 selected recErr  5.6322681 vs 5.6322681
+PASS V3b QUAIDS seed 113 oracle recErr  5.6322681 vs 5.6322681
+PASS V3b QUAIDS seed 113 truth criterion  -5.568252 vs -5.568252 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 113: exact-objective selection picks start 9 (benchmark homogCrit selection 9)
+PASS V3b QUAIDS seed 114 converged starts  16 vs 16
+PASS V3b QUAIDS seed 114 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 114 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 114 selected recErr  1.0087746 vs 1.0087746
+PASS V3b QUAIDS seed 114 oracle recErr  1.0087746 vs 1.0087746
+PASS V3b QUAIDS seed 114 truth criterion  -5.5327024 vs -5.5327024 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 114: exact-objective selection picks start 5 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 115 converged starts  16 vs 16
+PASS V3b QUAIDS seed 115 distinct endpoints (bS, 1e-4)  8 vs 8
+PASS V3b QUAIDS seed 115 selected start (by homogCrit)  9 vs 9
+PASS V3b QUAIDS seed 115 selected recErr  0.71297992 vs 0.71297992
+PASS V3b QUAIDS seed 115 oracle recErr  0.71297783 vs 0.71297783
+PASS V3b QUAIDS seed 115 truth criterion  -5.6189089 vs -5.6189089 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 115: exact-objective selection picks start 6 (benchmark homogCrit selection 9)
+PASS V3b QUAIDS seed 116 converged starts  16 vs 16
+PASS V3b QUAIDS seed 116 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 116 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 116 selected recErr  15.056527 vs 15.056527
+PASS V3b QUAIDS seed 116 oracle recErr  15.056341 vs 15.056341
+PASS V3b QUAIDS seed 116 truth criterion  -5.5289768 vs -5.5289768 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 116: exact-objective selection picks start 8 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 117 converged starts  16 vs 16
+PASS V3b QUAIDS seed 117 distinct endpoints (bS, 1e-4)  15 vs 15
+PASS V3b QUAIDS seed 117 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 117 selected recErr  497.96245 vs 497.96245
+PASS V3b QUAIDS seed 117 oracle recErr  497.96245 vs 497.96245
+PASS V3b QUAIDS seed 117 truth criterion  -5.5503839 vs -5.5503839 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 117: exact-objective selection picks start 7 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 118 converged starts  16 vs 16
+PASS V3b QUAIDS seed 118 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 118 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 118 selected recErr  2.4817016 vs 2.4817016
+PASS V3b QUAIDS seed 118 oracle recErr  2.4817004 vs 2.4817004
+PASS V3b QUAIDS seed 118 truth criterion  -5.544196 vs -5.544196 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 118: exact-objective selection picks start 7 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 119 converged starts  16 vs 16
+PASS V3b QUAIDS seed 119 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 119 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 119 selected recErr  0.60853099 vs 0.60853099
+PASS V3b QUAIDS seed 119 oracle recErr  0.60852829 vs 0.60852829
+PASS V3b QUAIDS seed 119 truth criterion  -5.5971372 vs -5.5971372 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 119: exact-objective selection picks start 5 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 120 converged starts  16 vs 16
+PASS V3b QUAIDS seed 120 distinct endpoints (bS, 1e-4)  15 vs 15
+PASS V3b QUAIDS seed 120 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 120 selected recErr  120.41307 vs 120.41307
+PASS V3b QUAIDS seed 120 oracle recErr  120.40791 vs 120.40791
+PASS V3b QUAIDS seed 120 truth criterion  -5.5394067 vs -5.5394067 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 120: exact-objective selection picks start 9 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 121 converged starts  13 vs 13
+PASS V3b QUAIDS seed 121 distinct endpoints (bS, 1e-4)  12 vs 12
+PASS V3b QUAIDS seed 121 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 121 selected recErr  7743.5428 vs 7743.5428
+PASS V3b QUAIDS seed 121 oracle recErr  1040.6007 vs 1040.6007
+PASS V3b QUAIDS seed 121 truth criterion  -5.6082995 vs -5.6082995 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 121: exact-objective selection picks start 11 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 122 converged starts  16 vs 16
+PASS V3b QUAIDS seed 122 distinct endpoints (bS, 1e-4)  11 vs 11
+PASS V3b QUAIDS seed 122 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 122 selected recErr  41.991791 vs 41.991791
+PASS V3b QUAIDS seed 122 oracle recErr  19.275709 vs 19.275709
+PASS V3b QUAIDS seed 122 truth criterion  -5.5684757 vs -5.5684757 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 122: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 123 converged starts  16 vs 16
+PASS V3b QUAIDS seed 123 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 123 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 123 selected recErr  0.75442646 vs 0.75442646
+PASS V3b QUAIDS seed 123 oracle recErr  0.75442646 vs 0.75442646
+PASS V3b QUAIDS seed 123 truth criterion  -5.5045457 vs -5.5045457 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 123: exact-objective selection picks start 1 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 124 converged starts  16 vs 16
+PASS V3b QUAIDS seed 124 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 124 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 124 selected recErr  0.62832255 vs 0.62832255
+PASS V3b QUAIDS seed 124 oracle recErr  0.62832255 vs 0.62832255
+PASS V3b QUAIDS seed 124 truth criterion  -5.5992681 vs -5.5992681 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 124: exact-objective selection picks start 3 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 125 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 126 converged starts  16 vs 16
+PASS V3b QUAIDS seed 126 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 126 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 126 selected recErr  0.2830591 vs 0.2830591
+PASS V3b QUAIDS seed 126 oracle recErr  0.28305207 vs 0.28305207
+PASS V3b QUAIDS seed 126 truth criterion  -5.4718816 vs -5.4718816 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 126: exact-objective selection picks start 7 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 127 converged starts  12 vs 12
+PASS V3b QUAIDS seed 127 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b QUAIDS seed 127 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 127 selected recErr  19.726641 vs 19.726641
+PASS V3b QUAIDS seed 127 oracle recErr  19.726641 vs 19.726641
+PASS V3b QUAIDS seed 127 truth criterion  -5.5517079 vs -5.5517079 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 127: exact-objective selection picks start 10 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 128 converged starts  16 vs 16
+PASS V3b QUAIDS seed 128 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 128 selected start (by homogCrit)  1 vs 1
+PASS V3b QUAIDS seed 128 selected recErr  1.4491559 vs 1.4491559
+PASS V3b QUAIDS seed 128 oracle recErr  1.4491508 vs 1.4491508
+PASS V3b QUAIDS seed 128 truth criterion  -5.4958539 vs -5.4958539 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 128: exact-objective selection picks start 1 (benchmark homogCrit selection 1)
+PASS V3b QUAIDS seed 129 converged starts  16 vs 16
+PASS V3b QUAIDS seed 129 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 129 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 129 selected recErr  0.4355401 vs 0.4355401
+PASS V3b QUAIDS seed 129 oracle recErr  0.4355401 vs 0.4355401
+PASS V3b QUAIDS seed 129 truth criterion  -5.5703687 vs -5.5703687 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 129: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 130 converged starts  16 vs 16
+PASS V3b QUAIDS seed 130 distinct endpoints (bS, 1e-4)  8 vs 8
+PASS V3b QUAIDS seed 130 selected start (by homogCrit)  8 vs 8
+PASS V3b QUAIDS seed 130 selected recErr  20.672096 vs 20.672096
+PASS V3b QUAIDS seed 130 oracle recErr  20.667161 vs 20.667161
+PASS V3b QUAIDS seed 130 truth criterion  -5.508963 vs -5.508963 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 130: exact-objective selection picks start 8 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 131 converged starts  16 vs 16
+PASS V3b QUAIDS seed 131 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 131 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 131 selected recErr  0.8114472 vs 0.8114472
+PASS V3b QUAIDS seed 131 oracle recErr  0.81144682 vs 0.81144682
+PASS V3b QUAIDS seed 131 truth criterion  -5.5226779 vs -5.5226779 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 131: exact-objective selection picks start 7 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 132 converged starts  16 vs 16
+PASS V3b QUAIDS seed 132 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 132 selected start (by homogCrit)  8 vs 8
+PASS V3b QUAIDS seed 132 selected recErr  5.899218 vs 5.899218
+PASS V3b QUAIDS seed 132 oracle recErr  5.899218 vs 5.899218
+PASS V3b QUAIDS seed 132 truth criterion  -5.4670968 vs -5.4670968 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 132: exact-objective selection picks start 10 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 133 converged starts  2 vs 2
+PASS V3b QUAIDS seed 133 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 133 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 133 selected recErr  1.2010895 vs 1.2010895
+PASS V3b QUAIDS seed 133 oracle recErr  1.2010895 vs 1.2010895
+PASS V3b QUAIDS seed 133 truth criterion  -5.6073554 vs -5.6073554 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 133: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 134 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 135 converged starts  16 vs 16
+PASS V3b QUAIDS seed 135 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 135 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 135 selected recErr  32.179353 vs 32.179353
+PASS V3b QUAIDS seed 135 oracle recErr  32.179353 vs 32.179353
+PASS V3b QUAIDS seed 135 truth criterion  -5.5565972 vs -5.5565972 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 135: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 136 converged starts  12 vs 12
+PASS V3b QUAIDS seed 136 distinct endpoints (bS, 1e-4)  11 vs 11
+PASS V3b QUAIDS seed 136 selected start (by homogCrit)  3 vs 3
+PASS V3b QUAIDS seed 136 selected recErr  725.30317 vs 725.30317
+PASS V3b QUAIDS seed 136 oracle recErr  725.29347 vs 725.29347
+PASS V3b QUAIDS seed 136 truth criterion  -5.4953741 vs -5.4953741 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 136: exact-objective selection picks start 11 (benchmark homogCrit selection 3)
+PASS V3b QUAIDS seed 137 converged starts  16 vs 16
+PASS V3b QUAIDS seed 137 distinct endpoints (bS, 1e-4)  8 vs 8
+PASS V3b QUAIDS seed 137 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 137 selected recErr  434.06524 vs 434.06524
+PASS V3b QUAIDS seed 137 oracle recErr  244.34579 vs 244.34579
+PASS V3b QUAIDS seed 137 truth criterion  -5.4870446 vs -5.4870446 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 137: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 138 converged starts  16 vs 16
+PASS V3b QUAIDS seed 138 distinct endpoints (bS, 1e-4)  15 vs 15
+PASS V3b QUAIDS seed 138 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 138 selected recErr  0.51074937 vs 0.51074937
+PASS V3b QUAIDS seed 138 oracle recErr  0.51074937 vs 0.51074937
+PASS V3b QUAIDS seed 138 truth criterion  -5.4506485 vs -5.4506485 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 138: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 139 converged starts  4 vs 4
+PASS V3b QUAIDS seed 139 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 139 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 139 selected recErr  8.2615742 vs 8.2615742
+PASS V3b QUAIDS seed 139 oracle recErr  8.2615742 vs 8.2615742
+PASS V3b QUAIDS seed 139 truth criterion  -5.5278923 vs -5.5278923 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 139: exact-objective selection picks start 10 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 140 converged starts  15 vs 15
+PASS V3b QUAIDS seed 140 distinct endpoints (bS, 1e-4)  10 vs 10
+PASS V3b QUAIDS seed 140 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 140 selected recErr  136.01956 vs 136.01956
+PASS V3b QUAIDS seed 140 oracle recErr  136.0165 vs 136.0165
+PASS V3b QUAIDS seed 140 truth criterion  -5.486403 vs -5.486403 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 140: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 141 converged starts  16 vs 16
+PASS V3b QUAIDS seed 141 distinct endpoints (bS, 1e-4)  9 vs 9
+PASS V3b QUAIDS seed 141 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 141 selected recErr  66.213366 vs 66.213366
+PASS V3b QUAIDS seed 141 oracle recErr  66.213366 vs 66.213366
+PASS V3b QUAIDS seed 141 truth criterion  -5.5311248 vs -5.5311248 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 141: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 142 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 143 converged starts  8 vs 8
+PASS V3b QUAIDS seed 143 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 143 selected start (by homogCrit)  3 vs 3
+PASS V3b QUAIDS seed 143 selected recErr  6.2531707 vs 6.2531707
+PASS V3b QUAIDS seed 143 oracle recErr  6.2531707 vs 6.2531707
+PASS V3b QUAIDS seed 143 truth criterion  -5.5763365 vs -5.5763365 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 143: exact-objective selection picks start 12 (benchmark homogCrit selection 3)
+PASS V3b QUAIDS seed 144 converged starts  16 vs 16
+PASS V3b QUAIDS seed 144 distinct endpoints (bS, 1e-4)  15 vs 15
+PASS V3b QUAIDS seed 144 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 144 selected recErr  151.24602 vs 151.24602
+PASS V3b QUAIDS seed 144 oracle recErr  151.24602 vs 151.24602
+PASS V3b QUAIDS seed 144 truth criterion  -5.5555226 vs -5.5555226 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 144: exact-objective selection picks start 14 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 145 converged starts  16 vs 16
+PASS V3b QUAIDS seed 145 distinct endpoints (bS, 1e-4)  7 vs 7
+PASS V3b QUAIDS seed 145 selected start (by homogCrit)  8 vs 8
+PASS V3b QUAIDS seed 145 selected recErr  16.489342 vs 16.489342
+PASS V3b QUAIDS seed 145 oracle recErr  16.489184 vs 16.489184
+PASS V3b QUAIDS seed 145 truth criterion  -5.4439498 vs -5.4439498 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 145: exact-objective selection picks start 4 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 146 converged starts  16 vs 16
+PASS V3b QUAIDS seed 146 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 146 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 146 selected recErr  0.78689605 vs 0.78689605
+PASS V3b QUAIDS seed 146 oracle recErr  0.78680738 vs 0.78680738
+PASS V3b QUAIDS seed 146 truth criterion  -5.5721046 vs -5.5721046 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 146: exact-objective selection picks start 2 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 147 converged starts  16 vs 16
+PASS V3b QUAIDS seed 147 distinct endpoints (bS, 1e-4)  8 vs 8
+PASS V3b QUAIDS seed 147 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 147 selected recErr  34.046058 vs 34.046058
+PASS V3b QUAIDS seed 147 oracle recErr  34.044617 vs 34.044617
+PASS V3b QUAIDS seed 147 truth criterion  -5.5250713 vs -5.5250713 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 147: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 148 converged starts  16 vs 16
+PASS V3b QUAIDS seed 148 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 148 selected start (by homogCrit)  9 vs 9
+PASS V3b QUAIDS seed 148 selected recErr  0.51292088 vs 0.51292088
+PASS V3b QUAIDS seed 148 oracle recErr  0.44095564 vs 0.44095564
+PASS V3b QUAIDS seed 148 truth criterion  -5.5454447 vs -5.5454447 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 148: exact-objective selection picks start 9 (benchmark homogCrit selection 9)
+PASS V3b QUAIDS seed 149 converged starts  16 vs 16
+PASS V3b QUAIDS seed 149 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 149 selected start (by homogCrit)  1 vs 1
+PASS V3b QUAIDS seed 149 selected recErr  0.66116397 vs 0.66116397
+PASS V3b QUAIDS seed 149 oracle recErr  0.66116397 vs 0.66116397
+PASS V3b QUAIDS seed 149 truth criterion  -5.4987679 vs -5.4987679 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 149: exact-objective selection picks start 1 (benchmark homogCrit selection 1)
+PASS V3b QUAIDS seed 150 converged starts  16 vs 16
+PASS V3b QUAIDS seed 150 distinct endpoints (bS, 1e-4)  15 vs 15
+PASS V3b QUAIDS seed 150 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 150 selected recErr  1030.2612 vs 1030.2612
+PASS V3b QUAIDS seed 150 oracle recErr  1030.2413 vs 1030.2413
+PASS V3b QUAIDS seed 150 truth criterion  -5.5605196 vs -5.5605196 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 150: exact-objective selection picks start 2 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 151 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 152 converged starts  15 vs 15
+PASS V3b QUAIDS seed 152 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b QUAIDS seed 152 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 152 selected recErr  7.3453171 vs 7.3453171
+PASS V3b QUAIDS seed 152 oracle recErr  7.3453072 vs 7.3453072
+PASS V3b QUAIDS seed 152 truth criterion  -5.4907073 vs -5.4907073 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 152: exact-objective selection picks start 15 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 153 converged starts  16 vs 16
+PASS V3b QUAIDS seed 153 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 153 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 153 selected recErr  15.916868 vs 15.916868
+PASS V3b QUAIDS seed 153 oracle recErr  15.916835 vs 15.916835
+PASS V3b QUAIDS seed 153 truth criterion  -5.5202376 vs -5.5202376 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 153: exact-objective selection picks start 12 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 154 converged starts  16 vs 16
+PASS V3b QUAIDS seed 154 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b QUAIDS seed 154 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 154 selected recErr  10.191667 vs 10.191667
+PASS V3b QUAIDS seed 154 oracle recErr  3.8331815 vs 3.8331815
+PASS V3b QUAIDS seed 154 truth criterion  -5.5565677 vs -5.5565677 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 154: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 155 converged starts  12 vs 12
+PASS V3b QUAIDS seed 155 distinct endpoints (bS, 1e-4)  11 vs 11
+PASS V3b QUAIDS seed 155 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 155 selected recErr  110.69993 vs 110.69993
+PASS V3b QUAIDS seed 155 oracle recErr  74.151936 vs 74.151936
+PASS V3b QUAIDS seed 155 truth criterion  -5.4228594 vs -5.4228594 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 155: exact-objective selection picks start 11 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 156 converged starts  11 vs 11
+PASS V3b QUAIDS seed 156 distinct endpoints (bS, 1e-4)  10 vs 10
+PASS V3b QUAIDS seed 156 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 156 selected recErr  11.831356 vs 11.831356
+PASS V3b QUAIDS seed 156 oracle recErr  11.831356 vs 11.831356
+PASS V3b QUAIDS seed 156 truth criterion  -5.5806361 vs -5.5806361 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 156: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 157 converged starts  16 vs 16
+PASS V3b QUAIDS seed 157 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 157 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 157 selected recErr  5.3664585 vs 5.3664585
+PASS V3b QUAIDS seed 157 oracle recErr  5.3657968 vs 5.3657968
+PASS V3b QUAIDS seed 157 truth criterion  -5.4867246 vs -5.4867246 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 157: exact-objective selection picks start 13 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 158 converged starts  16 vs 16
+PASS V3b QUAIDS seed 158 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 158 selected start (by homogCrit)  8 vs 8
+PASS V3b QUAIDS seed 158 selected recErr  8.0746346 vs 8.0746346
+PASS V3b QUAIDS seed 158 oracle recErr  8.0746346 vs 8.0746346
+PASS V3b QUAIDS seed 158 truth criterion  -5.6250961 vs -5.6250961 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 158: exact-objective selection picks start 14 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 159 converged starts  16 vs 16
+PASS V3b QUAIDS seed 159 distinct endpoints (bS, 1e-4)  15 vs 15
+PASS V3b QUAIDS seed 159 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 159 selected recErr  34.418353 vs 34.418353
+PASS V3b QUAIDS seed 159 oracle recErr  34.418353 vs 34.418353
+PASS V3b QUAIDS seed 159 truth criterion  -5.6212968 vs -5.6212968 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 159: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 160 converged starts  9 vs 9
+PASS V3b QUAIDS seed 160 distinct endpoints (bS, 1e-4)  8 vs 8
+PASS V3b QUAIDS seed 160 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 160 selected recErr  3954.0027 vs 3954.0027
+PASS V3b QUAIDS seed 160 oracle recErr  3953.9505 vs 3953.9505
+PASS V3b QUAIDS seed 160 truth criterion  -5.4701028 vs -5.4701028 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 160: exact-objective selection picks start 7 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 161 converged starts  16 vs 16
+PASS V3b QUAIDS seed 161 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 161 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 161 selected recErr  0.51332356 vs 0.51332356
+PASS V3b QUAIDS seed 161 oracle recErr  0.51332356 vs 0.51332356
+PASS V3b QUAIDS seed 161 truth criterion  -5.5462041 vs -5.5462041 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 161: exact-objective selection picks start 12 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 162 converged starts  16 vs 16
+PASS V3b QUAIDS seed 162 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 162 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 162 selected recErr  201.50499 vs 201.50499
+PASS V3b QUAIDS seed 162 oracle recErr  133.74355 vs 133.74355
+PASS V3b QUAIDS seed 162 truth criterion  -5.5865406 vs -5.5865406 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 162: exact-objective selection picks start 11 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 163 converged starts  16 vs 16
+PASS V3b QUAIDS seed 163 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 163 selected start (by homogCrit)  16 vs 16
+PASS V3b QUAIDS seed 163 selected recErr  0.36696841 vs 0.36696841
+PASS V3b QUAIDS seed 163 oracle recErr  0.36696739 vs 0.36696739
+PASS V3b QUAIDS seed 163 truth criterion  -5.5072612 vs -5.5072612 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 163: exact-objective selection picks start 8 (benchmark homogCrit selection 16)
+PASS V3b QUAIDS seed 164 converged starts  15 vs 15
+PASS V3b QUAIDS seed 164 distinct endpoints (bS, 1e-4)  14 vs 14
+PASS V3b QUAIDS seed 164 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 164 selected recErr  391.80492 vs 391.80492
+PASS V3b QUAIDS seed 164 oracle recErr  316.01386 vs 316.01386
+PASS V3b QUAIDS seed 164 truth criterion  -5.4193443 vs -5.4193443 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 164: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 165 converged starts  16 vs 16
+PASS V3b QUAIDS seed 165 distinct endpoints (bS, 1e-4)  9 vs 9
+PASS V3b QUAIDS seed 165 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 165 selected recErr  13.683176 vs 13.683176
+PASS V3b QUAIDS seed 165 oracle recErr  13.683176 vs 13.683176
+PASS V3b QUAIDS seed 165 truth criterion  -5.4654506 vs -5.4654506 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 165: exact-objective selection picks start 1 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 166 converged starts  16 vs 16
+PASS V3b QUAIDS seed 166 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 166 selected start (by homogCrit)  16 vs 16
+PASS V3b QUAIDS seed 166 selected recErr  0.73103094 vs 0.73103094
+PASS V3b QUAIDS seed 166 oracle recErr  0.73099743 vs 0.73099743
+PASS V3b QUAIDS seed 166 truth criterion  -5.5380273 vs -5.5380273 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 166: exact-objective selection picks start 16 (benchmark homogCrit selection 16)
+PASS V3b QUAIDS seed 167 converged starts  7 vs 7
+PASS V3b QUAIDS seed 167 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 167 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 167 selected recErr  502.87717 vs 502.87717
+PASS V3b QUAIDS seed 167 oracle recErr  502.87717 vs 502.87717
+PASS V3b QUAIDS seed 167 truth criterion  -5.5496359 vs -5.5496359 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 167: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 168 converged starts  16 vs 16
+PASS V3b QUAIDS seed 168 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 168 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 168 selected recErr  1.7340514 vs 1.7340514
+PASS V3b QUAIDS seed 168 oracle recErr  1.7340505 vs 1.7340505
+PASS V3b QUAIDS seed 168 truth criterion  -5.537973 vs -5.537973 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 168: exact-objective selection picks start 9 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 169 converged starts  15 vs 15
+PASS V3b QUAIDS seed 169 distinct endpoints (bS, 1e-4)  3 vs 3
+PASS V3b QUAIDS seed 169 selected start (by homogCrit)  14 vs 14
+PASS V3b QUAIDS seed 169 selected recErr  1.6654008 vs 1.6654008
+PASS V3b QUAIDS seed 169 oracle recErr  1.6653671 vs 1.6653671
+PASS V3b QUAIDS seed 169 truth criterion  -5.6088851 vs -5.6088851 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 169: exact-objective selection picks start 14 (benchmark homogCrit selection 14)
+PASS V3b QUAIDS seed 170 converged starts  9 vs 9
+PASS V3b QUAIDS seed 170 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 170 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 170 selected recErr  0.52492916 vs 0.52492916
+PASS V3b QUAIDS seed 170 oracle recErr  0.52492888 vs 0.52492888
+PASS V3b QUAIDS seed 170 truth criterion  -5.4628493 vs -5.4628493 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 170: exact-objective selection picks start 2 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 171 converged starts  16 vs 16
+PASS V3b QUAIDS seed 171 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b QUAIDS seed 171 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 171 selected recErr  1.0736198 vs 1.0736198
+PASS V3b QUAIDS seed 171 oracle recErr  1.0736198 vs 1.0736198
+PASS V3b QUAIDS seed 171 truth criterion  -5.5705619 vs -5.5705619 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 171: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 172 converged starts  16 vs 16
+PASS V3b QUAIDS seed 172 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 172 selected start (by homogCrit)  16 vs 16
+PASS V3b QUAIDS seed 172 selected recErr  0.56336833 vs 0.56336833
+PASS V3b QUAIDS seed 172 oracle recErr  0.56336833 vs 0.56336833
+PASS V3b QUAIDS seed 172 truth criterion  -5.5815529 vs -5.5815529 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 172: exact-objective selection picks start 1 (benchmark homogCrit selection 16)
+PASS V3b QUAIDS seed 173 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 174 converged starts  8 vs 8
+PASS V3b QUAIDS seed 174 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 174 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 174 selected recErr  0.58547249 vs 0.58547249
+PASS V3b QUAIDS seed 174 oracle recErr  0.58547249 vs 0.58547249
+PASS V3b QUAIDS seed 174 truth criterion  -5.5743232 vs -5.5743232 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 174: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 175 converged starts  16 vs 16
+PASS V3b QUAIDS seed 175 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 175 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 175 selected recErr  0.33127098 vs 0.33127098
+PASS V3b QUAIDS seed 175 oracle recErr  0.33127098 vs 0.33127098
+PASS V3b QUAIDS seed 175 truth criterion  -5.5753645 vs -5.5753645 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 175: exact-objective selection picks start 3 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 176 converged starts  1 vs 1
+PASS V3b QUAIDS seed 176 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 176 selected start (by homogCrit)  9 vs 9
+PASS V3b QUAIDS seed 176 selected recErr  167.11172 vs 167.11172
+PASS V3b QUAIDS seed 176 oracle recErr  167.11172 vs 167.11172
+PASS V3b QUAIDS seed 176 truth criterion  -5.4898895 vs -5.4898895 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 176: exact-objective selection picks start 9 (benchmark homogCrit selection 9)
+PASS V3b QUAIDS seed 177 converged starts  16 vs 16
+PASS V3b QUAIDS seed 177 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 177 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 177 selected recErr  0.65124124 vs 0.65124124
+PASS V3b QUAIDS seed 177 oracle recErr  0.65120916 vs 0.65120916
+PASS V3b QUAIDS seed 177 truth criterion  -5.5556387 vs -5.5556387 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 177: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 178 converged starts  16 vs 16
+PASS V3b QUAIDS seed 178 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 178 selected start (by homogCrit)  8 vs 8
+PASS V3b QUAIDS seed 178 selected recErr  0.74415505 vs 0.74415505
+PASS V3b QUAIDS seed 178 oracle recErr  0.74415505 vs 0.74415505
+PASS V3b QUAIDS seed 178 truth criterion  -5.5143073 vs -5.5143073 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 178: exact-objective selection picks start 4 (benchmark homogCrit selection 8)
+PASS V3b QUAIDS seed 179 converged starts  2 vs 2
+PASS V3b QUAIDS seed 179 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 179 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 179 selected recErr  15.303432 vs 15.303432
+PASS V3b QUAIDS seed 179 oracle recErr  15.303432 vs 15.303432
+PASS V3b QUAIDS seed 179 truth criterion  -5.571716 vs -5.571716 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 179: exact-objective selection picks start 11 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 180 converged starts  16 vs 16
+PASS V3b QUAIDS seed 180 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 180 selected start (by homogCrit)  13 vs 13
+PASS V3b QUAIDS seed 180 selected recErr  0.73335859 vs 0.73335859
+PASS V3b QUAIDS seed 180 oracle recErr  0.73335859 vs 0.73335859
+PASS V3b QUAIDS seed 180 truth criterion  -5.4642708 vs -5.4642708 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 180: exact-objective selection picks start 13 (benchmark homogCrit selection 13)
+PASS V3b QUAIDS seed 181 converged starts  16 vs 16
+PASS V3b QUAIDS seed 181 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 181 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 181 selected recErr  0.91246338 vs 0.91246338
+PASS V3b QUAIDS seed 181 oracle recErr  0.91246338 vs 0.91246338
+PASS V3b QUAIDS seed 181 truth criterion  -5.6008753 vs -5.6008753 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 181: exact-objective selection picks start 1 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 182 no converged start (benchmark: none)  pilot nConv 0
+PASS V3b QUAIDS seed 183 converged starts  16 vs 16
+PASS V3b QUAIDS seed 183 distinct endpoints (bS, 1e-4)  11 vs 11
+PASS V3b QUAIDS seed 183 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 183 selected recErr  1.0102582 vs 1.0102582
+PASS V3b QUAIDS seed 183 oracle recErr  1.0102582 vs 1.0102582
+PASS V3b QUAIDS seed 183 truth criterion  -5.6051278 vs -5.6051278 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 183: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 184 converged starts  16 vs 16
+PASS V3b QUAIDS seed 184 distinct endpoints (bS, 1e-4)  9 vs 9
+PASS V3b QUAIDS seed 184 selected start (by homogCrit)  15 vs 15
+PASS V3b QUAIDS seed 184 selected recErr  95.566357 vs 95.566357
+PASS V3b QUAIDS seed 184 oracle recErr  95.566357 vs 95.566357
+PASS V3b QUAIDS seed 184 truth criterion  -5.5441922 vs -5.5441922 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 184: exact-objective selection picks start 15 (benchmark homogCrit selection 15)
+PASS V3b QUAIDS seed 185 converged starts  16 vs 16
+PASS V3b QUAIDS seed 185 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b QUAIDS seed 185 selected start (by homogCrit)  10 vs 10
+PASS V3b QUAIDS seed 185 selected recErr  9.6578394 vs 9.6578394
+PASS V3b QUAIDS seed 185 oracle recErr  9.6572159 vs 9.6572159
+PASS V3b QUAIDS seed 185 truth criterion  -5.6451683 vs -5.6451683 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 185: exact-objective selection picks start 10 (benchmark homogCrit selection 10)
+PASS V3b QUAIDS seed 186 converged starts  15 vs 15
+PASS V3b QUAIDS seed 186 distinct endpoints (bS, 1e-4)  9 vs 9
+PASS V3b QUAIDS seed 186 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 186 selected recErr  0.51587525 vs 0.51587525
+PASS V3b QUAIDS seed 186 oracle recErr  0.51587525 vs 0.51587525
+PASS V3b QUAIDS seed 186 truth criterion  -5.5857833 vs -5.5857833 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 186: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 187 converged starts  2 vs 2
+PASS V3b QUAIDS seed 187 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 187 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 187 selected recErr  1476.7633 vs 1476.7633
+PASS V3b QUAIDS seed 187 oracle recErr  1476.7633 vs 1476.7633
+PASS V3b QUAIDS seed 187 truth criterion  -5.6141902 vs -5.6141902 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 187: exact-objective selection picks start 12 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 188 converged starts  16 vs 16
+PASS V3b QUAIDS seed 188 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 188 selected start (by homogCrit)  4 vs 4
+PASS V3b QUAIDS seed 188 selected recErr  0.55608593 vs 0.55608593
+PASS V3b QUAIDS seed 188 oracle recErr  0.55608467 vs 0.55608467
+PASS V3b QUAIDS seed 188 truth criterion  -5.5955093 vs -5.5955093 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 188: exact-objective selection picks start 4 (benchmark homogCrit selection 4)
+PASS V3b QUAIDS seed 189 converged starts  16 vs 16
+PASS V3b QUAIDS seed 189 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 189 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 189 selected recErr  0.76234334 vs 0.76234334
+PASS V3b QUAIDS seed 189 oracle recErr  0.76234325 vs 0.76234325
+PASS V3b QUAIDS seed 189 truth criterion  -5.4642793 vs -5.4642793 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 189: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 190 converged starts  11 vs 11
+PASS V3b QUAIDS seed 190 distinct endpoints (bS, 1e-4)  10 vs 10
+PASS V3b QUAIDS seed 190 selected start (by homogCrit)  9 vs 9
+PASS V3b QUAIDS seed 190 selected recErr  15921.462 vs 15921.462
+PASS V3b QUAIDS seed 190 oracle recErr  15921.462 vs 15921.462
+PASS V3b QUAIDS seed 190 truth criterion  -5.5335165 vs -5.5335165 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 190: exact-objective selection picks start 8 (benchmark homogCrit selection 9)
+PASS V3b QUAIDS seed 191 converged starts  16 vs 16
+PASS V3b QUAIDS seed 191 distinct endpoints (bS, 1e-4)  4 vs 4
+PASS V3b QUAIDS seed 191 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 191 selected recErr  15.593313 vs 15.593313
+PASS V3b QUAIDS seed 191 oracle recErr  15.593096 vs 15.593096
+PASS V3b QUAIDS seed 191 truth criterion  -5.5241191 vs -5.5241191 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 191: exact-objective selection picks start 5 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 192 converged starts  16 vs 16
+PASS V3b QUAIDS seed 192 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 192 selected start (by homogCrit)  2 vs 2
+PASS V3b QUAIDS seed 192 selected recErr  1.4374753 vs 1.4374753
+PASS V3b QUAIDS seed 192 oracle recErr  1.437475 vs 1.437475
+PASS V3b QUAIDS seed 192 truth criterion  -5.5066394 vs -5.5066394 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 192: exact-objective selection picks start 2 (benchmark homogCrit selection 2)
+PASS V3b QUAIDS seed 193 converged starts  16 vs 16
+PASS V3b QUAIDS seed 193 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 193 selected start (by homogCrit)  6 vs 6
+PASS V3b QUAIDS seed 193 selected recErr  25.862955 vs 25.862955
+PASS V3b QUAIDS seed 193 oracle recErr  25.862929 vs 25.862929
+PASS V3b QUAIDS seed 193 truth criterion  -5.5790365 vs -5.5790365 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 193: exact-objective selection picks start 8 (benchmark homogCrit selection 6)
+PASS V3b QUAIDS seed 194 converged starts  16 vs 16
+PASS V3b QUAIDS seed 194 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 194 selected start (by homogCrit)  16 vs 16
+PASS V3b QUAIDS seed 194 selected recErr  0.76732298 vs 0.76732298
+PASS V3b QUAIDS seed 194 oracle recErr  0.76732298 vs 0.76732298
+PASS V3b QUAIDS seed 194 truth criterion  -5.5076267 vs -5.5076267 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 194: exact-objective selection picks start 1 (benchmark homogCrit selection 16)
+PASS V3b QUAIDS seed 195 converged starts  6 vs 6
+PASS V3b QUAIDS seed 195 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 195 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 195 selected recErr  191.07155 vs 191.07155
+PASS V3b QUAIDS seed 195 oracle recErr  182.11289 vs 182.11289
+PASS V3b QUAIDS seed 195 truth criterion  -5.5452666 vs -5.5452666 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 195: exact-objective selection picks start 3 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 196 converged starts  16 vs 16
+PASS V3b QUAIDS seed 196 distinct endpoints (bS, 1e-4)  5 vs 5
+PASS V3b QUAIDS seed 196 selected start (by homogCrit)  11 vs 11
+PASS V3b QUAIDS seed 196 selected recErr  0.53690056 vs 0.53690056
+PASS V3b QUAIDS seed 196 oracle recErr  0.53690056 vs 0.53690056
+PASS V3b QUAIDS seed 196 truth criterion  -5.5143293 vs -5.5143293 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 196: exact-objective selection picks start 11 (benchmark homogCrit selection 11)
+PASS V3b QUAIDS seed 197 converged starts  16 vs 16
+PASS V3b QUAIDS seed 197 distinct endpoints (bS, 1e-4)  1 vs 1
+PASS V3b QUAIDS seed 197 selected start (by homogCrit)  7 vs 7
+PASS V3b QUAIDS seed 197 selected recErr  0.89515898 vs 0.89515898
+PASS V3b QUAIDS seed 197 oracle recErr  0.89515868 vs 0.89515868
+PASS V3b QUAIDS seed 197 truth criterion  -5.5330657 vs -5.5330657 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 197: exact-objective selection picks start 11 (benchmark homogCrit selection 7)
+PASS V3b QUAIDS seed 198 converged starts  16 vs 16
+PASS V3b QUAIDS seed 198 distinct endpoints (bS, 1e-4)  2 vs 2
+PASS V3b QUAIDS seed 198 selected start (by homogCrit)  12 vs 12
+PASS V3b QUAIDS seed 198 selected recErr  0.51196836 vs 0.51196836
+PASS V3b QUAIDS seed 198 oracle recErr  0.51196636 vs 0.51196636
+PASS V3b QUAIDS seed 198 truth criterion  -5.4958697 vs -5.4958697 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 198: exact-objective selection picks start 12 (benchmark homogCrit selection 12)
+PASS V3b QUAIDS seed 199 converged starts  15 vs 15
+PASS V3b QUAIDS seed 199 distinct endpoints (bS, 1e-4)  12 vs 12
+PASS V3b QUAIDS seed 199 selected start (by homogCrit)  5 vs 5
+PASS V3b QUAIDS seed 199 selected recErr  215.26408 vs 215.26408
+PASS V3b QUAIDS seed 199 oracle recErr  215.26171 vs 215.26171
+PASS V3b QUAIDS seed 199 truth criterion  -5.5301526 vs -5.5301526 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 199: exact-objective selection picks start 2 (benchmark homogCrit selection 5)
+PASS V3b QUAIDS seed 200 converged starts  16 vs 16
+PASS V3b QUAIDS seed 200 distinct endpoints (bS, 1e-4)  6 vs 6
+PASS V3b QUAIDS seed 200 selected start (by homogCrit)  1 vs 1
+PASS V3b QUAIDS seed 200 selected recErr  70.030929 vs 70.030929
+PASS V3b QUAIDS seed 200 oracle recErr  70.030929 vs 70.030929
+PASS V3b QUAIDS seed 200 truth criterion  -5.4779142 vs -5.4779142 (direct objective clips exp; replica tol)
+INFO V3b QUAIDS seed 200: exact-objective selection picks start 11 (benchmark homogCrit selection 1)
+SKIP V3c smoke gate AIDS seed 6 cold LM start 1 (cell not in this run)
+SKIP V3c smoke gate AIDS seed 6 continuation start 1 (cell not in this run)
+SKIP V3c smoke gate QUAIDS seed 9 cold LM start 1 (cell not in this run)
+SKIP V3c smoke gate QUAIDS seed 9 continuation start 1 (cell not in this run)
+PASS V5 largest critExact selected (-5.47 over -6.0, -7.84)
+PASS V5 sign reversal would pick the worst basin; rule does not
+PASS V5 non-converged better objective excluded
+PASS V5 tie -> lowest start
+PASS V5 no converged start -> never (None)
+PASS V5 NaN objective skipped
+PASS V5 oracle smallest error among converged
+PASS V5 basin dedup leader clustering (0,.04 | .06 | 1,1.03)
+
+VALIDATION: ALL 2023 CHECKS PASSED

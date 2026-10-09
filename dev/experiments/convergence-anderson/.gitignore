@@ -1,1 +1,8 @@
 __pycache__/
+
+# E2 per-cell GAUSS console captures (about 1.9 MB each). They were
+# deliberately not committed (owner decision, 2026-10-09) because each
+# line repeats data already in e2_out/cells_m*.csv. They are kept locally,
+# and their SHA-256, sizes and line counts are recorded in E2_RESULTS.md.
+e2_logs/e2_run_m0_console.txt
+e2_logs/e2_run_m1_console.txt

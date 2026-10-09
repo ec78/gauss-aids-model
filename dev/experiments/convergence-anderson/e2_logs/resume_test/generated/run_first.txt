@@ -1,0 +1,7 @@
+﻿cell m       0.0000000 seed       1.0000000 method       1.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8424106 rawStruct       2.9157727 bsErr       7.7610825 wall    0.0080000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733603 rawStruct     0.082433087 bsErr      0.79854768 wall      0.22400000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       1.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699598 wall       2.3980000 
+cell m       0.0000000 seed       1.0000000 method       1.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -7.8423925 rawStruct       2.9157710 bsErr       7.7610063 wall    0.0060000000 
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733612 rawStruct     0.082281554 bsErr      0.79455186 wall      0.18000000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       2.2850000 
+PILOT CORE DONE: cells run       6.0000000 cells skipped (already on disk)       0.0000000 

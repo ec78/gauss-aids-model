@@ -1,0 +1,2 @@
+﻿RESUME: pilot_resume_test/cells_m0.csv has       6.0000000 finished cells.
+PILOT CORE DONE: cells run       0.0000000 cells skipped (already on disk)       6.0000000 

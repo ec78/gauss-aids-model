@@ -54,3 +54,14 @@ confirm_dev_out/report.md -text whitespace=cr-at-eol
 CODEX_PILOT_REVIEW.md -whitespace
 confirm_dev_out/report.md -whitespace
 e0_out/e0_report.md -whitespace
+
+# E2 confirmation evidence (2026-10-08/09; see E2_RESULTS.md). These are
+# raw GAUSS and analysis outputs: store them byte-exact (several are CRLF)
+# and never edit them. The cell and truth CSVs stay out of text diffs,
+# like the pilot cells. Generated reports and raw console logs keep
+# GAUSS's padded trailing spaces and the generators' trailing blank
+# line, so they are exempt from git's whitespace check.
+e2_out/** -text -diff linguist-generated
+e2_det_out/** -text -diff linguist-generated
+confirm_e2_out/** -text -whitespace
+e2_logs/** -text -whitespace

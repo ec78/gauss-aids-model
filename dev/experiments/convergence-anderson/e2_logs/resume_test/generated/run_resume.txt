@@ -1,0 +1,4 @@
+﻿RESUME: pilot_resume_test/cells_m0.csv has       4.0000000 finished cells.
+cell m       0.0000000 seed       1.0000000 method       2.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733612 rawStruct     0.082281554 bsErr      0.79455186 wall      0.28800000 
+cell m       0.0000000 seed       1.0000000 method       3.0000000 start       2.0000000 conv       1.0000000 status       0.0000000 critExact      -5.4733715 rawStruct     0.081323286 bsErr      0.75699599 wall       2.2690000 
+PILOT CORE DONE: cells run       2.0000000 cells skipped (already on disk)       4.0000000 

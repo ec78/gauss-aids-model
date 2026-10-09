@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-08_
+_Last updated: 2026-10-09_
 
 ## Current Objective
 
@@ -60,9 +60,18 @@ before Stage 3 was written, not assumed.
 
 **The latest completed work is the AIDS/QUAIDS convergence-correctness
 research** in `dev/experiments/convergence-anderson/`. Its latest
-checkpoint is the matched 30-seed pilot, committed and pushed as
-`e90a568` (`HEAD`, `master`, `origin/master`). It remains
-experiment-only and is not shipped (see the 2026-10-05 update below).
+result is the **completed E2 confirmation (2026-10-08/09)**, in which all
+binding gates pass. See the 2026-10-09 update below and
+`dev/experiments/convergence-anderson/E2_RESULTS.md`.
+
+Commit history:
+- **`e90a568`:** the matched 30-seed pilot; pushed.
+- **`ad986fc`:** the protocol freeze; local.
+- **The E2 evidence and documentation commit,** on top of `ad986fc`;
+  local.
+
+None of the commits after `e90a568` is pushed. The work remains
+experiment-only and is not shipped.
 The original Anderson research and benchmark were committed and pushed
 earlier as `7e98720`. The methodology audit corrected the original
 multi-start selector direction, added a numerically safer experimental
@@ -198,8 +207,49 @@ Full account: `dev/experiments/convergence-anderson/SUMMARY.md`, section
 "Matched 30-seed pilot". Next entry point:
 `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
 
-**Update (2026-10-08): the confirmation protocol is frozen; the
-confirmation run has not been run.**
+**Update (2026-10-09): E2 confirmation COMPLETE. All binding gates pass
+for both models.**
+
+The run used the frozen protocol from freeze commit `ad986fc`, on
+held-out seeds 31-200 (n = 170 per model). `FREEZE_MANIFEST.json` verified
+34/34 before and after.
+
+| Model | Primary configuration | A2: correct / 170 (CP lower) | A4: wrong answers returned |
+|---|---|---|---|
+| AIDS | cold LM, 16 starts (`L16`) | **170** (0.9785 ≥ 0.90): PASS | **0**: PASS |
+| QUAIDS | cold LM + continuation pool (`L16+C16`) | **160** (0.8945 ≥ 0.85): PASS | **0**: PASS |
+
+- **A1:** all four parts pass. These are validation (340/340 benchmark
+  reproductions), analysis integrity, determinism (0 differences) and
+  resume (6/6).
+- **A5:** no regressions against Anderson.
+- **A3 (descriptive only):** improved/regressed/tied 44/0/126 for AIDS
+  and 86/0/84 for QUAIDS.
+- **QUAIDS has 10 visible no-result seeds:** 43, 112, 125, 134, 151,
+  160, 167, 182, 187 and 190. On all of them every cold-LM start was
+  infeasible or inversion-failed, and every continuation run failed.
+  Anderson also failed all 10, with no result or a wrong answer.
+
+**Limitations:**
+- synthetic DGP only;
+- no truth-free reliability signal;
+- the 10 QUAIDS no-result seeds;
+- A3 is non-confirmatory;
+- timing is descriptive, not a speed conclusion (wall time per seed:
+  AIDS median 4.2 s, QUAIDS median 79.5 s);
+- the production symmetry design is unresolved.
+
+The evidence package (`e2_out/`, `e2_det_out/`, `confirm_e2_out/`,
+`e2_logs/`) and `E2_RESULTS.md` are committed with this update. The
+exception is the two per-cell GAUSS console logs (about 1.9 MB each,
+redundant with the cell CSVs), which are kept locally and git-ignored by
+the owner's size decision; their SHA-256 values are recorded in
+`E2_RESULTS.md`. **No
+shipped `src/` file changed.**
+
+**Update (2026-10-08; historical, superseded by the 2026-10-09 update
+above): the confirmation protocol is frozen; the confirmation run has not
+been run.**
 
 `dev/experiments/convergence-anderson/CORRECTNESS_VALIDATION_PROTOCOL.md`
 (FROZEN v4) was approved by the user on 2026-10-08 under a limited scope:
@@ -222,8 +272,9 @@ Supporting implementation:
 - `FREEZE_MANIFEST.json` hashes 34 files. Its SHA-256 is in
   `FREEZE_MANIFEST.sha256` and in the freeze commit message.
 - The freeze is one local commit, **not pushed**.
-- **E2 (the 170-seed confirmation run) has not been run and needs
-  separate explicit approval.** No shipped `src/` file changed.
+- At the time of the freeze, E2 had not been run. It was then approved
+  and run on 2026-10-08/09 (see the update above). No shipped `src/`
+  file changed.
 - **Line-ending caveat (fails closed).** The current working tree
   verifies all 34 manifest files. A fresh-checkout simulation (a
   `git checkout-index` export) verifies 27 of 34, plus the manifest and
@@ -236,8 +287,9 @@ Supporting implementation:
     CRLF.
   - The manifest then fails closed: verification and
     `confirm_analyze.py --mode confirm` refuse to run.
-  - E2 must run from the verified LF working tree, or from a
-    `core.autocrlf=false`/`input` checkout re-verified before execution.
+  - E2 ran from the verified LF working tree. Any re-run or re-analysis
+    must use that tree, or a `core.autocrlf=false`/`input` checkout with
+    the manifest re-verified first.
   - Root-level checkout behavior was deliberately left unchanged.
 
 Limitations:
@@ -1093,17 +1145,29 @@ not active implementation or approved production scope.
    - Both are frozen in `CORRECTNESS_VALIDATION_PROTOCOL.md` (FROZEN v4,
      2026-10-08).
 
-   **Next:** E2, the 170-seed confirmation run on held-out seeds 31-200
-   (protocol section 14.4). It runs only with the user's separate
-   explicit approval.
+   Done (2026-10-08/09): E2, the 170-seed confirmation run. All binding
+   gates passed (see the Current Objective update).
+
+   **Recommended next work** (none of it started; each item needs its own
+   approval):
+   - Preserve the E2 evidence.
+   - Prototype AIDS direct LM as an **opt-in** experimental mode, with
+     the shipped default unchanged.
+   - Investigate the 10 QUAIDS no-result seeds under a **new, separately
+     prespecified exploratory protocol**.
+   - Resolve the symmetry design before shipping QUAIDS (or AIDS) direct
+     LM: in-objective symmetry, or a valid projection covariance.
+   - Benchmark speed in a separate, controlled study.
+
+   Full rationale: `E2_RESULTS.md`, "Recommended next work".
 3. Add diagnostics usable without synthetic truth: fixed-point residual,
    multi-start endpoint agreement, objective gaps, Jacobian/Hessian rank
    and conditioning, theory restrictions, and training-vs-held-out fit.
    Productionization should require a defensible real-data trust signal.
-4. Use continuation as a targeted follow-up: solve linear AIDS first,
-   then gradually introduce the nonlinear price-index and QUAIDS terms.
-   Combine this with parameter-block scaling/preconditioning rather than
-   adding more undirected random starts.
+4. Done in Phases 3 and 3-hardening, and confirmed in E2: continuation
+   as a targeted follow-up, solving a homotopy from a linear-index stage
+   to the full nonlinear objective, with parameter-block scaling. It is
+   part of the confirmed QUAIDS primary configuration.
 5. Before any future TVP-AIDS work, resolve the `sslib` installation
    deliberately: resync to pinned `v1.0.0`/`ad15626`, or explicitly test
    and adopt v2 using its supported installation/catalog path. The
@@ -1115,15 +1179,21 @@ not active implementation or approved production scope.
 
 ## Handoff Notes
 
-- **Current state (2026-10-08):** local `master` has one freeze commit
-  on top of `e90a568`, which adds the frozen confirmation protocol and
-  its analysis package. It is **not pushed**; `origin/master` is still
-  `e90a568`, the committed and pushed matched 30-seed pilot. No shipped
+- **Current state (2026-10-09):** local `master` has two commits on top
+  of `e90a568`:
+  - the protocol freeze `ad986fc`;
+  - the E2 evidence and documentation commit.
+
+  Neither is pushed; `origin/master` is still `e90a568`. No shipped
   `src/` file changed.
 
-  The research remains experiment-only and not shipped. E2 (the 170-seed
-  confirmation run) is **not** authorized yet. Next clean-session entry
-  point: `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`.
+  E2 is complete, and every binding gate passes (`E2_RESULTS.md`). The
+  research remains experiment-only and not shipped. Next clean-session
+  entry point: `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`,
+  then `E2_RESULTS.md`.
+- **Previous state (2026-10-08; superseded by the entry above).** Local
+  `master` had the freeze commit `ad986fc` on top of `e90a568`, not
+  pushed, and E2 had not yet been run.
 - **Previous state (2026-10-06; superseded by the entry above).** `HEAD`,
   `master` and `origin/master` were at `e90a568`.
 - **Historical (2026-10-01; superseded by the entry above).**

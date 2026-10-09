@@ -1,0 +1,43 @@
+﻿powershell : 
+At line:1 char:519
++ ...  HH:mm:ss'; powershell -ExecutionPolicy Bypass -File pilot_resume_tes ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: pilot_resume_test.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\experiments\convergence-anderson )
+Fri Oct  9 05:43:18 2026
+
+
+PASS V6 first run writes 6 cells  rows=6; PILOT CORE DONE: cells run       6.0000000 cells skipped (already on disk)       0.0000000
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: pilot_resume_test.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\experiments\convergence-anderson )
+Fri Oct  9 05:43:24 2026
+
+
+PASS V6 rerun adds no rows  rows=6; PILOT CORE DONE: cells run       0.0000000 cells skipped (already on disk)       6.0000000
+PASS V6 rerun leaves file byte-identical  
+
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: pilot_resume_test.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\experiments\convergence-anderson )
+Fri Oct  9 05:43:25 2026
+
+
+PASS V6 resume restores 6 rows  rows=6; PILOT CORE DONE: cells run       2.0000000 cells skipped (already on disk)       4.0000000
+PASS V6 keys unique after resume  
+PASS V6 recomputed cells identical except wallTime  
+RESUME TEST: ALL 6 CHECKS PASSED

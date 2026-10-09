@@ -1,6 +1,6 @@
-# Claude handoff: confirmation protocol FROZEN (2026-10-08); E2 not run and not yet authorized
+# Claude handoff: E2 confirmation COMPLETE (2026-10-08/09); all binding gates pass
 
-Last updated: 2026-10-08
+Last updated: 2026-10-09
 
 ## Start here
 
@@ -10,20 +10,65 @@ shipped file under `src/` was changed, and `direct_objective.src` was not
 changed by the pilot either.
 
 1. Read the repository-root `CLAUDE.md`.
-2. Read `SUMMARY.md`, section "Matched 30-seed pilot (2026-10-05)". It
-   is the latest result. Read the "Phase 3 hardening" section for the
-   solver details.
-3. Read `PILOT_PROTOCOL.md` for the frozen definitions and the recorded
-   deviations.
-4. Read `CORRECTNESS_VALIDATION_PROTOCOL.md` (FROZEN v4, 2026-10-08)
-   and the 2026-10-08 update below. They define the next step, E2, which
-   needs separate explicit user approval.
+2. **Read `E2_RESULTS.md`.** It is the latest result: the completed E2
+   confirmation, its limitations and the recommended next work.
+3. Read `CORRECTNESS_VALIDATION_PROTOCOL.md` (FROZEN v4, 2026-10-08) for
+   the rules E2 was run under. Its text still says E2 "has not been
+   run", because it is the frozen pre-run record and is deliberately
+   unchanged.
+4. For background, read `SUMMARY.md`: "E2 confirmation" first, then
+   "Matched 30-seed pilot (2026-10-05)" and "Phase 3 hardening". Also
+   read `PILOT_PROTOCOL.md`.
 
-Never commit or push without the user's explicit approval. The Phase 3
-hardened checkpoint is committed as `a776717`. **The matched 30-seed
-pilot is committed and pushed as `e90a568`** (`HEAD`, `master`,
-`origin/master`). It is experiment-only and not shipped, and it does not
-authorize a 200-seed scale-up.
+Never commit or push without the user's explicit approval.
+
+Commit history:
+- **`a776717`:** the Phase 3 hardened checkpoint.
+- **`e90a568`:** the matched 30-seed pilot; **pushed**.
+- **`ad986fc`:** the protocol freeze; local.
+- **The E2 evidence and documentation commit,** made on top of
+  `ad986fc`; local.
+
+None of the commits after `e90a568` is pushed. All of this is
+experiment-only and not shipped.
+
+## Current bottom line (2026-10-09): E2 confirmation complete
+
+Full detail and the evidence index are in `E2_RESULTS.md`.
+
+Under the frozen protocol, on held-out seeds 31-200 (n = 170 per model),
+**A1, A2 and A4 all pass for both models**:
+
+| Model | Primary configuration | Correct (A2) | Wrong answers returned (A4) |
+|---|---|---|---|
+| AIDS | cold LM, 16 starts (`L16`) | 170/170 | 0 |
+| QUAIDS | cold LM + continuation pool (`L16+C16`) | 160/170 | 0 |
+
+QUAIDS has **10 visible no-result seeds**: 43, 112, 125, 134, 151, 160,
+167, 182, 187 and 190. Anderson also failed all 10, with no result or a
+wildly wrong answer.
+
+A1 (all four parts) passes. A5: no regressions against Anderson.
+A3 is descriptive only: improved/regressed/tied 44/0/126 for AIDS and
+86/0/84 for QUAIDS.
+
+**Limitations:**
+- synthetic DGP only;
+- no truth-free reliability signal;
+- QUAIDS has 10 no-result seeds;
+- A3 is non-confirmatory;
+- timing is descriptive, not a speed conclusion;
+- the production symmetry design is unresolved.
+
+**Next work (not started):**
+1. preserve the evidence;
+2. prototype AIDS direct LM as an opt-in;
+3. investigate the 10 QUAIDS no-result seeds under a new exploratory
+   protocol;
+4. resolve symmetry before shipping QUAIDS direct LM;
+5. benchmark speed separately.
+
+The sections below are the pilot-era record, kept for history.
 
 ## Bottom line
 
@@ -83,7 +128,10 @@ What the results show:
   candidates (exploratory, not prespecified) reaches raw 30/30 on
   QUAIDS.
 
-## Recommendation
+## Recommendation (2026-10-05, pilot era)
+
+This was carried out: the metric was fixed (`pfErr`), the hybrid was
+prespecified and frozen, and E2 confirmed it. See `E2_RESULTS.md`.
 
 1. **Model-specific hybrid.** Cold LM for AIDS; continuation, or a small
    pool of cold LM plus continuation, for QUAIDS.
@@ -126,10 +174,12 @@ descriptive only.
   message.
 - The freeze is one local commit on top of `e90a568`. It is **not
   pushed**.
-- **E2 has not been run and is not authorized.** It needs a separate
-  explicit user approval.
+- At the time of the freeze, E2 had not been run. **Superseded:** the
+  user approved E2 on 2026-10-08. It ran from the verified LF working
+  tree, and its A1 resume step completed 2026-10-09. See
+  `E2_RESULTS.md`.
 
-Before E2, run `python make_freeze_manifest.py --verify` and
+Before any re-analysis, run `python make_freeze_manifest.py --verify` and
 `sha256sum -c FREEZE_MANIFEST.sha256`, then follow protocol section 14.4.
 
 **Line-ending caveat (known at freeze; fails closed).** This machine has
@@ -155,9 +205,10 @@ Before E2, run `python make_freeze_manifest.py --verify` and
 - **This fails closed.** `make_freeze_manifest.py --verify` and
   `confirm_analyze.py --mode confirm` then refuse to run; they never
   pass silently.
-- **E2 must run from the currently verified LF working tree, or from a
-  checkout made with `core.autocrlf=false` or `input`,** and it must be
-  re-verified before execution.
+- **E2 ran from the verified LF working tree.** Any re-run or
+  re-analysis must use that tree, or a checkout made with
+  `core.autocrlf=false` or `input`, and must re-verify the manifest
+  first.
 - No root-level `.gitattributes` or production-file checkout behavior
   was changed at freeze. That was a deliberate scope decision.
 
