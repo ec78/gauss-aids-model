@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-09_
+_Last updated: 2026-10-10_
 
 ## Current Objective
 
@@ -64,14 +64,53 @@ result is the **completed E2 confirmation (2026-10-08/09)**, in which all
 binding gates pass. See the 2026-10-09 update below and
 `dev/experiments/convergence-anderson/E2_RESULTS.md`.
 
-Commit history:
-- **`e90a568`:** the matched 30-seed pilot; pushed.
-- **`ad986fc`:** the protocol freeze; local.
-- **The E2 evidence and documentation commit,** on top of `ad986fc`;
-  local.
+Commit history (all pushed; `origin/master` was `158313a` on
+2026-10-09):
+- **`e90a568`:** the matched 30-seed pilot.
+- **`ad986fc`:** the protocol freeze.
+- **`158313a`:** the E2 evidence and documentation commit.
 
-None of the commits after `e90a568` is pushed. The work remains
-experiment-only and is not shipped.
+The research itself remains experiment-only and is not shipped.
+
+**Follow-up (2026-10-09): private AIDS direct-LM prototype.** The owner
+accepted decisions Q1-Q5 in `dev/AIDS_DIRECT_LM_DESIGN.md` for a
+**private** prototype, and it is now implemented:
+- **Code:** `dev/prototypes/aids_direct_lm/quaidsdirect.src`, entry point
+  `_quaidsDirectFit()`. It lives under `dev/` so it is never packaged
+  (`build_package.ps1` copies `src/` and `tests/`, not `dev/`) and never
+  loaded by `library quaids;`; a caller must `#include` it explicitly.
+  No public API, version bump or release claim (`CHANGELOG.md` has only
+  an `Unreleased` maintainer note).
+- **Model:** AIDS only, homogeneity-only, point estimates only. No
+  QUAIDS, no symmetry, no inference, no downstream integration.
+- **Arithmetic:** an exact copy of the frozen E2 code.
+  `quaidsdirect_evidence_test.e` reproduces every stored E2
+  cold-LM cell and the `L16` selection on 7 held-out seeds with zero
+  difference.
+- **Other tests:** `quaidsdirect_test.e` (recovery, selection and
+  no-result, determinism and RNG isolation, default compatibility) and
+  five `guard_error_cases/directlm_*.e` scripts, all in `dev/prototypes/aids_direct_lm/`
+  next to the code. All are wired into
+  `run_source_tests.ps1`; skip the evidence test with
+  `-SkipDirectEvidence`.
+- **Verification (2026-10-10):** frozen manifest 34/34; the frozen/E2
+  directory is unchanged since `158313a`; `quaidsdirect_test.e` 28/28;
+  `quaidsdirect_evidence_test.e` 80/80 at zero difference; the five
+  guards pass; `run_source_tests.ps1 -SkipBootstrap -SkipCurvature
+  -SkipPubtable -SkipTVPKalman` PASS (23 tests, 23 guards); manifest,
+  API and docs checks PASS. An earlier full run also passed the pubtable,
+  curvature, curvature-bootstrap and TVP tests up to `quaidstvp_smooth`.
+- **Known limitation: `tests/quaidstvpfit_test.e` is UNVERIFIED.** It
+  did not complete in two runs (one in the full suite, one isolated with
+  the `GAUSS26_CFG` override). The isolated run sat 59 minutes inside its
+  first sslib/CMLmt fit before it was stopped. The test uses no file the
+  prototype touched. `verify_sslib_pin.ps1` reports the shared sslib
+  install has drifted from `sslib.pin.json` (`sstvp`, `sskalman`,
+  `ssmain`, `ssstructural`). That drift was already there and is the
+  likely cause. It was left alone (shared install) and needs a separate,
+  authorized resync before the TVP fit test can be trusted again.
+- **Open owner items:** the sslib drift above; any public move needs a
+  new decision (design doc §12).
 The original Anderson research and benchmark were committed and pushed
 earlier as `7e98720`. The methodology audit corrected the original
 multi-start selector direction, added a numerically safer experimental
@@ -271,7 +310,8 @@ Supporting implementation:
   `ResourceWarning` as an error, and reproduces E0 exactly.
 - `FREEZE_MANIFEST.json` hashes 34 files. Its SHA-256 is in
   `FREEZE_MANIFEST.sha256` and in the freeze commit message.
-- The freeze is one local commit, **not pushed**.
+- The freeze is commit `ad986fc` (since pushed, with the E2 evidence
+  commit `158313a`).
 - At the time of the freeze, E2 had not been run. It was then approved
   and run on 2026-10-08/09 (see the update above). No shipped `src/`
   file changed.
@@ -1152,7 +1192,9 @@ not active implementation or approved production scope.
    approval):
    - Preserve the E2 evidence.
    - Prototype AIDS direct LM as an **opt-in** experimental mode, with
-     the shipped default unchanged.
+     the shipped default unchanged. **Done (2026-10-09) as a private
+     prototype** (`dev/prototypes/aids_direct_lm/`); decisions and validation are
+     in `dev/AIDS_DIRECT_LM_DESIGN.md`.
    - Investigate the 10 QUAIDS no-result seeds under a **new, separately
      prespecified exploratory protocol**.
    - Resolve the symmetry design before shipping QUAIDS (or AIDS) direct
@@ -1179,18 +1221,22 @@ not active implementation or approved production scope.
 
 ## Handoff Notes
 
-- **Current state (2026-10-09):** local `master` has two commits on top
-  of `e90a568`:
-  - the protocol freeze `ad986fc`;
-  - the E2 evidence and documentation commit.
+- **Current state (2026-10-10, private prototype):** the freeze
+  `ad986fc` and the E2 evidence commit `158313a` are both pushed
+  (`origin/master` = `158313a`).
 
-  Neither is pushed; `origin/master` is still `e90a568`. No shipped
-  `src/` file changed.
+  On top of them, one local, unpushed commit adds the private AIDS
+  direct-LM prototype: `dev/prototypes/aids_direct_lm/` (code and tests), and
+  `dev/AIDS_DIRECT_LM_DESIGN.md`. No shipped estimator, public API,
+  package manifest or version changed.
 
-  E2 is complete, and every binding gate passes (`E2_RESULTS.md`). The
-  research remains experiment-only and not shipped. Next clean-session
-  entry point: `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`,
-  then `E2_RESULTS.md`.
+  E2 is complete, and every binding gate passes (`E2_RESULTS.md`). Next
+  clean-session entry point: `dev/AIDS_DIRECT_LM_DESIGN.md` for the
+  prototype; `dev/experiments/convergence-anderson/CLAUDE_HANDOFF.md`,
+  then `E2_RESULTS.md`, for the research.
+- **Previous state (2026-10-09, before the prototype; superseded by the
+  entry above).** The text then said `ad986fc` and `158313a` were
+  unpushed, which was already stale: `origin/master` was `158313a`.
 - **Previous state (2026-10-08; superseded by the entry above).** Local
   `master` had the freeze commit `ad986fc` on top of `e90a568`, not
   pushed, and E2 had not yet been run.

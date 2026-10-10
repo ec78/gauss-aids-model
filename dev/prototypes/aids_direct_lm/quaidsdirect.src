@@ -1,0 +1,728 @@
+/*
+** quaidsdirect.src
+**
+** PRIVATE EXPERIMENTAL PROTOTYPE -- direct Levenberg-Marquardt (LM)
+** estimation of the iterated, homogeneity-constrained AIDS model.
+**
+** Status:
+**   - Not public API. Every name here is underscore-prefixed. Nothing is
+**     listed in docs/public-api.json or docs/COMMAND_REFERENCE.md.
+**   - Not shipped. This file lives under dev/prototypes/aids_direct_lm/,
+**     outside src/, so it is neither in package.json's src array (never
+**     loaded by `library quaids;`) nor copied into a release artifact by
+**     scripts/build_package.ps1 (which packages src/, docs/, examples/,
+**     scripts/ and tests/, never dev/).
+**   - A caller must #include quaids.sdf and quaids.src (with their
+**     dependencies) first, then this file: it calls quaidsFit() and
+**     uses struct quaidsControl/quaidsOut, and includes nothing itself.
+**   - quaidsFit(), quaidsControl and quaidsOut are untouched; the shipped
+**     default estimator is unchanged.
+**
+** Design and accepted decisions: dev/AIDS_DIRECT_LM_DESIGN.md.
+** Evidence: dev/experiments/convergence-anderson/E2_RESULTS.md (AIDS
+** configuration L16: cold LM from 16 starts, correct on 170/170
+** held-out SYNTHETIC seeds, W = 0). That evidence covers one synthetic
+** DGP (N = 5 goods, tobs = 3000) only.
+**
+** Scope (enforced by input guards): aCtl.linear = 1, aCtl.homogenous = 1,
+** aCtl.b0 = 0, unweighted. aCtl.maxiter, aCtl.err and aCtl.relax are
+** not used. There is no QUAIDS path, no symmetry, no covariance or
+** standard errors, and no integration with any downstream procedure.
+**
+** Usage:
+**     #include ../dev/prototypes/aids_direct_lm/quaidsdirect.src
+**     (path relative to the working directory, e.g. tests/)
+**     struct _quaidsDirectOut dOut;
+**     dOut = _quaidsDirectFit(w, intcpt, prices, totexp, instr, aCtl);
+**     if dOut.ok; ... dOut.bFull ...; endif;
+**
+** === Arithmetic provenance ===
+**
+** The objective, finite-difference Jacobian, Gauss-Newton gradient and
+** Hessian, LM solver and scale/unpack helpers are copies of the frozen
+** research procs in dev/experiments/convergence-anderson/
+** direct_objective.src (frozen at commit ad986fc, E2 evidence 158313a):
+**     _directObjResidHomotopy       -> _quaidsDirectResid
+**     _directObjCoreHomotopy        -> _quaidsDirectCore
+**     _directObjScale               -> _quaidsDirectScale
+**     _directObjUnpack              -> _quaidsDirectUnpack
+**     _directResidJacobianFDHomotopy-> _quaidsDirectJacobian
+**     _directGNGradient             -> _quaidsDirectGNGradient
+**     _directGNHessian              -> _quaidsDirectGNHessian
+**     _directLMHomotopyDiag         -> _quaidsDirectLM
+** The only removals: the homotopy argument (fixed at 1; 1*.5 == .5
+** exactly), the QUAIDS branch, fault injection, and verbose printing.
+** Operation order, constants, the trapped fail-closed inversions and the
+** retcode meanings are unchanged. quaidsdirect_evidence_test.e (next to
+** this file) checks exact (zero-difference) equality against the frozen procs and
+** reproduces stored E2 cells; it never writes to the evidence directory.
+**
+** The 16 start recipes are pilot_lib.src's _pilotBenchmarkStart(), but
+** the noise comes from rndKMn() with a fixed internal seed and an
+** explicit state, so the caller's global rndseed/rndn stream is never
+** read or changed. E2's own draws were seeded from the synthetic DGP
+** seed and cannot be reused on real data, so these starts are the same
+** recipe FAMILY as E2, not the same draws (owner decision Q4). The
+** private seam _quaidsDirectFitStarts() accepts injected starts, which
+** is how the evidence test feeds E2's exact starts.
+**
+** === Selection (CORRECTNESS_VALIDATION_PROTOCOL.md section 4) ===
+**
+** A start is eligible only if: LM retcode 0; the objective re-evaluated
+** at the endpoint is feasible and finite; every endpoint coefficient is
+** finite. The selected start is the eligible one with the strictly
+** largest critExact = -ln det(Sigma), Sigma built from the first n-1
+** equations' residuals. No tolerance; exact ties go to the lower start
+** index. With no eligible start the result is "no result" (ok = 0,
+** estimates missing). There is never a fallback to quaidsFit() or any
+** other method.
+**
+** The multi-start diagnostics (exactTies, marginOtherBasin, nearTie) are
+** computed as in confirm_analyze.py. They describe the multi-start run.
+** NONE HAS BEEN VALIDATED AS A SIGNAL THAT THE RETURNED ESTIMATE IS
+** CORRECT (protocol section 6): on development seeds every wrong direct
+** selection was the only basin its configuration found.
+*/
+
+/*
+** _quaidsDirectOut -- result of _quaidsDirectFit(). Private prototype
+** type; deliberately NOT a quaidsOut, so it cannot be passed to
+** quaidsElasFit()/quaidsWelfareFit()/... (no covariance or symmetric
+** estimate exists to feed them).
+*/
+struct _quaidsDirectOut {
+    string model;               // "AIDS direct LM (private prototype)"
+    matrix experimental;        // always 1
+    matrix ok;                  // 1 = an estimate was selected, 0 = no result
+    matrix status;              // 0 = selected, 1 = no eligible start
+    matrix nobs;
+    matrix n;                   // number of goods
+    matrix n1;                  // n - 1
+    matrix ng;                  // rows of the reduced raw layout
+    matrix nIntFull;            // intercept rows (constant + shifters)
+    matrix nStarts;
+    matrix nEligible;
+    matrix selStart;            // selected start index; missing if ok = 0
+    matrix bRaw;                // ng x n1 selected endpoint: alpha (nIntFull)
+                                //   | gamma (n1, homogeneity-reduced)
+                                //   | beta | u; missing if ok = 0
+    matrix bFull;               // (ng+1) x n: bRaw plus the n-th gamma row
+                                //   (homogeneity) and the n-th column
+                                //   (adding-up), the pfErr recovery;
+                                //   missing if ok = 0
+    matrix homogCrit;           // critExact = -ln det(Sigma); missing if ok = 0
+    matrix gnorm;               // final inf-norm scaled GN gradient
+    matrix iterations;          // LM iterations of the selected start
+    matrix exactTies;           // other eligible starts with exactly equal crit
+    matrix marginOtherBasin;    // homogCrit minus best crit in another basin
+                                //   (max |d raw| over rows 1:ng-1 > .05);
+                                //   missing if no other basin
+    matrix nearTie;             // 1 if marginOtherBasin < .01
+    matrix startTable;          // nStarts x 13, one row per start:
+                                //   start, retcode, eligible, critExact,
+                                //   gnorm, iterations, rejectedSteps,
+                                //   covInvFail, stepInvFail, infeasTrial,
+                                //   rhoReject, lmAccepted, finalLambda
+    matrix startRaw;            // (nStarts*ng) x n1 endpoints of every start,
+                                //   stacked in start order (start s is rows
+                                //   (s-1)*ng+1:s*ng)
+    matrix bStone;              // Stone/LA-AIDS start (quaidsFit maxiter=1 homogB)
+    matrix scaleVec;            // per-parameter scale used by the solver
+    matrix intcptFull;
+    matrix u;                   // first-stage IV residual (from the Stone fit)
+};
+
+
+/* ---- Copy of _directObjResidHomotopy() at homotopy 1, AIDS branch. ---- */
+proc (1) = _quaidsDirectResid(w, bRaw, intcptFull, prices, totexp, u, struct quaidsControl aCtl);
+    local nIntFull, nGoods, nReduced, alpha, priceCoef, relativePrices,
+        priceIndex, realExp, designMat, fitted;
+
+    nIntFull = cols(intcptFull);
+    nGoods = cols(prices);
+    nReduced = nGoods - 1;
+    relativePrices = (prices[., 1:nReduced] - prices[., nGoods])~prices[., nGoods];
+
+    alpha = intcptFull*bRaw[1:nIntFull, 1:nReduced];
+    priceCoef = bRaw[nIntFull+1:nIntFull+nReduced, 1:nReduced]
+        |zeros(1, nReduced);
+    priceIndex = aCtl.alpha0 + prices[., nGoods]
+        + sumc((relativePrices[., 1:nReduced].*alpha)')
+        + .5*sumc(((relativePrices*priceCoef)
+        .*relativePrices[., 1:nReduced])');
+    realExp = totexp - priceIndex;
+
+    designMat = intcptFull~relativePrices[., 1:nReduced]~realExp~u;
+
+    fitted = designMat*bRaw;
+    retp(w - fitted);
+endp;
+
+/* ---- Copy of _directObjScale(): per-element scale, floored at .05. ---- */
+proc (1) = _quaidsDirectScale(bRef, n1);
+    local v, floorVal;
+    floorVal = 0.05;
+    v = vec(bRef[., 1:n1]);
+    retp(maxc(abs(v)' | (floorVal*ones(1, rows(v)))));
+endp;
+
+/* ---- Copy of _directObjUnpack(): inverse of vec(bRaw[.,1:n1]), padded
+   with a dummy zero n-th column (see the frozen header for why). ---- */
+proc (1) = _quaidsDirectUnpack(bVec, ng, n1);
+    retp(reshape(bVec, n1, ng)' ~ zeros(ng, 1));
+endp;
+
+/* ---- Copy of _directObjCoreHomotopy() at homotopy 1. Returns
+   (fVal = ln det(Sigma) to MINIMIZE, feasible, resid). ---- */
+proc (3) = _quaidsDirectCore(thetaScaled, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec);
+    local bVec, bRaw, resid, residCov, critDet, fVal, feasible;
+
+    bVec = thetaScaled.*scaleVec;
+    bRaw = _quaidsDirectUnpack(bVec, ng, n1);
+    resid = _quaidsDirectResid(w, bRaw, intcptFull, prices, totexp, u, aCtl);
+    residCov = resid[., 1:n1]'resid[., 1:n1]/rows(w);
+    critDet = det(residCov);
+    if critDet <= 0;
+        feasible = 0;
+        fVal = miss(0, 0);
+    else;
+        feasible = 1;
+        fVal = ln(critDet);
+    endif;
+    retp(fVal, feasible, resid);
+endp;
+
+/* ---- Copy of _directResidJacobianFDHomotopy() at homotopy 1: central-FD
+   Jacobian of vec(resid[.,1:n1]) w.r.t. thetaScaled. ---- */
+proc (1) = _quaidsDirectJacobian(thetaScaled, h, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec);
+    local k, nobs, J, i, thetaUp, thetaDn, fUp, fDn, feasUp, feasDn, residUp, residDn;
+
+    k = rows(thetaScaled);
+    nobs = rows(w);
+    J = zeros(nobs*n1, k);
+    i = 1;
+    do while i <= k;
+        thetaUp = thetaScaled;
+        thetaDn = thetaScaled;
+        thetaUp[i] = thetaUp[i] + h;
+        thetaDn[i] = thetaDn[i] - h;
+
+        { fUp, feasUp, residUp } = _quaidsDirectCore(thetaUp, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+        { fDn, feasDn, residDn } = _quaidsDirectCore(thetaDn, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+        J[., i] = vec(residUp[., 1:n1] - residDn[., 1:n1])/(2*h);
+        i = i+1;
+    endo;
+    retp(J);
+endp;
+
+/* ---- Copy of _directGNGradient(): g_k = (2/nobs)*tr(Sinv*R'*J_k).
+   Jacobian parameter is `Jmat` because GAUSS identifiers are
+   case-insensitive (J and j collide). ---- */
+proc (1) = _quaidsDirectGNGradient(resid, Jmat, Sinv, nobs, n1);
+    local g, i, j, Jj;
+
+    g = zeros(cols(Jmat), 1);
+    i = 1;
+    do while i <= n1;
+        j = 1;
+        do while j <= n1;
+            Jj = Jmat[(j-1)*nobs+1:j*nobs, .];
+            g = g + Sinv[i, j]*(Jj'resid[., i]);
+            j = j+1;
+        endo;
+        i = i+1;
+    endo;
+    retp(2*g/nobs);
+endp;
+
+/* ---- Copy of _directGNHessian(): PSD Gauss-Newton approximation. ---- */
+proc (1) = _quaidsDirectGNHessian(Jmat, Sinv, nobs, n1);
+    local B, i, j, Ji, Jj, k;
+
+    k = cols(Jmat);
+    B = zeros(k, k);
+    i = 1;
+    do while i <= n1;
+        Ji = Jmat[(i-1)*nobs+1:i*nobs, .];
+        j = 1;
+        do while j <= n1;
+            Jj = Jmat[(j-1)*nobs+1:j*nobs, .];
+            B = B + Sinv[i, j]*(Ji'Jj);
+            j = j+1;
+        endo;
+        i = i+1;
+    endo;
+    retp(2*B/nobs);
+endp;
+
+/*
+** ---- Copy of _directLMHomotopyDiag() at homotopy 1, faultMode 0. ----
+** retcode: 0 = converged (feasible current point AND inf-norm GN
+**              gradient < gradTol)
+**          2 = maxIter reached
+**          3 = infeasible START point (no iteration run)
+**          4 = stalled: damping reached 1e12 without an acceptable step
+**          5 = covariance-inversion failure at the current point
+** Returns (theta, fVal, retcode, gnorm, iterUsed, rejectedSteps, diagVec);
+** diagVec = covInvFail|stepInvFail|infeasTrial|rhoReject|accepted|lambda.
+** theta/fVal are always the last ACCEPTED point (or theta0).
+*/
+proc (7) = _quaidsDirectLM(theta0, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec, maxIter, gradTol, h);
+    local theta, nobs, fVal, feasible, resid, J, Sinv, residCov, g, B,
+        lambda, k, step, thetaTry, fTry, feasTry, residTry, predRed, rho,
+        accepted, iter, gnorm, retcode, done, rejectedSteps, oldtrp,
+        SinvOk, stepOk, nCovFail, nStepFail, nInfeasTrial, nRhoReject,
+        nAccepted, covIn, dampIn, invTry;
+
+    nobs = rows(w);
+    theta = theta0;
+    nCovFail = 0;
+    nStepFail = 0;
+    nInfeasTrial = 0;
+    nRhoReject = 0;
+    nAccepted = 0;
+    lambda = 1e-3;
+    { fVal, feasible, resid } = _quaidsDirectCore(theta, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+    gnorm = -1;
+    rejectedSteps = 0;
+    if not feasible;
+        retp(theta, fVal, 3, gnorm, 0, 0, zeros(5,1)|lambda);
+    endif;
+
+    k = rows(theta);
+    iter = 1;
+    retcode = 2;
+    done = 0;
+    do while iter <= maxIter and not done;
+        J = _quaidsDirectJacobian(theta, h, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+        residCov = resid[., 1:n1]'resid[., 1:n1]/nobs;
+
+        covIn = residCov;
+        Sinv = miss(0, 0);
+        invTry = miss(0, 0);
+        oldtrp = trapchk(1);
+        trap 1,1;
+        invTry = invpd(covIn);
+        trap oldtrp,1;
+        SinvOk = 0;
+        if rows(invTry) == n1 and cols(invTry) == n1;
+            SinvOk = not ismiss(invTry);
+        endif;
+
+        if not SinvOk;
+            nCovFail = nCovFail+1;
+            gnorm = -1;
+            retcode = 5;
+            done = 1;
+        else;
+        Sinv = invTry;
+        g = _quaidsDirectGNGradient(resid, J, Sinv, nobs, n1);
+        B = _quaidsDirectGNHessian(J, Sinv, nobs, n1);
+        gnorm = maxc(abs(g));
+
+        if gnorm < gradTol;
+            retcode = 0;
+            done = 1;
+        else;
+            accepted = 0;
+            do while not accepted and lambda < 1e12;
+                dampIn = B + lambda*eye(k);
+                step = miss(0, 0);
+                invTry = miss(0, 0);
+                oldtrp = trapchk(1);
+                trap 1,1;
+                invTry = invpd(dampIn);
+                trap oldtrp,1;
+                stepOk = 0;
+                if rows(invTry) == k and cols(invTry) == k;
+                    stepOk = not ismiss(invTry);
+                endif;
+
+                if stepOk;
+                    step = -invTry*g;
+                    thetaTry = theta + step;
+                    { fTry, feasTry, residTry } = _quaidsDirectCore(thetaTry, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+
+                    if feasTry and not scalmiss(fTry);
+                        predRed = -(g'step + .5*step'B*step);
+                        if predRed > 0;
+                            rho = (fVal-fTry)/predRed;
+                        else;
+                            rho = -1;
+                        endif;
+                    else;
+                        rho = -1;
+                        nInfeasTrial = nInfeasTrial+1;
+                    endif;
+
+                    if rho > .1;
+                        theta = thetaTry;
+                        fVal = fTry;
+                        resid = residTry;
+                        accepted = 1;
+                        nAccepted = nAccepted+1;
+                        if rho > .75;
+                            lambda = lambda*.5;
+                        endif;
+                    else;
+                        if feasTry and not scalmiss(fTry);
+                            nRhoReject = nRhoReject+1;
+                        endif;
+                        lambda = lambda*4;
+                        rejectedSteps = rejectedSteps+1;
+                    endif;
+                else;
+                    nStepFail = nStepFail+1;
+                    lambda = lambda*4;
+                    rejectedSteps = rejectedSteps+1;
+                endif;
+            endo;
+            if not accepted;
+                retcode = 4;
+                done = 1;
+            endif;
+        endif;
+        endif;
+        iter = iter+1;
+    endo;
+
+    retp(theta, fVal, retcode, gnorm, iter-1, rejectedSteps,
+        nCovFail|nStepFail|nInfeasTrial|nRhoReject|nAccepted|lambda);
+endp;
+
+
+/* ---- Start recipes: pilot_lib.src's _pilotAddScaledNoise()/
+   _pilotBenchmarkStart() (AIDS branch), with every rndn() draw replaced
+   by rndKMn() on an explicit state so the caller's RNG is untouched. ---- */
+proc (2) = _quaidsDirectAddScaledNoise(block, noiseScale, state);
+    local blockRms, scaleFloor, z;
+    blockRms = sqrt(meanc(vec(block^2)));
+    scaleFloor = maxc(blockRms|0.05);
+    { z, state } = rndKMn(rows(block), cols(block), state);
+    retp(block + noiseScale*(abs(block)+scaleFloor).*z, state);
+endp;
+
+proc (2) = _quaidsDirectStart(bStone, startIdx, nIntFull, nReduced, state);
+    local bStart, alphaRows, priceRows, betaRow, coreLast, z, blk;
+
+    bStart = bStone;
+    alphaRows = seqa(1, 1, nIntFull);
+    priceRows = seqa(nIntFull+1, 1, nReduced);
+    betaRow = nIntFull+nReduced+1;
+    coreLast = betaRow;
+
+    if startIdx == 1;
+        bStart = bStone;
+    elseif startIdx == 2;
+        { z, state } = rndKMn(rows(bStone), cols(bStone), state);
+        bStart = bStone + .3*abs(bStone).*z;
+    elseif startIdx == 3;
+        { z, state } = rndKMn(rows(bStone), cols(bStone), state);
+        bStart = bStone + .8*abs(bStone).*z;
+    elseif startIdx == 4;
+        { bStart, state } = _quaidsDirectAddScaledNoise(bStone, .1, state);
+    elseif startIdx == 5;
+        { bStart, state } = _quaidsDirectAddScaledNoise(bStone, .3, state);
+    elseif startIdx == 6;
+        { bStart, state } = _quaidsDirectAddScaledNoise(bStone, .6, state);
+    elseif startIdx == 7;
+        { blk, state } = _quaidsDirectAddScaledNoise(bStone[alphaRows, .], .3, state);
+        bStart[alphaRows, .] = blk;
+    elseif startIdx == 8;
+        { blk, state } = _quaidsDirectAddScaledNoise(bStone[alphaRows, .], .8, state);
+        bStart[alphaRows, .] = blk;
+    elseif startIdx == 9;
+        { blk, state } = _quaidsDirectAddScaledNoise(bStone[priceRows, .], .3, state);
+        bStart[priceRows, .] = blk;
+    elseif startIdx == 10;
+        { blk, state } = _quaidsDirectAddScaledNoise(bStone[priceRows, .], .8, state);
+        bStart[priceRows, .] = blk;
+    elseif startIdx == 11;
+        bStart[priceRows, .] = -bStone[priceRows, .];
+    elseif startIdx == 12;
+        { blk, state } = _quaidsDirectAddScaledNoise(bStone[betaRow, .], .5, state);
+        bStart[betaRow, .] = blk;
+    elseif startIdx == 13;
+        bStart[betaRow, .] = -bStone[betaRow, .];
+    elseif startIdx == 14;
+        { blk, state } = _quaidsDirectAddScaledNoise(bStone[1:coreLast, .], .3, state);
+        bStart[1:coreLast, .] = blk;
+    elseif startIdx == 15;
+        { blk, state } = _quaidsDirectAddScaledNoise(bStone[1:coreLast, .], .8, state);
+        bStart[1:coreLast, .] = blk;
+    else;
+        bStart[priceRows, .] = -bStone[priceRows, .];
+        bStart[betaRow, .] = -bStone[betaRow, .];
+    endif;
+
+    retp(bStart, state);
+endp;
+
+/* All 16 starts, stacked (16*ng) x n; start s is rows (s-1)*ng+1:s*ng.
+   Fixed internal seed: the same data always gets the same starts. */
+proc (1) = _quaidsDirectAllStarts(bStone, nIntFull, nReduced);
+    local starts, s, state, bStart;
+    state = 20261009;
+    starts = {};
+    s = 1;
+    do while s <= 16;
+        { bStart, state } = _quaidsDirectStart(bStone, s, nIntFull, nReduced, state);
+        starts = starts | bStart;
+        s = s+1;
+    endo;
+    retp(starts);
+endp;
+
+/* pfErr-style recovery of the full (ng+1) x n coefficient matrix from the
+   reduced raw layout (confirm_analyze.py unprojected_full): homogeneity
+   gives the n-th price row, adding-up gives the n-th column. */
+proc (1) = _quaidsDirectFull(raw, nIntFull);
+    local nRed, gam, full;
+    nRed = cols(raw);
+    gam = raw[nIntFull+1:nIntFull+nRed, .];
+    full = raw[1:nIntFull, .] | gam | (-sumc(gam)') | raw[nIntFull+nRed+1:rows(raw), .];
+    full = full ~ (-sumc(full'));
+    full[1, cols(full)] = full[1, cols(full)] + 1;
+    retp(full);
+endp;
+
+/* 1 if every element is non-missing and finite. */
+proc (1) = _quaidsDirectFinite(x);
+    if ismiss(x);
+        retp(0);
+    endif;
+    retp(maxc(abs(vec(x))) < 1e308);
+endp;
+
+/*
+** _quaidsDirectSelect -- protocol section 4 selection over candidates in
+** start order. elig, crit: nStarts x 1; raws: (nStarts*ng) x n1.
+** Returns (selIdx (0 = none), exactTies, marginOtherBasin, nearTie).
+*/
+proc (4) = _quaidsDirectSelect(elig, crit, raws, ng);
+    local nC, best, s, ties, margin, nearTie, bestRaw, d, otherBest;
+
+    nC = rows(elig);
+    best = 0;
+    s = 1;
+    do while s <= nC;
+        if elig[s];
+            if best == 0;
+                best = s;
+            elseif crit[s] > crit[best];
+                best = s;
+            endif;
+        endif;
+        s = s+1;
+    endo;
+    if best == 0;
+        retp(0, 0, miss(0, 0), 0);
+    endif;
+
+    ties = 0;
+    otherBest = miss(0, 0);
+    bestRaw = raws[(best-1)*ng+1:best*ng, .];
+    s = 1;
+    do while s <= nC;
+        if elig[s] and s /= best;
+            if crit[s] == crit[best];
+                ties = ties+1;
+            endif;
+            d = maxc(maxc(abs(raws[(s-1)*ng+1:s*ng-1, .] - bestRaw[1:ng-1, .])));
+            if d > .05;
+                if scalmiss(otherBest);
+                    otherBest = crit[s];
+                elseif crit[s] > otherBest;
+                    otherBest = crit[s];
+                endif;
+            endif;
+        endif;
+        s = s+1;
+    endo;
+    if scalmiss(otherBest);
+        margin = miss(0, 0);
+        nearTie = 0;
+    else;
+        margin = crit[best] - otherBest;
+        nearTie = margin < .01;
+    endif;
+    retp(best, ties, margin, nearTie);
+endp;
+
+proc (0) = _quaidsDirectCheckInputs(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
+    local nobs, shapeOk;
+
+    if rows(aCtl.linear)*cols(aCtl.linear) /= 1 or aCtl.linear /= 1;
+        errorlog "_quaidsDirectFit: aCtl.linear must be 1 (AIDS only; QUAIDS is not supported by this prototype).";
+        end;
+    endif;
+    if rows(aCtl.homogenous)*cols(aCtl.homogenous) /= 1 or aCtl.homogenous /= 1;
+        errorlog "_quaidsDirectFit: aCtl.homogenous must be 1 (homogeneity-constrained estimation only).";
+        end;
+    endif;
+    if rows(aCtl.b0)*cols(aCtl.b0) /= 1 or aCtl.b0 /= 0;
+        errorlog "_quaidsDirectFit: aCtl.b0 must be scalar 0 (user starting values are not supported by this prototype).";
+        end;
+    endif;
+
+    nobs = rows(w);
+    shapeOk = rows(prices) == nobs and cols(prices) == cols(w)
+        and rows(totexp) == nobs and cols(totexp) == 1
+        and rows(instr) == nobs and cols(w) >= 3;
+    if shapeOk and not (rows(intcpt)*cols(intcpt) == 1);
+        shapeOk = rows(intcpt) == nobs;
+    endif;
+    if not shapeOk;
+        errorlog "_quaidsDirectFit: inputs must be conformable (w and prices T x n with n >= 3; totexp T x 1; instr and intcpt T rows, or intcpt scalar 0).";
+        end;
+    endif;
+
+    if ismiss(w) or ismiss(prices) or ismiss(totexp) or ismiss(instr) or ismiss(intcpt);
+        errorlog "_quaidsDirectFit: input data must not contain missing values.";
+        end;
+    endif;
+    if rows(intcpt)*cols(intcpt) == 1 and intcpt /= 0;
+        errorlog "_quaidsDirectFit: inputs must be conformable (w and prices T x n with n >= 3; totexp T x 1; instr and intcpt T rows, or intcpt scalar 0).";
+        end;
+    endif;
+endp;
+
+/*
+** _quaidsDirectFit -- private prototype entry point. Same data arguments
+** as quaidsFit(); see this file's header for scope and semantics.
+*/
+proc (struct _quaidsDirectOut) = _quaidsDirectFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
+    struct _quaidsDirectOut dOut;
+    dOut = _quaidsDirectFitStarts(w, intcpt, prices, totexp, instr, aCtl, 0);
+    retp(dOut);
+endp;
+
+/*
+** _quaidsDirectFitStarts -- the same fit with a test-only start seam.
+** startsIn = 0 builds the 16 internal starts; otherwise startsIn is a
+** stacked (k*ng) x n matrix of starts in quaidsOut.homogB's layout (only
+** columns 1:n1 are used), as pilot_lib.src's _pilotAllStarts() returns.
+** Used by quaidsdirect_evidence_test.e (next to this file) to feed E2's
+** exact starts.
+*/
+proc (struct _quaidsDirectOut) = _quaidsDirectFitStarts(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, startsIn);
+    local bStone, intcptFull, u, ng, nGoods, n1, nIntFull, scaleVec, starts,
+        nStarts, s, bStart, theta0, thetaEnd, fEnd, rc, gn, it, rej, diagv,
+        bEnd, raw, fE, feasE, resE, crit, eligS, elig, crits, raws, tbl,
+        best, ties, margin, nearTie;
+    struct quaidsControl ctlStone;
+    struct quaidsOut stone;
+    struct _quaidsDirectOut dOut;
+
+    _quaidsDirectCheckInputs(w, intcpt, prices, totexp, instr, aCtl);
+
+    ctlStone = aCtl;
+    ctlStone.maxiter = 1;
+    stone = quaidsFit(w, intcpt, prices, totexp, instr, ctlStone);
+    bStone = stone.homogB;
+    intcptFull = stone.intcptFull;
+    u = stone.u;
+    ng = stone.ng;
+    nGoods = cols(prices);
+    n1 = nGoods-1;
+    nIntFull = cols(intcptFull);
+    if ng /= nIntFull+n1+2 or cols(u) /= 1;
+        errorlog "_quaidsDirectFit: internal layout mismatch (expected ng = nIntFull + n1 + 2 with one endogenous regressor).";
+        end;
+    endif;
+    scaleVec = _quaidsDirectScale(bStone, n1);
+
+    if rows(startsIn)*cols(startsIn) == 1 and startsIn == 0;
+        starts = _quaidsDirectAllStarts(bStone, nIntFull, n1);
+    else;
+        if cols(startsIn) /= cols(bStone) or rows(startsIn) < ng
+            or (rows(startsIn) % ng) /= 0;
+            errorlog "_quaidsDirectFitStarts: startsIn must be scalar 0 or a stacked (k*ng) x n matrix of starts.";
+            end;
+        endif;
+        starts = startsIn;
+    endif;
+    nStarts = rows(starts)/ng;
+
+    elig = zeros(nStarts, 1);
+    crits = miss(zeros(nStarts, 1), 0);
+    raws = zeros(nStarts*ng, n1);
+    tbl = zeros(nStarts, 13);
+    s = 1;
+    do while s <= nStarts;
+        bStart = starts[(s-1)*ng+1:s*ng, .];
+        theta0 = vec(bStart[., 1:n1])./scaleVec;
+        { thetaEnd, fEnd, rc, gn, it, rej, diagv } = _quaidsDirectLM(theta0,
+            w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec,
+            500, 1e-3, 1e-6);
+        bEnd = _quaidsDirectUnpack(thetaEnd.*scaleVec, ng, n1);
+        raw = bEnd[., 1:n1];
+
+        /* exact objective re-evaluated at the returned endpoint, as the
+           E2 harness did for every cell */
+        { fE, feasE, resE } = _quaidsDirectCore(thetaEnd, w, intcptFull,
+            prices, totexp, u, aCtl, ng, n1, scaleVec);
+        feasE = feasE and not scalmiss(fE);
+        if feasE;
+            crit = -fE;
+        else;
+            crit = miss(0, 0);
+        endif;
+        eligS = (rc == 0) and feasE;
+        if eligS;
+            eligS = _quaidsDirectFinite(crit) and _quaidsDirectFinite(raw);
+        endif;
+
+        elig[s] = eligS;
+        crits[s] = crit;
+        raws[(s-1)*ng+1:s*ng, .] = raw;
+        tbl[s, .] = (s~rc~eligS~crit~gn~it~rej)~diagv';
+        s = s+1;
+    endo;
+
+    { best, ties, margin, nearTie } = _quaidsDirectSelect(elig, crits, raws, ng);
+
+    dOut.model = "AIDS direct LM (private prototype)";
+    dOut.experimental = 1;
+    dOut.nobs = rows(w);
+    dOut.n = nGoods;
+    dOut.n1 = n1;
+    dOut.ng = ng;
+    dOut.nIntFull = nIntFull;
+    dOut.nStarts = nStarts;
+    dOut.nEligible = sumc(elig);
+    dOut.startTable = tbl;
+    dOut.startRaw = raws;
+    dOut.bStone = bStone;
+    dOut.scaleVec = scaleVec;
+    dOut.intcptFull = intcptFull;
+    dOut.u = u;
+
+    if best == 0;
+        dOut.ok = 0;
+        dOut.status = 1;
+        dOut.selStart = miss(0, 0);
+        dOut.bRaw = miss(0, 0);
+        dOut.bFull = miss(0, 0);
+        dOut.homogCrit = miss(0, 0);
+        dOut.gnorm = miss(0, 0);
+        dOut.iterations = miss(0, 0);
+        dOut.exactTies = 0;
+        dOut.marginOtherBasin = miss(0, 0);
+        dOut.nearTie = 0;
+    else;
+        dOut.ok = 1;
+        dOut.status = 0;
+        dOut.selStart = best;
+        dOut.bRaw = raws[(best-1)*ng+1:best*ng, .];
+        dOut.bFull = _quaidsDirectFull(dOut.bRaw, nIntFull);
+        dOut.homogCrit = crits[best];
+        dOut.gnorm = tbl[best, 5];
+        dOut.iterations = tbl[best, 6];
+        dOut.exactTies = ties;
+        dOut.marginOtherBasin = margin;
+        dOut.nearTie = nearTie;
+    endif;
+
+    retp(dOut);
+endp;

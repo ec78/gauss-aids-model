@@ -87,6 +87,16 @@
 # once, right before the sslib-dependent tests, printing a warning (not a
 # hard failure -- see that script's own header) if the installed sslib
 # copy no longer matches sslib.pin.json's documented commit.
+#
+# Private AIDS direct-LM prototype (dev/prototypes/aids_direct_lm/, kept
+# out of src/ so it is never packaged or loaded by `library quaids;`; see
+# dev/AIDS_DIRECT_LM_DESIGN.md): its quaidsdirect_test.e and five
+# directlm_*.e guard cases always run, from tests/ as the working
+# directory like every other test. quaidsdirect_evidence_test.e compares
+# the prototype exactly against the frozen research code and the
+# committed E2 evidence under
+# dev/experiments/convergence-anderson/ (read-only) and needs optmt --
+# pass -SkipDirectEvidence to skip it.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -94,7 +104,8 @@ param(
     [switch]$SkipPubtable,
     [switch]$SkipCurvature,
     [switch]$SkipBootstrap,
-    [switch]$SkipTVPKalman
+    [switch]$SkipTVPKalman,
+    [switch]$SkipDirectEvidence
 )
 
 $testsDir = Join-Path $RepoRoot "tests"
@@ -133,8 +144,13 @@ $gaussTests = @(
     "quaids_print_format_test.e",
     "quaidstrend_test.e",
     "quaidstvp_test.e",
-    "quaidstvp_elas_test.e"
+    "quaidstvp_elas_test.e",
+    "..\dev\prototypes\aids_direct_lm\quaidsdirect_test.e"
 )
+
+if (-not $SkipDirectEvidence) {
+    $gaussTests += "..\dev\prototypes\aids_direct_lm\quaidsdirect_evidence_test.e"
+}
 
 if (-not $SkipPubtable) {
     $gaussTests += "quaids_pubtable_test.e"
@@ -313,6 +329,26 @@ $guardTests = @(
     [pscustomobject]@{
         Script = "guard_error_cases\tvp_elas_bad_prices_length.e"
         Expected = "quaidsTVPElasFit: prices must be an n x 1 vector of ABSOLUTE log prices"
+    },
+    [pscustomobject]@{
+        Script = "..\dev\prototypes\aids_direct_lm\guard_error_cases\directlm_quaids_rejected.e"
+        Expected = "_quaidsDirectFit: aCtl.linear must be 1 (AIDS only; QUAIDS is not supported by this prototype)."
+    },
+    [pscustomobject]@{
+        Script = "..\dev\prototypes\aids_direct_lm\guard_error_cases\directlm_homogenous_zero.e"
+        Expected = "_quaidsDirectFit: aCtl.homogenous must be 1 (homogeneity-constrained estimation only)."
+    },
+    [pscustomobject]@{
+        Script = "..\dev\prototypes\aids_direct_lm\guard_error_cases\directlm_user_b0.e"
+        Expected = "_quaidsDirectFit: aCtl.b0 must be scalar 0 (user starting values are not supported by this prototype)."
+    },
+    [pscustomobject]@{
+        Script = "..\dev\prototypes\aids_direct_lm\guard_error_cases\directlm_bad_shape.e"
+        Expected = "_quaidsDirectFit: inputs must be conformable"
+    },
+    [pscustomobject]@{
+        Script = "..\dev\prototypes\aids_direct_lm\guard_error_cases\directlm_missing_data.e"
+        Expected = "_quaidsDirectFit: input data must not contain missing values."
     }
 )
 

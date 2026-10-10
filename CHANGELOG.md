@@ -4,6 +4,18 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
+## Unreleased
+
+### Maintainer notes (no user-facing change)
+
+- Private, experimental AIDS direct Levenberg-Marquardt prototype added
+  under `dev/prototypes/aids_direct_lm/` (design and accepted scope:
+  `dev/AIDS_DIRECT_LM_DESIGN.md`). It is not part of the package: it is
+  outside `src/`, not loaded by `library quaids;`, not included in
+  release artifacts, and has no public API or documentation. No shipped
+  procedure, default or output changed, and the package version is
+  unchanged.
+
 ## 0.3.0 - 2026-09-17
 
 ### Added
