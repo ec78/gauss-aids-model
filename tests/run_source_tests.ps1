@@ -96,7 +96,11 @@
 # the prototype exactly against the frozen research code and the
 # committed E2 evidence under
 # dev/experiments/convergence-anderson/ (read-only) and needs optmt --
-# pass -SkipDirectEvidence to skip it.
+# pass -SkipDirectEvidence to skip it. dev/ is never shipped, so in an
+# extracted release artifact (no dev/prototypes/aids_direct_lm/ and no
+# .git) all seven prototype checks are skipped with an explicit SKIP
+# notice. In a git checkout a missing prototype directory is a hard
+# failure, not a skip, so the checks cannot silently disappear there.
 
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
@@ -144,12 +148,26 @@ $gaussTests = @(
     "quaids_print_format_test.e",
     "quaidstrend_test.e",
     "quaidstvp_test.e",
-    "quaidstvp_elas_test.e",
-    "..\dev\prototypes\aids_direct_lm\quaidsdirect_test.e"
+    "quaidstvp_elas_test.e"
 )
 
-if (-not $SkipDirectEvidence) {
-    $gaussTests += "..\dev\prototypes\aids_direct_lm\quaidsdirect_evidence_test.e"
+# Private direct-LM prototype: present in a source checkout only (see header).
+$directLMDir = Join-Path $RepoRoot "dev\prototypes\aids_direct_lm"
+$hasDirectLM = Test-Path -LiteralPath $directLMDir -PathType Container
+$isGitCheckout = Test-Path -LiteralPath (Join-Path $RepoRoot ".git")
+$directLMMissing = $false
+if ($hasDirectLM) {
+    $gaussTests += "..\dev\prototypes\aids_direct_lm\quaidsdirect_test.e"
+    if (-not $SkipDirectEvidence) {
+        $gaussTests += "..\dev\prototypes\aids_direct_lm\quaidsdirect_evidence_test.e"
+    } else {
+        Write-Host "SKIP  quaidsdirect_evidence_test.e (-SkipDirectEvidence)"
+    }
+} elseif ($isGitCheckout) {
+    Write-Host "FAIL  private direct-LM prototype missing from a git checkout: $directLMDir"
+    $directLMMissing = $true
+} else {
+    Write-Host "SKIP  private direct-LM prototype tests (quaidsdirect_test.e, quaidsdirect_evidence_test.e, 5 directlm_*.e guards): $directLMDir not present (dev/ is not shipped in release artifacts)"
 }
 
 if (-not $SkipPubtable) {
@@ -256,6 +274,7 @@ function Invoke-GaussBatch {
 }
 
 $failed = @()
+if ($directLMMissing) { $failed += "dev\prototypes\aids_direct_lm (missing)" }
 
 $guardTests = @(
     [pscustomobject]@{
@@ -329,7 +348,11 @@ $guardTests = @(
     [pscustomobject]@{
         Script = "guard_error_cases\tvp_elas_bad_prices_length.e"
         Expected = "quaidsTVPElasFit: prices must be an n x 1 vector of ABSOLUTE log prices"
-    },
+    }
+)
+
+if ($hasDirectLM) {
+    $guardTests += @(
     [pscustomobject]@{
         Script = "..\dev\prototypes\aids_direct_lm\guard_error_cases\directlm_quaids_rejected.e"
         Expected = "_quaidsDirectFit: aCtl.linear must be 1 (AIDS only; QUAIDS is not supported by this prototype)."
@@ -350,7 +373,8 @@ $guardTests = @(
         Script = "..\dev\prototypes\aids_direct_lm\guard_error_cases\directlm_missing_data.e"
         Expected = "_quaidsDirectFit: input data must not contain missing values."
     }
-)
+    )
+}
 
 if (-not $SkipTVPKalman) {
     $guardTests += [pscustomobject]@{

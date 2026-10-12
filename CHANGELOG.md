@@ -15,6 +15,12 @@ as internal milestone history and were never public compatibility promises.
   release artifacts, and has no public API or documentation. No shipped
   procedure, default or output changed, and the package version is
   unchanged.
+- `tests/run_source_tests.ps1` no longer hard-references the unshipped
+  `dev/prototypes/aids_direct_lm/` files: when that directory is absent
+  outside a git checkout (an extracted release artifact) it prints an
+  explicit `SKIP` line for the prototype's two tests and five guard
+  cases instead of failing; in a git checkout the directory is still
+  required and its absence fails the run.
 
 ## 0.3.0 - 2026-09-17
 

@@ -314,7 +314,11 @@ then an `ALL N CHECKS PASSED` line. `tests/run_source_tests.ps1` runs
 them all:
 - `quaidsdirect_test.e` and the five guard scripts always run;
 - `quaidsdirect_evidence_test.e` needs optmt and can be skipped with
-  `-SkipDirectEvidence`.
+  `-SkipDirectEvidence`;
+- `dev/` is not shipped, so in an extracted release artifact (no
+  `dev/prototypes/aids_direct_lm/`, no `.git`) the runner prints a `SKIP`
+  line and skips all seven prototype checks; in a git checkout a missing
+  prototype directory fails the run instead.
 
 | ID | Check | Where | Result |
 |---|---|---|---|
