@@ -9,6 +9,51 @@ _Last updated: 2026-10-15_
 
 ## Current Objective
 
+**PRIORITY 1 (active, set 2026-10-15): promote TVP-AIDS out of
+Experimental.** Plan, evidence, decision gate and acceptance criteria:
+**`dev/TVP_PROMOTION_ROADMAP.md`**. Nothing in it is implemented yet.
+Summary of the 2026-10-15 read-only diagnosis (task `task_03d43536665b`):
+- **Bounded test matrix (shared install as found, hard caps):**
+  - `quaidstvp_test` 56/56;
+  - `quaidstvp_elas_test` 13/13;
+  - `quaidstvp_kalman_test` 8/8;
+  - `quaidstvp_mle_test` 7/7 (20 s);
+  - `quaidstvp_smooth_test` 8/8;
+  - both `tvpfit_bad_*` guards fail with their intended messages;
+  - **`tests/quaidstvpfit_test.e` TIMEOUT at 600 s** (killed while still
+    inside its first MLE). It remains waived/unverified, not passing.
+- **Root cause (repository defect):**
+  - `_quaidsTVPMLEFit()` runs CMLmt with its effectively unbounded
+    defaults (`maxIters = 1e5`, `maxTime = 1e8` min).
+  - `quaidsTVPControl` cannot set either.
+  - At about 35 ms per iteration that is about 58 min per CMLmt run,
+    matching the earlier 59-minute stall. sslib's second, untransformed
+    CMLmt pass and the test's four fits multiply it.
+- **Ill-posed fixture:**
+  - the shares are random, not an AIDS DGP;
+  - H is fixed at 0.01, about 1/4 of the share variance;
+  - q0 is a flat 0.001;
+  - so Q variances go to the zero boundary, and the fit hits retcode 2
+    even at 3000 iterations.
+- **sslib drift is real but not causal.**
+  - The shared install's `src/` is byte-identical to tag `v2.0.0`
+    (`0326d40`), while its `package.json` still says 1.0.0.
+  - `sslib.pin.json`'s notes are stale.
+  - A v1.0.0-vs-v2.0.0-vs-shared-install A/B gave bit-identical
+    optimizer trajectories.
+- **Risk: unreleased sslib diffuse-phase fix.**
+  - gauss-state-space `5c300b1` is untagged.
+  - It removes spurious diffuse updates that make the TVP likelihood
+    jumpy and biased on v1 and v2, and it moves fitted Q materially.
+  - It does not by itself make the fixture converge.
+- **Before any repin:** decision gate D0 (roadmap section 4) must choose
+  a *tagged* sslib baseline (recommended: a tag containing `5c300b1`).
+- **Deferred and preserved (not abandoned):**
+  - AIDS direct-LM, including the frozen symmetry study, whose evidence
+    is unchanged;
+  - QUAIDS direct LM / no-result seeds;
+  - any speed study.
+
 **`v0.3.0` has been RELEASED.** `scripts\run_release_gate.ps1` reported
 `GO` (artifact SHA256
 `c5ce5e5ded68c64c6e5bdeaad9fdaf01bd82fca384d1aa7cef202f926d52b791`;
@@ -109,6 +154,9 @@ accepted decisions Q1-Q5 in `dev/AIDS_DIRECT_LM_DESIGN.md` for a
   `ssmain`, `ssstructural`). That drift was already there and is the
   likely cause. It was left alone (shared install) and needs a separate,
   authorized resync before the TVP fit test can be trusted again.
+  **Superseded 2026-10-15:** drift was confirmed NOT to be the cause.
+  The hang is the unbounded CMLmt fit on an ill-posed fixture. See
+  Priority 1 above and `dev/TVP_PROMOTION_ROADMAP.md`.
 - **Open owner items:** the sslib drift above; any public move needs a
   new decision (design doc §12).
 The original Anderson research and benchmark were committed and pushed
@@ -1081,6 +1129,16 @@ Limitations:
 
 ## Known Issues
 
+- **`tests/quaidstvpfit_test.e` does not terminate in bounded time
+  (2026-10-15: TIMEOUT at 600 s).**
+  - Cause: the unbounded CMLmt defaults in `_quaidsTVPMLEFit()`, plus an
+    ill-posed fixture.
+  - The sslib drift below is verified to be non-causal: v1.0.0 and v2.0.0
+    give bit-identical trajectories.
+  - The shared install's `src/` is exactly `v2.0.0` (`0326d40`), with a
+    stale 1.0.0 `package.json`. The "unverified drift" wording in the next
+    item is now resolved to that.
+  - Fix plan: `dev/TVP_PROMOTION_ROADMAP.md` (Priority 1).
 - **`sslib` v2.0.0 released upstream (2026-09-29); the shared install at
   `C:\gauss26\pkgs\sslib` is currently a drifted/mixed tree, NOT this
   repo's pinned `v1.0.0`/`ad15626`.** Rechecked on 2026-10-01:
@@ -1167,9 +1225,27 @@ Limitations:
 
 ## Next Steps
 
-**TVP-AIDS is complete; the next recommended research direction is
-convergence correctness for iterated AIDS/QUAIDS.** This is a recommendation,
-not active implementation or approved production scope.
+**Priority 1 (2026-10-15): TVP-AIDS promotion.** Follow the sequenced
+plan P1-P8 in `dev/TVP_PROMOTION_ROADMAP.md`:
+- P1: decision gate D0, choosing a tagged sslib baseline before any repin;
+- P2: repin and resync;
+- P3: bound the MLE (`maxIters`/`maxTime` on `quaidsTVPControl`);
+- P4: a well-posed `quaidstvpfit_test.e`;
+- P5: revalidate the numerics, plus an independent log-likelihood check;
+- P6: re-measure the `n1` limit;
+- P7: a per-test timeout in `run_source_tests.ps1`;
+- P8: the local TVP release gate.
+
+Item 5 below is superseded by that plan.
+
+**Deferred and preserved, not abandoned:** the convergence-correctness
+direction below. It covers AIDS direct-LM (including the frozen symmetry
+study and its open owner decisions), QUAIDS direct LM / no-result seeds,
+and speed benchmarking. Resume after TVP Priority 1, or by explicit owner
+decision. The section below was originally written as "TVP-AIDS is
+complete; the next recommended research direction is convergence
+correctness for iterated AIDS/QUAIDS". That is a recommendation, not
+active implementation or approved production scope.
 
 1. Done: the direct objective and its LM solver were defined and
    validated (Phases 1, 1b, 3), and continuation was added (Phase 3 and
@@ -1377,7 +1453,8 @@ not active implementation or approved production scope.
    as a targeted follow-up, solving a homotopy from a linear-index stage
    to the full nonlinear objective, with parameter-block scaling. It is
    part of the confirmed QUAIDS primary configuration.
-5. Before any future TVP-AIDS work, resolve the `sslib` installation
+5. (Superseded 2026-10-15 by `dev/TVP_PROMOTION_ROADMAP.md` gate D0
+   and step P2. Kept for history.) Before any future TVP-AIDS work, resolve the `sslib` installation
    deliberately: resync to pinned `v1.0.0`/`ad15626`, or explicitly test
    and adopt v2 using its supported installation/catalog path. The
    current shared install fails the pin verifier and must not be assumed
