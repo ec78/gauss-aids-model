@@ -1,0 +1,39 @@
+﻿tgauss.exe : 
+At C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\run_sym_stage.ps1:105 char:12
++     $out = & $GaussExe -b -x $driver 2>&1 | Out-String
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: run_conf_interim.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\symmetry\conf 
+)
+Tue Oct 13 06:29:07 2026
+
+
+sym_harness: stage conf_interim seed 2001
+sym_harness: stage conf_interim seed 2002
+sym_harness: stage conf_interim seed 2003
+sym_harness: stage conf_interim seed 2004
+sym_harness: stage conf_interim seed 2005
+sym_harness: stage conf_interim seed 2006
+sym_harness: stage conf_interim seed 2007
+sym_harness: stage conf_interim seed 2008
+sym_harness: stage conf_interim seed 2009
+sym_harness: stage conf_interim seed 2010
+sym_harness: stage conf_interim seed 2011
+sym_harness: stage conf_interim seed 2012
+sym_harness: stage conf_interim seed 2013
+sym_harness: stage conf_interim seed 2014
+sym_harness: stage conf_interim seed 2015
+sym_harness: stage conf_interim seed 2016
+sym_harness: stage conf_interim seed 2017
+sym_harness: stage conf_interim seed 2018
+sym_harness: stage conf_interim seed 2019
+sym_harness: stage conf_interim seed 2020
+sym_harness: stage conf_interim done
+

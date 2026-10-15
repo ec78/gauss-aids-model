@@ -1,0 +1,560 @@
+/*
+** quaidsdirectsym.src
+**
+** PRIVATE EXPERIMENTAL PROTOTYPE -- in-objective symmetry (arm S) and the
+** endpoint-weighted minimum-distance comparator (arm P) for the AIDS
+** direct-LM prototype. Specification: SYMMETRY_PROTOCOL.md v1 (this
+** directory), sections 2-4. Nothing here is public API, shipped, or
+** loaded by `library quaids;`.
+**
+** A caller #includes quaids.sdf, quaids.src (with their dependencies) and
+** quaidsdirect.src first, then this file. quaidsdirect.src is called,
+** never modified (protocol I5).
+**
+** Notation (protocol section 2): bRaw is the ng x n1 reduced layout
+** [intercepts 1..nIntFull | gamma 1..n1 | beta | u]; v = vec(bRaw) is the
+** full vector (ng*n1); theta is the free symmetric vector (kS = ng*n1 -
+** n1*(n1-1)/2): the non-gamma entries of v in ascending full-index order,
+** then vech(G). v = theta[idx] is an index gather, so the reconstructed G
+** is bitwise symmetric.
+**
+** Arithmetic provenance: _quaidsDirectSymCore, _quaidsDirectSymJacobian
+** and _quaidsDirectSymLM are copies of _quaidsDirectCore,
+** _quaidsDirectJacobian and _quaidsDirectLM whose ONLY change is the
+** parameter map (Core: bVec = (thetaScaled.*scaleSym)[idx]; Jacobian and
+** LM: call the Sym version of Core/Jacobian). Operation order, constants,
+** trapped inversions and retcodes are unchanged.
+**
+** _quaidsDirectSymFit returns the existing struct _quaidsDirectOut,
+** filled as _quaidsDirectFitStarts fills it, except (protocol 3.4):
+**   - model = "AIDS direct LM, in-objective symmetry (private prototype)";
+**   - bRaw and every startRaw block are the RECONSTRUCTED ng x n1 layouts;
+**   - scaleVec holds scaleSym (kS x 1), not the full ng*n1 scale;
+**   - homogCrit holds S's selected critExact (field name inherited).
+** Input guards are _quaidsDirectCheckInputs (their messages keep the
+** "_quaidsDirectFit:" prefix, since quaidsdirect.src stays byte-identical).
+*/
+
+/* ---- Index map idx (ng*n1 x 1): full position -> free position. ---- */
+proc (1) = _quaidsDirectSymIndex(ng, n1);
+    local nIntFull, vmap, m0, idx, j, c, r;
+
+    nIntFull = ng - n1 - 2;
+    vmap = xpnd(seqa(1, 1, n1*(n1+1)/2));
+    m0 = (ng-n1)*n1;
+    idx = zeros(ng*n1, 1);
+    j = 0;
+    c = 1;
+    do while c <= n1;
+        r = 1;
+        do while r <= ng;
+            if r > nIntFull and r <= nIntFull+n1;
+                idx[(c-1)*ng+r] = m0 + vmap[r-nIntFull, c];
+            else;
+                j = j+1;
+                idx[(c-1)*ng+r] = j;
+            endif;
+            r = r+1;
+        endo;
+        c = c+1;
+    endo;
+    retp(idx);
+endp;
+
+/* ---- Unweighted projection onto theta: (T'v)./sumc(T), T = design(idx).
+   Exactly (G+G')/2 on off-diagonal pairs, the identity elsewhere. ---- */
+proc (1) = _quaidsDirectSymProj(fullVec, idx);
+    local tm;
+    tm = design(idx);
+    retp((tm'fullVec)./sumc(tm));
+endp;
+
+/* ---- Reconstruction: theta -> ng x n1 bRaw by index gather. ---- */
+proc (1) = _quaidsDirectSymRaw(theta, idx, ng, n1);
+    local fullVec;
+    fullVec = theta[idx];
+    retp(reshape(fullVec, n1, ng)');
+endp;
+
+/* ---- scaleSym_j = max{ scaleVec[r] : idx[r] = j }. ---- */
+proc (1) = _quaidsDirectSymScale(scaleVec, idx);
+    local kS, s, r;
+    kS = maxc(idx);
+    s = zeros(kS, 1);
+    r = 1;
+    do while r <= rows(idx);
+        if scaleVec[r] > s[idx[r]];
+            s[idx[r]] = scaleVec[r];
+        endif;
+        r = r+1;
+    endo;
+    retp(s);
+endp;
+
+/* ---- Copy of _quaidsDirectCore() with the symmetric parameter map.
+   Returns (fVal = ln det(Sigma) to MINIMIZE, feasible, resid). ---- */
+proc (3) = _quaidsDirectSymCore(thetaScaled, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleSym, idx);
+    local thetaU, bVec, bRaw, resid, residCov, critDet, fVal, feasible;
+
+    thetaU = thetaScaled.*scaleSym;
+    bVec = thetaU[idx];
+    bRaw = _quaidsDirectUnpack(bVec, ng, n1);
+    resid = _quaidsDirectResid(w, bRaw, intcptFull, prices, totexp, u, aCtl);
+    residCov = resid[., 1:n1]'resid[., 1:n1]/rows(w);
+    critDet = det(residCov);
+    if critDet <= 0;
+        feasible = 0;
+        fVal = miss(0, 0);
+    else;
+        feasible = 1;
+        fVal = ln(critDet);
+    endif;
+    retp(fVal, feasible, resid);
+endp;
+
+/* ---- Copy of _quaidsDirectJacobian() over the kS scaled free
+   coordinates, calling _quaidsDirectSymCore. ---- */
+proc (1) = _quaidsDirectSymJacobian(thetaScaled, h, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleSym, idx);
+    local k, nobs, J, i, thetaUp, thetaDn, fUp, fDn, feasUp, feasDn, residUp, residDn;
+
+    k = rows(thetaScaled);
+    nobs = rows(w);
+    J = zeros(nobs*n1, k);
+    i = 1;
+    do while i <= k;
+        thetaUp = thetaScaled;
+        thetaDn = thetaScaled;
+        thetaUp[i] = thetaUp[i] + h;
+        thetaDn[i] = thetaDn[i] - h;
+
+        { fUp, feasUp, residUp } = _quaidsDirectSymCore(thetaUp, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleSym, idx);
+        { fDn, feasDn, residDn } = _quaidsDirectSymCore(thetaDn, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleSym, idx);
+        J[., i] = vec(residUp[., 1:n1] - residDn[., 1:n1])/(2*h);
+        i = i+1;
+    endo;
+    retp(J);
+endp;
+
+/*
+** ---- Copy of _quaidsDirectLM() calling _quaidsDirectSymCore and
+** _quaidsDirectSymJacobian. Same constants (lambda0 1e-3, rho > .1,
+** x.5 when rho > .75, x4 on rejection, stall at 1e12) and retcodes:
+**   0 converged, 2 maxIter, 3 infeasible start, 4 stalled,
+**   5 covariance-inversion failure.
+** Returns (theta, fVal, retcode, gnorm, iterUsed, rejectedSteps, diagVec).
+*/
+proc (7) = _quaidsDirectSymLM(theta0, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleSym, idx, maxIter, gradTol, h);
+    local theta, nobs, fVal, feasible, resid, J, Sinv, residCov, g, B,
+        lambda, k, step, thetaTry, fTry, feasTry, residTry, predRed, rho,
+        accepted, iter, gnorm, retcode, done, rejectedSteps, oldtrp,
+        SinvOk, stepOk, nCovFail, nStepFail, nInfeasTrial, nRhoReject,
+        nAccepted, covIn, dampIn, invTry;
+
+    nobs = rows(w);
+    theta = theta0;
+    nCovFail = 0;
+    nStepFail = 0;
+    nInfeasTrial = 0;
+    nRhoReject = 0;
+    nAccepted = 0;
+    lambda = 1e-3;
+    { fVal, feasible, resid } = _quaidsDirectSymCore(theta, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleSym, idx);
+    gnorm = -1;
+    rejectedSteps = 0;
+    if not feasible;
+        retp(theta, fVal, 3, gnorm, 0, 0, zeros(5,1)|lambda);
+    endif;
+
+    k = rows(theta);
+    iter = 1;
+    retcode = 2;
+    done = 0;
+    do while iter <= maxIter and not done;
+        J = _quaidsDirectSymJacobian(theta, h, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleSym, idx);
+        residCov = resid[., 1:n1]'resid[., 1:n1]/nobs;
+
+        covIn = residCov;
+        Sinv = miss(0, 0);
+        invTry = miss(0, 0);
+        oldtrp = trapchk(1);
+        trap 1,1;
+        invTry = invpd(covIn);
+        trap oldtrp,1;
+        SinvOk = 0;
+        if rows(invTry) == n1 and cols(invTry) == n1;
+            SinvOk = not ismiss(invTry);
+        endif;
+
+        if not SinvOk;
+            nCovFail = nCovFail+1;
+            gnorm = -1;
+            retcode = 5;
+            done = 1;
+        else;
+        Sinv = invTry;
+        g = _quaidsDirectGNGradient(resid, J, Sinv, nobs, n1);
+        B = _quaidsDirectGNHessian(J, Sinv, nobs, n1);
+        gnorm = maxc(abs(g));
+
+        if gnorm < gradTol;
+            retcode = 0;
+            done = 1;
+        else;
+            accepted = 0;
+            do while not accepted and lambda < 1e12;
+                dampIn = B + lambda*eye(k);
+                step = miss(0, 0);
+                invTry = miss(0, 0);
+                oldtrp = trapchk(1);
+                trap 1,1;
+                invTry = invpd(dampIn);
+                trap oldtrp,1;
+                stepOk = 0;
+                if rows(invTry) == k and cols(invTry) == k;
+                    stepOk = not ismiss(invTry);
+                endif;
+
+                if stepOk;
+                    step = -invTry*g;
+                    thetaTry = theta + step;
+                    { fTry, feasTry, residTry } = _quaidsDirectSymCore(thetaTry, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleSym, idx);
+
+                    if feasTry and not scalmiss(fTry);
+                        predRed = -(g'step + .5*step'B*step);
+                        if predRed > 0;
+                            rho = (fVal-fTry)/predRed;
+                        else;
+                            rho = -1;
+                        endif;
+                    else;
+                        rho = -1;
+                        nInfeasTrial = nInfeasTrial+1;
+                    endif;
+
+                    if rho > .1;
+                        theta = thetaTry;
+                        fVal = fTry;
+                        resid = residTry;
+                        accepted = 1;
+                        nAccepted = nAccepted+1;
+                        if rho > .75;
+                            lambda = lambda*.5;
+                        endif;
+                    else;
+                        if feasTry and not scalmiss(fTry);
+                            nRhoReject = nRhoReject+1;
+                        endif;
+                        lambda = lambda*4;
+                        rejectedSteps = rejectedSteps+1;
+                    endif;
+                else;
+                    nStepFail = nStepFail+1;
+                    lambda = lambda*4;
+                    rejectedSteps = rejectedSteps+1;
+                endif;
+            endo;
+            if not accepted;
+                retcode = 4;
+                done = 1;
+            endif;
+        endif;
+        endif;
+        iter = iter+1;
+    endo;
+
+    retp(theta, fVal, retcode, gnorm, iter-1, rejectedSteps,
+        nCovFail|nStepFail|nInfeasTrial|nRhoReject|nAccepted|lambda);
+endp;
+
+/*
+** _quaidsDirectSymStarts -- the 16 paired starts (protocol 3.3): the
+** full starts of _quaidsDirectAllStarts (same recipes, internal seed and
+** draw order), each mapped to theta by the unweighted projection and
+** divided by scaleSym. Returns a 16 x kS matrix of SCALED starts, one
+** start per row. startsIn = 0 builds the internal starts; otherwise it is
+** a stacked (k*ng) x n matrix of full starts, as for
+** _quaidsDirectFitStarts.
+*/
+proc (1) = _quaidsDirectSymStarts(bStone, nIntFull, n1, ng, idx, scaleSym, startsIn);
+    local starts, nStarts, out, s, bStart, theta;
+
+    if rows(startsIn)*cols(startsIn) == 1 and startsIn == 0;
+        starts = _quaidsDirectAllStarts(bStone, nIntFull, n1);
+    else;
+        if cols(startsIn) /= cols(bStone) or rows(startsIn) < ng
+            or (rows(startsIn) % ng) /= 0;
+            errorlog "_quaidsDirectSymFitStarts: startsIn must be scalar 0 or a stacked (k*ng) x n matrix of starts.";
+            end;
+        endif;
+        starts = startsIn;
+    endif;
+    nStarts = rows(starts)/ng;
+    out = zeros(nStarts, rows(scaleSym));
+    s = 1;
+    do while s <= nStarts;
+        bStart = starts[(s-1)*ng+1:s*ng, .];
+        theta = _quaidsDirectSymProj(vec(bStart[., 1:n1]), idx);
+        out[s, .] = (theta./scaleSym)';
+        s = s+1;
+    endo;
+    retp(out);
+endp;
+
+/*
+** _quaidsDirectSymFit -- arm S: 16 paired starts through
+** _quaidsDirectSymLM, then design section 5 selection verbatim (no
+** tolerance, ties to the lower start, no fallback).
+*/
+proc (struct _quaidsDirectOut) = _quaidsDirectSymFit(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
+    struct _quaidsDirectOut dOut;
+    dOut = _quaidsDirectSymFitStarts(w, intcpt, prices, totexp, instr, aCtl, 0);
+    retp(dOut);
+endp;
+
+/* The same fit with the test-only start seam (startsIn as in
+   _quaidsDirectFitStarts: full ng x n starts, mapped by projection). */
+proc (struct _quaidsDirectOut) = _quaidsDirectSymFitStarts(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl, startsIn);
+    local bStone, intcptFull, u, ng, nGoods, n1, nIntFull, scaleVec, idx,
+        scaleSym, startsS, nStarts, s, theta0, thetaEnd, fEnd, rc, gn, it,
+        rej, diagv, raw, fE, feasE, resE, crit, eligS, elig, crits, raws,
+        tbl, best, ties, margin, nearTie, thetaU;
+    struct quaidsControl ctlStone;
+    struct quaidsOut stone;
+    struct _quaidsDirectOut dOut;
+
+    _quaidsDirectCheckInputs(w, intcpt, prices, totexp, instr, aCtl);
+
+    ctlStone = aCtl;
+    ctlStone.maxiter = 1;
+    stone = quaidsFit(w, intcpt, prices, totexp, instr, ctlStone);
+    bStone = stone.homogB;
+    intcptFull = stone.intcptFull;
+    u = stone.u;
+    ng = stone.ng;
+    nGoods = cols(prices);
+    n1 = nGoods-1;
+    nIntFull = cols(intcptFull);
+    if ng /= nIntFull+n1+2 or cols(u) /= 1;
+        errorlog "_quaidsDirectSymFit: internal layout mismatch (expected ng = nIntFull + n1 + 2 with one endogenous regressor).";
+        end;
+    endif;
+    scaleVec = _quaidsDirectScale(bStone, n1);
+    idx = _quaidsDirectSymIndex(ng, n1);
+    scaleSym = _quaidsDirectSymScale(scaleVec, idx);
+
+    startsS = _quaidsDirectSymStarts(bStone, nIntFull, n1, ng, idx, scaleSym, startsIn);
+    nStarts = rows(startsS);
+
+    elig = zeros(nStarts, 1);
+    crits = miss(zeros(nStarts, 1), 0);
+    raws = zeros(nStarts*ng, n1);
+    tbl = zeros(nStarts, 13);
+    s = 1;
+    do while s <= nStarts;
+        theta0 = startsS[s, .]';
+        { thetaEnd, fEnd, rc, gn, it, rej, diagv } = _quaidsDirectSymLM(theta0,
+            w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleSym, idx,
+            500, 1e-3, 1e-6);
+        thetaU = thetaEnd.*scaleSym;
+        raw = _quaidsDirectSymRaw(thetaU, idx, ng, n1);
+
+        /* exact objective re-evaluated at the returned endpoint */
+        { fE, feasE, resE } = _quaidsDirectSymCore(thetaEnd, w, intcptFull,
+            prices, totexp, u, aCtl, ng, n1, scaleSym, idx);
+        feasE = feasE and not scalmiss(fE);
+        if feasE;
+            crit = -fE;
+        else;
+            crit = miss(0, 0);
+        endif;
+        eligS = (rc == 0) and feasE;
+        if eligS;
+            eligS = _quaidsDirectFinite(crit) and _quaidsDirectFinite(raw);
+        endif;
+
+        elig[s] = eligS;
+        crits[s] = crit;
+        raws[(s-1)*ng+1:s*ng, .] = raw;
+        tbl[s, .] = (s~rc~eligS~crit~gn~it~rej)~diagv';
+        s = s+1;
+    endo;
+
+    { best, ties, margin, nearTie } = _quaidsDirectSelect(elig, crits, raws, ng);
+
+    dOut.model = "AIDS direct LM, in-objective symmetry (private prototype)";
+    dOut.experimental = 1;
+    dOut.nobs = rows(w);
+    dOut.n = nGoods;
+    dOut.n1 = n1;
+    dOut.ng = ng;
+    dOut.nIntFull = nIntFull;
+    dOut.nStarts = nStarts;
+    dOut.nEligible = sumc(elig);
+    dOut.startTable = tbl;
+    dOut.startRaw = raws;
+    dOut.bStone = bStone;
+    dOut.scaleVec = scaleSym;
+    dOut.intcptFull = intcptFull;
+    dOut.u = u;
+
+    if best == 0;
+        dOut.ok = 0;
+        dOut.status = 1;
+        dOut.selStart = miss(0, 0);
+        dOut.bRaw = miss(0, 0);
+        dOut.bFull = miss(0, 0);
+        dOut.homogCrit = miss(0, 0);
+        dOut.gnorm = miss(0, 0);
+        dOut.iterations = miss(0, 0);
+        dOut.exactTies = 0;
+        dOut.marginOtherBasin = miss(0, 0);
+        dOut.nearTie = 0;
+    else;
+        dOut.ok = 1;
+        dOut.status = 0;
+        dOut.selStart = best;
+        dOut.bRaw = raws[(best-1)*ng+1:best*ng, .];
+        dOut.bFull = _quaidsDirectFull(dOut.bRaw, nIntFull);
+        dOut.homogCrit = crits[best];
+        dOut.gnorm = tbl[best, 5];
+        dOut.iterations = tbl[best, 6];
+        dOut.exactTies = ties;
+        dOut.marginOtherBasin = margin;
+        dOut.nearTie = nearTie;
+    endif;
+
+    retp(dOut);
+endp;
+
+/*
+** _quaidsDirectSymPWeight -- protocol 4.3 steps 2-4. vH = vec(H.bRaw)
+** (ng*n1 x 1, unscaled); scaleVec is H's scale. Returns the unscaled
+** Gauss-Newton weight B ((ng*n1) x (ng*n1)), or a missing scalar when the
+** residual covariance is not invertible.
+*/
+proc (1) = _quaidsDirectSymPWeight(vH, w, intcptFull, prices, totexp, u, struct quaidsControl aCtl, ng, n1, scaleVec);
+    local nobs, vS, fVal, feas, resid, invTry, oldtrp, J, Bs;
+
+    nobs = rows(w);
+    vS = vH./scaleVec;
+    { fVal, feas, resid } = _quaidsDirectCore(vS, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+    invTry = miss(0, 0);
+    oldtrp = trapchk(1);
+    trap 1,1;
+    invTry = invpd(resid[., 1:n1]'resid[., 1:n1]/nobs);
+    trap oldtrp,1;
+    if rows(invTry) /= n1 or cols(invTry) /= n1;
+        retp(miss(0, 0));
+    endif;
+    if ismiss(invTry);
+        retp(miss(0, 0));
+    endif;
+    J = _quaidsDirectJacobian(vS, 1e-6, w, intcptFull, prices, totexp, u, aCtl, ng, n1, scaleVec);
+    Bs = _quaidsDirectGNHessian(J, invTry, nobs, n1);
+    /* B = diag(1/scaleVec)*Bs*diag(1/scaleVec) */
+    retp(((1./scaleVec).*Bs).*(1./scaleVec'));
+endp;
+
+/*
+** _quaidsDirectSymPSolve -- protocol 4.3 step 5: phi = solpd(T'BT, T'B vH),
+** trapped; vP = phi[idx]. Returns (ok, vP); ok = 0 (vP missing) on a trap,
+** a missing or wrongly sized result, or a non-finite entry.
+*/
+proc (2) = _quaidsDirectSymPSolve(vH, B, idx);
+    local tm, kS, lhs, rhs, phi, oldtrp, vP;
+
+    if rows(B)*cols(B) == 1;
+        retp(0, miss(0, 0));
+    endif;
+    tm = design(idx);
+    kS = cols(tm);
+    lhs = tm'B*tm;
+    rhs = tm'B*vH;
+    phi = miss(0, 0);
+    oldtrp = trapchk(1);
+    trap 1,1;
+    phi = solpd(rhs, lhs);
+    trap oldtrp,1;
+    if rows(phi) /= kS or cols(phi) /= 1;
+        retp(0, miss(0, 0));
+    endif;
+    if not _quaidsDirectFinite(phi);
+        retp(0, miss(0, 0));
+    endif;
+    vP = phi[idx];
+    retp(1, vP);
+endp;
+
+/*
+** _quaidsDirectSymP -- arm P (comparator only) from an H result dH.
+** Returns (ok, pRaw (ng x n1), critP). ok = 0 (pRaw and critP missing)
+** when H has no result or any step fails; critP is evaluated at unit
+** scale, so v_P enters the residual unchanged.
+*/
+proc (3) = _quaidsDirectSymP(struct _quaidsDirectOut dH, w, prices, totexp, struct quaidsControl aCtl);
+    local ng, n1, idx, vH, B, ok, vP, fVal, feas, resid, critP;
+
+    if dH.ok /= 1;
+        retp(0, miss(0, 0), miss(0, 0));
+    endif;
+    ng = dH.ng;
+    n1 = dH.n1;
+    idx = _quaidsDirectSymIndex(ng, n1);
+    vH = vec(dH.bRaw);
+    B = _quaidsDirectSymPWeight(vH, w, dH.intcptFull, prices, totexp, dH.u, aCtl, ng, n1, dH.scaleVec);
+    { ok, vP } = _quaidsDirectSymPSolve(vH, B, idx);
+    if not ok;
+        retp(0, miss(0, 0), miss(0, 0));
+    endif;
+    { fVal, feas, resid } = _quaidsDirectCore(vP, w, dH.intcptFull, prices, totexp, dH.u, aCtl, ng, n1, ones(ng*n1, 1));
+    if not feas or scalmiss(fVal);
+        retp(0, miss(0, 0), miss(0, 0));
+    endif;
+    critP = -fVal;
+    if not _quaidsDirectFinite(critP);
+        retp(0, miss(0, 0), miss(0, 0));
+    endif;
+    retp(1, reshape(vP, n1, ng)', critP);
+endp;
+
+/*
+** _quaidsDirectSymCondGN -- condGN (protocol 6.1): 2-norm condition number
+** of the Gauss-Newton Hessian of S's SCALED Jacobian at the selected
+** endpoint. dS is an S result (scaleVec holds scaleSym). Missing when S
+** has no result or the covariance is not invertible.
+*/
+proc (1) = _quaidsDirectSymCondGN(struct _quaidsDirectOut dS, w, prices, totexp, struct quaidsControl aCtl);
+    local ng, n1, idx, theta, thS, fVal, feas, resid, invTry, oldtrp, J, B;
+
+    if dS.ok /= 1;
+        retp(miss(0, 0));
+    endif;
+    ng = dS.ng;
+    n1 = dS.n1;
+    idx = _quaidsDirectSymIndex(ng, n1);
+    theta = _quaidsDirectSymProj(vec(dS.bRaw), idx);
+    thS = theta./dS.scaleVec;
+    { fVal, feas, resid } = _quaidsDirectSymCore(thS, w, dS.intcptFull, prices, totexp, dS.u, aCtl, ng, n1, dS.scaleVec, idx);
+    invTry = miss(0, 0);
+    oldtrp = trapchk(1);
+    trap 1,1;
+    invTry = invpd(resid[., 1:n1]'resid[., 1:n1]/rows(w));
+    trap oldtrp,1;
+    if rows(invTry) /= n1 or cols(invTry) /= n1;
+        retp(miss(0, 0));
+    endif;
+    if ismiss(invTry);
+        retp(miss(0, 0));
+    endif;
+    J = _quaidsDirectSymJacobian(thS, 1e-6, w, dS.intcptFull, prices, totexp, dS.u, aCtl, ng, n1, dS.scaleVec, idx);
+    B = _quaidsDirectGNHessian(J, invTry, rows(w), n1);
+    retp(cond(B));
+endp;
+
+/* asym = max |G - G'| of an ng x n1 reduced raw. */
+proc (1) = _quaidsDirectSymAsym(raw, nIntFull);
+    local n1, gm;
+    n1 = cols(raw);
+    gm = raw[nIntFull+1:nIntFull+n1, .];
+    retp(maxc(maxc(abs(gm - gm'))));
+endp;

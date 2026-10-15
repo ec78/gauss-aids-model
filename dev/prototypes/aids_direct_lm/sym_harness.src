@@ -1,0 +1,374 @@
+/*
+** sym_harness.src
+**
+** PRIVATE EXPERIMENT HARNESS for SYMMETRY_PROTOCOL.md v1 (this
+** directory). Runs arms H, S and P per seed and appends the protocol
+** section 9 files. Truth-dependent metrics are NOT computed here:
+** sym_analyze.py completes them (pfErr, rawStructErr, classPf) and
+** recomputes selection independently (v1 artifact-schema clarification).
+**
+** Include order (working directory tests/): quaids.sdf, quaids.src and
+** its dependencies, quaidsdirect.src, quaidsdirectsym.src,
+** quaidsfixtures.src, then this file. Normally driven by
+** run_sym_stage.ps1, which creates the output directory, refuses to
+** overwrite an existing run, and requires a verified freeze manifest
+** before any confirmation stage.
+**
+** Seed guard: _symStageSeeds hard-codes every stage's seeds, and
+** _symRunStage refuses an unknown stage BEFORE any data is generated.
+** There is no way to pass an arbitrary seed list through _symRunStage.
+**
+** Files written in the output directory (all appended, header written
+** when the file is new; '.' = missing / not applicable; reals %.17g):
+**   cells.csv  block,seed,arm(H|S),start, retcode, eligible, critExact,
+**              gnorm, iterations, rejected, covInvFail, stepInvFail,
+**              infeasTrial, rhoReject, lmAccepted, lambdaFinal, wallSec
+**              (wallSec is '.' per start: H is called unchanged, so
+**              per-start timing is not observable; per-arm wall time is
+**              in seeds.csv)
+**   raw.csv    block,seed,arm(H|S|P),start,row,col,value (P: start 0,
+**              only when P has a result)
+**   seeds.csv  block,seed,arm(H|S|S1|P), ok, selStart, nEligible, crit,
+**              pfErr, rawStructErr, classPf (these three '.' here),
+**              asym, addUpErr, homogErr, exactTies, margin, nearTie,
+**              iterations, wallSec, N1, N2, LR, condGN (S row only),
+**              critAbsErr
+**   truth.csv  block,seed,row,col,value (regenerated trueParams)
+**   polish.csv (real stage only) block,seed, retcode, iterations,
+**              critDiff -- the R6 polish restart
+** Rows are written in key order with arms in the listed order.
+*/
+
+/* Copy of critFromFull() in quaidsdirect_test.e (design T5): criterion
+   recomputed in absolute-price form from the full (ng+1) x n matrix. */
+proc (1) = _symCritFromFull(bFull, w, intcptFull, prices, totexp, u, alpha0);
+    local nif, n, n1, alphaT, G, a_p, lx, fitted, e, S;
+    nif = cols(intcptFull);
+    n = cols(prices);
+    n1 = n - 1;
+    alphaT = intcptFull*bFull[1:nif, .];
+    G = bFull[nif+1:nif+n, .];
+    a_p = alpha0 + sumc((prices.*alphaT)') + .5*sumc(((prices*G).*prices)');
+    lx = totexp - a_p;
+    fitted = alphaT + prices*G + lx*bFull[nif+n+1, .] + u*bFull[nif+n+2, .];
+    e = w[., 1:n1] - fitted[., 1:n1];
+    S = e'e/rows(w);
+    retp(-ln(det(S)));
+endp;
+
+/* Hard-coded seeds per stage (protocol section 5). Unknown stage: stop. */
+proc (1) = _symStageSeeds(stage);
+    if stage $== "fixture";
+        retp(602);
+    elseif stage $== "dev";
+        retp(seqa(1001, 1, 30));
+    elseif stage $== "dev_det";
+        retp(1001|1030);
+    elseif stage $== "conf_interim";
+        retp(seqa(2001, 1, 20));
+    elseif stage $== "conf_rest";
+        retp(seqa(2021, 1, 150));
+    elseif stage $== "conf_det";
+        retp(2001|2085|2170);
+    endif;
+    errorlog "sym_harness: unknown stage (allowed: fixture, dev, dev_det, conf_interim, conf_rest, conf_det, real).";
+    end;
+endp;
+
+/* The block label written to the files for a stage. */
+proc (1) = _symStageBlock(stage);
+    if stage $== "conf_interim" or stage $== "conf_rest";
+        retp("conf");
+    endif;
+    retp(stage);
+endp;
+
+/* One numeric row -> CSV fields (%.17g; missing -> "."). */
+proc (1) = _symCsv(x);
+    retp(strjoin(sprintf("%.17g", vec(x))', ","));
+endp;
+
+proc (0) = _symAppend(fname, header, text);
+    local fh, isNew;
+    fh = fopen(fname, "r");
+    isNew = fh <= 0;
+    if not isNew;
+        call close(fh);
+    endif;
+    fh = fopen(fname, "a");
+    if fh <= 0;
+        errorlog "sym_harness: cannot open output file for append.";
+        end;
+    endif;
+    if isNew;
+        call fputs(fh, header $+ "\n");
+    endif;
+    if strlen(text) > 0;
+        call fputs(fh, text);
+    endif;
+    call close(fh);
+endp;
+
+/* Key prefix "block,seed,arm," */
+proc (1) = _symKey(block, seed, arm);
+    retp(block $+ "," $+ _symCsv(seed) $+ "," $+ arm $+ ",");
+endp;
+
+/* raw.csv txtRows for a stacked (k*ng) x n1 matrix of endpoints;
+   startIds is k x 1. */
+proc (1) = _symRawLines(keyStr, raws, ng, startIds);
+    local n1, k, s, r, c, sCol, rCol, cCol, valCol, blk, txtRows;
+    n1 = cols(raws);
+    k = rows(startIds);
+    sCol = {};
+    rCol = {};
+    cCol = {};
+    valCol = {};
+    s = 1;
+    do while s <= k;
+        blk = raws[(s-1)*ng+1:s*ng, .];
+        r = 1;
+        do while r <= ng;
+            c = 1;
+            do while c <= n1;
+                sCol = sCol | startIds[s];
+                rCol = rCol | r;
+                cCol = cCol | c;
+                valCol = valCol | blk[r, c];
+                c = c+1;
+            endo;
+            r = r+1;
+        endo;
+        s = s+1;
+    endo;
+    txtRows = keyStr $+ sprintf("%.17g,%.17g,%.17g,%.17g", sCol, rCol, cCol, valCol);
+    retp(strjoin(txtRows', "\n") $+ "\n");
+endp;
+
+/* cells.csv txtRows from a startTable (nStarts x 13). */
+proc (1) = _symCellLines(keyStr, tbl);
+    local txtRows, s;
+    txtRows = "";
+    s = 1;
+    do while s <= rows(tbl);
+        txtRows = txtRows $+ keyStr $+ _symCsv(tbl[s, 1]) $+ "," $+ _symCsv(tbl[s, 2:13]) $+ ",.\n";
+        s = s+1;
+    endo;
+    retp(txtRows);
+endp;
+
+/* asym, addUpErr, homogErr of a reduced raw (missing when raw missing). */
+proc (3) = _symStructErrs(raw, nIntFull);
+    local full, n, e, addUp, homog;
+    if scalmiss(raw);
+        retp(miss(0, 0), miss(0, 0), miss(0, 0));
+    endif;
+    full = _quaidsDirectFull(raw, nIntFull);
+    n = cols(full);
+    e = 1|zeros(rows(full)-1, 1);
+    addUp = maxc(abs(sumc(full') - e));
+    homog = maxc(abs(sumc(full[nIntFull+1:nIntFull+n, .])));
+    retp(_quaidsDirectSymAsym(raw, nIntFull), addUp, homog);
+endp;
+
+/* Difference of two possibly-missing scalars (a - b). */
+proc (1) = _symDiff(a, b);
+    if scalmiss(a) or scalmiss(b);
+        retp(miss(0, 0));
+    endif;
+    retp(a - b);
+endp;
+
+/* |critFromFull(raw) - crit|, missing when either is missing. */
+proc (1) = _symCritAbsErr(raw, crit, w, intcptFull, prices, totexp, u, alpha0);
+    if scalmiss(raw) or scalmiss(crit);
+        retp(miss(0, 0));
+    endif;
+    retp(abs(_symCritFromFull(_quaidsDirectFull(raw, cols(intcptFull)), w, intcptFull, prices, totexp, u, alpha0) - crit));
+endp;
+
+/* Arm H: the unchanged _quaidsDirectFit, called as is (protocol 4.1). */
+proc (struct _quaidsDirectOut) = _symFitH(w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
+    struct _quaidsDirectOut dH;
+    dH = _quaidsDirectFit(w, intcpt, prices, totexp, instr, aCtl);
+    retp(dH);
+endp;
+
+/*
+** _symRunData -- run H, S and P on one dataset and append cells.csv,
+** raw.csv and seeds.csv. Returns the S result (used by the real stage).
+*/
+proc (struct _quaidsDirectOut) = _symRunData(block, seed, outDir, w, intcpt, prices, totexp, instr, struct quaidsControl aCtl);
+    local t0, wallH, wallS, wallP, ng, n1, nif, nobs, okP, pRaw, critP,
+        keyH, keyS, keyS1, keyP, cellsTxt, rawTxt, seedsTxt, asym, addUp,
+        homog, cae, n1Gap, n2Gap, lr, condGN, rowV, ok1, raw1, crit1, it1,
+        hdrSeeds;
+    struct _quaidsDirectOut dH, dS;
+
+    t0 = hsec;
+    dH = _symFitH(w, intcpt, prices, totexp, instr, aCtl);
+    wallH = (hsec-t0)/100;
+    t0 = hsec;
+    dS = _quaidsDirectSymFit(w, intcpt, prices, totexp, instr, aCtl);
+    wallS = (hsec-t0)/100;
+    t0 = hsec;
+    { okP, pRaw, critP } = _quaidsDirectSymP(dH, w, prices, totexp, aCtl);
+    wallP = (hsec-t0)/100;
+
+    ng = dH.ng;
+    n1 = dH.n1;
+    nif = dH.nIntFull;
+    nobs = rows(w);
+
+    keyH = _symKey(block, seed, "H");
+    keyS = _symKey(block, seed, "S");
+    keyS1 = _symKey(block, seed, "S1");
+    keyP = _symKey(block, seed, "P");
+
+    cellsTxt = _symCellLines(keyH, dH.startTable) $+ _symCellLines(keyS, dS.startTable);
+    rawTxt = _symRawLines(keyH, dH.startRaw, ng, seqa(1, 1, dH.nStarts))
+        $+ _symRawLines(keyS, dS.startRaw, ng, seqa(1, 1, dS.nStarts));
+    if okP;
+        rawTxt = rawTxt $+ _symRawLines(keyP, pRaw, ng, 0);
+    endif;
+
+    n1Gap = _symDiff(dS.homogCrit, dH.homogCrit);
+    n2Gap = _symDiff(critP, dS.homogCrit);
+    lr = _symDiff(dH.homogCrit, dS.homogCrit);
+    if not scalmiss(lr);
+        lr = nobs*lr;
+    endif;
+    condGN = _quaidsDirectSymCondGN(dS, w, prices, totexp, aCtl);
+
+    /* H */
+    { asym, addUp, homog } = _symStructErrs(dH.bRaw, nif);
+    cae = _symCritAbsErr(dH.bRaw, dH.homogCrit, w, dH.intcptFull, prices, totexp, dH.u, aCtl.alpha0);
+    rowV = dH.ok|dH.selStart|dH.nEligible|dH.homogCrit|miss(zeros(3,1), 0)|asym|addUp|homog
+        |dH.exactTies|dH.marginOtherBasin|dH.nearTie|dH.iterations|wallH|miss(zeros(4,1), 0)|cae;
+    seedsTxt = keyH $+ _symCsv(rowV) $+ "\n";
+
+    /* S */
+    { asym, addUp, homog } = _symStructErrs(dS.bRaw, nif);
+    cae = _symCritAbsErr(dS.bRaw, dS.homogCrit, w, dS.intcptFull, prices, totexp, dS.u, aCtl.alpha0);
+    rowV = dS.ok|dS.selStart|dS.nEligible|dS.homogCrit|miss(zeros(3,1), 0)|asym|addUp|homog
+        |dS.exactTies|dS.marginOtherBasin|dS.nearTie|dS.iterations|wallS|n1Gap|n2Gap|lr|condGN|cae;
+    seedsTxt = seedsTxt $+ keyS $+ _symCsv(rowV) $+ "\n";
+
+    /* S1: start 1 of S (descriptive subset, no separate run) */
+    ok1 = dS.startTable[1, 3];
+    it1 = dS.startTable[1, 6];
+    if ok1;
+        raw1 = dS.startRaw[1:ng, .];
+        crit1 = dS.startTable[1, 4];
+    else;
+        raw1 = miss(0, 0);
+        crit1 = miss(0, 0);
+    endif;
+    { asym, addUp, homog } = _symStructErrs(raw1, nif);
+    cae = _symCritAbsErr(raw1, crit1, w, dS.intcptFull, prices, totexp, dS.u, aCtl.alpha0);
+    if ok1;
+        rowV = ok1|1;
+    else;
+        rowV = ok1|miss(0, 0);
+    endif;
+    rowV = rowV|miss(0, 0)|crit1|miss(zeros(3,1), 0)|asym|addUp|homog
+        |miss(zeros(3,1), 0)|it1|miss(zeros(5,1), 0)|cae;
+    seedsTxt = seedsTxt $+ keyS1 $+ _symCsv(rowV) $+ "\n";
+
+    /* P */
+    if okP;
+        { asym, addUp, homog } = _symStructErrs(pRaw, nif);
+    else;
+        asym = miss(0, 0);
+        addUp = miss(0, 0);
+        homog = miss(0, 0);
+    endif;
+    cae = _symCritAbsErr(pRaw, critP, w, dH.intcptFull, prices, totexp, dH.u, aCtl.alpha0);
+    rowV = okP|0|miss(0, 0)|critP|miss(zeros(3,1), 0)|asym|addUp|homog
+        |miss(zeros(4,1), 0)|wallP|miss(zeros(4,1), 0)|cae;
+    seedsTxt = seedsTxt $+ keyP $+ _symCsv(rowV) $+ "\n";
+
+    hdrSeeds = "block,seed,arm,ok,selStart,nEligible,crit,pfErr,rawStructErr,classPf,asym,addUpErr,homogErr,exactTies,margin,nearTie,iterations,wallSec,N1,N2,LR,condGN,critAbsErr";
+    _symAppend(outDir $+ "/cells.csv", "block,seed,arm,start,retcode,eligible,critExact,gnorm,iterations,rejected,covInvFail,stepInvFail,infeasTrial,rhoReject,lmAccepted,lambdaFinal,wallSec", cellsTxt);
+    _symAppend(outDir $+ "/raw.csv", "block,seed,arm,start,row,col,value", rawTxt);
+    _symAppend(outDir $+ "/seeds.csv", hdrSeeds, seedsTxt);
+    retp(dS);
+endp;
+
+/* One synthetic seed: data, truth, arms. */
+proc (0) = _symRunSeed(block, seed, outDir, struct quaidsControl aCtl);
+    local w, intcpt, prices, totexp, instr, tp, rr, cc, tLines;
+    struct _quaidsDirectOut dS;
+
+    { w, intcpt, prices, totexp, instr, tp } = _quaidsSyntheticDGP(3000, seed, 0, 1);
+    /* row-major (vec of the transpose), so rows are in key order row, col */
+    rr = vec((seqa(1, 1, rows(tp)).*ones(1, cols(tp)))');
+    cc = vec((ones(rows(tp), 1).*seqa(1, 1, cols(tp))')');
+    tLines = block $+ "," $+ _symCsv(seed) $+ "," $+ sprintf("%.17g,%.17g,%.17g", rr, cc, vec(tp'));
+    _symAppend(outDir $+ "/truth.csv", "block,seed,row,col,value", strjoin(tLines', "\n") $+ "\n");
+    dS = _symRunData(block, seed, outDir, w, intcpt, prices, totexp, instr, aCtl);
+endp;
+
+/* Real data (Blanciforti86, protocol section 5), block "real", seed 0;
+   plus the R6 polish restart in polish.csv. Run from tests/. */
+proc (0) = _symRunReal(outDir, struct quaidsControl aCtl);
+    local data, w, prices, totexp, instr, ng, n1, idx, theta, thS, thE,
+        fE, rc, gn, it, rej, dg, critE;
+    struct _quaidsDirectOut dS;
+
+    data = loadd("fixtures/published/blanciforti86_food32.csv");
+    w = data[., "wFood1" "wFood2" "wFood3" "wFood4"];
+    prices = ln(data[., "pFood1" "pFood2" "pFood3" "pFood4"]);
+    totexp = ln(data[., "xFood"]);
+    instr = ln(data[., "xAgg"]);
+    dS = _symRunData("real", 0, outDir, w, 0, prices, totexp, instr, aCtl);
+
+    if dS.ok == 1;
+        ng = dS.ng;
+        n1 = dS.n1;
+        idx = _quaidsDirectSymIndex(ng, n1);
+        theta = _quaidsDirectSymProj(vec(dS.bRaw), idx);
+        thS = theta./dS.scaleVec;
+        { thE, fE, rc, gn, it, rej, dg } = _quaidsDirectSymLM(thS, w, dS.intcptFull,
+            prices, totexp, dS.u, aCtl, ng, n1, dS.scaleVec, idx, 500, 1e-3, 1e-6);
+        critE = miss(0, 0);
+        if not scalmiss(fE);
+            critE = abs(-fE - dS.homogCrit);
+        endif;
+    else;
+        rc = miss(0, 0);
+        it = miss(0, 0);
+        critE = miss(0, 0);
+    endif;
+    _symAppend(outDir $+ "/polish.csv", "block,seed,retcode,iterations,critDiff",
+        "real,0," $+ _symCsv(rc|it|critE) $+ "\n");
+endp;
+
+/*
+** _symRunStage -- the only entry point the drivers call. aCtl is
+** quaidsControlCreate() with linear = 1 and homogenous = 1 (protocol 5).
+*/
+proc (0) = _symRunStage(stage, outDir);
+    local seeds, block, i;
+    struct quaidsControl aCtl;
+
+    aCtl = quaidsControlCreate();
+    aCtl.linear = 1;
+    aCtl.homogenous = 1;
+
+    if stage $== "real";
+        _symRunReal(outDir, aCtl);
+        print "sym_harness: stage real done";
+        retp;
+    endif;
+
+    seeds = _symStageSeeds(stage);
+    block = _symStageBlock(stage);
+    i = 1;
+    do while i <= rows(seeds);
+        print "sym_harness: stage " $+ stage $+ " seed " $+ ftocv(seeds[i], 1, 0);
+        _symRunSeed(block, seeds[i], outDir, aCtl);
+        i = i+1;
+    endo;
+    print "sym_harness: stage " $+ stage $+ " done";
+endp;

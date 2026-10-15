@@ -1,0 +1,18 @@
+﻿tgauss.exe : 
+At C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\run_sym_stage.ps1:105 char:12
++     $out = & $GaussExe -b -x $driver 2>&1 | Out-String
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: run_real.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\symmetry\real )
+Thu Oct 15 06:04:04 2026
+
+
+sym_harness: stage real done
+

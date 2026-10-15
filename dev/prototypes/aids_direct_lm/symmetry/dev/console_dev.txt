@@ -1,0 +1,48 @@
+﻿tgauss.exe : 
+At C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\run_sym_stage.ps1:88 char:12
++     $out = & $GaussExe -b -x $driver 2>&1 | Out-String
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+GAUSS 26.1.4 (Aug 17 2026, 5565) 64-bit
+(C)Copyright 1984-2026 Aptech Systems, Inc.
+All Rights Reserved Worldwide.
+
+
+Job: run_dev.e ( C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\symmetry\dev )
+Tue Oct 13 06:06:52 2026
+
+
+sym_harness: stage dev seed 1001
+sym_harness: stage dev seed 1002
+sym_harness: stage dev seed 1003
+sym_harness: stage dev seed 1004
+sym_harness: stage dev seed 1005
+sym_harness: stage dev seed 1006
+sym_harness: stage dev seed 1007
+sym_harness: stage dev seed 1008
+sym_harness: stage dev seed 1009
+sym_harness: stage dev seed 1010
+sym_harness: stage dev seed 1011
+sym_harness: stage dev seed 1012
+sym_harness: stage dev seed 1013
+sym_harness: stage dev seed 1014
+sym_harness: stage dev seed 1015
+sym_harness: stage dev seed 1016
+sym_harness: stage dev seed 1017
+sym_harness: stage dev seed 1018
+sym_harness: stage dev seed 1019
+sym_harness: stage dev seed 1020
+sym_harness: stage dev seed 1021
+sym_harness: stage dev seed 1022
+sym_harness: stage dev seed 1023
+sym_harness: stage dev seed 1024
+sym_harness: stage dev seed 1025
+sym_harness: stage dev seed 1026
+sym_harness: stage dev seed 1027
+sym_harness: stage dev seed 1028
+sym_harness: stage dev seed 1029
+sym_harness: stage dev seed 1030
+sym_harness: stage dev done
+

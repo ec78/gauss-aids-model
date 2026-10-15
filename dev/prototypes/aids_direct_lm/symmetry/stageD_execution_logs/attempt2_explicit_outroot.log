@@ -1,0 +1,8 @@
+CMD powershell -ExecutionPolicy Bypass -File run_sym_stage.ps1 -Stage dev -OutRoot C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\symmetry
+START dev 2026-10-13T06:06:49-05:00
+stage dev complete: C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\symmetry\dev
+EXIT dev 0 END 2026-10-13T06:14:44-05:00
+CMD powershell -ExecutionPolicy Bypass -File run_sym_stage.ps1 -Stage dev_det -OutRoot C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\symmetry
+START dev_det 2026-10-13T06:14:44-05:00
+stage dev_det complete: C:\Users\eclow\Documents\GitHub\gauss-aids-model\dev\prototypes\aids_direct_lm\symmetry\dev_det
+EXIT dev_det 0 END 2026-10-13T06:14:59-05:00

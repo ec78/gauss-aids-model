@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-10_
+_Last updated: 2026-10-15_
 
 ## Current Objective
 
@@ -1199,6 +1199,173 @@ not active implementation or approved production scope.
      prespecified exploratory protocol**.
    - Resolve the symmetry design before shipping QUAIDS (or AIDS) direct
      LM: in-objective symmetry, or a valid projection covariance.
+     **AIDS symmetry study: COMPLETE (frozen 2026-10-13; stage C
+     2026-10-13; G6 2026-10-15). C0-C5 and G6 all PASS; final verdict
+     PROCEED** (scope and limitations at the end of this item). Protocol
+     v1 (approved 2026-10-12 for the private implementation stage):
+     `dev/prototypes/aids_direct_lm/SYMMETRY_PROTOCOL.md`. It covers
+     in-objective symmetry against the homogeneity-only endpoint and an
+     endpoint-weighted projection comparator, with fresh seed blocks
+     1001-1030 (development) and 2001-2170 (confirmation). Thresholds
+     approved (U6); the small-sample panel (U7) and real-data holdout
+     (U8) are not run in v1. Still deferred: any shipped `quaidsFit()`
+     change, the projection endpoint as a start, public exposure and new
+     returned fields (U2-U5). **Implemented 2026-10-12 (private, under
+     `dev/prototypes/aids_direct_lm/` only):** `quaidsdirectsym.src`
+     (arm S plus the P comparator), the guarded harness
+     `sym_harness.src`/`run_sym_stage.ps1`, `sym_analyze.py` and
+     `sym_config.json`, and the checks (`quaidsdirectsym_test.e` 38/38,
+     `test_sym_analyze.py` 11/11 including I6, five `directlm_sym_*.e`
+     guards; `run_sym_checks.ps1` runs them all). A fixture-only pipeline
+     smoke run (seed 602) was deterministic and agreed with the analyzer.
+     **Independent pre-stage-D review (2026-10-13):** no estimator,
+     math, dimension or selection defect found; guard/tooling fixes only
+     (recorded in the protocol's Status): `-Full` implies `-WithEvidence`
+     and clears any old stamp first; the analyzer never overwrites its
+     outputs or the freeze manifest, needs a clean `dev_out` before
+     freezing, rejects an incomplete determinism re-solve and maps
+     asym/determinism failures to the stage D stop rule; `conf_rest` runs
+     once; `truth.csv` is in key order. `test_sym_analyze.py` is now
+     13/13. **I9 passed:** `run_sym_checks.ps1 -Full -WithEvidence` (all
+     targeted checks, 10 guards, evidence test 80/80, and
+     `run_source_tests.ps1 -SkipTVPKalman -SkipBootstrap`, which excludes
+     every SSLib TVP test including `quaidstvpfit_test.e`) wrote
+     `dev/prototypes/aids_direct_lm/symmetry/IMPLEMENTATION_CHECKS_PASSED.txt`
+     (untracked). Any edit to a stamped file invalidates it.
+     **Stage D run 2026-10-13 (seeds 1001-1030 plus the 1001/1030
+     determinism re-solve; outputs kept, untracked, under
+     `dev/prototypes/aids_direct_lm/symmetry/`: `dev/`, `dev_det/`,
+     `dev_out/`):** the stamp re-verified first. The default invocation
+     `run_sym_stage.ps1 -Stage dev` failed before any solve: under Windows
+     PowerShell 5.1, `$PSScriptRoot` is empty inside the param-default of
+     an advanced script (this one has `[Parameter(Mandatory)]`), so the
+     `-OutRoot` default threw in `Join-Path`. No `dev`/`dev_det` directory
+     or seed output existed afterwards. Rerun with the same directory
+     passed explicitly (`-OutRoot <repo>\dev\prototypes\aids_direct_lm\symmetry`):
+     `dev` 06:06:49-06:14:44 (7 min 55 s), `dev_det` 06:14:44-06:14:59.
+     `sym_analyze.py analyze --stage dev --run symmetry/dev --det
+     symmetry/dev_det --out symmetry/dev_out`: 0 integrity problems, 0
+     determinism differences. **Stop rule (protocol section 8 step 3) not
+     triggered:** S returned-wrong 0, S no-result 0, N2 > 0.01 on 0 seeds
+     (max 3.9e-5), asym 0 exactly on every S/S1/P result.
+     Descriptive (informational only; the dev-mode C1 "REJECT" is
+     mechanical, 30 seeds can never reach 161): H, S, S1 and P each 30/30
+     correct at cutoff 1 (max pfErr H 0.26, S 0.21, S1 0.21, P 0.21);
+     N1 in [-0.0039, -0.0005]; LR in [1.6, 11.8], none above the chi2(6)
+     5% point; every S start eligible; one S near-tie basin flag (seed
+     1027, margin 2.8e-4); median seed time 13.7 s, projected stage C 39
+     min. **Post-Stage-D wrapper repair (2026-10-13, numerically
+     irrelevant; Stage D not rerun):** the `-OutRoot` default of
+     `run_sym_stage.ps1` (and, as a precaution, `run_sym_checks.ps1`) now
+     resolves after parameter binding; `run_sym_stage.ps1 -Preflight`
+     prints the resolved paths and exits before any guard or solve, and
+     `run_sym_checks.ps1` checks it from two working directories and with
+     an explicit `-OutRoot` (no directory created, `symmetry/` tree
+     unchanged). The old stamp was deleted, and
+     `run_sym_checks.ps1 -Full -WithEvidence` (06:18:49-06:23:31) passed
+     everything (I1-I9; evidence 80/80; I9 runner PASS without any SSLib
+     TVP test) and wrote a new 25-file stamp. All 15 `dev/`, `dev_det/`,
+     `dev_out/` files are byte-identical to before the repair; the
+     execution logs of both Stage D attempts are in
+     `symmetry/stageD_execution_logs/`. **Frozen 2026-10-13 06:27
+     (protocol section 8 step 4):** `python -B sym_analyze.py manifest
+     --gauss-version "26.1.4"` wrote `symmetry/SYM_FREEZE_MANIFEST.json`
+     (25 files, identical to the stamp's hashes and `sym_config.json`'s
+     `freeze_files`; git HEAD `d8b4318`; GAUSS 26.1.4, Python 3.12.0,
+     NumPy 2.5.1, SciPy 1.18.0) and its sidecar
+     `SYM_FREEZE_MANIFEST.sha256` (digest
+     `b1036a8b04dd9a53baf8e3a20020908d6b1053413bd16bae52313ce646a0790a`).
+     `verify-manifest` passes, the hashes were rechecked independently,
+     and a regenerated copy is byte-identical. Do not edit any of the 25
+     covered files from here on (a revision means a new protocol version
+     and block 2201-2370). Only Stage D seeds (1001-1030) have been solved.
+     **Stage C interim run 2026-10-13 (protocol section 8 step 5; integrity
+     and runtime only):** after `verify-manifest` passed and with no
+     `conf/` directory present, `run_sym_stage.ps1 -Stage conf_interim`
+     (default `-OutRoot`) ran seeds 2001-2020 once, 06:29:04-06:31:46,
+     into `symmetry/conf/` (complete grid: 640 cells, 21,120 raw, 80 seed
+     and 900 truth rows). `sym_analyze.py analyze --stage interim --run
+     symmetry/conf --out symmetry/conf_interim_out` reported 0 integrity
+     problems and no accuracy or gate statistic (truth not loaded). Runtime:
+     median 7.9 s per seed (max 12.8 s), projected stage C 1,339 s (about
+     22 min) against the 6 h cap, so no feasibility stop. The manifest
+     still verifies. **Stage C completed 2026-10-13:** `run_sym_stage.ps1
+     -Stage conf_rest` (seeds 2021-2170 appended once, 06:33:06-06:51:57;
+     the interim rows are byte-unchanged) and `-Stage conf_det` (seeds
+     2001, 2085, 2170; 06:51:57-06:52:16). `conf/` is complete (5,440
+     cells, 179,520 raw, 680 seed, 7,650 truth rows; 170 seeds, no
+     duplicate keys). Total stage C wall time about 22 min against the 6 h
+     cap. `sym_analyze.py analyze --stage confirm --run symmetry/conf --det
+     symmetry/conf_det --manifest symmetry/SYM_FREEZE_MANIFEST.json --out
+     symmetry/conf_out` (no `--real`): manifest OK, 0 integrity problems,
+     0 determinism differences. **Gates:** C0 pass; C1 pass (k_S = 170/170,
+     Clopper-Pearson lower 0.9785, threshold 161); C2 pass (W_S = 0); C3
+     pass (0 seeds with N2 > 0.01, max N2 4.2e-4, none missing); C4 pass
+     (c = 0, b = 0); C5 pass (0 regressions, so no mechanism is needed).
+     G6 is pending, so the recorded verdict is `PENDING_G6`, not
+     PROCEED. Descriptive: k_H = k_P = k_S1 = 170, W = 0 for every arm,
+     no "none" result; median pfErr S 0.073 vs H 0.098 (paired median
+     S - H -0.017); max pfErr below 0.24 for every arm; no borderline
+     (0.25, 2] seed; no N1 flag; LR above the chi2(6) 5% point on 7.6% of
+     seeds (preview only); 2 S near-tie flags; asym exactly 0 and
+     adding-up/homogeneity errors <= 4.4e-16 on every S/S1/P result.
+     **G6 completed 2026-10-15:** `verify-manifest` OK beforehand;
+     `run_sym_stage.ps1 -Stage real` run once (exit 0, 06:04:00-06:04:05,
+     output `symmetry/real/`); `sym_analyze.py real --run symmetry/real
+     --out symmetry/real_out` wrote `symmetry/real_out/realdata.json`
+     (H, S, P ok = 1; R1 = -0.667 and R2 = -0.021, both <= 0.01; R3 LR
+     21.33, chi2(3) p 9.0e-5, non-inferential; R4 support 16, 0 exact or
+     near ties, margin null; R5 asym, addUpErr, homogErr all 0 for S and
+     P; R6 polish retcode 0 at iteration 1, critDiff 0; R7 condGN 7.0e5;
+     R8 tables only). The final confirm analysis (`--real
+     symmetry/real_out/realdata.json --out symmetry/conf_g6_out`; `conf_out`
+     left unchanged) reported manifest OK, 0 integrity problems, 0
+     determinism differences, C0-C5 pass with the same statistics as
+     above, G6 pass, and **verdict PROCEED** (experimental, AIDS-only,
+     point-estimate MVP evidence, subject to the protocol's section 12
+     owner decisions). The optional small-sample panel was not run.
+     **Artifact locations (all untracked; keep them):** the real-data
+     report is `symmetry/real_out/realdata.json` (not `symmetry/real/`,
+     which holds the harness CSVs). The final results are
+     `symmetry/conf_g6_out/results.json` and `report.md`. In that
+     `results.json`, `gates.G6.pass` is `true` but `gates.G6.statistic` is
+     `null`. G6's conditions are in `realdata.json`. `symmetry/conf_out/`
+     is the pre-G6 analysis (verdict `PENDING_G6`). It differs from
+     `conf_g6_out` only in `gates.G6.pass` and `verdict`, and its
+     `seeds.csv` is byte-identical. **Real-data descriptives (truth-free,
+     never a correctness claim):** the Blanciforti86 LR is 21.33, with
+     chi2(3) p about 9.0e-5. It is explicitly **non-inferential**: `u` is a
+     generated regressor and no test size was validated. It is not
+     evidence for or against symmetry, though it is large. S's
+     Gauss-Newton condition number (condGN, R7) is about 7.0e5. G6 is
+     executability only. An independent read-only audit (2026-10-15)
+     re-verified the 25 manifest hashes and recomputed C0-C5 and G6 from
+     the raw artifacts. It found no integrity or protocol discrepancy.
+     **What PROCEED licenses:** S (in-objective symmetry) is the preferred
+     symmetric path for an **experimental, private, AIDS-only,
+     point-estimate** MVP. The evidence base is PROCEED, E2 and the
+     I1-I9 checks kept as permanent tests. **Section 11 limitations any
+     such MVP must state:** one synthetic DGP family (n = 5, T = 3000); no
+     per-fit reliability signal; truth-free checks are falsification-only;
+     AIDS only, unweighted, `homogenous = 1`, no user `b0`; point estimates
+     only. **PROCEED does NOT license:**
+     - public exposure (U2);
+     - new returned fields (U3);
+     - any change to shipped `quaidsFit()`, or its use as an arm (U4);
+     - theta_P as a start (U5);
+     - covariance, standard errors, inference or a symmetry test. Each
+       needs its own prespecified study (protocol section 11 items 1-6:
+       a two-step covariance, coverage, LR/Wald size and power,
+       multi-start effects, heteroskedasticity/clustering/weights,
+       downstream integration);
+     - QUAIDS, weights, small-T or real-data correctness claims;
+     - any speed claim.
+
+     **Next owner decisions:**
+     - whether to commit the untracked protocol, code and `symmetry/`
+       evidence;
+     - then either a private AIDS-only point-estimate MVP wrapper, or
+       first prespecifying the section 11 covariance/coverage study.
    - Benchmark speed in a separate, controlled study.
 
    Full rationale: `E2_RESULTS.md`, "Recommended next work".

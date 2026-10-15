@@ -1,0 +1,21 @@
+{
+ "block": "conf",
+ "integrity": {
+  "determinismDiffs": null,
+  "manifestOk": null,
+  "problems": []
+ },
+ "mode": "interim",
+ "nSeeds": 20,
+ "note": "interim look: integrity and runtime only; no accuracy statistic is computed",
+ "protocolVersion": "v1",
+ "runtime": {
+  "exceeds_cap": false,
+  "max_seed_s": 12.829999999999998,
+  "median_seed_s": 7.875999999998603,
+  "p90_seed_s": 10.493099999999163,
+  "projected_stage_c_s": 1338.9199999997625,
+  "slow_arms": []
+ },
+ "verdict": null
+}

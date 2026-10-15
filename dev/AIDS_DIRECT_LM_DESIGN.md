@@ -281,6 +281,34 @@ found). The source header says so.
     smoke-gate design, then a held-out confirmation).
   - **B, a projection valid at direct endpoints:** this needs a valid
     covariance first.
+- **Prespecified evaluation (v1, approved 2026-10-12; frozen
+  2026-10-13; completed 2026-10-15):**
+  `dev/prototypes/aids_direct_lm/SYMMETRY_PROTOCOL.md` evaluates A as the
+  preferred MVP path against this homogeneity-only endpoint. Its only
+  comparator for B is a minimum-distance projection weighted at the
+  direct endpoint, used for point estimates only.
+- **Outcome:** C0-C5 and G6 all PASS; **verdict PROCEED**. On seeds
+  2001-2170, S was correct on 170/170 seeds (CP lower bound 0.9785), with
+  0 returned-wrong, 0 N2 flags, 0 regressions and asym exactly 0.
+  - **Real data (Blanciforti86, truth-free):** LR 21.33 (chi2(3) p about
+    9.0e-5, non-inferential) and condGN about 7.0e5.
+  - **Artifacts** (untracked, under `dev/prototypes/aids_direct_lm/symmetry/`):
+    - final results are in `conf_g6_out/` (`results.json`: `gates.G6.pass`
+      true, `gates.G6.statistic` null);
+    - G6 details are in `real_out/realdata.json`.
+
+  Details: `PROJECT_STATUS.md`.
+- **What PROCEED licenses:** A, as the preferred path for an experimental,
+  private, AIDS-only, point-estimate MVP. Such an MVP must state:
+  - the evidence comes from one synthetic DGP family (n = 5, T = 3000);
+  - there is no per-fit reliability signal;
+  - the truth-free checks are falsification-only;
+  - it is unweighted, with `homogenous = 1` and no user `b0`;
+  - it gives point estimates only.
+
+  It does **not** license public exposure, new returned fields, a change
+  to shipped `quaidsFit()`, theta_P as a start (U2-U5), any covariance or
+  inference (§8; protocol §11), QUAIDS, or a speed claim.
 
 ## 8. Covariance and inference boundary (Q5)
 
@@ -377,7 +405,10 @@ them all:
 - any move to public API, which would need a new decision covering the
   printer, `docs/public-api.json`, command-reference pages, version bump,
   changelog and an installed-package test;
-- symmetry option A or B;
+- symmetry option A or B as a shipped or public feature (the private
+  evaluation protocol `dev/prototypes/aids_direct_lm/SYMMETRY_PROTOCOL.md`
+  v1 is complete with verdict PROCEED for a private, AIDS-only,
+  point-estimate MVP only; its U2-U5 stay open);
 - a covariance design.
 
 ## 13. Documentation
