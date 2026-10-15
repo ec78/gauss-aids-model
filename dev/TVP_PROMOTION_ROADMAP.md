@@ -1,7 +1,8 @@
 # TVP-AIDS Promotion Roadmap
 
-_Created: 2026-10-15. Status: **Priority 1 (active)**. Nothing in this plan
-has been implemented yet._
+_Created: 2026-10-15. Status: **Priority 1 (active)**. P1 (D0 = option A,
+v2.1.0), P2, P3, P4 and P7 implemented on 2026-10-15 in package 0.4.0 (see
+section 10). P5, P6 and P8 remain open, so TVP-AIDS stays Experimental._
 
 This is the durable plan for promoting TVP-AIDS (`quaidsTVPFit()` and the
 Stage 1-6 machinery in `src/quaidstvp*.src`) from **Experimental** to a
@@ -355,3 +356,75 @@ section 2:
 - sslib sources from `git archive ad15626`, `v2.0.0` and `HEAD`, each
   `#include`d from its own extracted directory so that nested
   `#include ss.sdf` resolves to the matching version.
+
+## 10. Progress log
+
+### 2026-10-15: P1-P4 and P7 (task `task_575ce63c08a6`, package 0.4.0)
+
+**P1 / D0.** Option A was taken. gauss-state-space tagged **v2.1.0**
+(`7d0e0421a008db81fb4fda0b789bdbef21ffe5f7`, GAUSS 26.1.4+), which
+contains `5c300b1`. The shared install was already at v2.1.0 when this
+work started; it was installed outside this repo's `sync_sslib.ps1`.
+Before pinning, all 9 installed `src/` files and `package.json` were
+confirmed identical to the tag after line-ending normalisation.
+
+**P2.** `sslib.pin.json` now records the full commit, `pinnedTag` and
+`pinnedVersion`, and five raw-byte hashes (`ss.sdf` was added). The
+stale `2a26076` note is gone. `verify_sslib_pin.ps1 -Strict` passes. It
+now also compares the installed `package.json` version with
+`pinnedVersion`; a negative control with a wrong version exits 1.
+`sync_sslib.ps1` keeps `pinnedTag`/`pinnedVersion` current on a repin.
+Its hand-built `.lcg` limitation (section 4, criterion 3) was not
+changed, because no resync was performed.
+
+**P3.** `quaidsTVPControl.maxIters`/`maxTime` were added and threaded
+into `ssCtl.ctl` in `_quaidsTVPMLEFit()` (both `ssFitTVP()` CMLMT passes).
+Deviation from the plan: the **defaults are CMLMT's own (1e5, 1e8 min)**,
+not finite values. The coordinator brief required backward-compatible
+defaults, so existing calls are numerically unchanged. Finite caps are
+opt-in and used by the test, the README and the command-reference
+examples. Invalid caps fail before estimation; there are five guard
+cases.
+
+**P4.** `_quaidsTVPRawSyntheticDGP` (`tests/quaidsfixtures.src`) is a
+correctly specified raw-input DGP. `quaidstvpfit_test.e` uses n = 3,
+tobs = 120, seed 7, Q = (1e-5 alpha, 1e-4 gamma/beta), H = 2.5e-5 I, and
+q0 = 0.1 mean(diag H). All shares lie in [0.156, 0.596].
+- Result: 30/30 checks, about 6 s wall time.
+- Main fit: 1.1 s, retcode 0.
+- maxIters = 1: retcode 2. maxTime = 1e-6 min: retcode 11.
+- Two runs gave identical output apart from the printed timings.
+- Fits: the main fit, the smooth = 0 fit, one direct reference MLE, and
+  two capped fits. The main fit is reused for checks 1-3.
+
+Fixture finding: an earlier scratch draft added a level offset to
+`totexp` but not to the simulation regressor. That misspecification
+inflated the alpha Q and pushed the beta Q to the zero boundary. With
+regressors matched exactly, 15/15 configuration and seed combinations
+converged in 1-2.6 s.
+
+**P7.** `run_source_tests.ps1` gained `-TestTimeoutSeconds` (default
+1800, 0 disables). On expiry the `tgauss` tree is killed (`taskkill /T`)
+and the test or guard is reported FAIL. A deliberately hanging scratch
+script was killed at 10.3 s with `TimedOut = True` and left no stray
+process.
+
+**Verification (2026-10-15):**
+- `run_source_tests.ps1`, with no skip flags and the TVP group included, passed: 31 test files (762 checks) and 38/38 guard cases in 158.8 min, with no timeouts.
+- `verify_sslib_pin.ps1 -Strict` passed.
+- The manifest, public-API, docs-consistency and docs-quality checks passed, as did `git diff --check`.
+- The 0.4.0 artifact was built and verified from a scratch copy of the tree.
+- `examples/14_tvp_aids_estimation.e` converged in 19.6 s.
+
+**Still open:**
+- **P5:** independent log-likelihood cross-check, plus revalidation of
+  example 14 tolerances.
+- **P6:** re-measure the n1 = 3/4 scale limit with caps.
+- **P8:** the full release gate.
+
+**New residual risk.** sslib's untransformed second CMLMT pass warns
+`function evaluated as complex` when a fitted Q is near zero; example 14
+on v2.1.0 shows it even though the fit converges. In one scratch
+misspecified configuration it aborted with `G0518 Not implemented for
+complex` in `cmlmthess`, which `trap` cannot catch. This should be filed
+upstream (section 5, P3 note); it is not patched here.

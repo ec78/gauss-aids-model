@@ -54,6 +54,22 @@ if ($trackedFiles.Count -eq 0) {
 
 $mismatches = @()
 $missing = @()
+
+# TVP-AIDS promotion P2: when the pin records the release version
+# (pinnedVersion), the installed package.json must report it too. The
+# 2026-10-15 diagnosis found an install whose src/ was v2.0.0 while its
+# package.json still said 1.0.0 -- the src hashes alone cannot see that.
+if ($pin.PSObject.Properties.Name -contains "pinnedVersion" -and -not [string]::IsNullOrWhiteSpace([string]$pin.pinnedVersion)) {
+    $installedManifest = Join-Path $installPath "package.json"
+    $installedVersion = $null
+    if (Test-Path -LiteralPath $installedManifest) {
+        $installedVersion = [string](Get-Content -LiteralPath $installedManifest -Raw | ConvertFrom-Json).version
+    }
+    if ($installedVersion -ne [string]$pin.pinnedVersion) {
+        $mismatches += "package.json version (installed '$installedVersion', pinned '$($pin.pinnedVersion)')"
+    }
+}
+
 foreach ($relPath in $trackedFiles) {
     $fullPath = Join-Path $installPath $relPath
     if (-not (Test-Path -LiteralPath $fullPath)) {
@@ -84,4 +100,8 @@ if ($missing.Count -gt 0 -or $mismatches.Count -gt 0) {
     exit 0
 }
 
-Write-Host "verify_sslib_pin.ps1: PASS -- installed sslib at $installPath matches the pinned commit $($pin.pinnedCommit) ($($trackedFiles.Count) files verified)"
+$versionNote = ""
+if ($pin.PSObject.Properties.Name -contains "pinnedVersion" -and -not [string]::IsNullOrWhiteSpace([string]$pin.pinnedVersion)) {
+    $versionNote = ", version $($pin.pinnedVersion)"
+}
+Write-Host "verify_sslib_pin.ps1: PASS -- installed sslib at $installPath matches the pinned commit $($pin.pinnedCommit) ($($trackedFiles.Count) files verified$versionNote)"

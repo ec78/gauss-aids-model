@@ -684,3 +684,115 @@ proc (4) = _quaidsTVPDynamicSyntheticDGP(tobs, seed, n1, trueQdiag, trueH);
 
     retp(w, pricesRel, lx, trueStateArr);
 endp;
+
+/*
+** _quaidsTVPRawSyntheticDGP: TVP-AIDS promotion P4. A well-posed,
+** correctly specified time-varying (random-walk) AIDS DGP in the RAW form
+** quaidsTVPFit()'s public contract takes -- full n-good shares, ABSOLUTE
+** log prices and log total expenditure -- unlike
+** _quaidsTVPDynamicSyntheticDGP above, which returns the already-built
+** relative-price/Stone-deflated regressors. Same state-space model and
+** the same simulation order: state_t = state_(t-1) + eta_t,
+** eta_t ~ N(0, diag(trueQdiag)), and for the first n1 goods
+** w_t = Z_t*state_t + eps_t, eps_t ~ N(0, trueH). The nth share is
+** 1 - sum(w_t[1:n1]) (adding-up), so every row sums to 1 exactly.
+**
+** The caller supplies the starting state state0 (an economically
+** plausible one keeps every share inside (0,1) -- check it, this
+** fixture does not clip). The regressors quaidsTVPFit() itself rebuilds
+** are matched EXACTLY to the ones used to simulate:
+**   - absolute prices: prices[., n] = pref, prices[., 1:n1] = pricesRel +
+**     pref, so prices[., 1:n1] - prices[., n] == pricesRel;
+**   - totexp = lx + prices*meanc(w), so quaidsTVPFit()'s fixed-weight
+**     Stone index totexp - prices*meanc(w) (_quaidsTVPStoneIndex())
+**     returns lx up to rounding. Total expenditure is centered (log
+**     units, arbitrary scale); a level offset added here but not to the
+**     simulation regressor would misspecify the model (found directly:
+**     it pushed the fitted alpha Q up and the beta Q to the boundary).
+**
+** Format: { w, prices, totexp, trueStateArr, lx } =
+**             _quaidsTVPRawSyntheticDGP(tobs, seed, state0, trueQdiag, trueH);
+**
+** Input:  tobs       -- number of periods.
+**         seed       -- rndseed.
+**         state0     -- k_states x 1 period-1 state, [alpha | gamma(unique,
+**                       row-major upper triangle) | beta].
+**         trueQdiag  -- k_states x 1 true state innovation variances.
+**         trueH      -- n1 x n1 true observation covariance (n1 = rows).
+**
+** Output: w            -- tobs x n full shares (rows sum to 1).
+**         prices       -- tobs x n ABSOLUTE log prices.
+**         totexp       -- tobs x 1 log total expenditure.
+**         trueStateArr -- k_states x tobs true state path.
+**         lx           -- tobs x 1 Stone-deflated log expenditure used to
+**                         simulate (what _quaidsTVPStoneIndex() recovers).
+*/
+proc (5) = _quaidsTVPRawSyntheticDGP(tobs, seed, state0, trueQdiag, trueH);
+
+    local n1, ngamma, k_states, gidx, cnt, i, j, t, pricesRel, lx, pref,
+        trueStateArr, wsub, w, state_t, gmat, Hchol, Qsd, eps, prices, totexp;
+
+    rndseed seed;
+
+    n1 = rows(trueH);
+    ngamma = n1*(n1+1)/2;
+    k_states = n1 + ngamma + n1;
+
+    gidx = zeros(n1, n1);
+    cnt = 1;
+    i = 1;
+    do while i <= n1;
+        j = i;
+        do while j <= n1;
+            gidx[i, j] = cnt;
+            gidx[j, i] = cnt;
+            cnt = cnt + 1;
+            j = j + 1;
+        endo;
+        i = i + 1;
+    endo;
+
+    pricesRel = .3*rndn(tobs, n1);
+    lx = .3*rndn(tobs, 1);
+    pref = .1*rndn(tobs, 1);
+
+    trueStateArr = zeros(k_states, tobs);
+    wsub = zeros(tobs, n1);
+    state_t = state0;
+    Qsd = sqrt(trueQdiag);
+    Hchol = chol(trueH)';
+
+    t = 1;
+    do while t <= tobs;
+        if t > 1;
+            state_t = state_t + Qsd.*rndn(k_states, 1);
+        endif;
+        trueStateArr[., t] = state_t;
+
+        gmat = zeros(n1, n1);
+        i = 1;
+        do while i <= n1;
+            j = 1;
+            do while j <= n1;
+                gmat[i, j] = state_t[n1 + gidx[i, j]];
+                j = j + 1;
+            endo;
+            i = i + 1;
+        endo;
+
+        eps = Hchol*rndn(n1, 1);
+        i = 1;
+        do while i <= n1;
+            wsub[t, i] = state_t[i] + pricesRel[t, .]*gmat[i, .]' + state_t[n1+ngamma+i]*lx[t] + eps[i];
+            i = i + 1;
+        endo;
+
+        t = t + 1;
+    endo;
+
+    w = wsub~(1 - sumc(wsub'));
+    prices = (pricesRel + pref)~pref;
+    totexp = lx + prices*meanc(w);
+
+    retp(w, prices, totexp, trueStateArr, lx);
+endp;

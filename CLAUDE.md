@@ -180,7 +180,8 @@ an optional adapter dependency exactly like `optmt`/`pubtable`, never a
 # Fast source-tree test suite (manifest/API/docs checks + all tgauss tests)
 powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1
 # Add -SkipBootstrap / -SkipCurvature / -SkipPubtable to skip slower or
-# optional-package-gated groups.
+# optional-package-gated groups. -TestTimeoutSeconds N (default 1800,
+# 0 = off) kills and FAILs any single GAUSS test/guard still running at N s.
 
 # Run every examples/*.e file for real
 powershell -ExecutionPolicy Bypass -File tests\run_examples_smoke.ps1

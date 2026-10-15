@@ -140,6 +140,22 @@ try {
 
     $pin.pinnedCommit = $targetCommit
     $pin.verifiedFiles = $newVerifiedFiles
+
+    # Keep pinnedTag/pinnedVersion (TVP-AIDS promotion P2) in step with
+    # the commit just synced, so a repin cannot leave them stale.
+    $tagAtCommit = [string](& git -C $SourceRepoPath tag --points-at $targetCommit | Select-Object -First 1)
+    $syncedManifest = Join-Path $installPath "package.json"
+    $syncedVersion = ""
+    if (Test-Path -LiteralPath $syncedManifest) {
+        $syncedVersion = [string](Get-Content -LiteralPath $syncedManifest -Raw | ConvertFrom-Json).version
+    }
+    foreach ($field in @(@("pinnedTag", $tagAtCommit), @("pinnedVersion", $syncedVersion))) {
+        if ($pin.PSObject.Properties.Name -contains $field[0]) {
+            $pin.($field[0]) = $field[1]
+        } else {
+            $pin | Add-Member -NotePropertyName $field[0] -NotePropertyValue $field[1]
+        }
+    }
     $pin.lastVerified = (Get-Date -Format "yyyy-MM-dd")
     $pinJson = $pin | ConvertTo-Json -Depth 6
     $utf8NoBom = New-Object System.Text.UTF8Encoding $false

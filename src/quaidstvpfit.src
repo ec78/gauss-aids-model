@@ -87,15 +87,65 @@
 **
 ** Output:     tvpCtl -- struct quaidsTVPControl: smooth = 1 (also run the
 **                       Stage 4 RTS smoother), othnam = 0 (auto W1..Wn
-**                       good names).
+**                       good names), maxIters = 1e5 and maxTime = 1e8
+**                       minutes (CMLMT's own defaults, so a fit is
+**                       numerically identical to one made before these
+**                       two fields existed -- set finite values to bound
+**                       the Q MLE's run time).
 */
 proc (struct quaidsTVPControl) = quaidsTVPControlCreate();
     struct quaidsTVPControl tvpCtl;
 
     tvpCtl.smooth = 1;
     tvpCtl.othnam = 0;
+    tvpCtl.maxIters = 1e5;
+    tvpCtl.maxTime = 1e8;
 
     retp(tvpCtl);
+endp;
+
+
+/*
+** _quaidsTVPResolveCaps
+**
+** Purpose: validates quaidsTVPControl's optimizer caps and resolves an
+**          empty field ({} -- a struct declared without
+**          quaidsTVPControlCreate()) to its CMLMT default. Fails loudly
+**          on anything that is not a usable finite cap, before any
+**          estimation work starts.
+**
+** Format:     { maxIters, maxTime } = _quaidsTVPResolveCaps(tvpCtl);
+*/
+proc (2) = _quaidsTVPResolveCaps(struct quaidsTVPControl tvpCtl);
+    local mi, mt;
+
+    mi = tvpCtl.maxIters;
+    mt = tvpCtl.maxTime;
+    if rows(mi) == 0;
+        mi = 1e5;
+    endif;
+    if rows(mt) == 0;
+        mt = 1e8;
+    endif;
+
+    if type(mi) /= 6 or rows(mi) /= 1 or cols(mi) /= 1;
+        errorlog "quaidsTVPFit: tvpCtl.maxIters must be a scalar.";
+        end;
+    endif;
+    if scalmiss(mi) or mi /= mi or abs(mi) == __INFp or mi < 1 or mi /= round(mi);
+        errorlog "quaidsTVPFit: tvpCtl.maxIters must be a finite positive integer (CMLMT iteration cap).";
+        end;
+    endif;
+    if type(mt) /= 6 or rows(mt) /= 1 or cols(mt) /= 1;
+        errorlog "quaidsTVPFit: tvpCtl.maxTime must be a scalar.";
+        end;
+    endif;
+    if scalmiss(mt) or mt /= mt or abs(mt) == __INFp or mt <= 0;
+        errorlog "quaidsTVPFit: tvpCtl.maxTime must be a finite positive number of minutes (CMLMT time cap).";
+        end;
+    endif;
+
+    retp(mi, mt);
 endp;
 
 
@@ -130,7 +180,13 @@ endp;
 **                       the state vector's layout). Every element must be
 **                       strictly positive.
 **             tvpCtl -- struct quaidsTVPControl (quaidsTVPControlCreate()
-**                       for defaults).
+**                       for defaults). tvpCtl.maxIters/maxTime cap the Q
+**                       MLE (CMLMT iterations / minutes); invalid values
+**                       fail loudly before any estimation work. An
+**                       exhausted cap returns normally with
+**                       tvOut.mleRetcode /= 0 (CMLMT's own code, e.g. 11
+**                       for the time cap) -- check it, as printQuaidsTVP()
+**                       does.
 **
 ** Output:     tvOut -- struct quaidsTVPOut (see quaids.sdf): fitted Q,
 **                      MLE convergence code, filtered state path (+
@@ -145,8 +201,11 @@ endp;
 **             #include chain documented in this file's own header.
 */
 proc (struct quaidsTVPOut) = quaidsTVPFit(w, prices, totexp, H, q0, struct quaidsTVPControl tvpCtl);
-    local n, n1, nobs, k_states, wnam, pricesRel, lx, Zarr, sOut, a_TS, p_TS, finalState;
+    local n, n1, nobs, k_states, wnam, pricesRel, lx, Zarr, sOut, a_TS, p_TS, finalState,
+        maxIters, maxTime;
     struct quaidsTVPOut tvOut;
+
+    { maxIters, maxTime } = _quaidsTVPResolveCaps(tvpCtl);
 
     n = cols(prices);
     n1 = n - 1;
@@ -163,7 +222,7 @@ proc (struct quaidsTVPOut) = quaidsTVPFit(w, prices, totexp, H, q0, struct quaid
     lx = _quaidsTVPStoneIndex(w, prices, totexp, n);
     Zarr = _quaidsTVPBuildZ(pricesRel, lx, n1);
 
-    sOut = _quaidsTVPMLEFit(Zarr, H, w[., 1:n1], q0, n1);
+    sOut = _quaidsTVPMLEFit(Zarr, H, w[., 1:n1], q0, n1, maxIters, maxTime);
 
     tvOut.n = n;
     tvOut.n1 = n1;

@@ -143,7 +143,7 @@ below.
 | Zero-share correction (`quaidsZeroFit`) | Experimental | Inherits the base model's convergence risk above, plus a simplified (non-sandwich) SE formula, approximate adding-up in corrected coefficients, and a known non-trappable `glm()` crash mode on some inputs. |
 | Curvature imposition (`quaidsCurvatureFit`, requires `optmt`) | Experimental | Delta-method SE are known-unreliable whenever the estimated Cholesky factor sits at the boundary of the constraint (a common outcome in testing) -- prefer `quaidsCurvatureBootstrapFit`/`quaidsCurvatureBootstrapCI`. QUAIDS curvature additionally needs damping (`aCtl.relax=.25`-ish) to converge at all. |
 | Bootstrap / replicate-weight procedures | Inherits base model's tier | A resampled or replicate refit that itself fails to converge is dropped, not retried -- check the returned struct's `nCompleted`/`nFailed`. |
-| Time-varying-parameter estimation (`quaidsTVPFit`, requires `sslib`) | Experimental | No IV/endogeneity treatment of total expenditure, no standard errors (point elasticities/coefficients only), `H` (observation covariance) must be supplied fixed rather than estimated, and `Q`'s individual per-state-element diagonal entries are only loosely identified even at moderate sample sizes (the aggregate mean is much better identified) -- always check `tvOut.mleRetcode == 0`. MLE convergence speed degrades sharply above `n1=2`-`3` (confirmed: a 5-good, `n1=4` dataset made CMLMT pathologically slow) -- see [quaidsTVPFit](docs/command-reference/quaidsTVPFit.md)'s own Remarks. |
+| Time-varying-parameter estimation (`quaidsTVPFit`, requires `sslib`) | Experimental | No IV/endogeneity treatment of total expenditure, no standard errors (point elasticities/coefficients only), `H` (observation covariance) must be supplied fixed rather than estimated, and `Q`'s individual per-state-element diagonal entries are only loosely identified even at moderate sample sizes (the aggregate mean is much better identified) -- always check `tvOut.mleRetcode == 0`, and bound the MLE with `tvpCtl.maxIters`/`tvpCtl.maxTime` (defaults are CMLMT's own, effectively unbounded). Tested against `sslib` v2.1.0 (`sslib.pin.json`). MLE convergence speed degrades sharply above `n1=2`-`3` (confirmed: a 5-good, `n1=4` dataset made CMLMT pathologically slow) -- see [quaidsTVPFit](docs/command-reference/quaidsTVPFit.md)'s own Remarks. |
 
 **What `qOut.converged == 1` proves, and what it does not**: it means the
 iteration's relative parameter change fell below `aCtl.err` before
@@ -369,6 +369,8 @@ H = diagrv(eye(n1), qOut.homogSse[1:n1]/qOut.nobs);
 q0 = 0.1*meanc(diag(H))*ones(k_states, 1);   // scaled relative to H, not a flat tiny constant
 
 tvpCtl = quaidsTVPControlCreate();
+tvpCtl.maxIters = 500;   // bound the Q MLE: 500 iterations ...
+tvpCtl.maxTime = 5;      // ... or 5 minutes; check tvOut.mleRetcode
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 call printQuaidsTVP(tvOut);
 
@@ -378,7 +380,8 @@ call printQuaidsTVP(tvOut);
 Requires the [sslib](https://github.com/aptech/gauss-state-space)
 (`gauss-state-space`) package installed separately -- not a
 `library quaids;` dependency, so core estimation never requires it. The
-installed copy's commit is tracked in `sslib.pin.json` and kept in sync
+installed copy's commit (currently release v2.1.0) is tracked in
+`sslib.pin.json` and kept in sync
 via `scripts/sync_sslib.ps1`/`scripts/verify_sslib_pin.ps1` (see that
 file's own comments). See `examples/14_tvp_aids_estimation.e` for a full
 runnable example.

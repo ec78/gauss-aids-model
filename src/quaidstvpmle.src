@@ -108,6 +108,7 @@ endp;
 **          itself.
 **
 ** Format:     sOut = _quaidsTVPMLEFit(Zarr, H, y, q0, n1);
+**             sOut = _quaidsTVPMLEFit(Zarr, H, y, q0, n1, maxIters, maxTime);
 **
 ** Input:      Zarr -- nobs-page array, each page n1 x k_states (Stage
 **                      1's _quaidsTVPBuildZ() output).
@@ -135,6 +136,15 @@ endp;
 **                      is the raw starting value CMLMT actually begins
 **                      from).
 **             n1   -- number of independently-estimated equations.
+**             maxIters -- optional, CMLMT iteration cap (default 1e5,
+**                      CMLMT's own default).
+**             maxTime  -- optional, CMLMT time cap in minutes (default
+**                      1e8, CMLMT's own default). Both are written into
+**                      ssCtl.ctl, which ssFitTVP() uses for BOTH of its
+**                      CMLMT passes (the transformed fit and the
+**                      untransformed covariance re-run). Already
+**                      validated by quaidsTVPFit()'s
+**                      _quaidsTVPResolveCaps() on the public path.
 **
 ** Output:     sOut -- struct ssOut (sslib): sOut.final_params is the
 **                     fitted Q diagonal (k_states x 1, natural units,
@@ -160,7 +170,7 @@ endp;
 **           (`library cmlmt, tsmt, sslib;`), and
 **           src/quaidstvpkalman.src's procs must already be #include-d.
 */
-proc (struct ssOut) = _quaidsTVPMLEFit(Zarr, H, y, q0, n1);
+proc (struct ssOut) = _quaidsTVPMLEFit(Zarr, H, y, q0, n1, maxIters=1e5, maxTime=1e8);
     local ord, nobs, k_states, param_vec0;
     struct ssControl ssCtl;
     struct ssOut sOut;
@@ -189,6 +199,8 @@ proc (struct ssOut) = _quaidsTVPMLEFit(Zarr, H, y, q0, n1);
     ssCtl = ssControlCreate(k_states, n1, k_states, nobs);
     ssCtl.init = "diffuse";
     ssCtl.positive_vars = seqa(1, 1, k_states);
+    ssCtl.ctl.maxIters = maxIters;
+    ssCtl.ctl.maxTime = maxTime;
 
     ssCtl.tvp = _quaidsTVPBuildModel(Zarr, diagrv(eye(k_states), q0), H, n1);
 

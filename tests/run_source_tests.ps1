@@ -109,7 +109,8 @@ param(
     [switch]$SkipCurvature,
     [switch]$SkipBootstrap,
     [switch]$SkipTVPKalman,
-    [switch]$SkipDirectEvidence
+    [switch]$SkipDirectEvidence,
+    [int]$TestTimeoutSeconds = 1800
 )
 
 $testsDir = Join-Path $RepoRoot "tests"
@@ -206,8 +207,17 @@ function Invoke-GaussBatch {
     param(
         [string]$Exe,
         [string[]]$Arguments,
-        [string]$Gauss26Cfg = $null
+        [string]$Gauss26Cfg = $null,
+        [int]$TimeoutSeconds = $TestTimeoutSeconds
     )
+
+    # TVP-AIDS promotion P7: per-test wall-clock timeout. Before this, one
+    # hung GAUSS job (quaidstvpfit_test.e once sat ~59 minutes in a single
+    # non-converging CMLMT fit) blocked the whole suite indefinitely. On
+    # expiry the tgauss process tree is killed and the result is flagged
+    # TimedOut, which both callers below report as a FAIL. The default
+    # (-TestTimeoutSeconds, 1800 s) is far above the slowest legitimate
+    # test; 0 disables the timeout.
 
     # Milestone 15 finding: reading stdout fully (ReadToEnd()) before
     # touching stderr is a classic .NET Process deadlock -- if the child
@@ -250,6 +260,7 @@ function Invoke-GaussBatch {
     $outputBuilder = [System.Text.StringBuilder]::new()
     $errorBuilder = [System.Text.StringBuilder]::new()
 
+    $timedOut = $false
     $outputEvent = Register-ObjectEvent -InputObject $proc -EventName OutputDataReceived -Action {
         if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
     } -MessageData $outputBuilder
@@ -261,15 +272,32 @@ function Invoke-GaussBatch {
         [void]$proc.Start()
         $proc.BeginOutputReadLine()
         $proc.BeginErrorReadLine()
+        if ($TimeoutSeconds -gt 0) {
+            if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+                $timedOut = $true
+                # /T kills the whole tree; .NET Framework's Process.Kill()
+                # has no tree option.
+                & taskkill.exe /PID $proc.Id /T /F 2>&1 | Out-Null
+                [void]$proc.WaitForExit(30000)
+            }
+        }
+        # The no-argument overload also waits for the async stdout/stderr
+        # readers to drain.
         $proc.WaitForExit()
     } finally {
         Unregister-Event -SourceIdentifier $outputEvent.Name -ErrorAction SilentlyContinue
         Unregister-Event -SourceIdentifier $errorEvent.Name -ErrorAction SilentlyContinue
     }
 
+    $output = $outputBuilder.ToString() + $errorBuilder.ToString()
+    if ($timedOut) {
+        $output += "`r`nTIMEOUT: killed after $TimeoutSeconds s (run_source_tests.ps1 -TestTimeoutSeconds)`r`n"
+    }
+
     [pscustomobject]@{
         ExitCode = $proc.ExitCode
-        Output = ($outputBuilder.ToString() + $errorBuilder.ToString())
+        Output = $output
+        TimedOut = $timedOut
     }
 }
 
@@ -417,6 +445,26 @@ if (-not $SkipTVPKalman) {
         Script = "guard_error_cases\tvpfit_bad_q0_shape.e"
         Expected = "_quaidsTVPMLEFit: q0 must be k_states x 1"
     }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_nonpositive_maxiters.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxIters must be a finite positive integer"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_fractional_maxiters.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxIters must be a finite positive integer"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_nonscalar_maxiters.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxIters must be a scalar."
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_nonpositive_maxtime.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxTime must be a finite positive number of minutes"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_infinite_maxtime.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxTime must be a finite positive number of minutes"
+    }
 }
 
 $sslibGuardScripts = @(
@@ -429,7 +477,12 @@ $sslibGuardScripts = @(
     "guard_error_cases\tvp_smooth_bad_state_rows.e",
     "guard_error_cases\tvp_smooth_bad_state_cols.e",
     "guard_error_cases\tvpfit_bad_H_shape.e",
-    "guard_error_cases\tvpfit_bad_q0_shape.e"
+    "guard_error_cases\tvpfit_bad_q0_shape.e",
+    "guard_error_cases\tvpfit_nonpositive_maxiters.e",
+    "guard_error_cases\tvpfit_fractional_maxiters.e",
+    "guard_error_cases\tvpfit_nonscalar_maxiters.e",
+    "guard_error_cases\tvpfit_nonpositive_maxtime.e",
+    "guard_error_cases\tvpfit_infinite_maxtime.e"
 )
 
 foreach ($guard in $guardTests) {
@@ -441,7 +494,10 @@ foreach ($guard in $guardTests) {
     $output = $result.Output
     $output
 
-    if ($output -match [regex]::Escape($guard.Expected)) {
+    if ($result.TimedOut) {
+        Write-Host "FAIL  timed out after $TestTimeoutSeconds s"
+        $failed += $guard.Script
+    } elseif ($output -match [regex]::Escape($guard.Expected)) {
         Write-Host "PASS  expected guard diagnostic observed"
     } else {
         Write-Host "FAIL  expected guard diagnostic not observed: $($guard.Expected)"
@@ -462,7 +518,10 @@ foreach ($test in $gaussTests) {
     $hasPassSummary = $output -match "ALL \d+ CHECKS PASSED"
     $hasFailSummary = $output -match "\d+ CHECKS FAILED"
 
-    if ($hasGaussError -or $hasFailSummary -or -not $hasPassSummary) {
+    if ($result.TimedOut) {
+        Write-Host "FAIL  timed out after $TestTimeoutSeconds s"
+    }
+    if ($result.TimedOut -or $hasGaussError -or $hasFailSummary -or -not $hasPassSummary) {
         $failed += $test
     }
 }

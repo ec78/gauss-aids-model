@@ -1,14 +1,17 @@
 {
     "package":  "sslib",
     "sourceRepo":  "gauss-state-space",
-    "pinnedCommit":  "ad15626",
+    "pinnedCommit":  "7d0e0421a008db81fb4fda0b789bdbef21ffe5f7",
+    "pinnedTag":  "v2.1.0",
+    "pinnedVersion":  "2.1.0",
     "installPath":  "C:\\gauss26\\pkgs\\sslib",
     "verifiedFiles":  {
-                          "src/sstvp.src":  "21ec7c4d755db4e3aee61ec61fb5c4f28d521322cf213d4b8ac926ec2e2e54e4",
-                          "src/sskalman.src":  "6f5f6d247d6f136a9929e91327d4187e2317763ed20ce17d0e6ab67781a74893",
-                          "src/ssmain.src":  "3f69517e8483dd00d8d38011c2f02df905ca7c93e76078c0dc427eadc58816d5",
-                          "src/ssstructural.src":  "d2b4c260e974f39e275552efa0145c082e25c3f3e0030003f88cafdc3e2ce2fe"
+                          "src/ss.sdf":  "f027bb7e70dca00055309d4a0049ff47ad0abbd08a582cdc48148230c328a78d",
+                          "src/sstvp.src":  "879d33148133ee6393ffdd10084514e6d8983e1377dc72d3801bd8c0bc7ee815",
+                          "src/sskalman.src":  "efa8f808c8d9d72b019b473af4d704c35e634cfb0c461012de134c7084424c51",
+                          "src/ssmain.src":  "5d8ced8cd474040bce4316652493da2d3b96136fb07390eeb916e797f532f143",
+                          "src/ssstructural.src":  "c9a4f6db343e615b928fdeddc4c5850337151ab0bdc380463d3cf8a996f84b73"
                       },
-    "lastVerified":  "2026-09-23",
-    "notes":  "TVP-AIDS Stage 6: pin repointed to 2a26076 (gauss-state-space\u0027s ssStructuralTS multi-seasonal/multi-cycle generalization, confirmed backward-compatible and internal-only per a live coordination check with the concurrent session that authored it) and synced for real via scripts/sync_sslib.ps1 -SourceRepoPath \u003clocal checkout\u003e -Commit 2a26076. verifiedFiles/lastVerified are now populated from an actual run, not placeholders."
+    "lastVerified":  "2026-10-15",
+    "notes":  "TVP-AIDS promotion P2 (decision gate D0, option A): pinned to gauss-state-space release tag v2.1.0 (7d0e042, GAUSS 26.1.4+), the first tag containing 5c300b1's diffuse-phase termination fix. The shared install was already at v2.1.0 when this pin was written (installed outside this repo's sync_sslib.ps1). Before pinning, all 9 installed src files plus package.json were confirmed byte-identical to the tag after line-ending normalisation. verifiedFiles are sha256 hashes of the installed (CRLF) files as found, so verify_sslib_pin.ps1 compares raw bytes. pinnedVersion is checked against the installed package.json."
 }

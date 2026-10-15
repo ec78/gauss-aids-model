@@ -11,8 +11,28 @@ _Last updated: 2026-10-15_
 
 **PRIORITY 1 (active, set 2026-10-15): promote TVP-AIDS out of
 Experimental.** Plan, evidence, decision gate and acceptance criteria:
-**`dev/TVP_PROMOTION_ROADMAP.md`**. Nothing in it is implemented yet.
-Summary of the 2026-10-15 read-only diagnosis (task `task_03d43536665b`):
+**`dev/TVP_PROMOTION_ROADMAP.md`**.
+
+**Progress 2026-10-15 (task `task_575ce63c08a6`, package 0.4.0, local
+commit only):** P1 (D0 = option A), P2, P3, P4 and P7 are done; see
+roadmap section 10.
+- sslib is pinned to tag v2.1.0 (`7d0e042`), and
+  `verify_sslib_pin.ps1 -Strict` passes.
+- `quaidsTVPControl.maxIters`/`maxTime` were added. Their defaults are
+  CMLMT's own, so existing calls are unchanged.
+- `quaidstvpfit_test.e` passes 30/30 in about 6 s on a well-posed raw
+  DGP, with deterministic output.
+- There are five invalid-cap guards.
+- `run_source_tests.ps1` has a per-test timeout
+  (`-TestTimeoutSeconds`, default 1800).
+- Full `run_source_tests.ps1` (TVP included, no skips) passed: 31 files, 762 checks and 38/38 guards in 158.8 min, with no timeouts.
+- **Still open:** P5 (an independent log-likelihood check), P6 (the
+  n1 = 3/4 scale re-measurement) and P8 (the release gate). TVP-AIDS
+  stays **Experimental**.
+
+The rest of this section is the original 2026-10-15 read-only diagnosis
+(task `task_03d43536665b`). It is kept as evidence; its "TIMEOUT",
+"waived" and "drift" items are resolved by the progress above.
 - **Bounded test matrix (shared install as found, hard caps):**
   - `quaidstvp_test` 56/56;
   - `quaidstvp_elas_test` 13/13;
@@ -966,6 +986,18 @@ Limitations:
 
 ## Decisions
 
+- **TVP-AIDS D0 (2026-10-15): option A, sslib v2.1.0**
+  (`7d0e0421a008db81fb4fda0b789bdbef21ffe5f7`), the first tag with the
+  diffuse-phase termination fix. Install method: the shared install was
+  already at v2.1.0 when found, installed outside `sync_sslib.ps1`. It
+  was content-verified (all 9 `src/` files and `package.json` match the
+  tag after line-ending normalisation) and was not reinstalled.
+- **TVP optimizer caps default to CMLMT's own values (1e5 iterations,
+  1e8 minutes), not finite ones.** The coordinator brief required
+  backward-compatible defaults. Finite caps are opt-in and are shown in
+  the docs and examples. Revisit if promotion wants bounded-by-default
+  behavior (that would be a behavior change, needing a version bump and
+  a changelog entry).
 - **Stone price index, not the full translog index**, for TVP-AIDS's
   first pass — the translog index makes the AIDS share equation bilinear
   in the state once alpha/gamma/beta are all time-varying, breaking a
@@ -1129,6 +1161,24 @@ Limitations:
 
 ## Known Issues
 
+- **sslib's untransformed second CMLMT pass is fragile near the Q zero
+  boundary (2026-10-15, v2.1.0).**
+  - It prints `CMLmt: function evaluated as complex` whenever a fitted Q
+    element is near zero. Example 14 shows it even though it converges.
+  - In one deliberately misspecified scratch configuration it aborted
+    the job with `G0518 Not implemented for complex` in `cmlmthess`,
+    which `trap` cannot catch.
+  - It is upstream sslib behaviour (`ssFitTVP()`); file it there rather
+    than patching it here.
+  - The well-posed `quaidstvpfit_test.e` fixture does not trigger it.
+- **A local `quaids 0.3.0.zip` in the repo root (gitignored, the
+  released 0.3.0 artifact) now trips `verify_release_artifact.ps1`'s
+  stale-artifact guard,** because the package version is 0.4.0.
+  - It was left in place deliberately.
+  - Move or archive it before running `run_release_verification.ps1` or
+    `run_release_gate.ps1`.
+  - The 0.4.0 artifact was built and verified (PASS) from a scratch copy
+    of the working tree instead.
 - **`tests/quaidstvpfit_test.e` does not terminate in bounded time
   (2026-10-15: TIMEOUT at 600 s).**
   - Cause: the unbounded CMLmt defaults in `_quaidsTVPMLEFit()`, plus an
@@ -1225,8 +1275,10 @@ Limitations:
 
 ## Next Steps
 
-**Priority 1 (2026-10-15): TVP-AIDS promotion.** Follow the sequenced
-plan P1-P8 in `dev/TVP_PROMOTION_ROADMAP.md`:
+**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P4 and P7 are done
+(roadmap section 10). Next come P5, P6 and P8. Before P8, move the stale
+`quaids 0.3.0.zip` (Known Issues). The original sequenced plan, P1-P8,
+in `dev/TVP_PROMOTION_ROADMAP.md`:
 - P1: decision gate D0, choosing a tagged sslib baseline before any repin;
 - P2: repin and resync;
 - P3: bound the MLE (`maxIters`/`maxTime` on `quaidsTVPControl`);

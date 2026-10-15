@@ -45,7 +45,9 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
   `Q` diagonal, in natural (positive variance) units. Every element must
   be strictly positive.
 - `tvpCtl` (*`quaidsTVPControl` structure*) - see
-  [quaidsTVPControlCreate](quaidsTVPControlCreate.md).
+  [quaidsTVPControlCreate](quaidsTVPControlCreate.md). Its `maxIters`/
+  `maxTime` fields cap the `Q` MLE (see Remarks); invalid values stop the
+  call with a clear error before any estimation.
 
 ## Returns
 
@@ -55,7 +57,10 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 - `wnam` - legacy character matrix of good names.
 - `H`, `q0` - echoed inputs.
 - `Qfit` - fitted `Q` diagonal (`k_states x 1`, natural units).
-- `mleRetcode` - CMLMT convergence code; `0` means converged.
+- `mleRetcode` - CMLMT convergence code; `0` means converged. `2` means
+  the `tvpCtl.maxIters` cap was reached and `11` that the `tvpCtl.maxTime`
+  cap was reached; the other outputs are then evaluated at the last
+  iterate, not at an optimum.
 - `filteredState` (`k_states x nobs`), `filteredStateCov` (array,
   `nobs x k_states x k_states`) - the filtered (causal) state path.
 - `smoothed` - echoes `tvpCtl.smooth`.
@@ -95,6 +100,23 @@ filtered/smoothed covariance through the (linear) state-to-coefficients
 recovery step is real, tractable future work -- not attempted yet. Use
 `filteredStateCov`/`smoothedStateCov` directly if you need the raw state
 covariance.
+
+**Bound the MLE with `tvpCtl.maxIters`/`tvpCtl.maxTime`.** Their
+defaults are CMLMT's own (`1e5` iterations, `1e8` minutes), so by default
+a fit is unbounded and identical to one made before 0.4.0. A
+non-converging fit could previously run for close to an hour per CMLMT
+pass. With finite caps it returns at the cap with `mleRetcode /= 0`.
+Always check `mleRetcode`, as [printQuaidsTVP](printQuaidsTVP.md) does.
+Measured on the deterministic, correctly specified test DGP in
+`tests/quaidstvpfit_test.e` (`n1=2`, `tobs=120`, `sslib` v2.1.0): each
+fit converged (`mleRetcode = 0`) in about 1-2 seconds. That is evidence
+for that fixture only, not a general convergence guarantee.
+
+**`sslib` baseline.** This repository's TVP-AIDS tests are pinned to
+`sslib` v2.1.0 (`sslib.pin.json`), the first release with the fix that
+correctly ends the exact diffuse Kalman filter's diffuse phase. On
+earlier `sslib` releases, likelihoods and `Q` estimates for this
+random-walk state model are affected by spurious extra diffuse updates.
 
 **MLE convergence speed degrades sharply with `k_states`** (and so with
 `n1`, the number of goods). Confirmed directly: a 5-good (`n1=4`,
@@ -140,8 +162,10 @@ H = diagrv(eye(n1), qOut.homogSse[1:n1]/qOut.nobs);
 q0 = 0.1*meanc(diag(H))*ones(k_states, 1);   // scaled relative to H, not a flat tiny constant -- see Remarks
 
 tvpCtl = quaidsTVPControlCreate();
+tvpCtl.maxIters = 500;   // bound the Q MLE (defaults are effectively unbounded)
+tvpCtl.maxTime = 5;      // minutes
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
-call printQuaidsTVP(tvOut);
+call printQuaidsTVP(tvOut);   // flags mleRetcode /= 0
 
 // Elasticities at the final period's (smoothed) state.
 { er, ep, epc } = quaidsTVPElasFit(tvOut.smoothedState[., tvOut.nobs], n1, prices[tvOut.nobs, .]', totexp[tvOut.nobs], aCtl);

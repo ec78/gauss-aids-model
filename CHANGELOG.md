@@ -4,7 +4,44 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
-## Unreleased
+## 0.4.0 - 2026-10-15
+
+### Added
+
+- `quaidsTVPControl.maxIters` and `quaidsTVPControl.maxTime` (TVP-AIDS
+  promotion P3): caps on the CMLMT iterations and wall-clock minutes of
+  `quaidsTVPFit()`'s `Q` maximum-likelihood step. They are written into
+  the CMLMT control `ssFitTVP()` uses for both of its passes. Defaults
+  (`1e5`, `1e8`) are CMLMT's own, so existing calls give identical
+  results. An exhausted cap returns normally with `tvOut.mleRetcode /= 0`
+  (`2` iterations, `11` time). Invalid caps (non-scalar, zero, negative,
+  fractional `maxIters`, missing or infinite) stop the call with a clear
+  `quaidsTVPFit: tvpCtl.maxIters/maxTime ...` error before estimation; a
+  struct declared without `quaidsTVPControlCreate()` (empty fields) uses
+  the defaults.
+
+### Changed
+
+- `sslib` baseline repinned to release tag v2.1.0
+  (`7d0e0421a008db81fb4fda0b789bdbef21ffe5f7`). It is the first release
+  with the exact diffuse filter's diffuse-phase termination fix.
+  `sslib.pin.json` now also records `pinnedTag`/`pinnedVersion`.
+  `scripts/verify_sslib_pin.ps1` checks the installed `package.json`
+  version against `pinnedVersion` as well as the source hashes, and
+  `scripts/sync_sslib.ps1` keeps both fields current on a repin.
+- `tests/quaidstvpfit_test.e` now runs on a deterministic, correctly
+  specified raw-input TVP-AIDS DGP (`_quaidsTVPRawSyntheticDGP` in
+  `tests/quaidsfixtures.src`; all shares strictly inside (0,1)) instead
+  of random shares. The old fixture never converged and could run for
+  hours. The test now asserts convergence, a per-fit wall-clock budget,
+  that finite caps leave a converged fit unchanged, and the
+  iteration/time cap return codes: 30 checks in about 6 seconds.
+- `tests/run_source_tests.ps1` has a per-test timeout
+  (`-TestTimeoutSeconds`, default 1800, `0` disables). A test still
+  running at the limit has its `tgauss` process tree killed and is
+  reported as FAIL, so one hung GAUSS job can no longer stall the suite.
+  Five new guard cases (`tvpfit_*_maxiters.e`/`tvpfit_*_maxtime.e`)
+  cover the invalid-cap errors.
 
 ### Maintainer notes (no user-facing change)
 
