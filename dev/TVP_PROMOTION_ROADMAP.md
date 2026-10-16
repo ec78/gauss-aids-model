@@ -1,8 +1,10 @@
 # TVP-AIDS Promotion Roadmap
 
 _Created: 2026-10-15. Status: **Priority 1 (active)**. P1 (D0 = option A,
-v2.1.0), P2, P3, P4 and P7 implemented on 2026-10-15 in package 0.4.0 (see
-section 10). P5, P6 and P8 remain open, so TVP-AIDS stays Experimental._
+v2.1.0), P2, P3, P4 and P7 implemented on 2026-10-15 in package 0.4.0, and
+P5 on 2026-10-16 (see section 10). P5 found a new upstream blocker: a
+non-diagonal H gives a wrong diffuse likelihood in sslib v2.1.0 (section
+10). P6 and P8 remain open, so TVP-AIDS stays Experimental._
 
 This is the durable plan for promoting TVP-AIDS (`quaidsTVPFit()` and the
 Stage 1-6 machinery in `src/quaidstvp*.src`) from **Experimental** to a
@@ -256,6 +258,8 @@ next step starts.
   - the cross-implementation log-likelihood agrees to a documented
     tolerance;
   - no undocumented tolerance loosening.
+- **Status (2026-10-16): done for diagonal H; a non-diagonal-H upstream
+  blocker is open.** See section 10.
 
 **P6: Re-measure the `n1` scale limit.**
 - With the bounded optimizer, rerun `n1 = 3` and `n1 = 4`, each with a
@@ -322,8 +326,13 @@ is the evidence.
 - that `quaidsTVPFit()` is tested or supported (its test is
   waived/unverified);
 - any claim that the MLE terminates or converges in bounded time;
-- numeric accuracy of TVP likelihoods or Q on released sslib, given the
-  diffuse-phase bias in section 2.4;
+- numeric accuracy of TVP likelihoods or Q on sslib releases before
+  v2.1.0, given the diffuse-phase bias in section 2.4. On v2.1.0 with a
+  **diagonal** H, the fixed-Q likelihood now matches statsmodels to
+  6.3e-13 (P5, section 10);
+- any result with a **non-diagonal H**. sslib v2.1.0 takes a spurious
+  diffuse update there (P5, section 10). This needs an upstream fix plus
+  a regression;
 - any `n1`/`k_states` scale claim beyond what P6 measures;
 - reproducibility against `sslib.pin.json`, because the install currently
   fails the pin;
@@ -458,3 +467,80 @@ on v2.1.0 shows it even though the fit converges. In one scratch
 misspecified configuration it aborted with `G0518 Not implemented for
 complex` in `cmlmthess`, which `trap` cannot catch. This should be filed
 upstream (section 5, P3 note); it is not patched here.
+
+### 2026-10-16: P5 (task `task_8c1e86fde0fd`, still package 0.4.0)
+
+Tests, fixtures and docs only. No `src/` change, no version change, and
+no install. sslib and gauss-state-space are untouched.
+
+**Environment.**
+- GAUSS 26.1.4.5565 with `GAUSS26_CFG=tests\gauss26_cfg_override`.
+- sslib v2.1.0 (`7d0e042`); `verify_sslib_pin.ps1 -Strict` passes.
+- Validation only: Python 3.12.0, numpy 2.5.1 and statsmodels 0.15.0.
+
+**Independent cross-check.** `tests/quaidstvp_loglik_xcheck_test.e`
+reads the committed fixture `tests/fixtures/tvp_loglik/`. Its README
+records provenance, independence, the convention and the commands.
+- The data are the P4 DGP: n1 = 2, k_states = 7, tobs = 120, seed 7,
+  written with `%.17g`. Regenerating it is byte-identical.
+- There are three fixed (diag Q, H) cases.
+- The reference is statsmodels' exact diffuse `KalmanFilter`, with Z_t
+  rebuilt independently in Python and `loglikelihood_burn = 0`.
+  `--check` reproduces it to 0.0.
+
+| Case | H | GAUSS llf | statsmodels llf | max per-period diff | total diff |
+|---|---|---|---|---|---|
+| 1 (DGP Q) | 2.5e-5 I | 690.6901320251270 | 690.6901320251268 | 4.97e-14 | 2.27e-13 |
+| 2 (q0 start) | 2.5e-5 I | 281.2743884578091 | 281.2743884578097 | 3.97e-13 | 6.25e-13 |
+| 3 (heterogeneous Q) | [3e-5 1e-5; 1e-5 2e-5] | 688.0306020430203 | 674.2112678504466 | 14.19 (period 4) | 13.82 |
+
+- **Tolerance: 1e-9 absolute**, per period and on the total. That is
+  more than three orders above the measured rounding, and about nine
+  below a real logic difference (`ln 2pi` = 0.92 per period; a spurious
+  diffuse update is about 14). No existing tolerance or reference moved.
+- Check (c) holds for every case: sslib's `_tvpLFNImpl()`, the MLE's
+  actual objective, run through `_quaidsTVPQUpdate()`, equals the filter
+  path exactly.
+- Result: 11/11 checks pass. Two runs gave identical output.
+
+**Case 3 is an upstream defect, not a convention difference.** The
+coordinator decided to keep it as a characterization only.
+- In sslib v2.1.0's `kalmanFilterDiffuseTVP()`, a non-diagonal H is
+  decorrelated by `inv(chol(H)')` row scaling, and then the absolute
+  `F_inf > 1e-12` element test is applied.
+- At period 4, element 1 removes the last diffuse direction. Element 2's
+  rounding residue, inflated by `1/sqrt(H)`, is 2.3e-11 in the numpy
+  replica. It passes the test and takes a spurious diffuse update.
+- `sslib_nondiag_h_repro.py` reproduces this. The same recursion with
+  LDL decorrelation, or a 1e-10 or 1e-8 threshold, matches statsmodels
+  to 1.7e-13.
+- It triggers when the diffuse phase ends mid-period
+  (`k_states mod n1 != 0`, i.e. even n1).
+- The test asserts periods 1-3 and prints the full gap as
+  `KNOWN-UPSTREAM-DEFECT`, which is not counted. It prints a `NOTE` if
+  the gap disappears.
+- **Remaining blocker:** an upstream gauss-state-space fix, a repin, and
+  promotion of case 3 to a counted check. The reference column is already
+  committed.
+
+**Revalidation (2026-10-16).**
+- `testsun_source_tests.ps1 -TestTimeoutSeconds 1800` was run with no
+  skip flags. Result: `run_source_tests.ps1: PASS`, with 32 test files
+  (773 checks), 42/42 guard cases (22 of them TVP), 0 FAIL and no
+  timeouts. It finished at 06:11 local time.
+- TVP results: Stage 1 56/56, Stage 5 13/13, Stage 2 8/8, Stage 3 7/7,
+  Stage 4 8/8, Stage 6 30/30, and the P5 cross-check 11/11.
+- No reference value or tolerance needed to move.
+- Example 14 was run against the 0.4.0 source through
+  `run_examples_smoke.ps1 -ExamplesDir <scratch> -ExampleList
+  14_tvp_aids_estimation.e -TestTimeoutSeconds 900`. The scratch copy
+  uses absolute `#include`s, because installed quaids is still 0.3.0.
+  - Result: PASS in 19 s. Both fits CONVERGED (23 iterations).
+  - It still shows the known `function evaluated as complex` warning and
+    "covariance failed to invert".
+
+**Still open:**
+- P6: the n1 = 3/4 scale re-measurement;
+- P8: the release gate;
+- the non-diagonal-H upstream defect above;
+- the complex/G0518 upstream risk.

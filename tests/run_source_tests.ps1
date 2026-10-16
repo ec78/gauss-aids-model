@@ -88,6 +88,12 @@
 # hard failure -- see that script's own header) if the installed sslib
 # copy no longer matches sslib.pin.json's documented commit.
 #
+# TVP-AIDS promotion P5: quaidstvp_loglik_xcheck_test.e (fixed-Q
+# log-likelihood vs a committed statsmodels reference, see
+# tests/fixtures/tvp_loglik/README.md) shares the same sslib
+# dependency/-SkipTVPKalman flag/GAUSS26_CFG override. It needs no Python
+# at test time; the reference is committed.
+#
 # Private AIDS direct-LM prototype (dev/prototypes/aids_direct_lm/, kept
 # out of src/ so it is never packaged or loaded by `library quaids;`; see
 # dev/AIDS_DIRECT_LM_DESIGN.md): its quaidsdirect_test.e and five
@@ -199,6 +205,8 @@ if (-not $SkipTVPKalman) {
     $gaussTests += "quaidstvp_smooth_test.e"
     $sslibTests += "quaidstvpfit_test.e"
     $gaussTests += "quaidstvpfit_test.e"
+    $sslibTests += "quaidstvp_loglik_xcheck_test.e"
+    $gaussTests += "quaidstvp_loglik_xcheck_test.e"
 }
 
 $gaussCfgOverride = Join-Path $testsDir "gauss26_cfg_override"

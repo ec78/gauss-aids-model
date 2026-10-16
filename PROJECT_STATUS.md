@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-15_
+_Last updated: 2026-10-16_
 
 ## Current Objective
 
@@ -53,9 +53,32 @@ roadmap section 10.
     no longer stall them. `verify_runner_timeouts.ps1` covers this case.
   - The docs got a NaN in the invalid-cap list, a missing paragraph
     break, and two rewrapped long lines.
-- **Still open:** P5 (an independent log-likelihood check), P6 (the
-  n1 = 3/4 scale re-measurement) and P8 (the release gate). TVP-AIDS
-  stays **Experimental**.
+- **P5 (2026-10-16, task `task_8c1e86fde0fd`, local commit only, still
+  0.4.0, tests and docs only):** an independent fixed-Q log-likelihood
+  cross-check, `tests/quaidstvp_loglik_xcheck_test.e` (11/11), compares
+  against statsmodels 0.15.0's exact diffuse filter (numpy 2.5.1,
+  Python 3.12.0) on the committed fixture `tests/fixtures/tvp_loglik/`.
+  - **Diagonal H passes.** Case 1 (DGP Q) gives 690.6901320251270 in
+    GAUSS vs 690.6901320251268 in statsmodels. Case 2 (q0 start) gives
+    281.2743884578091 vs 281.2743884578097. The largest difference is
+    4.0e-13 per period and 6.3e-13 on a total; the tolerance is 1e-9
+    absolute.
+  - The MLE objective (`_tvpLFNImpl`) equals the filter path exactly.
+  - **Non-diagonal H fails upstream.** Case 3 gives 688.0306 vs 674.2113:
+    sslib's absolute `F_inf > 1e-12` test, applied after Cholesky
+    scaling, takes a spurious diffuse update at period 4. This was
+    hand-verified in numpy. Only periods 1-3 are asserted; the full gap
+    is printed as `KNOWN-UPSTREAM-DEFECT` and not counted.
+  - Full `run_source_tests.ps1` (no skips, 1800 s timeout) passed:
+    32 files, 773 checks, 42/42 guards and 0 FAIL. Stages 1-6 gave
+    56/13/8/7/8/30.
+  - Example 14 passed through the bounded `run_examples_smoke.ps1`
+    (scratch copy using the 0.4.0 source includes) in 19 s, CONVERGED.
+  - No reference or tolerance changes. See roadmap section 10.
+- **Still open:** P6 (the n1 = 3/4 scale re-measurement), P8 (the
+  release gate), the new **non-diagonal-H upstream blocker** (needs a
+  gauss-state-space fix and a regression), and the complex/G0518
+  upstream risk. TVP-AIDS stays **Experimental**.
 
 The rest of this section is the original 2026-10-15 read-only diagnosis
 (task `task_03d43536665b`). It is kept as evidence; its "TIMEOUT",
@@ -1188,6 +1211,37 @@ Limitations:
 
 ## Known Issues
 
+- **sslib v2.1.0's exact diffuse TVP filter is wrong for a non-diagonal
+  H when the diffuse phase ends mid-period (found 2026-10-16 by P5;
+  upstream, not patched here).**
+  - `kalmanFilterDiffuseTVP()` decorrelates H by `inv(chol(H)')` row
+    scaling, then applies an absolute per-element `F_inf > 1e-12`
+    diffuse test.
+  - A rounding residue inflated by `1/sqrt(H)` (2.3e-11 in the numpy
+    replica) passes that test, so the element takes a spurious diffuse
+    update.
+  - On the P5 fixture this is +14.19 at period 4, and the state path
+    differs from then on. The total is off by +13.82 vs statsmodels.
+  - It triggers when `k_states mod n1 != 0`, i.e. for an even `n1`.
+    Diagonal H is unaffected: it is never row-scaled. That covers every
+    test, example 14 and the documented `diagrv` recipe.
+  - The time-invariant `kalmanFilterDiffuse()` uses the same pattern
+    but was not tested here.
+  - Evidence: `tests/fixtures/tvp_loglik/README.md` and
+    `sslib_nondiag_h_repro.py`.
+  - The same recursion with LDL decorrelation, or with a threshold of
+    1e-10, matches statsmodels to 1.7e-13.
+  - To do: file it with gauss-state-space, then promote case 3 in
+    `quaidstvp_loglik_xcheck_test.e` to a counted check once a fixed tag
+    is pinned. **This blocks any claim that non-diagonal H is supported.**
+- **`examples/14_tvp_aids_estimation.e` prints "The covariance of the
+  parameters failed to invert"** in both of its CMLMT summaries
+  (observed 2026-10-16 on v2.1.0; the fit still converges, retcode 0,
+  23 iterations).
+  - Four of the seven fitted Q elements print as 0.0000 at four
+    decimals.
+  - This is the same near-zero-Q boundary as the complex/G0518 entry
+    below. It is not addressed by P5.
 - **sslib's untransformed second CMLMT pass is fragile near the Q zero
   boundary (2026-10-15, v2.1.0).**
   - It prints `CMLmt: function evaluated as complex` whenever a fitted Q
@@ -1313,11 +1367,12 @@ Limitations:
 
 ## Next Steps
 
-**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P4 and P7 are done,
-along with the review follow-ups (roadmap section 10). Next come P5, P6
-and P8. The stale-zip blocker is resolved. The upstream sslib
-second-pass complex/G0518 risk (Known Issues) is still open and should
-gate promotion. The original sequenced plan, P1-P8,
+**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P5 and P7 are done,
+along with the review follow-ups (roadmap section 10). Next come P6 and
+P8. The stale-zip blocker is resolved. Two upstream sslib risks (Known
+Issues) are still open and should gate promotion:
+- the second-pass complex/G0518 risk;
+- the non-diagonal-H diffuse-threshold defect found by P5. The original sequenced plan, P1-P8,
 in `dev/TVP_PROMOTION_ROADMAP.md`:
 - P1: decision gate D0, choosing a tagged sslib baseline before any repin;
 - P2: repin and resync;

@@ -97,6 +97,14 @@ element, the standard TVP-VAR/TVP-AIDS simplifying assumption, and far
 cheaper/safer than a full `k_states*(k_states+1)/2`-parameter covariance
 given the identification risk above.
 
+**Use a diagonal `H`.** A non-diagonal `H` is accepted but **not
+validated**. Against `sslib` v2.1.0, the fixed-`Q` log-likelihood
+matches an independent statsmodels implementation to about 1e-12 with a
+diagonal `H`. With a non-diagonal `H` it can be wrong: when the diffuse
+phase ends partway through a period (an even `n1`), `sslib`'s exact
+diffuse filter takes a spurious diffuse update. This is a known upstream
+issue (see `tests/fixtures/tvp_loglik/README.md`).
+
 **No delta-method standard errors.** Propagating the state's own
 filtered/smoothed covariance through the (linear) state-to-coefficients
 recovery step is real, tractable future work -- not attempted yet. Use

@@ -81,6 +81,32 @@ as internal milestone history and were never public compatibility promises.
   unbounded wait. `verify_runner_timeouts.ps1` covers this case for
   both a timed-out job and a normally exiting one.
 
+- TVP-AIDS promotion P5 (tests only; no source or API change): new
+  `tests/quaidstvp_loglik_xcheck_test.e`, an independent fixed-`Q`
+  log-likelihood cross-check against statsmodels' exact diffuse Kalman
+  filter. It runs on a committed deterministic fixture
+  (`tests/fixtures/tvp_loglik/`: the P4 DGP, 120 periods, `n1 = 2`,
+  `k_states = 7`) and is registered in `run_source_tests.ps1`'s sslib
+  group.
+  - With **diagonal `H`**, GAUSS (sslib v2.1.0) and statsmodels 0.15.0
+    agree to at most 4.0e-13 per period and 6.3e-13 on the total.
+    The documented tolerance is 1e-9 absolute.
+  - The objective `ssFitTVP()` maximizes equals the filter path exactly.
+  - Python (numpy, statsmodels) is needed only to regenerate the
+    committed reference, never by package users or at test time.
+- **Known issue found by P5 (upstream, not fixed here):** with a
+  **non-diagonal `H`**, sslib v2.1.0's `kalmanFilterDiffuseTVP()` takes a
+  spurious diffuse update when the diffuse phase ends mid-period, which
+  happens with an even `n1`. Its absolute `1e-12` per-element test is
+  applied after Cholesky row scaling. On the fixture this adds about +14
+  to one period's log-likelihood (13.82 on the total) and shifts the
+  state path from then on. This was hand-verified in
+  `tests/fixtures/tvp_loglik/sslib_nondiag_h_repro.py`.
+  - `quaidsTVPFit()` results with a non-diagonal `H` are therefore not
+    validated.
+  - Diagonal `H` is unaffected. That covers the documented recipe,
+    example 14 and every test.
+
 ### Maintainer notes (no user-facing change)
 
 - Private, experimental AIDS direct Levenberg-Marquardt prototype added
