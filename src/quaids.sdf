@@ -626,19 +626,27 @@ struct quaidsTVPControl {
                      //   correctly. See both call sites (examples/
                      //   14_tvp_aids_estimation.e, tests/
                      //   quaidstvpfit_test.e) for the working pattern.
-    matrix maxIters; // CMLMT iteration cap for the Q MLE (positive integer).
-                     //   Default 1e5, CMLMT's own default -- identical to
-                     //   the pre-0.4.0 behavior. Set a finite, practical
-                     //   cap (e.g. 500) to bound run time; an exhausted
-                     //   cap is reported through tvOut.mleRetcode /= 0,
-                     //   never silently. Empty ({}, a struct declared
+    matrix maxIters; // CMLMT iteration cap for the Q MLE (positive
+                     //   integer), PER CMLMT PASS. Default 1e5, CMLMT's
+                     //   own default -- identical to the pre-0.4.0
+                     //   behavior. Set a finite, practical cap (e.g. 500)
+                     //   to bound run time. Empty ({}, a struct declared
                      //   without quaidsTVPControlCreate()) means default.
     matrix maxTime;  // CMLMT wall-clock cap for the Q MLE, in MINUTES
-                     //   (positive, finite). Default 1e8, CMLMT's own
-                     //   default. Checked once per CMLMT iteration, so a
-                     //   fit can overrun it by up to one iteration. Both
-                     //   caps also apply to sslib's second (untransformed,
-                     //   covariance) CMLMT pass, which shares one control.
+                     //   (positive, finite), PER CMLMT PASS. Default 1e8,
+                     //   CMLMT's own default. Checked once per CMLMT
+                     //   iteration, so a pass can overrun it by up to
+                     //   one iteration.
+                     // Per-pass semantics (both caps): sslib's ssFitTVP()
+                     //   may run TWO CMLMT passes sharing one control --
+                     //   the estimation pass and, because Q is
+                     //   positivity-transformed, an untransformed
+                     //   covariance pass -- so the worst-case total is
+                     //   roughly TWICE each cap, plus up to one
+                     //   iteration of overrun per pass. tvOut.mleRetcode
+                     //   reports the first (estimation) pass only (2 =
+                     //   maxIters hit, 11 = maxTime hit); a cap hit in
+                     //   the second pass is not exposed by sslib.
 };
 
 /*

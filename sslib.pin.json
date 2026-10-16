@@ -6,12 +6,17 @@
     "pinnedVersion":  "2.1.0",
     "installPath":  "C:\\gauss26\\pkgs\\sslib",
     "verifiedFiles":  {
+                          "package.json":  "ec080c8e3846ed4644f2a33591bd493770d09e63b6565b1336e2fb3619d12b33",
                           "src/ss.sdf":  "f027bb7e70dca00055309d4a0049ff47ad0abbd08a582cdc48148230c328a78d",
-                          "src/sstvp.src":  "879d33148133ee6393ffdd10084514e6d8983e1377dc72d3801bd8c0bc7ee815",
+                          "src/ssarima.src":  "be6ad3bff730c50ac6584c5692b7a41e34c7f9aaf00df05b9bb0f640079211b0",
+                          "src/ssdfm.src":  "e0b4552d770a2f66f566fe47f3642cc9a0c70e232942e4be59bb28956866a10e",
+                          "src/ssdiagnostics.src":  "8ffc2770da7b557fd97970f3ed5ad44e41e876e7a40d44eb8ef2e055b8a05e2e",
                           "src/sskalman.src":  "efa8f808c8d9d72b019b473af4d704c35e634cfb0c461012de134c7084424c51",
                           "src/ssmain.src":  "5d8ced8cd474040bce4316652493da2d3b96136fb07390eeb916e797f532f143",
-                          "src/ssstructural.src":  "c9a4f6db343e615b928fdeddc4c5850337151ab0bdc380463d3cf8a996f84b73"
+                          "src/ssprintutil.src":  "3b1033e94747b219b33716cd24febe70098197a637facc175f9ec1228f544bbe",
+                          "src/ssstructural.src":  "c9a4f6db343e615b928fdeddc4c5850337151ab0bdc380463d3cf8a996f84b73",
+                          "src/sstvp.src":  "879d33148133ee6393ffdd10084514e6d8983e1377dc72d3801bd8c0bc7ee815"
                       },
     "lastVerified":  "2026-10-15",
-    "notes":  "TVP-AIDS promotion P2 (decision gate D0, option A): pinned to gauss-state-space release tag v2.1.0 (7d0e042, GAUSS 26.1.4+), the first tag containing 5c300b1's diffuse-phase termination fix. The shared install was already at v2.1.0 when this pin was written (installed outside this repo's sync_sslib.ps1). Before pinning, all 9 installed src files plus package.json were confirmed byte-identical to the tag after line-ending normalisation. verifiedFiles are sha256 hashes of the installed (CRLF) files as found, so verify_sslib_pin.ps1 compares raw bytes. pinnedVersion is checked against the installed package.json."
+    "notes":  "TVP-AIDS promotion P2 (decision gate D0, option A): pinned to gauss-state-space release tag v2.1.0 (7d0e042, GAUSS 26.1.4+), the first tag containing 5c300b1's diffuse-phase termination fix. The shared install was already at v2.1.0 when this pin was written (installed outside this repo's sync_sslib.ps1). Before pinning, all 9 installed src files plus package.json were confirmed byte-identical to the tag after line-ending normalisation. verifiedFiles covers ALL 9 src files of v2.1.0 plus package.json: sha256 of the installed (CRLF) files as found, so verify_sslib_pin.ps1 compares raw bytes, and it also flags any installed src/*.src or *.sdf file not listed here. pinnedVersion is checked against the installed package.json. Boundary: lib/sslib.lcg is NOT hashed -- it is generated at install time (sync_sslib.ps1 rebuilds it with build_lcg.ps1; this install's copy came from outside that script) and byte-for-byte determinism of that catalog has not been established, so a hash would be a false-alarm source rather than a check. A stale catalog surfaces as a GAUSS undefined-symbol error, and sync_sslib.ps1 regenerates it."
 }

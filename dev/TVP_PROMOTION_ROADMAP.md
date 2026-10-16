@@ -422,6 +422,36 @@ process.
 - **P6:** re-measure the n1 = 3/4 scale limit with caps.
 - **P8:** the full release gate.
 
+### 2026-10-15: review follow-up (task `task_6c990bb79fcc`)
+
+An independent review of `ccd4066` returned PASS WITH FINDINGS. The
+actionable findings are addressed in one follow-up commit, still package
+0.4.0:
+- **Per-pass cap semantics** are documented everywhere: the source
+  comments, README, both command-reference pages, CHANGELOG and status.
+  `ssFitTVP()` may run two CMLMT passes with one control, so the worst
+  case is about 2x each cap plus up to one iteration of overrun per
+  pass. `mleRetcode` is the first pass's code, and a second-pass cap hit
+  is not exposed upstream.
+- **Example 14** sets `maxIters = 500` and `maxTime = 5`. It converged
+  against the 0.4.0 source in about 17 s, and still converged with
+  `maxIters = 50`.
+- **Timeouts** now also cover `run_examples_smoke.ps1` and the
+  installed-package tests in `run_release_verification.ps1`, threaded
+  from `run_release_gate.ps1`. `tests/verify_runner_timeouts.ps1` kills a
+  GAUSS job hanging on a grandchild process through each runner's
+  committed `Invoke-GaussBatch`; it passed 37/37 in about 70 s.
+- **Guards:** missing and NaN `maxIters`/`maxTime` were added, for nine
+  cap guards in all.
+- **Pin:** all 9 v2.1.0 src files plus `package.json` are hashed, and
+  unpinned installed src files are flagged. `lib/sslib.lcg` stays out of
+  scope, because its determinism is unproven.
+- **Release-gate blocker:** the stale `quaids 0.3.0.zip` (SHA-256
+  `c5ce5e5d...d52b791`, matching the 0.3.0 release record) was moved to
+  `C:\Users\eclow\Documents\quaids-artifact-backups\`.
+
+Not addressed here, by design: the upstream complex/G0518 risk below.
+
 **New residual risk.** sslib's untransformed second CMLMT pass warns
 `function evaluated as complex` when a fitted Q is near zero; example 14
 on v2.1.0 shows it even though the fit converges. In one scratch

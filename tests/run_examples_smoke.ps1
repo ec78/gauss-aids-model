@@ -50,12 +50,22 @@ param(
     [string]$GaussExe = "C:\gauss26\tgauss.exe",
     [switch]$SkipCurvature,
     [switch]$SkipPubtable,
-    [switch]$SkipTVPKalman
+    [switch]$SkipTVPKalman,
+    [int]$TestTimeoutSeconds = 1800,
+    [string]$ExamplesDir = "",
+    [string[]]$ExampleList = @()
 )
 
 $gaussCfgOverride = Join-Path $RepoRoot "tests\gauss26_cfg_override"
 
-$examplesDir = Join-Path $RepoRoot "examples"
+# -ExamplesDir/-ExampleList override the directory and the example list.
+# They exist for tests/verify_runner_timeouts.ps1's negative control (a
+# deliberately hanging scratch script outside the repo); normal runs use
+# neither.
+$examplesDir = $ExamplesDir
+if ([string]::IsNullOrWhiteSpace($examplesDir)) {
+    $examplesDir = Join-Path $RepoRoot "examples"
+}
 
 $examples = @(
     "00_real_data_quickstart.e",
@@ -85,6 +95,11 @@ if (-not $SkipTVPKalman) {
     $examples += "14_tvp_aids_estimation.e"
 }
 
+if ($ExampleList.Count -gt 0) {
+    # `powershell -File` hands a comma list over as ONE string, so split.
+    $examples = @($ExampleList | ForEach-Object { $_ -split "," } | Where-Object { $_ })
+}
+
 # Same async-stream-drain fix as tests/run_source_tests.ps1's own
 # Invoke-GaussBatch (Milestone 15 finding): sequential ReadToEnd() calls
 # on stdout then stderr can deadlock once a child writes enough to both
@@ -97,8 +112,15 @@ function Invoke-GaussBatch {
         [string]$Exe,
         [string[]]$Arguments,
         [string]$WorkingDirectory,
-        [string]$Gauss26Cfg = $null
+        [string]$Gauss26Cfg = $null,
+        [int]$TimeoutSeconds = $TestTimeoutSeconds
     )
+
+    # TVP-AIDS promotion P7 follow-up: same per-run wall-clock timeout as
+    # tests/run_source_tests.ps1's Invoke-GaussBatch. On expiry the tgauss
+    # process tree is killed (taskkill /T) and the result is flagged
+    # TimedOut, which the caller reports as a FAIL. -TestTimeoutSeconds 0
+    # disables it.
 
     $psi = [System.Diagnostics.ProcessStartInfo]::new()
     $psi.FileName = $Exe
@@ -127,6 +149,7 @@ function Invoke-GaussBatch {
     $outputBuilder = [System.Text.StringBuilder]::new()
     $errorBuilder = [System.Text.StringBuilder]::new()
 
+    $timedOut = $false
     $outputEvent = Register-ObjectEvent -InputObject $proc -EventName OutputDataReceived -Action {
         if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
     } -MessageData $outputBuilder
@@ -138,15 +161,32 @@ function Invoke-GaussBatch {
         [void]$proc.Start()
         $proc.BeginOutputReadLine()
         $proc.BeginErrorReadLine()
+        if ($TimeoutSeconds -gt 0) {
+            if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+                $timedOut = $true
+                # /T kills the whole tree; .NET Framework's Process.Kill()
+                # has no tree option.
+                & taskkill.exe /PID $proc.Id /T /F 2>&1 | Out-Null
+                [void]$proc.WaitForExit(30000)
+            }
+        }
+        # The no-argument overload also waits for the async stdout/stderr
+        # readers to drain.
         $proc.WaitForExit()
     } finally {
         Unregister-Event -SourceIdentifier $outputEvent.Name -ErrorAction SilentlyContinue
         Unregister-Event -SourceIdentifier $errorEvent.Name -ErrorAction SilentlyContinue
     }
 
+    $output = $outputBuilder.ToString() + $errorBuilder.ToString()
+    if ($timedOut) {
+        $output += "`r`nTIMEOUT: killed after $TimeoutSeconds s (run_examples_smoke.ps1 -TestTimeoutSeconds)`r`n"
+    }
+
     [pscustomobject]@{
         ExitCode = $proc.ExitCode
-        Output = ($outputBuilder.ToString() + $errorBuilder.ToString())
+        Output = $output
+        TimedOut = $timedOut
     }
 }
 
@@ -186,7 +226,10 @@ foreach ($example in $examples) {
     $output
 
     $hasGaussError = $output -match "Program execute failed|error G[0-9]+|Program compile failed"
-    if ($hasGaussError) {
+    if ($result.TimedOut) {
+        Write-Host "FAIL  $example (timed out after $TestTimeoutSeconds s)"
+        $failed += $example
+    } elseif ($hasGaussError) {
         Write-Host "FAIL  $example"
         $failed += $example
     } else {

@@ -465,6 +465,22 @@ if (-not $SkipTVPKalman) {
         Script = "guard_error_cases\tvpfit_infinite_maxtime.e"
         Expected = "quaidsTVPFit: tvpCtl.maxTime must be a finite positive number of minutes"
     }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_missing_maxiters.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxIters must be a finite positive integer"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_nan_maxiters.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxIters must be a finite positive integer"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_missing_maxtime.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxTime must be a finite positive number of minutes"
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpfit_nan_maxtime.e"
+        Expected = "quaidsTVPFit: tvpCtl.maxTime must be a finite positive number of minutes"
+    }
 }
 
 $sslibGuardScripts = @(
@@ -482,7 +498,11 @@ $sslibGuardScripts = @(
     "guard_error_cases\tvpfit_fractional_maxiters.e",
     "guard_error_cases\tvpfit_nonscalar_maxiters.e",
     "guard_error_cases\tvpfit_nonpositive_maxtime.e",
-    "guard_error_cases\tvpfit_infinite_maxtime.e"
+    "guard_error_cases\tvpfit_infinite_maxtime.e",
+    "guard_error_cases\tvpfit_missing_maxiters.e",
+    "guard_error_cases\tvpfit_nan_maxiters.e",
+    "guard_error_cases\tvpfit_missing_maxtime.e",
+    "guard_error_cases\tvpfit_nan_maxtime.e"
 )
 
 foreach ($guard in $guardTests) {

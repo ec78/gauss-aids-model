@@ -26,6 +26,24 @@ roadmap section 10.
 - `run_source_tests.ps1` has a per-test timeout
   (`-TestTimeoutSeconds`, default 1800).
 - Full `run_source_tests.ps1` (TVP included, no skips) passed: 31 files, 762 checks and 38/38 guards in 158.8 min, with no timeouts.
+- **Review follow-up (task `task_6c990bb79fcc`, same day, local commit
+  only, still 0.4.0):** an independent review of `ccd4066` passed with
+  findings, and these are now addressed:
+  - The docs, source comments and changelog now say the caps apply
+    **per CMLMT pass**. sslib may run two passes, so the worst case is
+    about 2x each cap. `mleRetcode` is the first pass's code; a cap hit
+    in the second pass is not exposed upstream.
+  - `examples/14_tvp_aids_estimation.e` sets `maxIters = 500` and
+    `maxTime = 5`.
+  - The per-job timeout now also covers `run_examples_smoke.ps1` and the
+    installed-package tests in `run_release_verification.ps1`, and is
+    threaded through `run_release_gate.ps1`. The negative control
+    `tests/verify_runner_timeouts.ps1` passes.
+  - Four more guards cover missing and NaN caps, for nine in all.
+  - The sslib pin now hashes all 9 v2.1.0 src files plus `package.json`.
+    The generated `.lcg` is not hashed (documented).
+  - The stale `quaids 0.3.0.zip` was moved out of the repo root (see
+    Known Issues).
 - **Still open:** P5 (an independent log-likelihood check), P6 (the
   n1 = 3/4 scale re-measurement) and P8 (the release gate). TVP-AIDS
   stays **Experimental**.
@@ -1171,14 +1189,25 @@ Limitations:
   - It is upstream sslib behaviour (`ssFitTVP()`); file it there rather
     than patching it here.
   - The well-posed `quaidstvpfit_test.e` fixture does not trigger it.
-- **A local `quaids 0.3.0.zip` in the repo root (gitignored, the
-  released 0.3.0 artifact) now trips `verify_release_artifact.ps1`'s
-  stale-artifact guard,** because the package version is 0.4.0.
-  - It was left in place deliberately.
-  - Move or archive it before running `run_release_verification.ps1` or
-    `run_release_gate.ps1`.
-  - The 0.4.0 artifact was built and verified (PASS) from a scratch copy
-    of the working tree instead.
+- **RESOLVED 2026-10-15: the stale local `quaids 0.3.0.zip` no longer
+  blocks the release gate.**
+  - It was gitignored, in the repo root, and tripped the stale-artifact
+    guard in `verify_release_artifact.ps1`.
+  - Its SHA-256, `c5ce5e5ded68c64c6e5bdeaad9fdaf01bd82fca384d1aa7cef202f926d52b791`,
+    matches `release_records/0.3.0-20260924-093017.json`.
+  - It was moved, not deleted, to
+    `C:\Users\eclow\Documents\quaids-artifact-backups\quaids 0.3.0__from-gauss-aids-model-root__moved-20261015-220303.zip`,
+    with a `.README.txt` beside it.
+- **The installed `quaids` package (`C:\gauss26\pkgs\quaids`) is still
+  0.3.0.**
+  - `examples/14_tvp_aids_estimation.e` now sets `tvpCtl.maxIters`/
+    `maxTime`, which 0.3.0 lacks. A standalone
+    `run_examples_smoke.ps1` run fails example 14 until 0.4.0 is
+    installed.
+  - The release gate (P8) installs 0.4.0 before its smoke stage, so
+    this resolves itself there.
+  - The example was verified against the 0.4.0 source through a scratch
+    copy with absolute `#include`s.
 - **`tests/quaidstvpfit_test.e` does not terminate in bounded time
   (2026-10-15: TIMEOUT at 600 s).**
   - Cause: the unbounded CMLmt defaults in `_quaidsTVPMLEFit()`, plus an
@@ -1275,9 +1304,11 @@ Limitations:
 
 ## Next Steps
 
-**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P4 and P7 are done
-(roadmap section 10). Next come P5, P6 and P8. Before P8, move the stale
-`quaids 0.3.0.zip` (Known Issues). The original sequenced plan, P1-P8,
+**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P4 and P7 are done,
+along with the review follow-ups (roadmap section 10). Next come P5, P6
+and P8. The stale-zip blocker is resolved. The upstream sslib
+second-pass complex/G0518 risk (Known Issues) is still open and should
+gate promotion. The original sequenced plan, P1-P8,
 in `dev/TVP_PROMOTION_ROADMAP.md`:
 - P1: decision gate D0, choosing a tagged sslib baseline before any repin;
 - P2: repin and resync;

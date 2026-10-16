@@ -11,24 +11,38 @@ as internal milestone history and were never public compatibility promises.
 - `quaidsTVPControl.maxIters` and `quaidsTVPControl.maxTime` (TVP-AIDS
   promotion P3): caps on the CMLMT iterations and wall-clock minutes of
   `quaidsTVPFit()`'s `Q` maximum-likelihood step. They are written into
-  the CMLMT control `ssFitTVP()` uses for both of its passes. Defaults
-  (`1e5`, `1e8`) are CMLMT's own, so existing calls give identical
-  results. An exhausted cap returns normally with `tvOut.mleRetcode /= 0`
-  (`2` iterations, `11` time). Invalid caps (non-scalar, zero, negative,
-  fractional `maxIters`, missing or infinite) stop the call with a clear
-  `quaidsTVPFit: tvpCtl.maxIters/maxTime ...` error before estimation; a
-  struct declared without `quaidsTVPControlCreate()` (empty fields) uses
-  the defaults.
+  the CMLMT control `ssFitTVP()` uses for both of its passes, so each cap
+  applies **per CMLMT pass**: `sslib` may run two passes (estimation,
+  then a covariance-only pass on the untransformed `Q`), and the
+  worst case is roughly twice each cap plus up to one iteration of
+  overrun per pass. Defaults (`1e5`, `1e8`) are CMLMT's own, so existing
+  calls give identical results. An exhausted cap in the first
+  (estimation) pass returns normally with `tvOut.mleRetcode /= 0`
+  (`2` iterations, `11` time); a cap hit in the second pass is not
+  exposed, because `ssFitTVP()` discards that pass's return code. Invalid caps (non-scalar, zero, negative,
+  fractional `maxIters`, missing, NaN or infinite) stop the call with a
+  clear `quaidsTVPFit: tvpCtl.maxIters/maxTime ...` error before
+  estimation; a struct declared without `quaidsTVPControlCreate()`
+  (empty fields) uses the defaults.
+- `examples/14_tvp_aids_estimation.e` sets explicit, practical caps
+  (`maxIters = 500`, `maxTime = 5` minutes per pass) and explains them.
+  This example now needs the 0.4.0 package installed, because the cap
+  fields do not exist in 0.3.0.
 
 ### Changed
 
 - `sslib` baseline repinned to release tag v2.1.0
   (`7d0e0421a008db81fb4fda0b789bdbef21ffe5f7`). It is the first release
   with the exact diffuse filter's diffuse-phase termination fix.
-  `sslib.pin.json` now also records `pinnedTag`/`pinnedVersion`.
-  `scripts/verify_sslib_pin.ps1` checks the installed `package.json`
-  version against `pinnedVersion` as well as the source hashes, and
-  `scripts/sync_sslib.ps1` keeps both fields current on a repin.
+  `sslib.pin.json` now also records `pinnedTag`/`pinnedVersion`, and
+  its `verifiedFiles` hash all 9 v2.1.0 source files plus `package.json`
+  (previously 4 hand-picked files). `scripts/verify_sslib_pin.ps1`
+  checks the installed `package.json` version against `pinnedVersion` as
+  well as the hashes, and flags any installed `src/*.src`/`*.sdf` file
+  the pin does not list. `scripts/sync_sslib.ps1` keeps both fields
+  current on a repin and hashes every source file of the synced commit.
+  The generated `lib/sslib.lcg` catalog is deliberately not hashed,
+  because its byte-for-byte determinism has not been established.
 - `tests/quaidstvpfit_test.e` now runs on a deterministic, correctly
   specified raw-input TVP-AIDS DGP (`_quaidsTVPRawSyntheticDGP` in
   `tests/quaidsfixtures.src`; all shares strictly inside (0,1)) instead
@@ -40,8 +54,22 @@ as internal milestone history and were never public compatibility promises.
   (`-TestTimeoutSeconds`, default 1800, `0` disables). A test still
   running at the limit has its `tgauss` process tree killed and is
   reported as FAIL, so one hung GAUSS job can no longer stall the suite.
-  Five new guard cases (`tvpfit_*_maxiters.e`/`tvpfit_*_maxtime.e`)
-  cover the invalid-cap errors.
+  Nine new guard cases (`tvpfit_*_maxiters.e`/`tvpfit_*_maxtime.e`)
+  cover the invalid-cap errors, including missing and NaN values.
+- The same per-job timeout now also covers `tests/run_examples_smoke.ps1`
+  (`-TestTimeoutSeconds`, plus `-ExamplesDir`/`-ExampleList` overrides)
+  and the installed-package API tests in
+  `scripts/run_release_verification.ps1`. `run_release_verification.ps1`
+  and `run_release_gate.ps1` accept `-TestTimeoutSeconds` and pass it to
+  every stage that runs GAUSS. The installed-package test runner also
+  switched from sequential `ReadToEnd()` calls to the async stream drain
+  the other runners use.
+- New `tests/verify_runner_timeouts.ps1`: a negative control that runs
+  each runner's committed `Invoke-GaussBatch` against a scratch GAUSS
+  job that hangs on a grandchild process. It checks that the job is
+  killed with its whole process tree and reported as a failure, that
+  quick jobs are unaffected, and that the release scripts pass the
+  timeout through. It takes about 70 seconds.
 
 ### Maintainer notes (no user-facing change)
 

@@ -142,9 +142,13 @@ endp;
 **                      1e8, CMLMT's own default). Both are written into
 **                      ssCtl.ctl, which ssFitTVP() uses for BOTH of its
 **                      CMLMT passes (the transformed fit and the
-**                      untransformed covariance re-run). Already
-**                      validated by quaidsTVPFit()'s
-**                      _quaidsTVPResolveCaps() on the public path.
+**                      untransformed covariance re-run), so each cap
+**                      applies per pass and the worst case is roughly
+**                      twice the cap. sOut.mleResults.retcode is the
+**                      first pass's; ssFitTVP() discards the second
+**                      pass's retcode. Already validated by
+**                      quaidsTVPFit()'s _quaidsTVPResolveCaps() on the
+**                      public path.
 **
 ** Output:     sOut -- struct ssOut (sslib): sOut.final_params is the
 **                     fitted Q diagonal (k_states x 1, natural units,

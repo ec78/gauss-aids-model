@@ -26,7 +26,13 @@ param(
     [switch]$BuildArtifact,
     [switch]$ForceArtifact,
     [switch]$InstallArtifact,
-    [switch]$SkipInstalledPackageTest
+    [switch]$SkipInstalledPackageTest,
+    # Per-GAUSS-job wall-clock timeout in seconds (TVP-AIDS promotion P7
+    # follow-up), passed to run_source_tests.ps1 and run_examples_smoke.ps1
+    # and applied to the installed-package API tests below. A job still
+    # running at the limit has its tgauss process tree killed and FAILs
+    # its stage. 0 disables it.
+    [int]$TestTimeoutSeconds = 1800
 )
 
 function Invoke-Step {
@@ -46,9 +52,14 @@ function Invoke-Step {
 function Invoke-GaussBatch {
     param(
         [string]$Exe,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [int]$TimeoutSeconds = $TestTimeoutSeconds
     )
 
+    # Same async-drain + per-run timeout pattern as tests/
+    # run_source_tests.ps1's Invoke-GaussBatch: sequential ReadToEnd()
+    # calls can deadlock (Milestone 15 finding), and an unbounded
+    # WaitForExit() lets one hung job stall the whole release pipeline.
     $psi = [System.Diagnostics.ProcessStartInfo]::new()
     $psi.FileName = $Exe
     $psi.Arguments = (($Arguments | ForEach-Object {
@@ -62,14 +73,50 @@ function Invoke-GaussBatch {
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
 
-    $proc = [System.Diagnostics.Process]::Start($psi)
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
+    $proc = [System.Diagnostics.Process]::new()
+    $proc.StartInfo = $psi
+
+    $outputBuilder = [System.Text.StringBuilder]::new()
+    $errorBuilder = [System.Text.StringBuilder]::new()
+
+    $timedOut = $false
+    $outputEvent = Register-ObjectEvent -InputObject $proc -EventName OutputDataReceived -Action {
+        if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
+    } -MessageData $outputBuilder
+    $errorEvent = Register-ObjectEvent -InputObject $proc -EventName ErrorDataReceived -Action {
+        if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
+    } -MessageData $errorBuilder
+
+    try {
+        [void]$proc.Start()
+        $proc.BeginOutputReadLine()
+        $proc.BeginErrorReadLine()
+        if ($TimeoutSeconds -gt 0) {
+            if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+                $timedOut = $true
+                # /T kills the whole tree; .NET Framework's Process.Kill()
+                # has no tree option.
+                & taskkill.exe /PID $proc.Id /T /F 2>&1 | Out-Null
+                [void]$proc.WaitForExit(30000)
+            }
+        }
+        # The no-argument overload also waits for the async stdout/stderr
+        # readers to drain.
+        $proc.WaitForExit()
+    } finally {
+        Unregister-Event -SourceIdentifier $outputEvent.Name -ErrorAction SilentlyContinue
+        Unregister-Event -SourceIdentifier $errorEvent.Name -ErrorAction SilentlyContinue
+    }
+
+    $output = $outputBuilder.ToString() + $errorBuilder.ToString()
+    if ($timedOut) {
+        $output += "`r`nTIMEOUT: killed after $TimeoutSeconds s (run_release_verification.ps1 -TestTimeoutSeconds)`r`n"
+    }
 
     [pscustomobject]@{
         ExitCode = $proc.ExitCode
-        Output = ($stdout + $stderr)
+        Output = $output
+        TimedOut = $timedOut
     }
 }
 
@@ -88,7 +135,7 @@ if ([string]::IsNullOrWhiteSpace($InstallRoot)) {
 }
 
 Invoke-Step "Source tests" {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $testsDir "run_source_tests.ps1") -RepoRoot $RepoRoot -GaussExe $GaussExe
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $testsDir "run_source_tests.ps1") -RepoRoot $RepoRoot -GaussExe $GaussExe -TestTimeoutSeconds $TestTimeoutSeconds
 }
 
 if ($BuildArtifact) {
@@ -158,6 +205,10 @@ if (-not $SkipInstalledPackageTest) {
             try {
                 $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-nb", "-b", "-x", $wrapper)
                 $result.Output
+                if ($result.TimedOut) {
+                    Write-Host "FAIL  $testFile timed out after $TestTimeoutSeconds s"
+                    exit 1
+                }
                 if ($result.ExitCode -ne 0 -or ($result.Output -match "Program execute failed|error G[0-9]+|Program compile failed")) {
                     exit 1
                 }
@@ -175,7 +226,7 @@ if (-not $SkipInstalledPackageTest) {
         # something once the package is actually installed -- gated behind
         # the same -SkipInstalledPackageTest flag as the step above, not a
         # separate switch.
-        & powershell -ExecutionPolicy Bypass -File (Join-Path $testsDir "run_examples_smoke.ps1") -RepoRoot $RepoRoot -GaussExe $GaussExe
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $testsDir "run_examples_smoke.ps1") -RepoRoot $RepoRoot -GaussExe $GaussExe -TestTimeoutSeconds $TestTimeoutSeconds
     }
 }
 

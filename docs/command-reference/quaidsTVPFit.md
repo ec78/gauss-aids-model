@@ -46,8 +46,8 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
   be strictly positive.
 - `tvpCtl` (*`quaidsTVPControl` structure*) - see
   [quaidsTVPControlCreate](quaidsTVPControlCreate.md). Its `maxIters`/
-  `maxTime` fields cap the `Q` MLE (see Remarks); invalid values stop the
-  call with a clear error before any estimation.
+  `maxTime` fields cap the `Q` MLE per CMLMT pass (see Remarks); invalid
+  values stop the call with a clear error before any estimation.
 
 ## Returns
 
@@ -57,10 +57,12 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 - `wnam` - legacy character matrix of good names.
 - `H`, `q0` - echoed inputs.
 - `Qfit` - fitted `Q` diagonal (`k_states x 1`, natural units).
-- `mleRetcode` - CMLMT convergence code; `0` means converged. `2` means
-  the `tvpCtl.maxIters` cap was reached and `11` that the `tvpCtl.maxTime`
-  cap was reached; the other outputs are then evaluated at the last
-  iterate, not at an optimum.
+- `mleRetcode` - CMLMT convergence code of the first (estimation) pass;
+  `0` means converged. `2` means the `tvpCtl.maxIters` cap was reached
+  and `11` that the `tvpCtl.maxTime` cap was reached; the other outputs
+  are then evaluated at the last iterate, not at an optimum. A cap hit in
+  `sslib`'s second, covariance-only pass is not reflected here (see
+  Remarks).
 - `filteredState` (`k_states x nobs`), `filteredStateCov` (array,
   `nobs x k_states x k_states`) - the filtered (causal) state path.
 - `smoothed` - echoes `tvpCtl.smooth`.
@@ -107,6 +109,13 @@ a fit is unbounded and identical to one made before 0.4.0. A
 non-converging fit could previously run for close to an hour per CMLMT
 pass. With finite caps it returns at the cap with `mleRetcode /= 0`.
 Always check `mleRetcode`, as [printQuaidsTVP](printQuaidsTVP.md) does.
+
+The caps apply **per CMLMT pass**. `sslib`'s `ssFitTVP()` may run two
+passes with the same control (the estimation pass, then a
+covariance-only pass on the untransformed `Q`), so the worst case is
+roughly twice each cap plus up to one iteration of overrun per pass.
+`mleRetcode` is the first pass's code; a cap hit in the second pass is
+not exposed by `sslib`.
 Measured on the deterministic, correctly specified test DGP in
 `tests/quaidstvpfit_test.e` (`n1=2`, `tobs=120`, `sslib` v2.1.0): each
 fit converged (`mleRetcode = 0`) in about 1-2 seconds. That is evidence
@@ -162,8 +171,8 @@ H = diagrv(eye(n1), qOut.homogSse[1:n1]/qOut.nobs);
 q0 = 0.1*meanc(diag(H))*ones(k_states, 1);   // scaled relative to H, not a flat tiny constant -- see Remarks
 
 tvpCtl = quaidsTVPControlCreate();
-tvpCtl.maxIters = 500;   // bound the Q MLE (defaults are effectively unbounded)
-tvpCtl.maxTime = 5;      // minutes
+tvpCtl.maxIters = 500;   // cap the Q MLE (defaults are effectively unbounded) ...
+tvpCtl.maxTime = 5;      // ... minutes; both per CMLMT pass (worst case ~2x)
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 call printQuaidsTVP(tvOut);   // flags mleRetcode /= 0
 

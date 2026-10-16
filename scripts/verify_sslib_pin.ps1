@@ -1,10 +1,13 @@
 # verify_sslib_pin.ps1
 #
 # TVP-AIDS initiative, Stage 6: checks the shared sslib install
-# (sslib.pin.json's own installPath) against the handful of files that
-# have actually drifted or mattered in past incidents (Stage 3's
-# init_diffTVP arity break; Stage 4's stale sstvp.src/sskalman.src -- see
-# sslib.pin.json's own header comment). Prints a CLEAR warning up front
+# (sslib.pin.json's own installPath) against the pin's verifiedFiles --
+# since TVP-AIDS promotion P2 follow-up, every src/*.src/*.sdf file of the
+# pinned release plus package.json (past incidents: Stage 3's
+# init_diffTVP arity break; Stage 4's stale sstvp.src/sskalman.src), and
+# flags any installed src file the pin does not list. The generated
+# lib/sslib.lcg catalog is out of scope (see sslib.pin.json's notes).
+# Prints a CLEAR warning up front
 # instead of letting drift surface later as a confusing low-level GAUSS
 # error deep inside a kalmanFilter*/ssFitTVP call -- the actual failure
 # mode both past incidents took the form of.
@@ -83,13 +86,30 @@ foreach ($relPath in $trackedFiles) {
     }
 }
 
-if ($missing.Count -gt 0 -or $mismatches.Count -gt 0) {
+# Every installed GAUSS source file must be pinned: a src/*.src or *.sdf
+# the pin does not list (e.g. added by a different upstream commit) is
+# drift too. lib/sslib.lcg is deliberately NOT checked -- it is generated
+# at install time and its byte-for-byte determinism is not established
+# (see sslib.pin.json's notes).
+$unexpected = @()
+$installedSrcDir = Join-Path $installPath "src"
+if (Test-Path -LiteralPath $installedSrcDir) {
+    $unexpected = @(Get-ChildItem -LiteralPath $installedSrcDir -File |
+        Where-Object { $_.Extension -in @(".src", ".sdf") } |
+        ForEach-Object { "src/" + $_.Name } |
+        Where-Object { $trackedFiles -notcontains $_ })
+}
+
+if ($missing.Count -gt 0 -or $mismatches.Count -gt 0 -or $unexpected.Count -gt 0) {
     Write-Warning "verify_sslib_pin.ps1: installed sslib at $installPath does NOT match the pinned commit $($pin.pinnedCommit) (last verified $($pin.lastVerified))."
     if ($missing.Count -gt 0) {
         Write-Warning "  missing: $($missing -join ', ')"
     }
     if ($mismatches.Count -gt 0) {
         Write-Warning "  content differs: $($mismatches -join ', ')"
+    }
+    if ($unexpected.Count -gt 0) {
+        Write-Warning "  installed but not pinned: $($unexpected -join ', ')"
     }
     Write-Warning "  Run 'scripts\sync_sslib.ps1 -SourceRepoPath <path to a gauss-state-space checkout>' to resync, or -Commit <hash> to repin -- see that script's own header. A newer commit may still work fine; this is advisory, not necessarily broken."
     if ($Strict) {

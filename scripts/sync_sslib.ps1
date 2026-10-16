@@ -112,20 +112,19 @@ try {
     Write-Host "sync_sslib.ps1: rebuilding lib/sslib.lcg"
     & (Join-Path $PSScriptRoot "build_lcg.ps1") -PackageRoot $installPath -PackageName "sslib"
 
-    # Recompute verifiedFiles hashes over the same handful of files that
-    # have actually drifted or mattered in past incidents (see
-    # sslib.pin.json's own header comment / this file's own header) --
-    # not the whole tree, to keep this maintainable.
-    # See verify_sslib_pin.ps1's matching comment -- @() around
-    # .PSObject.Properties.Name yields a one-element array containing
-    # $null for a truly empty PSCustomObject, not an empty array.
-    $trackedFiles = @()
-    if ($pin.verifiedFiles.PSObject.Properties.Count -gt 0) {
-        $trackedFiles = @($pin.verifiedFiles.PSObject.Properties | ForEach-Object { $_.Name })
-    }
-    if ($trackedFiles.Count -eq 0) {
-        $trackedFiles = @("src/sstvp.src", "src/sskalman.src", "src/ssmain.src", "src/ssstructural.src")
-    }
+    # Recompute verifiedFiles hashes over EVERY GAUSS source file the
+    # synced commit ships (src/*.src, src/*.sdf) plus package.json -- the
+    # same complete set verify_sslib_pin.ps1 expects (TVP-AIDS promotion
+    # P2 follow-up; previously only a hand-picked subset). Enumerated from
+    # the synced tree, not from the old pin's keys, so a file added or
+    # removed upstream is picked up on a repin. lib/sslib.lcg is
+    # deliberately excluded: it is generated just above and its
+    # byte-for-byte determinism is not established.
+    $trackedFiles = @("package.json")
+    $trackedFiles += @(Get-ChildItem -LiteralPath (Join-Path $installPath "src") -File |
+        Where-Object { $_.Extension -in @(".src", ".sdf") } |
+        Sort-Object Name |
+        ForEach-Object { "src/" + $_.Name })
 
     $newVerifiedFiles = [ordered]@{}
     foreach ($relPath in $trackedFiles) {

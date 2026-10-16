@@ -68,6 +68,8 @@ tests/
   run_source_tests.ps1    #   runs the manifest/API/docs-consistency checks
                          #   plus every tgauss test file
   run_examples_smoke.ps1  #   runs every examples/*.e file for real
+  verify_runner_timeouts.ps1 # negative control for every runner's
+                         #   per-job timeout/process-tree kill
   verify_package_manifest.ps1
 docs/
   COMMAND_REFERENCE.md, USAGE_GUIDE.md, METHODOLOGY_NOTES.md,
@@ -183,8 +185,14 @@ powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1
 # optional-package-gated groups. -TestTimeoutSeconds N (default 1800,
 # 0 = off) kills and FAILs any single GAUSS test/guard still running at N s.
 
-# Run every examples/*.e file for real
+# Run every examples/*.e file for real (same -TestTimeoutSeconds; also
+# accepted, and passed through, by run_release_verification.ps1 and
+# run_release_gate.ps1)
 powershell -ExecutionPolicy Bypass -File tests\run_examples_smoke.ps1
+
+# Negative control for every runner's timeout/process-tree kill (~70 s;
+# run after touching any Invoke-GaussBatch)
+powershell -ExecutionPolicy Bypass -File tests\verify_runner_timeouts.ps1
 
 # Rebuild + reinstall the package after any src/ change, then verify
 # the installed public API (library quaids; against a real install)

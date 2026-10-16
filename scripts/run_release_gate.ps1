@@ -29,7 +29,11 @@ param(
     [string]$GaussHome = "",
     [string]$InstallRoot = "",
     [switch]$AllowDirtyWorktree,
-    [switch]$SkipConvergenceSweep
+    [switch]$SkipConvergenceSweep,
+    # Per-GAUSS-job timeout (seconds) threaded through
+    # run_release_verification.ps1 to its source-test, installed-package
+    # and example-smoke stages; 0 disables it.
+    [int]$TestTimeoutSeconds = 1800
 )
 
 $ErrorActionPreference = "Stop"
@@ -171,7 +175,8 @@ $verificationArgList = @(
     "-ExecutionPolicy", "Bypass", "-File", (Join-Path $RepoRoot "scripts\run_release_verification.ps1"),
     "-RepoRoot", $RepoRoot,
     "-GaussExe", $GaussExe,
-    "-BuildArtifact", "-ForceArtifact", "-InstallArtifact"
+    "-BuildArtifact", "-ForceArtifact", "-InstallArtifact",
+    "-TestTimeoutSeconds", [string]$TestTimeoutSeconds
 )
 if (-not [string]::IsNullOrWhiteSpace($GaussHome)) { $verificationArgList += @("-GaussHome", $GaussHome) }
 if (-not [string]::IsNullOrWhiteSpace($InstallRoot)) { $verificationArgList += @("-InstallRoot", $InstallRoot) }

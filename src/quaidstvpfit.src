@@ -91,7 +91,9 @@
 **                       minutes (CMLMT's own defaults, so a fit is
 **                       numerically identical to one made before these
 **                       two fields existed -- set finite values to bound
-**                       the Q MLE's run time).
+**                       the Q MLE's run time). Both caps apply PER CMLMT
+**                       PASS; sslib may run two passes, so the worst case
+**                       is roughly twice each cap (see quaids.sdf).
 */
 proc (struct quaidsTVPControl) = quaidsTVPControlCreate();
     struct quaidsTVPControl tvpCtl;
@@ -181,12 +183,17 @@ endp;
 **                       strictly positive.
 **             tvpCtl -- struct quaidsTVPControl (quaidsTVPControlCreate()
 **                       for defaults). tvpCtl.maxIters/maxTime cap the Q
-**                       MLE (CMLMT iterations / minutes); invalid values
+**                       MLE (CMLMT iterations / minutes) PER CMLMT PASS:
+**                       sslib's ssFitTVP() may run a second, covariance-
+**                       only pass with the same caps, so the worst case
+**                       is roughly twice each cap plus up to one
+**                       iteration of overrun per pass. Invalid values
 **                       fail loudly before any estimation work. An
-**                       exhausted cap returns normally with
-**                       tvOut.mleRetcode /= 0 (CMLMT's own code, e.g. 11
-**                       for the time cap) -- check it, as printQuaidsTVP()
-**                       does.
+**                       exhausted cap in the first (estimation) pass
+**                       returns normally with tvOut.mleRetcode /= 0
+**                       (CMLMT's own code: 2 iterations, 11 time) --
+**                       check it, as printQuaidsTVP() does. A cap hit in
+**                       the second pass is not exposed by sslib.
 **
 ** Output:     tvOut -- struct quaidsTVPOut (see quaids.sdf): fitted Q,
 **                      MLE convergence code, filtered state path (+

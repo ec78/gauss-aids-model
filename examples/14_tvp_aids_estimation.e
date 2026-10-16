@@ -96,10 +96,28 @@ tvpCtl = quaidsTVPControlCreate();
    applied once above when building goodNames, reused here directly. */
 tvpCtl.othnam = goodNames;
 
+/* Explicit, practical caps on the Q maximum-likelihood step. The
+   defaults (1e5 iterations, 1e8 minutes) are CMLMT's own and effectively
+   unbounded, so a non-converging fit could otherwise run for an hour or
+   more. Both caps are PER CMLMT PASS: sslib's ssFitTVP() runs a second,
+   covariance-only pass with the same control, so the worst case is
+   roughly twice each cap, plus up to one iteration of overrun per pass
+   (maxTime is checked once per iteration). This fit converges in well
+   under both (seconds; it also converges with maxIters = 50), so the caps never change
+   its result -- they only bound the failure case. tvOut.mleRetcode
+   reports the first (estimation) pass: 0 = converged, 2 = maxIters hit,
+   11 = maxTime hit. A cap hit in the second pass is not exposed by
+   sslib. printQuaidsTVP() flags a non-zero code. */
+tvpCtl.maxIters = 500;
+tvpCtl.maxTime = 5;
+
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 
 print "";
 call printQuaidsTVP(tvOut);
+if tvOut.mleRetcode /= 0;
+    print "NOTE: the Q MLE stopped at a cap or did not converge (mleRetcode above) -- treat the fit with caution.";
+endif;
 
 /* ---------------------------------------------------------------------
 ** Elasticities at the final period's smoothed state.
@@ -121,6 +139,8 @@ print$ goodNames~ftocv(er, 0, 4);
 
 tvpCtlFiltered = quaidsTVPControlCreate();
 tvpCtlFiltered.smooth = 0;
+tvpCtlFiltered.maxIters = 500;
+tvpCtlFiltered.maxTime = 5;
 tvOutFiltered = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtlFiltered);
 
 print "";
