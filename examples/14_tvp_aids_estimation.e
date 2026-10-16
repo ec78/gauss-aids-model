@@ -103,8 +103,8 @@ tvpCtl.othnam = goodNames;
    covariance-only pass with the same control, so the worst case is
    roughly twice each cap, plus up to one iteration of overrun per pass
    (maxTime is checked once per iteration). This fit converges in well
-   under both (seconds; it also converges with maxIters = 50), so the caps never change
-   its result -- they only bound the failure case. tvOut.mleRetcode
+   under both (seconds; it also converges with maxIters = 50), so the
+   caps never change its result -- they only bound the failure case. tvOut.mleRetcode
    reports the first (estimation) pass: 0 = converged, 2 = maxIters hit,
    11 = maxTime hit. A cap hit in the second pass is not exposed by
    sslib. printQuaidsTVP() flags a non-zero code. */

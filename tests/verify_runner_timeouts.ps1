@@ -16,7 +16,13 @@
 #      killed" cannot pass vacuously because it never started. A quick
 #      script must still pass untouched with the timeout on, and with
 #      0 (disabled). The script-scope $TestTimeoutSeconds default must
-#      propagate when -TimeoutSeconds is not passed.
+#      propagate when -TimeoutSeconds is not passed. Finally, an escaped
+#      pipe holder (an orphaned grandchild outside the tree that keeps
+#      stdout/stderr open) must not reintroduce an unbounded wait: both a
+#      timed-out and a normally exiting job must return within the
+#      runner's 30 s bounded drain, with a NOTE line, the job's own tree
+#      killed and its output kept. The orphan is outside the runner's
+#      reach by design, so this script kills it itself.
 #   2. Integration -- run_examples_smoke.ps1 itself, pointed at the scratch
 #      directory (-ExamplesDir/-ExampleList), must exit 1 with the hung
 #      script reported FAIL (timed out) and the quick one PASS.
@@ -27,7 +33,7 @@
 # Safe by construction: everything runs from a fresh temp directory, only
 # processes whose command line carries this run's unique marker are ever
 # inspected, and the runners' own taskkill targets only the PID they
-# started. Takes about a minute. Not part of run_source_tests.ps1 (it
+# started. Takes about 4 minutes. Not part of run_source_tests.ps1 (it
 # deliberately hangs jobs); run it after changing any runner's
 # Invoke-GaussBatch:
 #   powershell -ExecutionPolicy Bypass -File tests\verify_runner_timeouts.ps1
@@ -70,6 +76,34 @@ function New-HangScript {
         ''' -Value x; Start-Sleep -Seconds 900 # ' + $token + '");' + "`r`n" + 'print "unreachable";'
     Set-Content -LiteralPath (Join-Path $work "$Name.e") -Value $gauss -Encoding ascii
     return (Join-Path $work "$Name.e")
+}
+
+function New-EscapeScript {
+    param([string]$Name, [bool]$Hang)
+    $marker = (Join-Path $work "$Name.started") -replace "\\", "/"
+    # tgauss exec()s powershell A, which starts B with the inherited std
+    # handles and exits at once. B is then an orphan OUTSIDE tgauss's
+    # process tree (taskkill /T cannot reach it) that holds the runner's
+    # stdout/stderr pipes open -- the case the runners' bounded drain
+    # exists for. With $Hang, tgauss then blocks on an in-tree child too.
+    $inner = "Set-Content -Path '$marker' -Value x; Start-Sleep -Seconds 900 # $token-esc"
+    $a = "-NoProfile -Command Start-Process -NoNewWindow powershell.exe -ArgumentList '-NoProfile','-Command','" +
+        ($inner -replace "'", "''") + "'"
+    $lines = @('ret = exec("powershell.exe", "' + ($a -replace '"', '\"') + '");')
+    if ($Hang) {
+        $lines += 'ret = exec("powershell.exe", "-NoProfile -Command Start-Sleep -Seconds 900 # ' + $token + '-tree");'
+    }
+    $lines += 'print "after escape";'
+    Set-Content -LiteralPath (Join-Path $work "$Name.e") -Value $lines -Encoding ascii
+    return (Join-Path $work "$Name.e")
+}
+
+# Kills this run's escaped pipe holders (unreachable by the runners by
+# design) and returns how many there were.
+function Stop-EscapedProcesses {
+    $esc = @(Get-MarkedProcesses | Where-Object { $_.CommandLine.Contains("$token-esc") })
+    foreach ($p in $esc) { & taskkill.exe /PID $p.ProcessId /T /F 2>&1 | Out-Null }
+    return $esc.Count
 }
 
 Set-Content -LiteralPath (Join-Path $work "quick.e") -Value 'print "quick done";' -Encoding ascii
@@ -132,6 +166,29 @@ try {
             $r = & $mod { param($a, $t) Invoke-GaussBatch @a -TimeoutSeconds $t } ($common + @{ Arguments = @("-b", "-x", $quick) }) $t
             Assert-That ($r.TimedOut -eq $false -and $r.Output -match "quick done") "${runner}: a quick job completes normally with timeout $t"
         }
+        # Escaped pipe holder: the runner must still return within the
+        # timeout plus its 30 s bounded drain, not wait on the orphan.
+        $drainLimit = 30
+        $esc = New-EscapeScript ("esc_hang_" + [System.IO.Path]::GetFileNameWithoutExtension($runner)) $true
+        $sw.Restart()
+        $r = & $mod { param($a, $t) Invoke-GaussBatch @a -TimeoutSeconds $t } ($common + @{ Arguments = @("-b", "-x", $esc) }) $TimeoutSeconds
+        $secs = $sw.Elapsed.TotalSeconds
+        Start-Sleep -Seconds 2
+        Assert-That ($r.TimedOut -eq $true -and $secs -ge $TimeoutSeconds -and $secs -lt $TimeoutSeconds + $drainLimit + 25) ("${runner}: hung job with an escaped pipe holder still returns, bounded ({0:N1} s)" -f $secs)
+        Assert-That ($r.Output -match "TIMEOUT: killed after $TimeoutSeconds s" -and $r.Output -match "NOTE: stdout/stderr still held open") "${runner}: TIMEOUT and held-open NOTE lines appended"
+        Assert-That (@(Get-MarkedProcesses | Where-Object { -not $_.CommandLine.Contains("$token-esc") }).Count -eq 0) "${runner}: tgauss and its in-tree child killed"
+        Assert-That ((Stop-EscapedProcesses) -ge 1) "${runner}: the escaped pipe holder really existed outside the tree (non-vacuous)"
+
+        $esc = New-EscapeScript ("esc_exit_" + [System.IO.Path]::GetFileNameWithoutExtension($runner)) $false
+        $sw.Restart()
+        $r = & $mod { param($a, $t) Invoke-GaussBatch @a -TimeoutSeconds $t } ($common + @{ Arguments = @("-b", "-x", $esc) }) 60
+        $secs = $sw.Elapsed.TotalSeconds
+        Assert-That ($r.TimedOut -eq $false -and $r.ExitCode -ne $null -and $secs -lt $drainLimit + 25) ("${runner}: normal exit with an escaped pipe holder returns, bounded ({0:N1} s)" -f $secs)
+        Assert-That ($r.Output -match "after escape" -and $r.Output -match "NOTE: stdout/stderr still held open") "${runner}: that job's output is kept and the NOTE appended"
+        Assert-That ((Stop-EscapedProcesses) -ge 1) "${runner}: escaped pipe holder existed for the normal-exit case"
+        Start-Sleep -Seconds 2
+        Assert-That ((Get-MarkedProcesses).Count -eq 0) "${runner}: nothing left alive after the escape cases"
+
         Remove-Module $mod
     }
 

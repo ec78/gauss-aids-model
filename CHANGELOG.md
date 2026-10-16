@@ -19,8 +19,8 @@ as internal milestone history and were never public compatibility promises.
   calls give identical results. An exhausted cap in the first
   (estimation) pass returns normally with `tvOut.mleRetcode /= 0`
   (`2` iterations, `11` time); a cap hit in the second pass is not
-  exposed, because `ssFitTVP()` discards that pass's return code. Invalid caps (non-scalar, zero, negative,
-  fractional `maxIters`, missing, NaN or infinite) stop the call with a
+  exposed, because `ssFitTVP()` discards that pass's return code.
+  Invalid caps (non-scalar, zero, negative, fractional `maxIters`, missing, NaN or infinite) stop the call with a
   clear `quaidsTVPFit: tvpCtl.maxIters/maxTime ...` error before
   estimation; a struct declared without `quaidsTVPControlCreate()`
   (empty fields) uses the defaults.
@@ -69,7 +69,17 @@ as internal milestone history and were never public compatibility promises.
   job that hangs on a grandchild process. It checks that the job is
   killed with its whole process tree and reported as a failure, that
   quick jobs are unaffected, and that the release scripts pass the
-  timeout through. It takes about 70 seconds.
+  timeout through. It takes about 4 minutes.
+- All three runners' `Invoke-GaussBatch` no longer make an unbounded
+  `WaitForExit()` call while a timeout is active. A process outside the
+  killed tree (for example an orphaned grandchild) that inherited the
+  stdout/stderr pipes could otherwise keep the runner waiting
+  indefinitely, even after a timeout kill. The stream drain is now
+  bounded to 30 s after exit. If the streams are still open then, the
+  readers are detached, the output already received is kept, and a
+  `NOTE:` line is added. `-TestTimeoutSeconds 0` keeps the old
+  unbounded wait. `verify_runner_timeouts.ps1` covers this case for
+  both a timed-out job and a normally exiting one.
 
 ### Maintainer notes (no user-facing change)
 

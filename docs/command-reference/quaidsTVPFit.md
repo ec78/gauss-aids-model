@@ -116,6 +116,7 @@ covariance-only pass on the untransformed `Q`), so the worst case is
 roughly twice each cap plus up to one iteration of overrun per pass.
 `mleRetcode` is the first pass's code; a cap hit in the second pass is
 not exposed by `sslib`.
+
 Measured on the deterministic, correctly specified test DGP in
 `tests/quaidstvpfit_test.e` (`n1=2`, `tobs=120`, `sslib` v2.1.0): each
 fit converged (`mleRetcode = 0`) in about 1-2 seconds. That is evidence

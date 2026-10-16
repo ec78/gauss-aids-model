@@ -76,16 +76,20 @@ function Invoke-GaussBatch {
     $proc = [System.Diagnostics.Process]::new()
     $proc.StartInfo = $psi
 
-    $outputBuilder = [System.Text.StringBuilder]::new()
-    $errorBuilder = [System.Text.StringBuilder]::new()
+    # Each stream's state carries an Eof flag: the event fires one last
+    # time with Data = $null when the stream closes, which the bounded
+    # drain below waits for.
+    $outputState = [pscustomobject]@{ Builder = [System.Text.StringBuilder]::new(); Eof = $false }
+    $errorState = [pscustomobject]@{ Builder = [System.Text.StringBuilder]::new(); Eof = $false }
 
     $timedOut = $false
+    $streamsOpen = $false
     $outputEvent = Register-ObjectEvent -InputObject $proc -EventName OutputDataReceived -Action {
-        if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
-    } -MessageData $outputBuilder
+        if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.Builder.AppendLine($EventArgs.Data) } else { $Event.MessageData.Eof = $true }
+    } -MessageData $outputState
     $errorEvent = Register-ObjectEvent -InputObject $proc -EventName ErrorDataReceived -Action {
-        if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
-    } -MessageData $errorBuilder
+        if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.Builder.AppendLine($EventArgs.Data) } else { $Event.MessageData.Eof = $true }
+    } -MessageData $errorState
 
     try {
         [void]$proc.Start()
@@ -99,22 +103,41 @@ function Invoke-GaussBatch {
                 & taskkill.exe /PID $proc.Id /T /F 2>&1 | Out-Null
                 [void]$proc.WaitForExit(30000)
             }
+            # Bounded drain. The no-argument WaitForExit() would also wait
+            # for both streams to close, but a process outside the killed
+            # tree that inherited them (e.g. an orphaned grandchild) can
+            # hold them open indefinitely. Wait at most 30 s for EOF, then
+            # detach the readers; output already written is kept.
+            $drain = [System.Diagnostics.Stopwatch]::StartNew()
+            while (-not ($outputState.Eof -and $errorState.Eof) -and $drain.Elapsed.TotalSeconds -lt 30) {
+                Start-Sleep -Milliseconds 50
+            }
+            if (-not ($outputState.Eof -and $errorState.Eof)) {
+                $streamsOpen = $true
+                try { $proc.CancelOutputRead() } catch { }
+                try { $proc.CancelErrorRead() } catch { }
+            }
+        } else {
+            # Timeout disabled: the no-argument overload waits for exit and
+            # for the async stdout/stderr readers to drain.
+            $proc.WaitForExit()
         }
-        # The no-argument overload also waits for the async stdout/stderr
-        # readers to drain.
-        $proc.WaitForExit()
     } finally {
         Unregister-Event -SourceIdentifier $outputEvent.Name -ErrorAction SilentlyContinue
         Unregister-Event -SourceIdentifier $errorEvent.Name -ErrorAction SilentlyContinue
     }
 
-    $output = $outputBuilder.ToString() + $errorBuilder.ToString()
+    $output = $outputState.Builder.ToString() + $errorState.Builder.ToString()
+    if ($streamsOpen) {
+        $output += "`r`nNOTE: stdout/stderr still held open 30 s after exit (by a process outside the job's tree); stopped reading`r`n"
+    }
     if ($timedOut) {
         $output += "`r`nTIMEOUT: killed after $TimeoutSeconds s (run_release_verification.ps1 -TestTimeoutSeconds)`r`n"
     }
 
     [pscustomobject]@{
-        ExitCode = $proc.ExitCode
+        # $null if even taskkill could not end the process.
+        ExitCode = $(if ($proc.HasExited) { $proc.ExitCode } else { $null })
         Output = $output
         TimedOut = $timedOut
     }

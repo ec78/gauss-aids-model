@@ -44,6 +44,15 @@ roadmap section 10.
     The generated `.lcg` is not hashed (documented).
   - The stale `quaids 0.3.0.zip` was moved out of the repo root (see
     Known Issues).
+- **Final audit follow-up (task `task_b255e6d2f250`):** a read-only
+  audit of `94c77f6` passed with four low findings, and these are now
+  fixed:
+  - While a timeout is active, the runners drain the output streams
+    for at most 30 s instead of waiting without limit. A process that
+    escaped the killed tree but still holds the stdout/stderr pipes can
+    no longer stall them. `verify_runner_timeouts.ps1` covers this case.
+  - The docs got a NaN in the invalid-cap list, a missing paragraph
+    break, and two rewrapped long lines.
 - **Still open:** P5 (an independent log-likelihood check), P6 (the
   n1 = 3/4 scale re-measurement) and P8 (the release gate). TVP-AIDS
   stays **Experimental**.

@@ -190,7 +190,7 @@ powershell -ExecutionPolicy Bypass -File tests\run_source_tests.ps1
 # run_release_gate.ps1)
 powershell -ExecutionPolicy Bypass -File tests\run_examples_smoke.ps1
 
-# Negative control for every runner's timeout/process-tree kill (~70 s;
+# Negative control for every runner's timeout/process-tree kill (~4 min;
 # run after touching any Invoke-GaussBatch)
 powershell -ExecutionPolicy Bypass -File tests\verify_runner_timeouts.ps1
 

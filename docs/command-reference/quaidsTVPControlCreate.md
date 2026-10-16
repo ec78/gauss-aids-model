@@ -71,7 +71,7 @@ for the time cap), and [printQuaidsTVP](printQuaidsTVP.md) flags it. A
 cap hit in the second pass is **not exposed**: `ssFitTVP()` discards
 that pass's return code upstream, and `quaidsTVPFit()` does not report
 the second pass's covariance. Invalid values (zero, negative,
-fractional `maxIters`, non-scalar, missing or infinite) stop
+fractional `maxIters`, non-scalar, missing, NaN or infinite) stop
 `quaidsTVPFit()` with a clear error before any estimation. A struct
 declared without this proc (`struct quaidsTVPControl tvpCtl;`) leaves
 both fields empty, and `quaidsTVPFit()` then uses the defaults.
