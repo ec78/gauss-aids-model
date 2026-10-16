@@ -27,11 +27,18 @@
 ** statsmodels side rebuilds Z_t itself, so Z construction is checked too.
 **
 ** Checks per DIAGONAL-H case (1, 2): (a) every period's log-likelihood
-** contribution, and (b) the total, match statsmodels within TOL; (c) the
-** objective ssFitTVP()'s CMLMT pass actually maximizes -- sslib's
-** _tvpLFNImpl() driven through this package's _quaidsTVPQUpdate() exactly
-** as _quaidsTVPMLEFit() configures it -- returns the same per-period
-** vector as (a), so the cross-checked number is the MLE's own objective.
+** contribution, and (b) the total, match statsmodels within TOL. These
+** are the independent numerical checks.
+**
+** Check (c), every case, is a WIRING check, not a numerical oracle:
+** sslib's _tvpLFNImpl() with transformed = 0, driven through this
+** package's _quaidsTVPQUpdate() with the diffuse init _quaidsTVPMLEFit()
+** uses, must return exactly the per-period vector of (a). That is the
+** untransformed path ssFitTVP() takes on its second (covariance) CMLMT
+** pass. It confirms the Q update and the y orientation reach the same
+** sslib filter. It does NOT exercise the transformed first pass that
+** does the maximizing (positive_vars set, so sstransformParms() runs
+** first), and both sides call the same kalmanFilterDiffuseTVP().
 **
 ** Case 3 (NON-diagonal H) is a KNOWN UPSTREAM DEFECT characterization, NOT
 ** a validation. sslib v2.1.0's kalmanFilterDiffuseTVP() decorrelates a
@@ -41,14 +48,24 @@
 ** rounding residue (inflated by the 1/sqrt(H) scaling) passes 1e-12, so
 ** it takes a spurious diffuse update: about +14 at period 4, then a
 ** diverging state path. Hand-verified in
-** fixtures/tvp_loglik/sslib_nondiag_h_repro.py. Only the pre-divergence
-** periods 1-3 are asserted, plus check (c). The full-sample discrepancy
-** is printed as KNOWN-UPSTREAM-DEFECT and is not counted. Non-diagonal H is
-** therefore NOT validated. It stays a promotion blocker until
-** gauss-state-space fixes it and a regression is added (see
-** dev/TVP_PROMOTION_ROADMAP.md). If an sslib fix lands, statsmodels
-** already holds the correct full-sample answer for case 3 in the
-** committed reference.
+** fixtures/tvp_loglik/sslib_nondiag_h_repro.py.
+** Counted for case 3: periods 1-3 match statsmodels (before the
+** divergence), plus two checks that PIN the defect so it cannot change
+** silently: the first period off by more than TOL is 4, and the
+** GAUSS-minus-statsmodels total is DEFECT_GAP within TOL. Those two
+** checks characterize the defect; they do not validate any numbers. Any
+** change at all, including the defect disappearing, FAILS them, and the
+** baseline must then be re-reviewed (see the FAIL text below). Non-diagonal
+** H is therefore NOT validated. It stays a promotion blocker until
+** gauss-state-space fixes it and case 3 becomes a full-sample check (see
+** dev/TVP_PROMOTION_ROADMAP.md). statsmodels already holds the correct
+** full-sample answer for case 3 in the committed reference.
+**
+** DEFECT_GAP is the gap GAUSS 26.1.4 / sslib v2.1.0 produce on this
+** machine, printed with %.16f: 13.8193341925737059. Its size depends on a
+** rounding residue, so it is only reproducible on a fixed build. The pin
+** uses the same TOL on purpose: any change to the upstream baseline should
+** force a re-review, not pass.
 **
 ** Tolerance. TOL = 1e-9 absolute, per period and on the total. Totals are
 ** 281-691 in magnitude, so this is about 1.5e-12 relative. Measured
@@ -93,6 +110,8 @@ proc (0) = check(cond, label);
 endp;
 
 TOL = 1e-9;
+DEFECT_FIRST = 4;
+DEFECT_GAP = 13.8193341925737059;
 n1 = 2;
 k_states = 2*n1 + n1*(n1+1)/2;
 
@@ -148,27 +167,36 @@ do while c <= ncase;
         call check(maxc(abs(rslt.loglikelihood[1:nPre] - llRef[1:nPre])) < TOL,
             "case " $+ ftocv(c, 1, 0) $+ " (non-diagonal H): pre-divergence periods 1-3 match statsmodels within 1e-9");
         dFlag = abs(rslt.loglikelihood - llRef) .> TOL;
+        gap = sumc(rslt.loglikelihood) - sumc(llRef);
         if sumc(dFlag) > 0;
             firstBad = minc(selif(seqa(1, 1, tobs), dFlag));
             print "KNOWN-UPSTREAM-DEFECT  case " $+ ftocv(c, 1, 0) $+ " (non-diagonal H, sslib kalmanFilterDiffuseTVP): first period off = "
-                $+ ftocv(firstBad, 1, 0) $+ ", GAUSS - statsmodels total = " $+ sprintf("%.10f", sumc(rslt.loglikelihood) - sumc(llRef))
-                $+ ", max |per-period diff| = " $+ sprintf("%.6e", dPer) $+ " (not counted; NOT validated)";
+                $+ ftocv(firstBad, 1, 0) $+ ", GAUSS - statsmodels total = " $+ sprintf("%.16f", gap)
+                $+ ", max |per-period diff| = " $+ sprintf("%.6e", dPer) $+ " (full sample NOT validated)";
         else;
-            print "NOTE  case " $+ ftocv(c, 1, 0) $+ " (non-diagonal H) now matches statsmodels over the full sample -- the upstream defect appears fixed; revalidate and promote this case to a counted check.";
+            firstBad = 0;
+            print "FAIL  case " $+ ftocv(c, 1, 0) $+ " (non-diagonal H) now matches statsmodels over the full sample: the upstream sslib baseline CHANGED. "
+                $+ "Re-review the fix, then update this characterization and the promotion gate (make case 3 a full-sample check).";
         endif;
+        call check(firstBad == DEFECT_FIRST,
+            "case " $+ ftocv(c, 1, 0) $+ " (non-diagonal H) KNOWN-UPSTREAM-DEFECT pin: first period off is 4 (characterization, not validation)");
+        call check(abs(gap - DEFECT_GAP) < TOL,
+            "case " $+ ftocv(c, 1, 0) $+ " (non-diagonal H) KNOWN-UPSTREAM-DEFECT pin: GAUSS - statsmodels total is 13.8193341925737 within 1e-9 (characterization, not validation)");
     endif;
 
-    /* (c): the objective ssFitTVP()'s untransformed CMLMT pass evaluates,
-       configured exactly as _quaidsTVPMLEFit() does (diffuse init,
-       _quaidsTVPQUpdate writing diag(q) into Q). transformed = 0 so p is
-       q itself; no analytic gradient (ssControlCreate's gradproc = 0). */
+    /* (c): wiring only. The untransformed path ssFitTVP() takes on its
+       second (covariance) CMLMT pass: diffuse init, _quaidsTVPQUpdate
+       writing diag(q) into Q, transformed = 0 so p is q itself, no
+       analytic gradient (ssControlCreate's gradproc = 0). Compared to the
+       same sslib filter, so it is not a numerical oracle; the transformed
+       first (maximizing) pass is not exercised. */
     ssCtl = ssControlCreate(k_states, n1, k_states, tobs);
     ssCtl.init = "diffuse";
     ssCtl.transformed = 0;
     ssCtl.tvp = _quaidsTVPBuildModel(Zarr, eye(k_states), H, n1);
     mm = _tvpLFNImpl(q, y, &_quaidsTVPQUpdate, &init_diffTVP, 0, 0, ssCtl);
     call check(maxc(abs(mm.function - rslt.loglikelihood)) == 0,
-        "case " $+ ftocv(c, 1, 0) $+ ": the MLE objective (sslib _tvpLFNImpl via _quaidsTVPQUpdate) equals the filter path exactly");
+        "case " $+ ftocv(c, 1, 0) $+ ": wiring -- untransformed second-pass objective (sslib _tvpLFNImpl via _quaidsTVPQUpdate, transformed = 0) equals the filter path exactly");
 
     c = c + 1;
 endo;

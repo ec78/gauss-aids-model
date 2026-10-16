@@ -55,7 +55,8 @@ roadmap section 10.
     break, and two rewrapped long lines.
 - **P5 (2026-10-16, task `task_8c1e86fde0fd`, local commit only, still
   0.4.0, tests and docs only):** an independent fixed-Q log-likelihood
-  cross-check, `tests/quaidstvp_loglik_xcheck_test.e` (11/11), compares
+  cross-check, `tests/quaidstvp_loglik_xcheck_test.e` (13/13 after the audit
+  follow-up), compares
   against statsmodels 0.15.0's exact diffuse filter (numpy 2.5.1,
   Python 3.12.0) on the committed fixture `tests/fixtures/tvp_loglik/`.
   - **Diagonal H passes.** Case 1 (DGP Q) gives 690.6901320251270 in
@@ -63,12 +64,17 @@ roadmap section 10.
     281.2743884578091 vs 281.2743884578097. The largest difference is
     4.0e-13 per period and 6.3e-13 on a total; the tolerance is 1e-9
     absolute.
-  - The MLE objective (`_tvpLFNImpl`) equals the filter path exactly.
+  - A wiring check: `_tvpLFNImpl` with `transformed = 0`, the untransformed
+    second-pass path, equals the filter path exactly. It uses the same
+    sslib filter, so it is not a numerical oracle and is not the
+    maximizing (transformed) pass.
   - **Non-diagonal H fails upstream.** Case 3 gives 688.0306 vs 674.2113:
     sslib's absolute `F_inf > 1e-12` test, applied after Cholesky
     scaling, takes a spurious diffuse update at period 4. This was
-    hand-verified in numpy. Only periods 1-3 are asserted; the full gap
-    is printed as `KNOWN-UPSTREAM-DEFECT` and not counted.
+    hand-verified in numpy. Periods 1-3 are asserted. The defect is
+    pinned by counted characterization checks (first divergence at
+    period 4, total gap 13.8193341925737059 within 1e-9), so any upstream
+    change fails the test. The full sample is still not validated.
   - Full `run_source_tests.ps1` (no skips, 1800 s timeout) passed:
     32 files, 773 checks, 42/42 guards and 0 FAIL. Stages 1-6 gave
     56/13/8/7/8/30.
@@ -1222,9 +1228,13 @@ Limitations:
     update.
   - On the P5 fixture this is +14.19 at period 4, and the state path
     differs from then on. The total is off by +13.82 vs statsmodels.
-  - It triggers when `k_states mod n1 != 0`, i.e. for an even `n1`.
-    Diagonal H is unaffected: it is never row-scaled. That covers every
-    test, example 14 and the documented `diagrv` recipe.
+  - It needs the diffuse phase to end mid-period. An even `n1`
+    (`k_states mod n1 != 0`) is a common, sufficient way for that to
+    happen, not a necessary one, and it fires only if the residue's
+    rounding passes 1e-12. Diagonal H is unaffected: it is never
+    row-scaled. That covers every test except the P5 cross-check's own
+    case 3 (excluded, unvalidated), plus example 14 and the documented
+    `diagrv` recipe.
   - The time-invariant `kalmanFilterDiffuse()` uses the same pattern
     but was not tested here.
   - Evidence: `tests/fixtures/tvp_loglik/README.md` and
@@ -1232,8 +1242,9 @@ Limitations:
   - The same recursion with LDL decorrelation, or with a threshold of
     1e-10, matches statsmodels to 1.7e-13.
   - To do: file it with gauss-state-space, then promote case 3 in
-    `quaidstvp_loglik_xcheck_test.e` to a counted check once a fixed tag
-    is pinned. **This blocks any claim that non-diagonal H is supported.**
+    `quaidstvp_loglik_xcheck_test.e` from its pinned-defect
+    characterization to a full-sample check once a fixed tag is pinned
+    (the pin fails as soon as the baseline changes). **This blocks any claim that non-diagonal H is supported.**
 - **`examples/14_tvp_aids_estimation.e` prints "The covariance of the
   parameters failed to invert"** in both of its CMLMT summaries
   (observed 2026-10-16 on v2.1.0; the fit still converges, retcode 0,

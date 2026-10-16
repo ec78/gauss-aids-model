@@ -71,10 +71,20 @@ Environment:
 | 2 | 281.2743884578091 | 281.2743884578097 | 3.97e-13 | 6.25e-13 | PASS |
 | 3 | 688.0306020430203 | 674.2112678504466 | 14.19 (period 4) | 13.82 | **known upstream defect, not validated** |
 
-For every case, check (c) holds exactly (difference 0): sslib's
-`_tvpLFNImpl()`, the objective `ssFitTVP()` maximizes, run through
-`_quaidsTVPQUpdate()` as `_quaidsTVPMLEFit()` configures it, returns the
-same per-period vector as the filter path.
+For every case, check (c) holds exactly (difference 0). It is a
+**wiring check, not a numerical oracle.** It runs sslib's `_tvpLFNImpl()`
+with `transformed = 0`, through `_quaidsTVPQUpdate()` and the diffuse
+init `_quaidsTVPMLEFit()` uses, and gets the same per-period vector as
+the filter path.
+- That is the untransformed path `ssFitTVP()` takes on its second
+  (covariance) CMLMT pass.
+- It does not exercise the transformed first pass, which does the
+  maximizing (`positive_vars` is set, so `sstransformParms()` runs
+  first).
+- Both sides call the same `kalmanFilterDiffuseTVP()`.
+
+The statsmodels comparisons in cases 1 and 2 are the independent
+numerical check.
 
 **Tolerance: 1e-9 absolute**, per period and on the total. That is about
 1.5e-12 relative to totals of 281-691.
@@ -117,13 +127,35 @@ So this is a defect in the upstream implementation, not a convention
 ambiguity.
 
 Diagonal H is never row-scaled and is unaffected. That covers cases 1 and
-2, every committed TVP test, example 14 and the documented `diagrv(...)`
-H recipe. The trigger is a diffuse phase that ends **mid-period**, which
-happens when `k_states mod n1 != 0`, i.e. even `n1`.
+2, every other committed TVP test, example 14 and the documented
+`diagrv(...)` H recipe. Case 3 of this test is the only non-diagonal-H
+case, and it stays excluded and unvalidated.
 
-The test asserts that periods 1-3 match (before the divergence). It
-prints the full-sample gap as a `KNOWN-UPSTREAM-DEFECT` line that is
-**not** counted, and prints a `NOTE` if the gap disappears.
+**When it can trigger.** The mechanism needs the diffuse phase to end
+**mid-period**. The common way this happens is `k_states mod n1 != 0`,
+i.e. an even `n1`, since each observation removes one diffuse direction.
+That is a sufficient, common condition, not a necessary one: a period
+whose `Z_t` is rank-deficient can also leave the phase ending partway
+through. It is also not guaranteed to fire, because whether the residue
+passes `1e-12` depends on rounding. Treat any non-diagonal H as
+unvalidated, whatever `n1` is.
+
+**What the test asserts for case 3.**
+- Periods 1-3 match statsmodels within 1e-9 (before the divergence).
+- Two counted checks **pin** the defect so it cannot change silently:
+  - the first period off by more than 1e-9 is 4;
+  - the GAUSS-minus-statsmodels total is `13.8193341925737059` within
+    1e-9. That is the gap GAUSS 26.1.4 with sslib v2.1.0 gives on this
+    machine, printed with `%.16f`.
+- These two checks characterize the defect. They do **not** validate
+  any numbers.
+- The gap's size comes from a rounding residue, so it reproduces only on
+  a fixed build. The tight pin is on purpose: any change to the upstream
+  baseline should force a re-review rather than pass.
+- If the gap disappears, the test prints an explicit `FAIL` saying the
+  upstream baseline changed. The first-period pin then fails, and this
+  characterization and the promotion gate must be updated.
+- The full-sample gap is still printed as a `KNOWN-UPSTREAM-DEFECT` line.
 
 **Non-diagonal H is not validated.** It remains a TVP promotion blocker
 until gauss-state-space fixes the threshold and a regression is added.
@@ -135,7 +167,7 @@ that regression.
 ```powershell
 # GAUSS check (from tests/)
 $env:GAUSS26_CFG = (Resolve-Path tests\gauss26_cfg_override).Path
-cd tests; C:\gauss26\tgauss.exe -b -x quaidstvp_loglik_xcheck_test.e   # ALL 11 CHECKS PASSED
+cd tests; C:\gauss26\tgauss.exe -b -x quaidstvp_loglik_xcheck_test.e   # ALL 13 CHECKS PASSED
 
 # Reference (from tests/fixtures/tvp_loglik/; needs numpy + statsmodels)
 python statsmodels_reference.py --check   # 0.000e+00 vs committed

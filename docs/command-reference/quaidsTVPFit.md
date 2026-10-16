@@ -101,9 +101,11 @@ given the identification risk above.
 validated**. Against `sslib` v2.1.0, the fixed-`Q` log-likelihood
 matches an independent statsmodels implementation to about 1e-12 with a
 diagonal `H`. With a non-diagonal `H` it can be wrong: when the diffuse
-phase ends partway through a period (an even `n1`), `sslib`'s exact
-diffuse filter takes a spurious diffuse update. This is a known upstream
-issue (see `tests/fixtures/tvp_loglik/README.md`).
+phase ends partway through a period, `sslib`'s exact diffuse filter can
+take a spurious diffuse update. An even `n1` is a common way for that to
+happen, but not the only one, so treat any non-diagonal `H` as
+unvalidated. This is a known upstream issue (see
+`tests/fixtures/tvp_loglik/README.md`).
 
 **No delta-method standard errors.** Propagating the state's own
 filtered/smoothed covariance through the (linear) state-to-coefficients

@@ -498,10 +498,15 @@ records provenance, independence, the convention and the commands.
   more than three orders above the measured rounding, and about nine
   below a real logic difference (`ln 2pi` = 0.92 per period; a spurious
   diffuse update is about 14). No existing tolerance or reference moved.
-- Check (c) holds for every case: sslib's `_tvpLFNImpl()`, the MLE's
-  actual objective, run through `_quaidsTVPQUpdate()`, equals the filter
-  path exactly.
-- Result: 11/11 checks pass. Two runs gave identical output.
+- Check (c) holds for every case: sslib's `_tvpLFNImpl()` with
+  `transformed = 0`, run through `_quaidsTVPQUpdate()`, equals the filter
+  path exactly. This is a **wiring check** of the untransformed
+  second-pass path of `ssFitTVP()`, compared with the same sslib filter.
+  It is not an independent numerical oracle, and it does not exercise
+  the transformed, maximizing first pass. The statsmodels cases are the
+  numerical check.
+- Result: 11/11 checks pass. Two runs gave identical output. (13/13
+  after the audit follow-up below.)
 
 **Case 3 is an upstream defect, not a convention difference.** The
 coordinator decided to keep it as a characterization only.
@@ -514,22 +519,25 @@ coordinator decided to keep it as a characterization only.
 - `sslib_nondiag_h_repro.py` reproduces this. The same recursion with
   LDL decorrelation, or a 1e-10 or 1e-8 threshold, matches statsmodels
   to 1.7e-13.
-- It triggers when the diffuse phase ends mid-period
-  (`k_states mod n1 != 0`, i.e. even n1).
+- It needs the diffuse phase to end mid-period. An even n1
+  (`k_states mod n1 != 0`) is a common, sufficient way for that to
+  happen, not a necessary one: a rank-deficient `Z_t` period can do it
+  too. Even then it fires only if the residue's rounding passes 1e-12.
 - The test asserts periods 1-3 and prints the full gap as
-  `KNOWN-UPSTREAM-DEFECT`, which is not counted. It prints a `NOTE` if
-  the gap disappears.
+  `KNOWN-UPSTREAM-DEFECT`. (Superseded by the audit follow-up below,
+  which pins the defect instead of leaving it uncounted.)
 - **Remaining blocker:** an upstream gauss-state-space fix, a repin, and
   promotion of case 3 to a counted check. The reference column is already
   committed.
 
 **Revalidation (2026-10-16).**
-- `testsun_source_tests.ps1 -TestTimeoutSeconds 1800` was run with no
+- `tests\run_source_tests.ps1 -TestTimeoutSeconds 1800` was run with no
   skip flags. Result: `run_source_tests.ps1: PASS`, with 32 test files
   (773 checks), 42/42 guard cases (22 of them TVP), 0 FAIL and no
   timeouts. It finished at 06:11 local time.
 - TVP results: Stage 1 56/56, Stage 5 13/13, Stage 2 8/8, Stage 3 7/7,
-  Stage 4 8/8, Stage 6 30/30, and the P5 cross-check 11/11.
+  Stage 4 8/8, Stage 6 30/30, and the P5 cross-check 11/11 (13/13
+  after the audit follow-up below).
 - No reference value or tolerance needed to move.
 - Example 14 was run against the 0.4.0 source through
   `run_examples_smoke.ps1 -ExamplesDir <scratch> -ExampleList
@@ -544,3 +552,32 @@ coordinator decided to keep it as a characterization only.
 - P8: the release gate;
 - the non-diagonal-H upstream defect above;
 - the complex/G0518 upstream risk.
+
+### 2026-10-16: P5 audit follow-up (still package 0.4.0)
+
+An independent read-only audit of the P5 commit passed it with findings.
+This follow-up changes tests and docs only: no `src/`, version, install,
+reference value or upstream change.
+- **Case 3 is now pinned, not left uncounted.** The test counts two
+  characterization checks:
+  - the first period off by more than 1e-9 is 4;
+  - the GAUSS-minus-statsmodels total is `13.8193341925737059` within
+    1e-9 (GAUSS 26.1.4 with sslib v2.1.0, printed with `%.16f`).
+  - Any change to the upstream baseline fails the test. If the defect
+    disappears, the test prints an explicit `FAIL`: re-review the fix,
+    then update this characterization and the promotion gate.
+  - These checks are still not validation. The full sample with a
+    non-diagonal H stays unvalidated.
+- **Check (c) is described accurately.** It is a wiring check of the
+  untransformed (`transformed = 0`) second-pass path, compared with the
+  same sslib filter. It is not the maximizing objective and not a
+  numerical oracle.
+- **The even-n1 wording is narrowed.** An even n1 is a common,
+  sufficient way to trigger the defect, not a necessary one.
+- A literal CR byte that corrupted `tests\run_source_tests.ps1` in the
+  P5 revalidation notes is removed.
+- **Negative controls, run on scratch copies:**
+  - shifting the pinned gap by 1e-9 gives `1 CHECKS FAILED`;
+  - forcing "no divergence" prints the baseline-changed `FAIL` and fails
+    the first-period pin.
+- **Result:** 13/13 checks pass, identical across two runs.

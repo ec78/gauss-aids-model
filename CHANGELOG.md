@@ -91,13 +91,18 @@ as internal milestone history and were never public compatibility promises.
   - With **diagonal `H`**, GAUSS (sslib v2.1.0) and statsmodels 0.15.0
     agree to at most 4.0e-13 per period and 6.3e-13 on the total.
     The documented tolerance is 1e-9 absolute.
-  - The objective `ssFitTVP()` maximizes equals the filter path exactly.
+  - A wiring check confirms that sslib's `_tvpLFNImpl()`, run with
+    `transformed = 0` (the untransformed second-pass path of
+    `ssFitTVP()`), equals the filter path exactly. Both sides call the
+    same sslib filter, so this is not an independent numerical check,
+    and it does not exercise the transformed, maximizing first pass.
   - Python (numpy, statsmodels) is needed only to regenerate the
     committed reference, never by package users or at test time.
 - **Known issue found by P5 (upstream, not fixed here):** with a
   **non-diagonal `H`**, sslib v2.1.0's `kalmanFilterDiffuseTVP()` takes a
-  spurious diffuse update when the diffuse phase ends mid-period, which
-  happens with an even `n1`. Its absolute `1e-12` per-element test is
+  spurious diffuse update when the diffuse phase ends mid-period. An even
+  `n1` is a common, sufficient way for that to happen, but not the only
+  one, and it does not always fire. Its absolute `1e-12` per-element test is
   applied after Cholesky row scaling. On the fixture this adds about +14
   to one period's log-likelihood (13.82 on the total) and shifts the
   state path from then on. This was hand-verified in
@@ -105,7 +110,11 @@ as internal milestone history and were never public compatibility promises.
   - `quaidsTVPFit()` results with a non-diagonal `H` are therefore not
     validated.
   - Diagonal `H` is unaffected. That covers the documented recipe,
-    example 14 and every test.
+    example 14 and every test except the cross-check's own case 3.
+  - Case 3 (non-diagonal `H`) pins the current defect: first divergence
+    at period 4 and a total gap of 13.8193341925737059, both to 1e-9.
+    These are characterization checks, not validation. If the upstream
+    baseline changes, the test fails and asks for a re-review.
 
 ### Maintainer notes (no user-facing change)
 
