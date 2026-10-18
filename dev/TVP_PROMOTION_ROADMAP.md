@@ -7,7 +7,8 @@ non-diagonal H gave a wrong diffuse likelihood in sslib v2.1.0. On
 2026-10-17 (Stage 1) sslib was repinned to v2.1.1, which fixes it, and P5
 case 3 became a counted full-sample check, so **P5 is closed** (section
 10). P6 (bounded `n1` scale re-measurement) was done on 2026-10-17
-(Stage 2, section 10). P8 remains open, so TVP-AIDS stays Experimental._
+(Stage 2, section 10). P8 (the release gate) passed on 2026-10-17
+(Stage 3, section 10), and TVP-AIDS is now **Supported (scoped)**._
 
 This is the durable plan for promoting TVP-AIDS (`quaidsTVPFit()` and the
 Stage 1-6 machinery in `src/quaidstvp*.src`) from **Experimental** to a
@@ -290,6 +291,8 @@ next step starts.
   FAIL at the timeout.
 
 **P8: Release gate and support-tier change** (section 6).
+- **Status: done (2026-10-17, Stage 3).** Every section 6 criterion
+  passed. The tier is now Supported (scoped). See section 10.
 
 ## 6. Release acceptance criteria (TVP gate)
 
@@ -694,3 +697,62 @@ code, public API or version change.
 - P8: the release gate. This includes the support-tier judgment for
   non-diagonal H and for the delta-method covariance, and a re-check of
   the complex/G0518 risk.
+
+### 2026-10-17: Stage 3 -- P8 release gate, Supported (scoped) (still package 0.4.0)
+
+Task `task_d49ed011d38a`. Docs only: no code, public API or version
+change. Local commits only; nothing is pushed, tagged or published. The
+private direct-LM prototype is untouched.
+
+**Gate run 1** was on the D0 baseline: clean HEAD `d02a812`, sslib tag
+v2.1.1 at `bf827aed3a72a5a3b541ce0a6a927c1665a9f992`, GAUSS 26.1.4.5565,
+on 2026-10-17 from 20:39:32 to 20:45:49 local (377.1 s).
+
+| Section 6 criterion | Result |
+|---|---|
+| 1. `verify_sslib_pin.ps1 -Strict` | PASS (10 files, version 2.1.1) |
+| 2. `run_source_tests.ps1`, no `-SkipTVPKalman`, 1800 s per test | PASS: 32 files, 774 checks, 42/42 guards (22 TVP), no timeouts. TVP: 56/13/8/7/8/30 + cross-check 12 |
+| 3. `run_examples_smoke.ps1` | PASS 15/15. Example 14: both fits CONVERGED in 23 iterations |
+| 4. `run_release_verification.ps1 -BuildArtifact -ForceArtifact -InstallArtifact` + installed API tests | PASS (`package_public_api.e`, `package_public_api_core_only.e`) |
+| 5. `run_release_gate.ps1` | **GO**. Artifact SHA-256 `290810136E491781A7317BCC7135C0285744C3ECBCF5F4F0AB1B3FDE7F05969F` |
+| 6. Docs, plus consistency/quality checks | Updated after run 1; all four checks and `git diff --check` pass |
+| 7. Record in `PROJECT_STATUS.md` | Done |
+
+- **Install warning.** `Remove-Item` on the install directory failed
+  ("used by another process"), as in the 0.3.0 gate. A content diff
+  found the extracted install identical to the artifact: 210/210 files,
+  plus the generated `.lcg`.
+- **Complex/G0518 re-check.** No `function evaluated as complex`, G0518
+  or "failed to invert" line appeared in the whole gate log. With
+  v2.1.1's removal of the second CMLMT pass, the observed trigger is
+  gone. This is evidence from this run only.
+- **Run 1 is not the final certification.** Its artifact's 0.4.0 release
+  notes (taken from the CHANGELOG 0.4.0 section) were stale. They said
+  sslib v2.1.0, two CMLMT passes, and non-diagonal H unvalidated.
+
+**Support-tier judgment (coordinator-approved): Supported (scoped).**
+- **Supported scope:**
+  - a fixed, diagonal H;
+  - finite `maxIters`/`maxTime`;
+  - a mandatory `mleRetcode == 0` check.
+- **Not claimed:**
+  - convergence (`n1=3` was measured not to converge, P6);
+  - standard errors;
+  - IV/endogeneity treatment.
+- **Non-diagonal H** is validated only for the fixed-Q likelihood (P5
+  case 3, one case). It is outside the supported estimation scope.
+- **Delta-method Q covariance.** It is internal to sslib and not exposed
+  in `quaidsTVPOut`, so nothing is claimed for it.
+
+The tier is not Stable, because the README defines Stable as having no
+convergence-failure mode.
+
+**Docs changed:**
+- CHANGELOG: the Unreleased items are folded into a corrected 0.4.0
+  section, and a P8 entry is added.
+- README: the tier row and the TVP section.
+- FEATURE_SUPPORT_MATRIX: a new TVP row.
+- The `quaidsTVPFit` and `quaidsTVPControlCreate` pages.
+
+**Final gate.** It is rerun from the committed docs, and the result is
+recorded below.

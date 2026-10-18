@@ -36,11 +36,12 @@ None.
   `$+`/`ftocv()` produce is accepted. Coerce with a leading `0$+` first:
   `tvpCtl.othnam = 0$+someDollarPipeBuiltNames;`.
 - `maxIters` - `1e5` by default (CMLMT's own default): the iteration
-  cap for the `Q` maximum-likelihood step, **per CMLMT pass** (see
-  Remarks). Must be a finite positive integer scalar. *(Added in 0.4.0.)*
+  cap for the `Q` maximum-likelihood step, which is one CMLMT pass with
+  `sslib` v2.1.1 (see Remarks). Must be a finite positive integer
+  scalar. *(Added in 0.4.0.)*
 - `maxTime` - `1e8` by default (CMLMT's own default): the wall-clock cap
-  for the `Q` maximum-likelihood step, in **minutes**, **per CMLMT pass**
-  (see Remarks). Must be a finite positive scalar. *(Added in 0.4.0.)*
+  for the `Q` maximum-likelihood step, in **minutes** (see Remarks).
+  Must be a finite positive scalar. *(Added in 0.4.0.)*
 
 ## Remarks
 
@@ -53,9 +54,13 @@ fields -- they are required, data-dependent arguments to
 so a fit made with the defaults is identical to one made before these
 fields existed -- and, like before, effectively unbounded. Set finite
 values to bound run time. A converged fit does not depend on a cap it
-never reached.
+never reached. **Finite caps are part of `quaidsTVPFit()`'s supported
+scope** (Supported (scoped) tier, together with a fixed diagonal `H`
+and a mandatory `tvOut.mleRetcode == 0` check; see
+[quaidsTVPFit](quaidsTVPFit.md) Remarks). A fit made with the default
+caps is outside that scope.
 
-**Both caps apply per CMLMT pass.** With the pinned `sslib` v2.1.1,
+**What the caps bound.** With the pinned `sslib` v2.1.1,
 `ssFitTVP()` runs **one** CMLMT pass: the estimation pass. The
 covariance of the positivity-transformed `Q` is converted by the delta
 method, with no second CMLMT run. So the caps bound the whole MLE, plus

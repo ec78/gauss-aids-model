@@ -5,12 +5,12 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-17 (Stage 2 / P6)_
+_Last updated: 2026-10-17 (Stage 3 / P8)_
 
 ## Current Objective
 
-**PRIORITY 1 (active, set 2026-10-15): promote TVP-AIDS out of
-Experimental.** Plan, evidence, decision gate and acceptance criteria:
+**PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
+Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
 **`dev/TVP_PROMOTION_ROADMAP.md`**.
 
 **Progress 2026-10-15 (task `task_575ce63c08a6`, package 0.4.0, local
@@ -123,10 +123,69 @@ roadmap section 10.
   - The README row, `quaidsTVPFit.md` and example 14's comments now
     state only these measurements. The old claim that `n1=4` was
     pathologically slow is withdrawn.
-- **Still open:** P8 (the release gate). P8 includes the support-tier judgment for non-diagonal H
-  and for the delta-method covariance, and a re-check of the complex/G0518
-  risk, whose second-pass trigger v2.1.1 removed. TVP-AIDS stays
-  **Experimental**.
+- **Stage 3 / P8 (2026-10-17, task `task_d49ed011d38a`, local commits
+  only, still 0.4.0; docs only, no code, API or version change): the
+  release gate passed, and TVP-AIDS is promoted to Supported (scoped).**
+  See roadmap section 10 for the full record.
+  - **Gate run 1** was on the D0 baseline, clean HEAD `d02a812`, on
+    2026-10-17 from 20:39:32 to 20:45:49 local (377.1 s). Environment:
+    GAUSS 26.1.4.5565 and PowerShell 5.1.26100. sslib was tag v2.1.1,
+    commit `bf827aed3a72a5a3b541ce0a6a927c1665a9f992`.
+    - `verify_sslib_pin.ps1 -Strict` passed (10 files, version 2.1.1).
+    - `run_release_gate.ps1 -TestTimeoutSeconds 1800` reported **GO**.
+      It runs `run_release_verification.ps1 -BuildArtifact
+      -ForceArtifact -InstallArtifact` with no skip flags.
+    - Source suite: 32 files, 774 checks, 42/42 guards (22 TVP), 0 FAIL,
+      no timeouts. The TVP tests gave Stage 1 56, Stage 5 13, Kalman 8,
+      MLE 7, smoother 8, `quaidstvpfit_test` 30 and cross-check 12, all
+      passing. The TVP group took about 15 s.
+    - Manifest, public-API (54 procs, 16 structs), docs-consistency and
+      docs-quality checks passed.
+    - The artifact was built and `verify_release_artifact.ps1` passed
+      (63 doc pages). The installed-package `package_public_api.e` and
+      `_core_only.e` tests passed. `run_examples_smoke.ps1` passed 15/15.
+      In example 14, both fits CONVERGED in 23 iterations (about 0.08
+      CMLMT min each).
+    - No `function evaluated as complex`, G0518 or "failed to invert"
+      line appeared anywhere in the gate log. That closes the complex
+      re-check on v2.1.1.
+    - Artifact SHA-256: `290810136E491781A7317BCC7135C0285744C3ECBCF5F4F0AB1B3FDE7F05969F`.
+      Record: `release_records/0.4.0-20261017-204549.json`, gitignored.
+    - The convergence sweep was captured: iterated AIDS 39/19/42% and
+      QUAIDS 54.5/21.5/24%, unchanged.
+    - **Warning:** the install step's `Remove-Item C:\gauss26\pkgs\quaids`
+      failed ("used by another process"), as it did in the 0.3.0 gate,
+      and the artifact was extracted over the old directory. A content
+      diff found all 210 artifact files byte-identical in the install,
+      with the generated `lib/quaids.lcg` as the only extra file.
+    - This run is **not** the final certification. An independent
+      review found that its artifact's 0.4.0 release notes were stale:
+      they still said sslib v2.1.0, two CMLMT passes, and non-diagonal H
+      unvalidated.
+  - **Tier decision (coordinator-approved): Supported (scoped).** The
+    scope is:
+    - a fixed, diagonal H;
+    - finite `maxIters`/`maxTime`;
+    - a mandatory `mleRetcode == 0` check.
+
+    There is no convergence guarantee, no standard-error claim and no
+    IV/endogeneity treatment. A non-diagonal H is validated for the
+    fixed-Q likelihood only and is outside the supported estimation
+    scope. The Q delta-method covariance is not exposed in
+    `quaidsTVPOut`, so nothing is claimed for it.
+  - **Docs:**
+    - CHANGELOG: Unreleased is folded into a corrected 0.4.0 section,
+      and a P8 tier entry is added.
+    - README: the tier row and the TVP section, including a fix to the
+      stale two-pass code comment.
+    - FEATURE_SUPPORT_MATRIX: a new TVP row.
+    - The `quaidsTVPFit`/`quaidsTVPControlCreate` pages: scope, and
+      removal of the stale second-pass text.
+  - **Final gate:** rerun from the committed docs; see roadmap section
+    10.
+- **Open:** the 0.4.0 `date-released` (2026-10-15, in CHANGELOG and
+  CITATION.cff) is left for the owner to set at tagging. Nothing is
+  pushed, tagged or published.
 
 The rest of this section is the original 2026-10-15 read-only diagnosis
 (task `task_03d43536665b`). It is kept as evidence; its "TIMEOUT",

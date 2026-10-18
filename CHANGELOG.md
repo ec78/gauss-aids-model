@@ -4,41 +4,107 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
-## Unreleased
+## 0.4.0 - 2026-10-15
+
+### Added
+
+- `quaidsTVPControl.maxIters` and `quaidsTVPControl.maxTime` (TVP-AIDS
+  promotion P3): caps on the CMLMT iterations and wall-clock minutes of
+  `quaidsTVPFit()`'s `Q` maximum-likelihood step, written into the CMLMT
+  control `ssFitTVP()` uses. With the pinned `sslib` v2.1.1, `ssFitTVP()`
+  runs **one** CMLMT pass, so the caps bound the whole MLE, plus up to
+  one iteration of overrun (`maxTime` is checked once per iteration).
+  Defaults (`1e5`, `1e8`) are CMLMT's own, so existing calls give
+  identical results. An exhausted cap returns normally with
+  `tvOut.mleRetcode /= 0` (`2` iterations, `11` time). Invalid caps
+  (non-scalar, zero, negative, fractional `maxIters`, missing, NaN or
+  infinite) stop the call with a clear `quaidsTVPFit:
+  tvpCtl.maxIters/maxTime ...` error before estimation; a struct
+  declared without `quaidsTVPControlCreate()` (empty fields) uses the
+  defaults.
+- `examples/14_tvp_aids_estimation.e` sets explicit, practical caps
+  (`maxIters = 500`, `maxTime = 5` minutes) and explains them. This
+  example now needs the 0.4.0 package installed, because the cap fields
+  do not exist in 0.3.0.
 
 ### Changed
 
-- `sslib` baseline repinned to release tag v2.1.1
-  (`bf827aed3a72a5a3b541ce0a6a927c1665a9f992`) with
-  `scripts/sync_sslib.ps1`. This package's code, public API and version
-  are unchanged. The previous v2.1.0 install was backed up first. v2.1.1
-  changes two things that `quaidsTVPFit()` depends on:
+- **TVP-AIDS support tier: Experimental -> Supported (scoped)**
+  (TVP-AIDS promotion P8). The full local release gate passed in one
+  session on the pinned `sslib` v2.1.1 baseline. That run included
+  `verify_sslib_pin.ps1 -Strict`, the source suite with every TVP test
+  and guard, all examples including 14, the build, install and
+  installed-package tests, and `run_release_gate.ps1` reporting GO. The
+  supported scope is exactly:
+  - a fixed, **diagonal** `H`;
+  - finite `tvpCtl.maxIters`/`tvpCtl.maxTime`;
+  - a mandatory `tvOut.mleRetcode == 0` check on every fit.
+
+  It carries no convergence guarantee, no standard-error claim and no
+  IV/endogeneity treatment of total expenditure. A non-diagonal `H` is
+  validated for the fixed-`Q` log-likelihood only and stays outside the
+  supported estimation scope. The README, `docs/FEATURE_SUPPORT_MATRIX.md`
+  (new TVP row) and the `quaidsTVPFit`/`quaidsTVPControlCreate` pages
+  state this scope. No code, API or version change.
+- `sslib` baseline pinned to release tag **v2.1.1**
+  (`bf827aed3a72a5a3b541ce0a6a927c1665a9f992`, GAUSS 26.1.4+), installed
+  with `scripts/sync_sslib.ps1` after a hash-verified backup of the
+  previous v2.1.0 install. v2.1.0 (`7d0e042`) had been pinned first, as
+  the first release with the exact diffuse filter's diffuse-phase
+  termination fix. v2.1.1 adds two changes that `quaidsTVPFit()`
+  depends on:
   - The exact diffuse filter no longer takes a spurious diffuse update
-    with a **non-diagonal `H`** (the known issue P5 found, listed under
-    0.4.0). With a correlated `H`, log-likelihoods, `Q` estimates and
-    state paths can differ from v2.1.0. Diagonal-`H` results on this
-    package's fixtures are bit-identical.
+    with a **non-diagonal `H`** (found by P5, below). With a correlated
+    `H`, log-likelihoods, `Q` estimates and state paths can differ from
+    v2.1.0. Diagonal-`H` results on this package's fixtures are
+    bit-identical.
   - `ssFitTVP()` converts the covariance of the positivity-transformed
     `Q` by the delta method instead of a second, untransformed CMLMT
-    pass. `quaidsTVPFit()` therefore runs **one** CMLMT pass, so
-    `tvpCtl.maxIters`/`maxTime` bound the whole MLE, not "per pass,
-    roughly twice". `mleRetcode` is that pass's code, and there is no
-    longer an unreported second-pass code. The docs, struct comments and
-    example 14 are updated to match. Example 14 no longer prints the
-    `function evaluated as complex` and "covariance failed to invert"
-    warnings.
-- TVP-AIDS promotion P5 closed:
-  `tests/quaidstvp_loglik_xcheck_test.e` case 3 (non-diagonal `H`) is
-  now a counted full-sample check against statsmodels, like cases 1-2.
-  GAUSS and statsmodels both give 674.2112678504466 (max 1.7e-13 per
-  period, tolerance 1e-9 unchanged), replacing the two v2.1.0
-  defect-pinning checks (13 checks become 12). The committed reference is
-  unchanged. Check (c) is still a pure wiring check, and its description
-  no longer calls it `ssFitTVP()`'s second pass.
+    pass. That is why one CMLMT pass is run, and `mleRetcode` is that
+    pass's code. Example 14 no longer prints the `function evaluated as
+    complex` and "covariance failed to invert" warnings seen on v2.1.0.
+    The `Q` covariance is not part of `quaidsTVPOut`.
 
+  `sslib.pin.json` records `pinnedTag`/`pinnedVersion`, and its
+  `verifiedFiles` hash every source file of the pinned commit plus
+  `package.json`. `scripts/verify_sslib_pin.ps1` checks the installed
+  `package.json` version against `pinnedVersion` as well as the hashes,
+  and flags any installed `src/*.src`/`*.sdf` file the pin does not
+  list. `scripts/sync_sslib.ps1` keeps both fields current on a repin.
+  The generated `lib/sslib.lcg` catalog is deliberately not hashed,
+  because its byte-for-byte determinism has not been established.
+- `tests/quaidstvpfit_test.e` now runs on a deterministic, correctly
+  specified raw-input TVP-AIDS DGP (`_quaidsTVPRawSyntheticDGP` in
+  `tests/quaidsfixtures.src`; all shares strictly inside (0,1)) instead
+  of random shares. The old fixture never converged and could run for
+  hours. The test now asserts convergence, a per-fit wall-clock budget,
+  that finite caps leave a converged fit unchanged, and the
+  iteration/time cap return codes: 30 checks in about 6 seconds.
+- TVP-AIDS promotion P5: new `tests/quaidstvp_loglik_xcheck_test.e`, an
+  independent fixed-`Q` log-likelihood cross-check against statsmodels'
+  exact diffuse Kalman filter. It runs on a committed deterministic
+  fixture (`tests/fixtures/tvp_loglik/`: the P4 DGP, 120 periods,
+  `n1 = 2`, `k_states = 7`) and is registered in `run_source_tests.ps1`'s
+  sslib group. 12 checks.
+  - All three cases agree with statsmodels 0.15.0 over the full sample,
+    within the documented 1e-9 absolute tolerance: two **diagonal `H`**
+    cases (at most 4.0e-13 per period, 6.3e-13 on a total) and one
+    **non-diagonal `H`** case (674.2112678504466 in both, at most
+    1.7e-13 per period).
+  - On sslib v2.1.0 the non-diagonal case took a spurious diffuse update
+    at period 4 (+13.82 on the total; hand-verified in
+    `tests/fixtures/tvp_loglik/sslib_nondiag_h_repro.py`). v2.1.1 fixes
+    it, and the case is now a counted full-sample check. The committed
+    reference and the tolerance did not change.
+  - A wiring check confirms that sslib's `_tvpLFNImpl()`, run with
+    `transformed = 0`, equals the filter path exactly. Both sides call
+    the same sslib filter, so this is not an independent numerical check,
+    and it does not exercise the transformed, maximizing objective.
+  - Python (numpy, statsmodels) is needed only to regenerate the
+    committed reference, never by package users or at test time.
 - TVP-AIDS promotion P6: the `n1` scale remarks in the README support-tier
   row, `docs/command-reference/quaidsTVPFit.md` and example 14's comments
-  now state only measured behaviour. The bounded re-measurement
+  state only measured behaviour. The bounded re-measurement
   (`dev/experiments/tvp_p6_scale/`, sslib v2.1.1, example 14's data and
   setup, caps 500 iterations / 5 min, outer 900 s timeout, never hit)
   found:
@@ -49,64 +115,7 @@ as internal milestone history and were never public compatibility promises.
     deterministically.
 
   The earlier "pathologically slow above `n1=2`-`3`" claim is withdrawn.
-  It was measured unbounded, on sslib before v2.1.0. No code, API or
-  version change.
-
-### Maintainer notes (no user-facing change)
-
-- `scripts/sync_sslib.ps1` failed under Windows PowerShell 5.1 before
-  doing anything ("Cannot bind argument to parameter 'Path' because it is
-  an empty string"). Its `[Parameter(Mandatory)]` attribute makes it an
-  advanced script, and 5.1 leaves `$PSScriptRoot` empty while binding an
-  advanced script's param defaults. `$RepoRoot` is now resolved in the
-  script body.
-
-## 0.4.0 - 2026-10-15
-
-### Added
-
-- `quaidsTVPControl.maxIters` and `quaidsTVPControl.maxTime` (TVP-AIDS
-  promotion P3): caps on the CMLMT iterations and wall-clock minutes of
-  `quaidsTVPFit()`'s `Q` maximum-likelihood step. They are written into
-  the CMLMT control `ssFitTVP()` uses for both of its passes, so each cap
-  applies **per CMLMT pass**: `sslib` may run two passes (estimation,
-  then a covariance-only pass on the untransformed `Q`), and the
-  worst case is roughly twice each cap plus up to one iteration of
-  overrun per pass. Defaults (`1e5`, `1e8`) are CMLMT's own, so existing
-  calls give identical results. An exhausted cap in the first
-  (estimation) pass returns normally with `tvOut.mleRetcode /= 0`
-  (`2` iterations, `11` time); a cap hit in the second pass is not
-  exposed, because `ssFitTVP()` discards that pass's return code.
-  Invalid caps (non-scalar, zero, negative, fractional `maxIters`, missing, NaN or infinite) stop the call with a
-  clear `quaidsTVPFit: tvpCtl.maxIters/maxTime ...` error before
-  estimation; a struct declared without `quaidsTVPControlCreate()`
-  (empty fields) uses the defaults.
-- `examples/14_tvp_aids_estimation.e` sets explicit, practical caps
-  (`maxIters = 500`, `maxTime = 5` minutes per pass) and explains them.
-  This example now needs the 0.4.0 package installed, because the cap
-  fields do not exist in 0.3.0.
-
-### Changed
-
-- `sslib` baseline repinned to release tag v2.1.0
-  (`7d0e0421a008db81fb4fda0b789bdbef21ffe5f7`). It is the first release
-  with the exact diffuse filter's diffuse-phase termination fix.
-  `sslib.pin.json` now also records `pinnedTag`/`pinnedVersion`, and
-  its `verifiedFiles` hash all 9 v2.1.0 source files plus `package.json`
-  (previously 4 hand-picked files). `scripts/verify_sslib_pin.ps1`
-  checks the installed `package.json` version against `pinnedVersion` as
-  well as the hashes, and flags any installed `src/*.src`/`*.sdf` file
-  the pin does not list. `scripts/sync_sslib.ps1` keeps both fields
-  current on a repin and hashes every source file of the synced commit.
-  The generated `lib/sslib.lcg` catalog is deliberately not hashed,
-  because its byte-for-byte determinism has not been established.
-- `tests/quaidstvpfit_test.e` now runs on a deterministic, correctly
-  specified raw-input TVP-AIDS DGP (`_quaidsTVPRawSyntheticDGP` in
-  `tests/quaidsfixtures.src`; all shares strictly inside (0,1)) instead
-  of random shares. The old fixture never converged and could run for
-  hours. The test now asserts convergence, a per-fit wall-clock budget,
-  that finite caps leave a converged fit unchanged, and the
-  iteration/time cap return codes: 30 checks in about 6 seconds.
+  It was measured unbounded, on sslib before v2.1.0.
 - `tests/run_source_tests.ps1` has a per-test timeout
   (`-TestTimeoutSeconds`, default 1800, `0` disables). A test still
   running at the limit has its `tgauss` process tree killed and is
@@ -138,42 +147,6 @@ as internal milestone history and were never public compatibility promises.
   unbounded wait. `verify_runner_timeouts.ps1` covers this case for
   both a timed-out job and a normally exiting one.
 
-- TVP-AIDS promotion P5 (tests only; no source or API change): new
-  `tests/quaidstvp_loglik_xcheck_test.e`, an independent fixed-`Q`
-  log-likelihood cross-check against statsmodels' exact diffuse Kalman
-  filter. It runs on a committed deterministic fixture
-  (`tests/fixtures/tvp_loglik/`: the P4 DGP, 120 periods, `n1 = 2`,
-  `k_states = 7`) and is registered in `run_source_tests.ps1`'s sslib
-  group.
-  - With **diagonal `H`**, GAUSS (sslib v2.1.0) and statsmodels 0.15.0
-    agree to at most 4.0e-13 per period and 6.3e-13 on the total.
-    The documented tolerance is 1e-9 absolute.
-  - A wiring check confirms that sslib's `_tvpLFNImpl()`, run with
-    `transformed = 0` (the untransformed second-pass path of
-    `ssFitTVP()`), equals the filter path exactly. Both sides call the
-    same sslib filter, so this is not an independent numerical check,
-    and it does not exercise the transformed, maximizing first pass.
-  - Python (numpy, statsmodels) is needed only to regenerate the
-    committed reference, never by package users or at test time.
-- **Known issue found by P5 (upstream; fixed in sslib v2.1.1, see
-  Unreleased):** with a
-  **non-diagonal `H`**, sslib v2.1.0's `kalmanFilterDiffuseTVP()` takes a
-  spurious diffuse update when the diffuse phase ends mid-period. An even
-  `n1` is a common, sufficient way for that to happen, but not the only
-  one, and it does not always fire. Its absolute `1e-12` per-element test is
-  applied after Cholesky row scaling. On the fixture this adds about +14
-  to one period's log-likelihood (13.82 on the total) and shifts the
-  state path from then on. This was hand-verified in
-  `tests/fixtures/tvp_loglik/sslib_nondiag_h_repro.py`.
-  - `quaidsTVPFit()` results with a non-diagonal `H` are therefore not
-    validated.
-  - Diagonal `H` is unaffected. That covers the documented recipe,
-    example 14 and every test except the cross-check's own case 3.
-  - Case 3 (non-diagonal `H`) pins the current defect: first divergence
-    at period 4 and a total gap of 13.8193341925737059, both to 1e-9.
-    These are characterization checks, not validation. If the upstream
-    baseline changes, the test fails and asks for a re-review.
-
 ### Maintainer notes (no user-facing change)
 
 - Private, experimental AIDS direct Levenberg-Marquardt prototype added
@@ -189,7 +162,17 @@ as internal milestone history and were never public compatibility promises.
   explicit `SKIP` line for the prototype's two tests and five guard
   cases instead of failing; in a git checkout the directory is still
   required and its absence fails the run.
-
+- `scripts/sync_sslib.ps1` failed under Windows PowerShell 5.1 before
+  doing anything ("Cannot bind argument to parameter 'Path' because it is
+  an empty string"). Its `[Parameter(Mandatory)]` attribute makes it an
+  advanced script, and 5.1 leaves `$PSScriptRoot` empty while binding an
+  advanced script's param defaults. `$RepoRoot` is now resolved in the
+  script body.
+- The release gate's install step can fail to wipe
+  `C:\gauss26\pkgs\quaids` ("being used by another process") and then
+  extracts over the old directory. In the P8 gate run, a content diff
+  found the installed copy identical to the artifact (210/210 files, plus
+  the generated `lib/quaids.lcg`).
 ## 0.3.0 - 2026-09-17
 
 ### Added

@@ -143,7 +143,7 @@ below.
 | Zero-share correction (`quaidsZeroFit`) | Experimental | Inherits the base model's convergence risk above, plus a simplified (non-sandwich) SE formula, approximate adding-up in corrected coefficients, and a known non-trappable `glm()` crash mode on some inputs. |
 | Curvature imposition (`quaidsCurvatureFit`, requires `optmt`) | Experimental | Delta-method SE are known-unreliable whenever the estimated Cholesky factor sits at the boundary of the constraint (a common outcome in testing) -- prefer `quaidsCurvatureBootstrapFit`/`quaidsCurvatureBootstrapCI`. QUAIDS curvature additionally needs damping (`aCtl.relax=.25`-ish) to converge at all. |
 | Bootstrap / replicate-weight procedures | Inherits base model's tier | A resampled or replicate refit that itself fails to converge is dropped, not retried -- check the returned struct's `nCompleted`/`nFailed`. |
-| Time-varying-parameter estimation (`quaidsTVPFit`, requires `sslib`) | Experimental | No IV/endogeneity treatment of total expenditure, no standard errors (point elasticities/coefficients only), `H` (observation covariance) must be supplied fixed rather than estimated, and `Q`'s individual per-state-element diagonal entries are only loosely identified even at moderate sample sizes (the aggregate mean is much better identified) -- always check `tvOut.mleRetcode == 0`, and bound the MLE with `tvpCtl.maxIters`/`tvpCtl.maxTime` (defaults are CMLMT's own, effectively unbounded). Both caps apply per CMLMT pass; with the pinned `sslib` v2.1.1 there is one pass, so they bound the whole MLE. Tested against `sslib` v2.1.1 (`sslib.pin.json`), including a full-sample fixed-`Q` log-likelihood cross-check against statsmodels with diagonal and non-diagonal `H`. Scale (measured on one dataset, example 14's data and setup, with caps `maxIters = 500`/`maxTime = 5`): `n1=2` converges in 23 iterations; `n1=4` (`k_states=18`) converges (`mleRetcode = 0`) deterministically in 93 iterations, about 3.5-3.9 min; `n1=3` (`k_states=12`) does not converge and stops at the time cap (`mleRetcode = 11`, timing-dependent endpoint), or at an iteration cap (`mleRetcode = 2`, deterministic). No convergence guarantee at any `n1` -- see [quaidsTVPFit](docs/command-reference/quaidsTVPFit.md)'s own Remarks. |
+| Time-varying-parameter estimation (`quaidsTVPFit`, requires `sslib`) | **Supported (scoped)** | Release-gated (TVP promotion P8, 2026-10-17) only within this scope: a fixed, **diagonal** `H`; finite `tvpCtl.maxIters`/`tvpCtl.maxTime` (the defaults are CMLMT's own and effectively unbounded); and a **mandatory** `tvOut.mleRetcode == 0` check on every fit. There is no convergence guarantee, no standard-error claim (point elasticities/coefficients only) and no IV/endogeneity treatment of total expenditure. `H` must be supplied fixed rather than estimated. A non-diagonal `H` is validated for the fixed-`Q` log-likelihood only and is outside the supported estimation scope. `Q`'s individual per-state-element diagonal entries are only loosely identified even at moderate sample sizes (the aggregate mean is much better identified). With the pinned `sslib` v2.1.1 the MLE is one CMLMT pass, so the caps bound the whole MLE. Tested against `sslib` v2.1.1 (`sslib.pin.json`), including a full-sample fixed-`Q` log-likelihood cross-check against statsmodels with diagonal and non-diagonal `H`. Scale (measured on one dataset, example 14's data and setup, with caps `maxIters = 500`/`maxTime = 5`): `n1=2` converges in 23 iterations; `n1=4` (`k_states=18`) converges (`mleRetcode = 0`) deterministically in 93 iterations, about 3.5-3.9 min; `n1=3` (`k_states=12`) does not converge and stops at the time cap (`mleRetcode = 11`, timing-dependent endpoint), or at an iteration cap (`mleRetcode = 2`, deterministic). No convergence guarantee at any `n1` -- see [quaidsTVPFit](docs/command-reference/quaidsTVPFit.md)'s own Remarks. |
 
 **What `qOut.converged == 1` proves, and what it does not**: it means the
 iteration's relative parameter change fell below `aCtl.err` before
@@ -370,8 +370,8 @@ q0 = 0.1*meanc(diag(H))*ones(k_states, 1);   // scaled relative to H, not a flat
 
 tvpCtl = quaidsTVPControlCreate();
 tvpCtl.maxIters = 500;   // cap the Q MLE at 500 iterations ...
-tvpCtl.maxTime = 5;      // ... or 5 minutes PER CMLMT PASS (sslib may run
-                         // two passes: worst case ~2x); check tvOut.mleRetcode
+tvpCtl.maxTime = 5;      // ... or 5 minutes (one CMLMT pass with sslib v2.1.1);
+                         // required for the supported scope -- then check tvOut.mleRetcode == 0
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 call printQuaidsTVP(tvOut);
 
@@ -386,6 +386,12 @@ installed copy's commit (currently release v2.1.1) is tracked in
 via `scripts/sync_sslib.ps1`/`scripts/verify_sslib_pin.ps1` (see that
 file's own comments). See `examples/14_tvp_aids_estimation.e` for a full
 runnable example.
+
+Support tier: **Supported (scoped)**. This covers a fixed diagonal `H`,
+finite caps and a mandatory `tvOut.mleRetcode == 0` check, with no
+convergence guarantee. See
+[Model & Feature Support Tiers](#model--feature-support-tiers) for the
+exact scope.
 
 ## Examples
 

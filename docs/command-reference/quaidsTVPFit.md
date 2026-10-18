@@ -60,9 +60,10 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 - `mleRetcode` - CMLMT convergence code of the estimation pass;
   `0` means converged. `2` means the `tvpCtl.maxIters` cap was reached
   and `11` that the `tvpCtl.maxTime` cap was reached; the other outputs
-  are then evaluated at the last iterate, not at an optimum. A cap hit in
-  `sslib`'s second, covariance-only pass is not reflected here (see
-  Remarks).
+  are then evaluated at the last iterate, not at an optimum. With the
+  pinned `sslib` v2.1.1 there is only one CMLMT pass (see Remarks).
+  Checking `mleRetcode == 0` is part of the supported scope (see
+  "Support tier" below).
 - `filteredState` (`k_states x nobs`), `filteredStateCov` (array,
   `nobs x k_states x k_states`) - the filtered (causal) state path.
 - `smoothed` - echoes `tvpCtl.smooth`.
@@ -76,6 +77,24 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
   Point values only -- no standard errors (see Remarks).
 
 ## Remarks
+
+**Support tier: Supported (scoped)** (TVP promotion P8, 2026-10-17;
+release-gated locally on the pinned `sslib` v2.1.1). Support covers only
+this scope:
+- a fixed, **diagonal** `H`;
+- finite `tvpCtl.maxIters`/`tvpCtl.maxTime` (the defaults are
+  effectively unbounded);
+- a **mandatory** `tvOut.mleRetcode == 0` check on every fit. Treat any
+  other value as no result.
+
+Outside the scope, or not claimed:
+- There is **no convergence guarantee**. A non-converging fit is a
+  measured outcome (see Scale below).
+- There is **no standard-error claim** for coefficients, elasticities or
+  `Q`.
+- There is **no IV/endogeneity treatment** of total expenditure.
+- A **non-diagonal `H`** is validated for the fixed-`Q` log-likelihood
+  only. It is not a supported estimation scope.
 
 **No IV treatment of `totexp`.** This initiative's Stage 1 design report
 scoped the reduced state-space representation without an endogeneity
@@ -105,9 +124,9 @@ implementation to about 1e-12 over the full sample, for two diagonal
 could take a spurious diffuse update with a non-diagonal `H` when the
 diffuse phase ended partway through a period, so do not use a
 non-diagonal `H` with an older `sslib`. The non-diagonal check is one
-fixed-`Q` likelihood case, not a validation of estimated `Q`; the
-diagonal `H` recipe remains the tested default, and this function stays
-Experimental.
+fixed-`Q` likelihood case, not a validation of estimated `Q`, so a
+non-diagonal `H` is **outside the supported estimation scope** (see
+"Support tier" below). The diagonal `H` recipe is the supported one.
 
 **No delta-method standard errors.** Propagating the state's own
 filtered/smoothed covariance through the (linear) state-to-coefficients
