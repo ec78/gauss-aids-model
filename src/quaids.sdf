@@ -637,16 +637,17 @@ struct quaidsTVPControl {
                      //   CMLMT's own default. Checked once per CMLMT
                      //   iteration, so a pass can overrun it by up to
                      //   one iteration.
-                     // Per-pass semantics (both caps): sslib's ssFitTVP()
-                     //   may run TWO CMLMT passes sharing one control --
-                     //   the estimation pass and, because Q is
-                     //   positivity-transformed, an untransformed
-                     //   covariance pass -- so the worst-case total is
-                     //   roughly TWICE each cap, plus up to one
-                     //   iteration of overrun per pass. tvOut.mleRetcode
-                     //   reports the first (estimation) pass only (2 =
-                     //   maxIters hit, 11 = maxTime hit); a cap hit in
-                     //   the second pass is not exposed by sslib.
+                     // Pass semantics (both caps): with the pinned
+                     //   sslib v2.1.1, ssFitTVP() runs ONE CMLMT pass
+                     //   (the estimation pass; the positivity-transformed
+                     //   Q's covariance is converted by the delta method,
+                     //   with no second CMLMT run), so each cap bounds
+                     //   the whole Q MLE, plus up to one iteration of
+                     //   overrun. sslib v2.1.0 and earlier also ran an
+                     //   untransformed covariance pass with the same
+                     //   control (worst case about twice each cap).
+                     //   tvOut.mleRetcode is that pass's code (2 =
+                     //   maxIters hit, 11 = maxTime hit).
 };
 
 /*

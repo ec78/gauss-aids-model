@@ -55,22 +55,21 @@ fields existed -- and, like before, effectively unbounded. Set finite
 values to bound run time. A converged fit does not depend on a cap it
 never reached.
 
-**Both caps apply per CMLMT pass, not per fit.** `sslib`'s `ssFitTVP()`
-may run two CMLMT passes with the same control: the estimation pass and,
-because `Q` is positivity-transformed, a second, covariance-only pass
-started from the first pass's result. The worst-case run time is
-therefore roughly **twice** each cap, plus up to one iteration of
-overrun per pass (`maxTime` is checked once per CMLMT iteration). So
-`maxIters = 500, maxTime = 5` bounds the MLE at about 1000 iterations or
-10 minutes, not 500 or 5.
+**Both caps apply per CMLMT pass.** With the pinned `sslib` v2.1.1,
+`ssFitTVP()` runs **one** CMLMT pass: the estimation pass. The
+covariance of the positivity-transformed `Q` is converted by the delta
+method, with no second CMLMT run. So the caps bound the whole MLE, plus
+up to one iteration of overrun (`maxTime` is checked once per CMLMT
+iteration): `maxIters = 500, maxTime = 5` bounds it at about 500
+iterations or 5 minutes. `sslib` v2.1.0 and earlier also ran a second,
+untransformed covariance-only pass with the same control, which made the
+worst case roughly twice each cap.
 
 An exhausted cap is not an error. `tvOut.mleRetcode` reports the
-**first (estimation) pass**: [quaidsTVPFit](quaidsTVPFit.md) returns
+estimation pass: [quaidsTVPFit](quaidsTVPFit.md) returns
 normally with `tvOut.mleRetcode /= 0` (`2` for the iteration cap, `11`
-for the time cap), and [printQuaidsTVP](printQuaidsTVP.md) flags it. A
-cap hit in the second pass is **not exposed**: `ssFitTVP()` discards
-that pass's return code upstream, and `quaidsTVPFit()` does not report
-the second pass's covariance. Invalid values (zero, negative,
+for the time cap), and [printQuaidsTVP](printQuaidsTVP.md) flags it.
+Invalid values (zero, negative,
 fractional `maxIters`, non-scalar, missing, NaN or infinite) stop
 `quaidsTVPFit()` with a clear error before any estimation. A struct
 declared without this proc (`struct quaidsTVPControl tvpCtl;`) leaves
@@ -82,11 +81,11 @@ both fields empty, and `quaidsTVPFit()` then uses the defaults.
 tvpCtl = quaidsTVPControlCreate();
 tvpCtl.smooth = 0;     // filtered path only, skip the RTS smoother
 tvpCtl.maxIters = 500; // cap the Q MLE at 500 iterations ...
-tvpCtl.maxTime = 5;    // ... or 5 minutes, per CMLMT pass (worst case ~2x)
+tvpCtl.maxTime = 5;    // ... or 5 minutes (one CMLMT pass with sslib v2.1.1)
 
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 if tvOut.mleRetcode /= 0;
-    print "Q MLE did not converge within the caps (first pass)";
+    print "Q MLE did not converge within the caps";
 endif;
 ```
 

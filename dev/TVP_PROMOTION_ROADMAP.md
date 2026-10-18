@@ -2,8 +2,10 @@
 
 _Created: 2026-10-15. Status: **Priority 1 (active)**. P1 (D0 = option A,
 v2.1.0), P2, P3, P4 and P7 implemented on 2026-10-15 in package 0.4.0, and
-P5 on 2026-10-16 (see section 10). P5 found a new upstream blocker: a
-non-diagonal H gives a wrong diffuse likelihood in sslib v2.1.0 (section
+P5 on 2026-10-16 (see section 10). P5 found an upstream blocker: a
+non-diagonal H gave a wrong diffuse likelihood in sslib v2.1.0. On
+2026-10-17 (Stage 1) sslib was repinned to v2.1.1, which fixes it, and P5
+case 3 became a counted full-sample check, so **P5 is closed** (section
 10). P6 and P8 remain open, so TVP-AIDS stays Experimental._
 
 This is the durable plan for promoting TVP-AIDS (`quaidsTVPFit()` and the
@@ -258,8 +260,10 @@ next step starts.
   - the cross-implementation log-likelihood agrees to a documented
     tolerance;
   - no undocumented tolerance loosening.
-- **Status (2026-10-16): done for diagonal H; a non-diagonal-H upstream
-  blocker is open.** See section 10.
+- **Status: closed (2026-10-17).** Done for diagonal H on 2026-10-16;
+  the non-diagonal-H upstream blocker was fixed in sslib v2.1.1, and all
+  three fixed-Q cases now agree with statsmodels over the full sample
+  (12/12). See section 10.
 
 **P6: Re-measure the `n1` scale limit.**
 - With the bounded optimizer, rerun `n1 = 3` and `n1 = 4`, each with a
@@ -327,12 +331,14 @@ is the evidence.
   waived/unverified);
 - any claim that the MLE terminates or converges in bounded time;
 - numeric accuracy of TVP likelihoods or Q on sslib releases before
-  v2.1.0, given the diffuse-phase bias in section 2.4. On v2.1.0 with a
-  **diagonal** H, the fixed-Q likelihood now matches statsmodels to
-  6.3e-13 (P5, section 10);
-- any result with a **non-diagonal H**. sslib v2.1.0 takes a spurious
-  diffuse update there (P5, section 10). This needs an upstream fix plus
-  a regression;
+  v2.1.0, given the diffuse-phase bias in section 2.4. On v2.1.1 the
+  fixed-Q likelihood matches statsmodels to 6.3e-13 for two diagonal-H
+  cases and one non-diagonal-H case (P5, section 10);
+- any result with a **non-diagonal H** on sslib v2.1.0 or earlier, which
+  takes a spurious diffuse update there. Fixed in v2.1.1 (gauss-state-space
+  `004c1be`, with its own regression) and covered by P5 case 3. Whether
+  non-diagonal H is a supported tier of `quaidsTVPFit()` is a P8
+  judgment: the evidence is one fixed-Q likelihood case, not estimated Q;
 - any `n1`/`k_states` scale claim beyond what P6 measures;
 - reproducibility against `sslib.pin.json`, because the install currently
   fails the pin;
@@ -581,3 +587,58 @@ reference value or upstream change.
   - forcing "no divergence" prints the baseline-changed `FAIL` and fails
     the first-period pin.
 - **Result:** 13/13 checks pass, identical across two runs.
+
+### 2026-10-17: Stage 1 -- sslib v2.1.1 adopted, P5 closed (still package 0.4.0)
+
+Task `task_dd4a6d307716`. Tests, docs, comments and tooling only: no
+estimation code, public API or version change.
+- **Baseline.** gauss-state-space tag `v2.1.1` peels to `bf827ae`
+  (`bf827aed3a72a5a3b541ce0a6a927c1665a9f992`). It is a patch release on
+  v2.1.0 carrying:
+  - `004c1be`: the exact diffuse filters test `F_inf * L[j,j]^2 > 1e-12`
+    (LDL-decorrelation units) and count diffuse directions from
+    `rank(P_inf_0)`. This fixes the P5 case 3 defect.
+  - `717abb5`: `ssFit`/`ssFitTVP` convert the transformed-parameter
+    covariance by the delta method instead of a second, untransformed
+    CMLMT pass. `quaidsTVPFit()` (which sets `positive_vars`) therefore
+    runs one CMLMT pass, and its caps bound the whole MLE.
+- **Install.** The previous v2.1.0 install was copied to
+  `C:\Users\eclow\Documents\sslib-backups\sslib-pre-v2.1.1-20261017-194100`
+  (260 files, sha256 manifest beside it, 0 mismatches against the
+  source). Then `scripts\sync_sslib.ps1 -SourceRepoPath <gauss-state-space>
+  -Commit bf827ae...` installed and repinned. `verify_sslib_pin.ps1
+  -Strict` passes (10 files, version 2.1.1), and all 10 tracked files
+  match the tag's content after line-ending normalisation.
+- **Tooling fix.** `sync_sslib.ps1` failed before doing anything under
+  Windows PowerShell 5.1: its `[Parameter(Mandatory)]` attribute makes it
+  an advanced script, and 5.1 leaves `$PSScriptRoot` empty while binding
+  an advanced script's param defaults, so the `$RepoRoot` default threw.
+  This was confirmed in an isolated two-script repro. `$RepoRoot` is now
+  resolved in the script body. No other script combines `[Parameter()]`
+  with that default.
+- **P5 case 3.** On v2.1.1 the two pinned characterization checks failed
+  exactly as designed: the gap went from 13.8193341925737059 to 0. Case 3
+  is now counted like cases 1 and 2, with every period and the total
+  within 1e-9. GAUSS gives 674.2112678504466 and statsmodels
+  674.2112678504466, with a max per-period difference of 1.7e-13. Cases
+  1 and 2 are bit-identical to v2.1.0. The committed reference and the
+  tolerance are unchanged (`statsmodels_reference.py --check`: 0.000e+00).
+  The cross-check now has 12 checks, down from 13, and they all pass.
+- **Check (c) wording.** It is still a pure wiring check
+  (`_tvpLFNImpl`, `transformed = 0`), but it is no longer described as
+  `ssFitTVP()`'s second pass, which v2.1.1 removed. The caps and
+  `mleRetcode` docs no longer claim two passes or a hidden second-pass
+  code. Those claims are corrected in the README, the
+  `quaidsTVPFit`/`quaidsTVPControlCreate` pages, `quaids.sdf`,
+  `quaidstvpfit.src`, `quaidstvpmle.src` and example 14 (comments only).
+- **Revalidation on v2.1.1.** Stage 1/5/4/2/3/6 tests give 56/13/8/7/8/30.
+  Example 14 (scratch copy including the 0.4.0 sources, as in P5) passes
+  in 11 s; both fits CONVERGED in 23 iterations. The `function evaluated
+  as complex` and "covariance failed to invert" warnings seen on v2.1.0
+  no longer appear.
+
+**Still open:**
+- P6: the n1 = 3/4 scale re-measurement;
+- P8: the release gate. This includes the support-tier judgment for
+  non-diagonal H and for the delta-method covariance, and a re-check of
+  the complex/G0518 risk, whose second-pass trigger v2.1.1 removed.

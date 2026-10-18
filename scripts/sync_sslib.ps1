@@ -36,9 +36,16 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$SourceRepoPath,
     [string]$Commit = $null,
-    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
+    [string]$RepoRoot = $null,
     [string]$PinFile = $null
 )
+
+# Resolved here, not as a param default: the [Parameter()] attribute above
+# makes this an advanced script, and Windows PowerShell 5.1 leaves
+# $PSScriptRoot empty while binding an advanced script's param defaults.
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+}
 
 if ([string]::IsNullOrWhiteSpace($PinFile)) {
     $PinFile = Join-Path $RepoRoot "sslib.pin.json"

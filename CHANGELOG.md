@@ -4,6 +4,47 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
+## Unreleased
+
+### Changed
+
+- `sslib` baseline repinned to release tag v2.1.1
+  (`bf827aed3a72a5a3b541ce0a6a927c1665a9f992`) with
+  `scripts/sync_sslib.ps1`. This package's code, public API and version
+  are unchanged. The previous v2.1.0 install was backed up first. v2.1.1
+  changes two things that `quaidsTVPFit()` depends on:
+  - The exact diffuse filter no longer takes a spurious diffuse update
+    with a **non-diagonal `H`** (the known issue P5 found, listed under
+    0.4.0). With a correlated `H`, log-likelihoods, `Q` estimates and
+    state paths can differ from v2.1.0. Diagonal-`H` results on this
+    package's fixtures are bit-identical.
+  - `ssFitTVP()` converts the covariance of the positivity-transformed
+    `Q` by the delta method instead of a second, untransformed CMLMT
+    pass. `quaidsTVPFit()` therefore runs **one** CMLMT pass, so
+    `tvpCtl.maxIters`/`maxTime` bound the whole MLE, not "per pass,
+    roughly twice". `mleRetcode` is that pass's code, and there is no
+    longer an unreported second-pass code. The docs, struct comments and
+    example 14 are updated to match. Example 14 no longer prints the
+    `function evaluated as complex` and "covariance failed to invert"
+    warnings.
+- TVP-AIDS promotion P5 closed:
+  `tests/quaidstvp_loglik_xcheck_test.e` case 3 (non-diagonal `H`) is
+  now a counted full-sample check against statsmodels, like cases 1-2.
+  GAUSS and statsmodels both give 674.2112678504466 (max 1.7e-13 per
+  period, tolerance 1e-9 unchanged), replacing the two v2.1.0
+  defect-pinning checks (13 checks become 12). The committed reference is
+  unchanged. Check (c) is still a pure wiring check, and its description
+  no longer calls it `ssFitTVP()`'s second pass.
+
+### Maintainer notes (no user-facing change)
+
+- `scripts/sync_sslib.ps1` failed under Windows PowerShell 5.1 before
+  doing anything ("Cannot bind argument to parameter 'Path' because it is
+  an empty string"). Its `[Parameter(Mandatory)]` attribute makes it an
+  advanced script, and 5.1 leaves `$PSScriptRoot` empty while binding an
+  advanced script's param defaults. `$RepoRoot` is now resolved in the
+  script body.
+
 ## 0.4.0 - 2026-10-15
 
 ### Added
@@ -98,7 +139,8 @@ as internal milestone history and were never public compatibility promises.
     and it does not exercise the transformed, maximizing first pass.
   - Python (numpy, statsmodels) is needed only to regenerate the
     committed reference, never by package users or at test time.
-- **Known issue found by P5 (upstream, not fixed here):** with a
+- **Known issue found by P5 (upstream; fixed in sslib v2.1.1, see
+  Unreleased):** with a
   **non-diagonal `H`**, sslib v2.1.0's `kalmanFilterDiffuseTVP()` takes a
   spurious diffuse update when the diffuse phase ends mid-period. An even
   `n1` is a common, sufficient way for that to happen, but not the only

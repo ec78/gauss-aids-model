@@ -1,8 +1,16 @@
 # sslib_nondiag_h_repro.py
 #
 # TVP-AIDS promotion P5: hand verification of the one case where GAUSS
-# (sslib v2.1.0 kalmanFilterDiffuseTVP) and statsmodels disagree -- case 3
+# (sslib v2.1.0 kalmanFilterDiffuseTVP) and statsmodels disagreed -- case 3
 # of tvp_loglik_cases.txt, a NON-diagonal H.
+#
+# HISTORICAL. sslib v2.1.1 (gauss-state-space 004c1be) fixed this: its
+# diffuse test now runs in LDL-decorrelation units and the diffuse phase
+# ends exactly when rank(P_inf_0) directions are used up. Case 3 now
+# matches statsmodels over the full sample and is a counted check in
+# tests/quaidstvp_loglik_xcheck_test.e. This replica does not call sslib,
+# so it still reproduces the v2.1.0 behaviour; it is kept as the record of
+# the mechanism.
 #
 # VALIDATION ONLY (numpy + statsmodels_reference.build_design; no runtime
 # dependency of the quaids package).

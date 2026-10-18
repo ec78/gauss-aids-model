@@ -86,7 +86,8 @@ q0 = 0.1*meanc(diag(H))*ones(k_states, 1);
 { w, prices, totexp, trueStateArr, lxTrue } = _quaidsTVPRawSyntheticDGP(tobs, 7, state0, trueQ, H);
 
 /* Per-fit wall-clock budget, seconds. Measured at about 1-2 s per fit on
-   this DGP (sslib v2.1.0, GAUSS 26.1.4); 60 s leaves wide headroom while
+   this DGP (sslib v2.1.0, GAUSS 26.1.4; 0.67 s for the main fit on
+   v2.1.1, which drops the second CMLMT pass); 60 s leaves wide headroom while
    still catching a regression to the old multi-minute non-converging
    path. */
 budget = 60;

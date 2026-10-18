@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-16_
+_Last updated: 2026-10-17_
 
 ## Current Objective
 
@@ -81,10 +81,34 @@ roadmap section 10.
   - Example 14 passed through the bounded `run_examples_smoke.ps1`
     (scratch copy using the 0.4.0 source includes) in 19 s, CONVERGED.
   - No reference or tolerance changes. See roadmap section 10.
-- **Still open:** P6 (the n1 = 3/4 scale re-measurement), P8 (the
-  release gate), the new **non-diagonal-H upstream blocker** (needs a
-  gauss-state-space fix and a regression), and the complex/G0518
-  upstream risk. TVP-AIDS stays **Experimental**.
+- **Stage 1 (2026-10-17, task `task_dd4a6d307716`, local commit only,
+  still 0.4.0; tests, docs, comments and tooling only): sslib v2.1.1
+  adopted, P5 closed.** See roadmap section 10.
+  - `v2.1.1` peels to `bf827ae`. Before the install, the v2.1.0 copy was
+    backed up, hash-verified, to
+    `C:\Users\eclow\Documents\sslib-backups\sslib-pre-v2.1.1-20261017-194100`.
+    Then `sync_sslib.ps1 -Commit bf827ae...` installed and repinned, and
+    `verify_sslib_pin.ps1 -Strict` passes.
+  - `sync_sslib.ps1` itself was fixed: under Windows PowerShell 5.1 its
+    `$RepoRoot` param default threw before doing anything, because
+    `$PSScriptRoot` is empty during an advanced script's param binding.
+  - **Non-diagonal H now passes.** Case 3 gives 674.2112678504466 in both
+    GAUSS and statsmodels, with a max per-period difference of 1.7e-13.
+    It is now a counted full-sample check, like cases 1 and 2, which are
+    bit-identical to v2.1.0. The cross-check passes 12/12. The reference
+    and tolerance are unchanged.
+  - v2.1.1 also replaced `ssFitTVP()`'s second, untransformed CMLMT pass
+    with a delta-method covariance. Docs that described two passes per
+    fit, a hidden second-pass retcode, or check (c) as "the second pass"
+    are corrected.
+  - TVP tests give 56/13/8/7/8/30. Example 14 passes in 11 s
+    (CONVERGED, 23 iterations), with no complex or "failed to invert"
+    warnings.
+- **Still open:** P6 (the n1 = 3/4 scale re-measurement) and P8 (the
+  release gate). P8 includes the support-tier judgment for non-diagonal H
+  and for the delta-method covariance, and a re-check of the complex/G0518
+  risk, whose second-pass trigger v2.1.1 removed. TVP-AIDS stays
+  **Experimental**.
 
 The rest of this section is the original 2026-10-15 read-only diagnosis
 (task `task_03d43536665b`). It is kept as evidence; its "TIMEOUT",
@@ -1217,51 +1241,27 @@ Limitations:
 
 ## Known Issues
 
-- **sslib v2.1.0's exact diffuse TVP filter is wrong for a non-diagonal
-  H when the diffuse phase ends mid-period (found 2026-10-16 by P5;
-  upstream, not patched here).**
-  - `kalmanFilterDiffuseTVP()` decorrelates H by `inv(chol(H)')` row
-    scaling, then applies an absolute per-element `F_inf > 1e-12`
-    diffuse test.
-  - A rounding residue inflated by `1/sqrt(H)` (2.3e-11 in the numpy
-    replica) passes that test, so the element takes a spurious diffuse
-    update.
-  - On the P5 fixture this is +14.19 at period 4, and the state path
-    differs from then on. The total is off by +13.82 vs statsmodels.
-  - It needs the diffuse phase to end mid-period. An even `n1`
-    (`k_states mod n1 != 0`) is a common, sufficient way for that to
-    happen, not a necessary one, and it fires only if the residue's
-    rounding passes 1e-12. Diagonal H is unaffected: it is never
-    row-scaled. That covers every test except the P5 cross-check's own
-    case 3 (excluded, unvalidated), plus example 14 and the documented
-    `diagrv` recipe.
-  - The time-invariant `kalmanFilterDiffuse()` uses the same pattern
-    but was not tested here.
-  - Evidence: `tests/fixtures/tvp_loglik/README.md` and
-    `sslib_nondiag_h_repro.py`.
-  - The same recursion with LDL decorrelation, or with a threshold of
-    1e-10, matches statsmodels to 1.7e-13.
-  - To do: file it with gauss-state-space, then promote case 3 in
-    `quaidstvp_loglik_xcheck_test.e` from its pinned-defect
-    characterization to a full-sample check once a fixed tag is pinned
-    (the pin fails as soon as the baseline changes). **This blocks any claim that non-diagonal H is supported.**
-- **`examples/14_tvp_aids_estimation.e` prints "The covariance of the
-  parameters failed to invert"** in both of its CMLMT summaries
-  (observed 2026-10-16 on v2.1.0; the fit still converges, retcode 0,
-  23 iterations).
-  - Four of the seven fitted Q elements print as 0.0000 at four
-    decimals.
-  - This is the same near-zero-Q boundary as the complex/G0518 entry
-    below. It is not addressed by P5.
-- **sslib's untransformed second CMLMT pass is fragile near the Q zero
-  boundary (2026-10-15, v2.1.0).**
-  - It prints `CMLmt: function evaluated as complex` whenever a fitted Q
-    element is near zero. Example 14 shows it even though it converges.
-  - In one deliberately misspecified scratch configuration it aborted
-    the job with `G0518 Not implemented for complex` in `cmlmthess`,
-    which `trap` cannot catch.
-  - It is upstream sslib behaviour (`ssFitTVP()`); file it there rather
-    than patching it here.
+- **Resolved 2026-10-17 (sslib v2.1.1): sslib v2.1.0's exact diffuse
+  filter was wrong for a non-diagonal H when the diffuse phase ended
+  mid-period.** Found 2026-10-16 by P5 and fixed upstream in
+  gauss-state-space `004c1be`. The filter now runs its diffuse test in
+  LDL-decorrelation units and counts directions from `rank(P_inf_0)`.
+  P5 case 3 is now a counted full-sample check (1.7e-13 per period).
+  sslib v2.1.0 and earlier remain affected; see
+  `tests/fixtures/tvp_loglik/README.md` ("Case 3 history").
+- **Likely resolved by sslib v2.1.1, pending the P8 re-check: example 14's
+  "covariance failed to invert" and sslib's fragile untransformed
+  second CMLMT pass.**
+  - On v2.1.0, `ssFitTVP()`'s second, untransformed CMLMT pass printed
+    `CMLmt: function evaluated as complex` near a zero Q element, and
+    example 14 printed "The covariance of the parameters failed to
+    invert" (it still converged). In one deliberately misspecified scratch
+    configuration it aborted with `G0518 Not implemented for complex` in
+    `cmlmthess`, which `trap` cannot catch.
+  - v2.1.1 (`717abb5`) removed that pass and converts the covariance
+    by the delta method. On 2026-10-17, example 14 no longer prints either
+    warning (CONVERGED, 23 iterations). The misspecified G0518
+    configuration was not re-run, so P8 should confirm it.
   - The well-posed `quaidstvpfit_test.e` fixture does not trigger it.
 - **RESOLVED 2026-10-15: the stale local `quaids 0.3.0.zip` no longer
   blocks the release gate.**
@@ -1379,12 +1379,13 @@ Limitations:
 ## Next Steps
 
 **Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P5 and P7 are done,
-along with the review follow-ups (roadmap section 10). Next come P6 and
-P8. The stale-zip blocker is resolved. Two upstream sslib risks (Known
-Issues) are still open and should gate promotion:
-- the second-pass complex/G0518 risk;
-- the non-diagonal-H diffuse-threshold defect found by P5. The original sequenced plan, P1-P8,
-in `dev/TVP_PROMOTION_ROADMAP.md`:
+along with the review follow-ups (roadmap section 10). P5 was closed on
+2026-10-17 by Stage 1 (sslib v2.1.1). Next come P6 and P8. The stale-zip
+blocker is resolved. Both upstream sslib risks that P5 tracked are
+addressed in v2.1.1: the non-diagonal-H defect is fixed (fixed-Q likelihood checked),
+and the second-pass complex/G0518 path is removed. P8 still owes the
+support-tier judgment and a re-check of the G0518 configuration. The
+original sequenced plan, P1-P8, in `dev/TVP_PROMOTION_ROADMAP.md`:
 - P1: decision gate D0, choosing a tagged sslib baseline before any repin;
 - P2: repin and resync;
 - P3: bound the MLE (`maxIters`/`maxTime` on `quaidsTVPControl`);

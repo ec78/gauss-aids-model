@@ -92,8 +92,8 @@
 **                       numerically identical to one made before these
 **                       two fields existed -- set finite values to bound
 **                       the Q MLE's run time). Both caps apply PER CMLMT
-**                       PASS; sslib may run two passes, so the worst case
-**                       is roughly twice each cap (see quaids.sdf).
+**                       PASS; with sslib v2.1.1 there is one pass, so
+**                       they bound the whole Q MLE (see quaids.sdf).
 */
 proc (struct quaidsTVPControl) = quaidsTVPControlCreate();
     struct quaidsTVPControl tvpCtl;
@@ -183,17 +183,16 @@ endp;
 **                       strictly positive.
 **             tvpCtl -- struct quaidsTVPControl (quaidsTVPControlCreate()
 **                       for defaults). tvpCtl.maxIters/maxTime cap the Q
-**                       MLE (CMLMT iterations / minutes) PER CMLMT PASS:
-**                       sslib's ssFitTVP() may run a second, covariance-
-**                       only pass with the same caps, so the worst case
-**                       is roughly twice each cap plus up to one
-**                       iteration of overrun per pass. Invalid values
-**                       fail loudly before any estimation work. An
-**                       exhausted cap in the first (estimation) pass
-**                       returns normally with tvOut.mleRetcode /= 0
-**                       (CMLMT's own code: 2 iterations, 11 time) --
-**                       check it, as printQuaidsTVP() does. A cap hit in
-**                       the second pass is not exposed by sslib.
+**                       MLE (CMLMT iterations / minutes) PER CMLMT PASS.
+**                       With sslib v2.1.1, ssFitTVP() runs one CMLMT pass
+**                       (its covariance is a delta-method conversion, not
+**                       a second CMLMT run), so the caps bound the whole
+**                       MLE, plus up to one iteration of overrun. Invalid
+**                       values fail loudly before any estimation work. An
+**                       exhausted cap returns normally with
+**                       tvOut.mleRetcode /= 0 (CMLMT's own code: 2
+**                       iterations, 11 time) -- check it, as
+**                       printQuaidsTVP() does.
 **
 ** Output:     tvOut -- struct quaidsTVPOut (see quaids.sdf): fitted Q,
 **                      MLE convergence code, filtered state path (+

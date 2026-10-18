@@ -46,7 +46,7 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
   be strictly positive.
 - `tvpCtl` (*`quaidsTVPControl` structure*) - see
   [quaidsTVPControlCreate](quaidsTVPControlCreate.md). Its `maxIters`/
-  `maxTime` fields cap the `Q` MLE per CMLMT pass (see Remarks); invalid
+  `maxTime` fields cap the `Q` MLE's CMLMT pass (see Remarks); invalid
   values stop the call with a clear error before any estimation.
 
 ## Returns
@@ -57,7 +57,7 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 - `wnam` - legacy character matrix of good names.
 - `H`, `q0` - echoed inputs.
 - `Qfit` - fitted `Q` diagonal (`k_states x 1`, natural units).
-- `mleRetcode` - CMLMT convergence code of the first (estimation) pass;
+- `mleRetcode` - CMLMT convergence code of the estimation pass;
   `0` means converged. `2` means the `tvpCtl.maxIters` cap was reached
   and `11` that the `tvpCtl.maxTime` cap was reached; the other outputs
   are then evaluated at the last iterate, not at an optimum. A cap hit in
@@ -97,15 +97,17 @@ element, the standard TVP-VAR/TVP-AIDS simplifying assumption, and far
 cheaper/safer than a full `k_states*(k_states+1)/2`-parameter covariance
 given the identification risk above.
 
-**Use a diagonal `H`.** A non-diagonal `H` is accepted but **not
-validated**. Against `sslib` v2.1.0, the fixed-`Q` log-likelihood
-matches an independent statsmodels implementation to about 1e-12 with a
-diagonal `H`. With a non-diagonal `H` it can be wrong: when the diffuse
-phase ends partway through a period, `sslib`'s exact diffuse filter can
-take a spurious diffuse update. An even `n1` is a common way for that to
-happen, but not the only one, so treat any non-diagonal `H` as
-unvalidated. This is a known upstream issue (see
-`tests/fixtures/tvp_loglik/README.md`).
+**Diagonal and non-diagonal `H`.** Against `sslib` v2.1.1, the
+fixed-`Q` log-likelihood matches an independent statsmodels
+implementation to about 1e-12 over the full sample, for two diagonal
+`H` cases and one non-diagonal `H` case (see
+`tests/fixtures/tvp_loglik/README.md`). `sslib` v2.1.0 and earlier
+could take a spurious diffuse update with a non-diagonal `H` when the
+diffuse phase ended partway through a period, so do not use a
+non-diagonal `H` with an older `sslib`. The non-diagonal check is one
+fixed-`Q` likelihood case, not a validation of estimated `Q`; the
+diagonal `H` recipe remains the tested default, and this function stays
+Experimental.
 
 **No delta-method standard errors.** Propagating the state's own
 filtered/smoothed covariance through the (linear) state-to-coefficients
@@ -120,23 +122,28 @@ non-converging fit could previously run for close to an hour per CMLMT
 pass. With finite caps it returns at the cap with `mleRetcode /= 0`.
 Always check `mleRetcode`, as [printQuaidsTVP](printQuaidsTVP.md) does.
 
-The caps apply **per CMLMT pass**. `sslib`'s `ssFitTVP()` may run two
-passes with the same control (the estimation pass, then a
-covariance-only pass on the untransformed `Q`), so the worst case is
-roughly twice each cap plus up to one iteration of overrun per pass.
-`mleRetcode` is the first pass's code; a cap hit in the second pass is
-not exposed by `sslib`.
+The caps apply **per CMLMT pass**. With the pinned `sslib` v2.1.1,
+`ssFitTVP()` runs one CMLMT pass (the covariance of the transformed `Q`
+is a delta-method conversion, not a second CMLMT run), so the caps bound
+the whole MLE plus up to one iteration of overrun, and `mleRetcode` is
+that pass's code. `sslib` v2.1.0 and earlier also ran an untransformed
+covariance-only pass with the same control (worst case about twice each
+cap).
 
 Measured on the deterministic, correctly specified test DGP in
-`tests/quaidstvpfit_test.e` (`n1=2`, `tobs=120`, `sslib` v2.1.0): each
-fit converged (`mleRetcode = 0`) in about 1-2 seconds. That is evidence
+`tests/quaidstvpfit_test.e` (`n1=2`, `tobs=120`, `sslib` v2.1.1): each
+fit converged (`mleRetcode = 0`) in about 1 second (0.67 s for the main
+fit; about 1-2 s on v2.1.0). That is evidence
 for that fixture only, not a general convergence guarantee.
 
 **`sslib` baseline.** This repository's TVP-AIDS tests are pinned to
-`sslib` v2.1.0 (`sslib.pin.json`), the first release with the fix that
-correctly ends the exact diffuse Kalman filter's diffuse phase. On
-earlier `sslib` releases, likelihoods and `Q` estimates for this
-random-walk state model are affected by spurious extra diffuse updates.
+`sslib` v2.1.1 (`sslib.pin.json`). v2.1.0 was the first release with the
+fix that correctly ends the exact diffuse Kalman filter's diffuse phase;
+v2.1.1 also fixes the spurious diffuse update with a non-diagonal `H`
+and replaces `ssFitTVP()`'s second CMLMT pass with a delta-method
+covariance. On releases before v2.1.0, likelihoods and `Q` estimates
+for this random-walk state model are affected by spurious extra diffuse
+updates.
 
 **MLE convergence speed degrades sharply with `k_states`** (and so with
 `n1`, the number of goods). Confirmed directly: a 5-good (`n1=4`,
@@ -183,7 +190,7 @@ q0 = 0.1*meanc(diag(H))*ones(k_states, 1);   // scaled relative to H, not a flat
 
 tvpCtl = quaidsTVPControlCreate();
 tvpCtl.maxIters = 500;   // cap the Q MLE (defaults are effectively unbounded) ...
-tvpCtl.maxTime = 5;      // ... minutes; both per CMLMT pass (worst case ~2x)
+tvpCtl.maxTime = 5;      // ... minutes; one CMLMT pass with sslib v2.1.1
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 call printQuaidsTVP(tvOut);   // flags mleRetcode /= 0
 
