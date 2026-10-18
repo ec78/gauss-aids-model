@@ -1345,8 +1345,8 @@ Limitations:
   P5 case 3 is now a counted full-sample check (1.7e-13 per period).
   sslib v2.1.0 and earlier remain affected; see
   `tests/fixtures/tvp_loglik/README.md` ("Case 3 history").
-- **Likely resolved by sslib v2.1.1, pending the P8 re-check: example 14's
-  "covariance failed to invert" and sslib's fragile untransformed
+- **Resolved by sslib v2.1.1 and confirmed by P8: example 14's
+  "covariance failed to invert" warning and sslib's fragile untransformed
   second CMLMT pass.**
   - On v2.1.0, `ssFitTVP()`'s second, untransformed CMLMT pass printed
     `CMLmt: function evaluated as complex` near a zero Q element, and
@@ -1355,9 +1355,9 @@ Limitations:
     configuration it aborted with `G0518 Not implemented for complex` in
     `cmlmthess`, which `trap` cannot catch.
   - v2.1.1 (`717abb5`) removed that pass and converts the covariance
-    by the delta method. On 2026-10-17, example 14 no longer prints either
-    warning (CONVERGED, 23 iterations). The misspecified G0518
-    configuration was not re-run, so P8 should confirm it.
+    by the delta method. On 2026-10-17, example 14 no longer printed either
+    warning (CONVERGED, 23 iterations). P8 then ran the full source suite
+    and all 15 examples twice without any complex/G0518 line.
   - The well-posed `quaidstvpfit_test.e` fixture does not trigger it.
 - **RESOLVED 2026-10-15: the stale local `quaids 0.3.0.zip` no longer
   blocks the release gate.**
@@ -1474,15 +1474,16 @@ Limitations:
 
 ## Next Steps
 
-**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P7 are done, along
-with the review follow-ups (roadmap section 10). P5 was closed on
-2026-10-17 by Stage 1 (sslib v2.1.1), and P6 followed later that day
-(Stage 2). Next comes P8. The stale-zip
-blocker is resolved. Both upstream sslib risks that P5 tracked are
-addressed in v2.1.1: the non-diagonal-H defect is fixed (fixed-Q likelihood checked),
-and the second-pass complex/G0518 path is removed. P8 still owes the
-support-tier judgment and a re-check of the G0518 configuration. The
-original sequenced plan, P1-P8, in `dev/TVP_PROMOTION_ROADMAP.md`:
+**Priority 1 completed 2026-10-17: TVP-AIDS promotion.** P1-P8 and the
+review follow-ups are done (roadmap section 10). P5 closed with sslib
+v2.1.1 in Stage 1, P6 completed the bounded scale measurement in Stage 2,
+and P8 passed the final release gate in Stage 3. TVP-AIDS is now Supported
+(scoped); see the current objective and Stage 3 evidence above for the
+exact boundaries. The stale-zip blocker is resolved, the non-diagonal-H
+fixed-Q likelihood is validated on the committed fixture, and the removed
+second CMLMT pass no longer produces the complex/G0518 path in the full
+gate. The completed sequenced plan, P1-P8, in
+`dev/TVP_PROMOTION_ROADMAP.md`:
 - P1: decision gate D0, choosing a tagged sslib baseline before any repin;
 - P2: repin and resync;
 - P3: bound the MLE (`maxIters`/`maxTime` on `quaidsTVPControl`);
@@ -1492,7 +1493,7 @@ original sequenced plan, P1-P8, in `dev/TVP_PROMOTION_ROADMAP.md`:
 - P7: a per-test timeout in `run_source_tests.ps1`;
 - P8: the local TVP release gate.
 
-Item 5 below is superseded by that plan.
+Item 5 below is superseded by that completed plan.
 
 **Deferred and preserved, not abandoned:** the convergence-correctness
 direction below. It covers AIDS direct-LM (including the frozen symmetry
