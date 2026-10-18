@@ -24,16 +24,16 @@
 ** tsmt\lib explicitly (tests/gauss26_cfg_override/gauss.cfg is a
 ** ready-made one this repo already ships for its own test suite).
 **
-** Uses only the first 3 of quaidsExampleData()'s 5 goods (n1=2), NOT the
-** full 5-good dataset -- confirmed directly (not assumed) that the full
-** 5-good case (n1=4, k_states=18) makes ssFitTVP()'s CMLMT optimization
-** pathologically slow/non-terminating on this dataset (observed directly:
-** still running after 100s+ at tobs as low as 200, vs. ~34s to convergence
-** for the n1=2 subset at tobs=500) -- consistent with every other
-** TVP-AIDS test/example in this initiative also staying at n1=2 or n1=3,
-** never n1=4. A real, documented scale limit of this codebase's
-** diffuse-initialization/random-walk-state MLE approach, not a bug in
-** this example's own setup.
+** Uses only the first 3 of quaidsExampleData()'s 5 goods (n1=2), which
+** converges in 23 CMLMT iterations. TVP promotion P6 (2026-10-17, sslib
+** v2.1.1, this same setup with only the number of goods changed, caps
+** 500 iterations / 5 minutes) measured the larger cases on this data:
+**   - n1=4 (5 goods, k_states=18) converges (mleRetcode 0) in 93
+**     iterations, about 3.5-3.9 minutes;
+**   - n1=3 (4 goods, k_states=12) does NOT converge and stops at the
+**     5-minute cap (mleRetcode 11).
+** That is one dataset, so it is no scale guarantee either way. See
+** dev/experiments/tvp_p6_scale/RESULTS.md and quaidsTVPFit.md's Remarks.
 **
 ** Run via `cd examples; tgauss -b -x 14_tvp_aids_estimation.e`.
 */
@@ -70,8 +70,7 @@ k_states = 2*n1 + n1*(n1+1)/2;
 ** equation residual variances. q0's own scale is likewise chosen
 ** relative to H's, not an arbitrary tiny constant -- confirmed directly
 ** that starting Q many orders of magnitude smaller than H (e.g. a flat
-** 0.001) contributes to the same CMLMT slowness noted above, on top of
-** the n1=4 issue.
+** 0.001) slowed the CMLMT step (observed before P6).
 ** --------------------------------------------------------------------- */
 
 aCtl = quaidsControlCreate();

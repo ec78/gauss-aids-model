@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-17_
+_Last updated: 2026-10-17 (Stage 2 / P6)_
 
 ## Current Objective
 
@@ -104,8 +104,26 @@ roadmap section 10.
   - TVP tests give 56/13/8/7/8/30. Example 14 passes in 11 s
     (CONVERGED, 23 iterations), with no complex or "failed to invert"
     warnings.
-- **Still open:** P6 (the n1 = 3/4 scale re-measurement) and P8 (the
-  release gate). P8 includes the support-tier judgment for non-diagonal H
+- **Stage 2 / P6 (2026-10-17, task `task_ee20ce3a0a46`, local commit
+  only, still 0.4.0; docs, comments and experiment evidence only): bounded
+  `n1` scale re-measurement done.** Evidence:
+  `dev/experiments/tvp_p6_scale/RESULTS.md`; also see roadmap section 10.
+  - Before and after, the pin passes `-Strict`, P5 gives 12/12 and Stage
+    6 gives 30/30.
+  - Setup: example 14's data and setup with only the number of goods
+    changed. Ten sequential jobs, each under an outer 900 s timeout,
+    which was never hit.
+  - **`n1=4` converges.** `mleRetcode = 0` in 93 iterations, about
+    3.5-3.9 min, with byte-identical output in 5/5 runs under caps
+    500 x 5 and 100 x 60.
+  - **`n1=3` does not converge.** At 500 x 5 it gives `mleRetcode = 11`
+    in 3/3 runs, after 437-457 iterations, with an endpoint that depends
+    on timing. At 100 x 60 it gives `mleRetcode = 2` in 2/2 runs,
+    deterministically. CMLMT reports "covariance failed to invert".
+  - The README row, `quaidsTVPFit.md` and example 14's comments now
+    state only these measurements. The old claim that `n1=4` was
+    pathologically slow is withdrawn.
+- **Still open:** P8 (the release gate). P8 includes the support-tier judgment for non-diagonal H
   and for the delta-method covariance, and a re-check of the complex/G0518
   risk, whose second-pass trigger v2.1.1 removed. TVP-AIDS stays
   **Experimental**.
@@ -1378,9 +1396,10 @@ Limitations:
 
 ## Next Steps
 
-**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P5 and P7 are done,
-along with the review follow-ups (roadmap section 10). P5 was closed on
-2026-10-17 by Stage 1 (sslib v2.1.1). Next come P6 and P8. The stale-zip
+**Priority 1 (2026-10-15): TVP-AIDS promotion.** P1-P7 are done, along
+with the review follow-ups (roadmap section 10). P5 was closed on
+2026-10-17 by Stage 1 (sslib v2.1.1), and P6 followed later that day
+(Stage 2). Next comes P8. The stale-zip
 blocker is resolved. Both upstream sslib risks that P5 tracked are
 addressed in v2.1.1: the non-diagonal-H defect is fixed (fixed-Q likelihood checked),
 and the second-pass complex/G0518 path is removed. P8 still owes the

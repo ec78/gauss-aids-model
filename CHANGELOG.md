@@ -36,6 +36,22 @@ as internal milestone history and were never public compatibility promises.
   unchanged. Check (c) is still a pure wiring check, and its description
   no longer calls it `ssFitTVP()`'s second pass.
 
+- TVP-AIDS promotion P6: the `n1` scale remarks in the README support-tier
+  row, `docs/command-reference/quaidsTVPFit.md` and example 14's comments
+  now state only measured behaviour. The bounded re-measurement
+  (`dev/experiments/tvp_p6_scale/`, sslib v2.1.1, example 14's data and
+  setup, caps 500 iterations / 5 min, outer 900 s timeout, never hit)
+  found:
+  - `n1=4` converges (`mleRetcode = 0`) in 93 iterations, about 3.5-3.9
+    min, with byte-identical output in all 5 runs;
+  - `n1=3` stops at the time cap (`mleRetcode = 11`) with a
+    timing-dependent endpoint, or at an iteration cap (`mleRetcode = 2`)
+    deterministically.
+
+  The earlier "pathologically slow above `n1=2`-`3`" claim is withdrawn.
+  It was measured unbounded, on sslib before v2.1.0. No code, API or
+  version change.
+
 ### Maintainer notes (no user-facing change)
 
 - `scripts/sync_sslib.ps1` failed under Windows PowerShell 5.1 before

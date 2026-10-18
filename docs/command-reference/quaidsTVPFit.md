@@ -125,8 +125,9 @@ Always check `mleRetcode`, as [printQuaidsTVP](printQuaidsTVP.md) does.
 The caps apply **per CMLMT pass**. With the pinned `sslib` v2.1.1,
 `ssFitTVP()` runs one CMLMT pass (the covariance of the transformed `Q`
 is a delta-method conversion, not a second CMLMT run), so the caps bound
-the whole MLE plus up to one iteration of overrun, and `mleRetcode` is
-that pass's code. `sslib` v2.1.0 and earlier also ran an untransformed
+the whole MLE plus a small overrun (`maxTime` is checked once per
+iteration; P6 measured at most 0.036 CMLMT minutes past a 5-minute
+cap), and `mleRetcode` is that pass's code. `sslib` v2.1.0 and earlier also ran an untransformed
 covariance-only pass with the same control (worst case about twice each
 cap).
 
@@ -145,17 +146,44 @@ covariance. On releases before v2.1.0, likelihoods and `Q` estimates
 for this random-walk state model are affected by spurious extra diffuse
 updates.
 
-**MLE convergence speed degrades sharply with `k_states`** (and so with
-`n1`, the number of goods). Confirmed directly: a 5-good (`n1=4`,
-`k_states=18`) dataset made the MLE step pathologically slow (still
-running well past 100 seconds at `tobs` as low as 200), while the exact
-same dataset restricted to 3 goods (`n1=2`, `k_states=7`) converged in
-well under a minute at `tobs=500`. `q0`'s own scale matters too -- a flat,
-very small starting value (e.g. `0.001` regardless of `H`'s own
-magnitude) makes this worse; scaling `q0` relative to `H` (as in the
-example below) is safer. Every test and example in this initiative stays
-at `n1=2` or `n1=3` for exactly this reason -- treat a larger `n1` as
-unproven, not just untested for style reasons.
+**Scale: measured behaviour, not a guarantee** (TVP promotion P6,
+2026-10-17, `sslib` v2.1.1; evidence in
+`dev/experiments/tvp_p6_scale/RESULTS.md`). These runs used example 14's
+data and setup below (`quaidsExampleData(500, 204)`, `H` from a static
+homogeneous LA-AIDS fit, `q0 = 0.1*mean(diag(H))`), changing only the
+number of goods. Each fit used one job under an outer hard timeout,
+which no job hit.
+
+| `n1` | `k_states` | caps (`maxIters` x `maxTime` min) | `mleRetcode` | CMLMT iterations | CMLMT minutes |
+|---|---|---|---|---|---|
+| 2 | 7 | 500 x 5 | 0 | 23 | -- (whole example about 11 s) |
+| 3 | 12 | 500 x 5 | 11 in 3/3 runs | 437-457 | 5.02-5.04 |
+| 3 | 12 | 100 x 60 | 2 in 2/2 runs | 101 | 1.19-1.23 |
+| 4 | 18 | 500 x 5 | 0 in 3/3 runs | 93 | 3.52-3.62 |
+| 4 | 18 | 100 x 60 | 0 in 2/2 runs | 93 | 3.70-3.89 |
+
+- `n1=4` converged with byte-identical output in all 5 runs.
+- `n1=3` did not converge. When the time cap binds, the stopping
+  iteration and the returned `Q` vary from run to run, because they
+  depend on machine timing. When the iteration cap binds, the result is
+  deterministic. CMLMT reports "The covariance of the parameters failed
+  to invert" at that endpoint, and `Q` was still moving substantially
+  when the fit stopped.
+- Time per CMLMT iteration grew with `k_states`: about 0.7 s at
+  `n1=3` and 2.3-2.5 s at `n1=4`. Whether a fit converges did not grow
+  monotonically with `n1`; on this data it depends on the subset.
+- This is one dataset, one seed and one `q0` rule, so it supports no
+  general scale claim. A larger `n1` is unmeasured, not just untested
+  for style reasons. Whether `n1=3` converges with a larger budget was
+  not measured.
+- The earlier claim, measured on `sslib` before v2.1.0 with no caps,
+  that `n1=4` was "pathologically slow" on this data is superseded by
+  these runs.
+
+`q0`'s own scale still matters. A flat, very small start (for example
+`0.001` regardless of `H`) was observed to slow the MLE before P6.
+Scaling `q0` relative to `H`, as in the example below, is safer. Always
+set the caps and check `mleRetcode`.
 
 **Minimal public surface, by design.** The individual Kalman-filter,
 MLE, and smoother steps this proc orchestrates are not separately public

@@ -6,7 +6,8 @@ P5 on 2026-10-16 (see section 10). P5 found an upstream blocker: a
 non-diagonal H gave a wrong diffuse likelihood in sslib v2.1.0. On
 2026-10-17 (Stage 1) sslib was repinned to v2.1.1, which fixes it, and P5
 case 3 became a counted full-sample check, so **P5 is closed** (section
-10). P6 and P8 remain open, so TVP-AIDS stays Experimental._
+10). P6 (bounded `n1` scale re-measurement) was done on 2026-10-17
+(Stage 2, section 10). P8 remains open, so TVP-AIDS stays Experimental._
 
 This is the durable plan for promoting TVP-AIDS (`quaidsTVPFit()` and the
 Stage 1-6 machinery in `src/quaidstvp*.src`) from **Experimental** to a
@@ -275,6 +276,10 @@ next step starts.
   reproduced).
 - Acceptance: the docs state measured behaviour, including retcodes, with
   no unmeasured claims.
+- **Status: done (2026-10-17, Stage 2).** `n1=4` converges in 93
+  iterations, deterministically. `n1=3` stops at the cap (`mleRetcode`
+  11, or 2 under an iteration cap). The docs now state only these
+  measurements. See section 10 and `dev/experiments/tvp_p6_scale/RESULTS.md`.
 
 **P7: Runner hardening.**
 - Add a per-test timeout to `tests/run_source_tests.ps1`'s
@@ -339,7 +344,8 @@ is the evidence.
   `004c1be`, with its own regression) and covered by P5 case 3. Whether
   non-diagonal H is a supported tier of `quaidsTVPFit()` is a P8
   judgment: the evidence is one fixed-Q likelihood case, not estimated Q;
-- any `n1`/`k_states` scale claim beyond what P6 measures;
+- any `n1`/`k_states` scale claim beyond what P6 measured (one dataset,
+  `n1 = 3` and `4`, `dev/experiments/tvp_p6_scale/RESULTS.md`);
 - reproducibility against `sslib.pin.json`, because the install currently
   fails the pin;
 - any move of TVP out of Experimental.
@@ -642,3 +648,49 @@ estimation code, public API or version change.
 - P8: the release gate. This includes the support-tier judgment for
   non-diagonal H and for the delta-method covariance, and a re-check of
   the complex/G0518 risk, whose second-pass trigger v2.1.1 removed.
+
+### 2026-10-17: Stage 2 -- P6 bounded scale re-measurement (still package 0.4.0)
+
+Task `task_ee20ce3a0a46`. Docs, comments and experiment evidence only: no
+code, public API or version change.
+- **Dependency state before and after:** `verify_sslib_pin.ps1 -Strict`
+  passes (v2.1.1, `bf827ae`). `quaidstvp_loglik_xcheck_test.e` gives
+  12/12 and `quaidstvpfit_test.e` gives 30/30. P5 has not regressed.
+- **Harness:** `dev/experiments/tvp_p6_scale/`:
+  - the template and generated `.e` inputs;
+  - `run_p6.ps1`, which runs jobs sequentially with a `GAUSS26_CFG`
+    override and an outer 900 s hard timeout using `taskkill /T`;
+  - full logs, `summary.csv` and `RESULTS.md`.
+
+  The setup is example 14's (`quaidsExampleData(500, 204)`, `H` from a
+  static fit, `q0 = 0.1*mean(diag(H))`) with only the number of goods
+  changed.
+- **Results** (10 jobs, no outer timeout hit, no complex warnings):
+
+  | `n1` | caps | runs | `mleRetcode` | iterations | CMLMT min |
+  |---|---|---|---|---|---|
+  | 3 | 500 x 5 | 3 | 11, 11, 11 | 457/438/437 | 5.02-5.04 |
+  | 3 | 100 x 60 | 2 | 2, 2 | 101 | 1.19-1.23 |
+  | 4 | 500 x 5 | 3 | 0, 0, 0 | 93 | 3.52-3.62 |
+  | 4 | 100 x 60 | 2 | 0, 0 | 93 | 3.70-3.89 |
+
+  - `n1=4`'s output is byte-identical across all 5 runs.
+  - `n1=3` is identical under the iteration cap and differs under the
+    time cap, where its endpoint depends on timing. CMLMT reports
+    "covariance failed to invert" there.
+  - Nine of `n1=4`'s 18 `Qfit` elements are under 1e-9, and one is 2.955.
+    These were measured, not validated.
+- **Doc changes:**
+  - the README support-tier row;
+  - `quaidsTVPFit.md`'s scale remark, now a measured table, plus its
+    overrun wording (at most 0.036 CMLMT min past a 5-min cap);
+  - example 14's header comments.
+
+  The old "n1=4 pathologically slow" claim is withdrawn.
+- **Not measured:** larger `n1 = 3` budgets, other seeds, `tobs` or `q0`
+  rules, `n1 >= 5`, and `Q` accuracy.
+
+**Still open:**
+- P8: the release gate. This includes the support-tier judgment for
+  non-diagonal H and for the delta-method covariance, and a re-check of
+  the complex/G0518 risk.
