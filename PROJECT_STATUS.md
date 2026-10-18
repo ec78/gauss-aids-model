@@ -181,8 +181,27 @@ roadmap section 10.
     - FEATURE_SUPPORT_MATRIX: a new TVP row.
     - The `quaidsTVPFit`/`quaidsTVPControlCreate` pages: scope, and
       removal of the stale second-pass text.
-  - **Final gate:** rerun from the committed docs; see roadmap section
-    10.
+  - **Final gate (run 2, the P8 certification): GO.** It ran from clean
+    commit `a15f190`, which holds all the P8 docs and tier changes, on
+    2026-10-17 from 20:51:28 to 20:57:42 local (374.2 s; release
+    verification 364.7 s). Same environment and command as run 1, with
+    the same results:
+    - pin `-Strict` PASS;
+    - 32 files, 774 checks, 42/42 guards (22 TVP), 0 FAIL, no timeouts;
+    - Stage 6 30/30 and cross-check 12/12;
+    - verify_release_artifact PASS, both installed-package tests PASS;
+    - examples 15/15, with example 14's two fits CONVERGED;
+    - zero complex/G0518/"failed to invert" lines.
+
+    Artifact `quaids 0.4.0.zip` SHA-256:
+    `51D8E00F57FECF273C02DBBA67AD4E12F5BCE34D4CCBE324E160465B3298A65E`.
+    Record: `release_records/0.4.0-20261017-205742.json`. Its
+    `releaseNotes` state sslib v2.1.1, one CMLMT pass, the P5 3/3
+    full-sample cross-check, the P6 measurements and the P8 Supported
+    (scoped) tier. The stale two-pass and "not validated" text is gone.
+    The install hit the same `Remove-Item` "in use" warning. The content
+    diff matched again: 210/210 files identical, with the `.lcg` as the
+    only extra.
 - **Open:** the 0.4.0 `date-released` (2026-10-15, in CHANGELOG and
   CITATION.cff) is left for the owner to set at tagging. Nothing is
   pushed, tagged or published.

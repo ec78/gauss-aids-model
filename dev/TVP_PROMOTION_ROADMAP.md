@@ -754,5 +754,24 @@ convergence-failure mode.
 - FEATURE_SUPPORT_MATRIX: a new TVP row.
 - The `quaidsTVPFit` and `quaidsTVPControlCreate` pages.
 
-**Final gate.** It is rerun from the committed docs, and the result is
-recorded below.
+**Final gate (run 2, the P8 certification): GO.** It ran from clean
+commit `a15f190` (all P8 docs and tier changes) on 2026-10-17 from
+20:51:28 to 20:57:42 local (374.2 s). Every criterion gave the same
+result as run 1:
+- pin `-Strict` PASS;
+- 32 files, 774 checks, 42/42 guards (22 TVP), no timeouts;
+- examples 15/15;
+- both installed-package tests PASS;
+- zero complex/G0518 lines.
+
+Artifact SHA-256:
+`51D8E00F57FECF273C02DBBA67AD4E12F5BCE34D4CCBE324E160465B3298A65E`.
+Record: `release_records/0.4.0-20261017-205742.json`. Its release notes
+carry the current v2.1.1, P5, P6 and P8 facts. The install content diff
+matched (210/210).
+
+**Still open (outside P8):**
+- the 0.4.0 `date-released` (2026-10-15) and any tag or publish, both
+  the owner's to do;
+- the recurring install-directory "in use" warning, which is harmless in
+  both runs by content diff.
