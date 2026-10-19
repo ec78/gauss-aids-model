@@ -5,16 +5,34 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-19 (Stage 4 / SSLib 2.1.2 adoption)_
+_Last updated: 2026-10-19 (0.4.0 release / next TVP boundary)_
 
 ## Current Objective
+
+**QUAIDS 0.4.0 was released 2026-10-19.** Annotated tag `v0.4.0` points
+to clean, fully gated commit `78a3340`; `master`, the tag and the GitHub
+release are pushed. The published asset `quaids.0.4.0.zip` has SHA-256
+`CF4BD4DB33A85624134F8704E0093DDC81BB1238D3631341049C5C4AB995A4F4`,
+matching the final gate record
+`release_records/0.4.0-20261019-063728.json` and GitHub's reported digest.
+The push-triggered CI run `39246013576` passed. Release URL:
+https://github.com/ec78/gauss-aids-model/releases/tag/v0.4.0.
+
+**Active next boundary: TVP convergence correctness, then speed.** A
+draft, not-yet-frozen protocol is at
+`dev/experiments/tvp_conv_study/PROTOCOL.md`. It uses known-truth DGPs
+and multi-start likelihood comparisons to distinguish a genuine best-found
+endpoint from a bare `mleRetcode == 0`. Speed work is gated on equivalent
+endpoints. No study grid has run and no shipped source/API has changed;
+the proposed factors, tolerance and six-hour budget need owner approval
+before the protocol is frozen and the small `n1=2` Stage A harness runs.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
 **`dev/TVP_PROMOTION_ROADMAP.md`**.
 
-**Stage 4 complete locally (2026-10-19): adopt SSLib v2.1.2 for the 0.4.0
-release candidate.** The immutable `v2.1.2` tag resolves to `a32885b`;
+**Stage 4 complete and released (2026-10-19): adopt SSLib v2.1.2 for
+0.4.0.** The immutable `v2.1.2` tag resolves to `a32885b`;
 all nine GAUSS library source files are byte-identical to v2.1.1. Before
 repinning, the 263-file shared install was backed up to
 `C:\Users\eclow\Documents\sslib-backups\sslib-pre-v2.1.2-20261019-054940`
@@ -29,8 +47,8 @@ converged in 23 iterations. Artifact SHA-256:
 `D5BAF56BA1D2F8BD85018940214909857E79AD1B4375EB9F5FA3400AAFF03F37`;
 record: `release_records/0.4.0-20261019-060215.json` (gitignored). The
 known install-directory-in-use warning recurred, but verification
-completed successfully. Nothing from this adoption has been pushed,
-tagged, or published.
+completed successfully. This earlier adoption gate was superseded by the
+final release gate and publication record above.
 
 **Progress 2026-10-15 (task `task_575ce63c08a6`, package 0.4.0, local
 commit only):** P1 (D0 = option A), P2, P3, P4 and P7 are done; see
