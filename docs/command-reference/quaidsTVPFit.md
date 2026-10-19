@@ -61,7 +61,7 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
   `0` means converged. `2` means the `tvpCtl.maxIters` cap was reached
   and `11` that the `tvpCtl.maxTime` cap was reached; the other outputs
   are then evaluated at the last iterate, not at an optimum. With the
-  pinned `sslib` v2.1.1 there is only one CMLMT pass (see Remarks).
+  pinned `sslib` v2.1.2 there is only one CMLMT pass (see Remarks).
   Checking `mleRetcode == 0` is part of the supported scope (see
   "Support tier" below).
 - `filteredState` (`k_states x nobs`), `filteredStateCov` (array,
@@ -79,7 +79,8 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 ## Remarks
 
 **Support tier: Supported (scoped)** (TVP promotion P8, 2026-10-17;
-release-gated locally on the pinned `sslib` v2.1.1). Support covers only
+release-gated locally on `sslib` v2.1.1 and repinned to source-identical
+`sslib` v2.1.2, with the adoption re-gate pending). Support covers only
 this scope:
 - a fixed, **diagonal** `H`;
 - finite `tvpCtl.maxIters`/`tvpCtl.maxTime` (the defaults are
@@ -116,7 +117,8 @@ element, the standard TVP-VAR/TVP-AIDS simplifying assumption, and far
 cheaper/safer than a full `k_states*(k_states+1)/2`-parameter covariance
 given the identification risk above.
 
-**Diagonal and non-diagonal `H`.** Against `sslib` v2.1.1, the
+**Diagonal and non-diagonal `H`.** Against the current `sslib` v2.1.2
+pin (library source identical to v2.1.1), the
 fixed-`Q` log-likelihood matches an independent statsmodels
 implementation to about 1e-12 over the full sample, for two diagonal
 `H` cases and one non-diagonal `H` case (see
@@ -141,7 +143,7 @@ non-converging fit could previously run for close to an hour per CMLMT
 pass. With finite caps it returns at the cap with `mleRetcode /= 0`.
 Always check `mleRetcode`, as [printQuaidsTVP](printQuaidsTVP.md) does.
 
-The caps apply **per CMLMT pass**. With the pinned `sslib` v2.1.1,
+The caps apply **per CMLMT pass**. With the pinned `sslib` v2.1.2,
 `ssFitTVP()` runs one CMLMT pass (the covariance of the transformed `Q`
 is a delta-method conversion, not a second CMLMT run), so the caps bound
 the whole MLE plus a small overrun (`maxTime` is checked once per
@@ -151,13 +153,16 @@ covariance-only pass with the same control (worst case about twice each
 cap).
 
 Measured on the deterministic, correctly specified test DGP in
-`tests/quaidstvpfit_test.e` (`n1=2`, `tobs=120`, `sslib` v2.1.1): each
+`tests/quaidstvpfit_test.e` (`n1=2`, `tobs=120`; originally measured on
+`sslib` v2.1.1, with the same runtime code in v2.1.2): each
 fit converged (`mleRetcode = 0`) in about 1 second (0.67 s for the main
 fit; about 1-2 s on v2.1.0). That is evidence
 for that fixture only, not a general convergence guarantee.
 
 **`sslib` baseline.** This repository's TVP-AIDS tests are pinned to
-`sslib` v2.1.1 (`sslib.pin.json`). v2.1.0 was the first release with the
+`sslib` v2.1.2 (`sslib.pin.json`). Its library source is byte-identical
+to v2.1.1; v2.1.2 updates documentation, examples and package metadata.
+v2.1.0 was the first release with the
 fix that correctly ends the exact diffuse Kalman filter's diffuse phase;
 v2.1.1 also fixes the spurious diffuse update with a non-diagonal `H`
 and replaces `ssFitTVP()`'s second CMLMT pass with a delta-method
@@ -166,7 +171,8 @@ for this random-walk state model are affected by spurious extra diffuse
 updates.
 
 **Scale: measured behaviour, not a guarantee** (TVP promotion P6,
-2026-10-17, `sslib` v2.1.1; evidence in
+2026-10-17, `sslib` v2.1.1; these conclusions apply unchanged to v2.1.2
+because its library source is byte-identical; evidence in
 `dev/experiments/tvp_p6_scale/RESULTS.md`). These runs used example 14's
 data and setup below (`quaidsExampleData(500, 204)`, `H` from a static
 homogeneous LA-AIDS fit, `q0 = 0.1*mean(diag(H))`), changing only the
@@ -237,7 +243,7 @@ q0 = 0.1*meanc(diag(H))*ones(k_states, 1);   // scaled relative to H, not a flat
 
 tvpCtl = quaidsTVPControlCreate();
 tvpCtl.maxIters = 500;   // cap the Q MLE (defaults are effectively unbounded) ...
-tvpCtl.maxTime = 5;      // ... minutes; one CMLMT pass with sslib v2.1.1
+tvpCtl.maxTime = 5;      // ... minutes; one CMLMT pass with sslib v2.1.2
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 call printQuaidsTVP(tvOut);   // flags mleRetcode /= 0
 

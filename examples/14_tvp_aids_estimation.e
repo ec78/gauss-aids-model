@@ -98,7 +98,7 @@ tvpCtl.othnam = goodNames;
 /* Explicit, practical caps on the Q maximum-likelihood step. The
    defaults (1e5 iterations, 1e8 minutes) are CMLMT's own and effectively
    unbounded, so a non-converging fit could otherwise run for an hour or
-   more. Both caps are PER CMLMT PASS; with sslib v2.1.1 ssFitTVP() runs
+   more. Both caps are PER CMLMT PASS; with sslib v2.1.2 ssFitTVP() runs
    one pass (its covariance is a delta-method conversion, not a second
    CMLMT run), so they bound the whole MLE, plus up to one iteration of
    overrun (maxTime is checked once per iteration). This fit converges in well

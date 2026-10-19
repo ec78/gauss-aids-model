@@ -92,7 +92,7 @@
 **                       numerically identical to one made before these
 **                       two fields existed -- set finite values to bound
 **                       the Q MLE's run time). Both caps apply PER CMLMT
-**                       PASS; with sslib v2.1.1 there is one pass, so
+**                       PASS; with sslib v2.1.2 there is one pass, so
 **                       they bound the whole Q MLE (see quaids.sdf).
 */
 proc (struct quaidsTVPControl) = quaidsTVPControlCreate();
@@ -184,7 +184,7 @@ endp;
 **             tvpCtl -- struct quaidsTVPControl (quaidsTVPControlCreate()
 **                       for defaults). tvpCtl.maxIters/maxTime cap the Q
 **                       MLE (CMLMT iterations / minutes) PER CMLMT PASS.
-**                       With sslib v2.1.1, ssFitTVP() runs one CMLMT pass
+**                       With sslib v2.1.2, ssFitTVP() runs one CMLMT pass
 **                       (its covariance is a delta-method conversion, not
 **                       a second CMLMT run), so the caps bound the whole
 **                       MLE, plus up to one iteration of overrun. Invalid

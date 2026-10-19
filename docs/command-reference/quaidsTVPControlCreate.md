@@ -37,7 +37,7 @@ None.
   `tvpCtl.othnam = 0$+someDollarPipeBuiltNames;`.
 - `maxIters` - `1e5` by default (CMLMT's own default): the iteration
   cap for the `Q` maximum-likelihood step, which is one CMLMT pass with
-  `sslib` v2.1.1 (see Remarks). Must be a finite positive integer
+  `sslib` v2.1.2 (see Remarks). Must be a finite positive integer
   scalar. *(Added in 0.4.0.)*
 - `maxTime` - `1e8` by default (CMLMT's own default): the wall-clock cap
   for the `Q` maximum-likelihood step, in **minutes** (see Remarks).
@@ -60,7 +60,8 @@ and a mandatory `tvOut.mleRetcode == 0` check; see
 [quaidsTVPFit](quaidsTVPFit.md) Remarks). A fit made with the default
 caps is outside that scope.
 
-**What the caps bound.** With the pinned `sslib` v2.1.1,
+**What the caps bound.** With the pinned `sslib` v2.1.2 (library source
+identical to v2.1.1),
 `ssFitTVP()` runs **one** CMLMT pass: the estimation pass. The
 covariance of the positivity-transformed `Q` is converted by the delta
 method, with no second CMLMT run. So the caps bound the whole MLE, plus
@@ -86,7 +87,7 @@ both fields empty, and `quaidsTVPFit()` then uses the defaults.
 tvpCtl = quaidsTVPControlCreate();
 tvpCtl.smooth = 0;     // filtered path only, skip the RTS smoother
 tvpCtl.maxIters = 500; // cap the Q MLE at 500 iterations ...
-tvpCtl.maxTime = 5;    // ... or 5 minutes (one CMLMT pass with sslib v2.1.1)
+tvpCtl.maxTime = 5;    // ... or 5 minutes (one CMLMT pass with sslib v2.1.2)
 
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 if tvOut.mleRetcode /= 0;

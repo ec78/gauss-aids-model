@@ -638,7 +638,7 @@ struct quaidsTVPControl {
                      //   iteration, so a pass can overrun it by up to
                      //   one iteration.
                      // Pass semantics (both caps): with the pinned
-                     //   sslib v2.1.1, ssFitTVP() runs ONE CMLMT pass
+                     //   sslib v2.1.2, ssFitTVP() runs ONE CMLMT pass
                      //   (the estimation pass; the positivity-transformed
                      //   Q's covariance is converted by the delta method,
                      //   with no second CMLMT run), so each cap bounds

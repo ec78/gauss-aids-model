@@ -5,13 +5,24 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-17 (Stage 3 / P8)_
+_Last updated: 2026-10-19 (Stage 4 / SSLib 2.1.2 adoption)_
 
 ## Current Objective
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
 **`dev/TVP_PROMOTION_ROADMAP.md`**.
+
+**Stage 4 in progress (2026-10-19): adopt SSLib v2.1.2 for the 0.4.0
+release candidate.** The immutable `v2.1.2` tag resolves to `a32885b`;
+all nine GAUSS library source files are byte-identical to v2.1.1. Before
+repinning, the 263-file shared install was backed up to
+`C:\Users\eclow\Documents\sslib-backups\sslib-pre-v2.1.2-20261019-054940`
+with a separately verified SHA-256 manifest. `scripts/sync_sslib.ps1`
+installed the tag and `scripts/verify_sslib_pin.ps1 -Strict` passes.
+Current user-facing references now identify v2.1.2; the local adoption
+release gate is pending. Nothing from this adoption has been pushed,
+tagged, or published.
 
 **Progress 2026-10-15 (task `task_575ce63c08a6`, package 0.4.0, local
 commit only):** P1 (D0 = option A), P2, P3, P4 and P7 are done; see

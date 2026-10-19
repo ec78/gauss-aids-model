@@ -141,7 +141,7 @@ endp;
 **             maxTime  -- optional, CMLMT time cap in minutes (default
 **                      1e8, CMLMT's own default). Both are written into
 **                      ssCtl.ctl, which ssFitTVP() uses for its one
-**                      CMLMT pass (the transformed fit; sslib v2.1.1
+**                      CMLMT pass (the transformed fit; sslib v2.1.2
 **                      converts the covariance by the delta method
 **                      instead of the untransformed CMLMT re-run that
 **                      v2.1.0 made with the same control).

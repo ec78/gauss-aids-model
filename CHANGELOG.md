@@ -11,7 +11,7 @@ as internal milestone history and were never public compatibility promises.
 - `quaidsTVPControl.maxIters` and `quaidsTVPControl.maxTime` (TVP-AIDS
   promotion P3): caps on the CMLMT iterations and wall-clock minutes of
   `quaidsTVPFit()`'s `Q` maximum-likelihood step, written into the CMLMT
-  control `ssFitTVP()` uses. With the pinned `sslib` v2.1.1, `ssFitTVP()`
+  control `ssFitTVP()` uses. With the pinned `sslib` v2.1.2, `ssFitTVP()`
   runs **one** CMLMT pass, so the caps bound the whole MLE, plus up to
   one iteration of overrun (`maxTime` is checked once per iteration).
   Defaults (`1e5`, `1e8`) are CMLMT's own, so existing calls give
@@ -46,13 +46,15 @@ as internal milestone history and were never public compatibility promises.
   supported estimation scope. The README, `docs/FEATURE_SUPPORT_MATRIX.md`
   (new TVP row) and the `quaidsTVPFit`/`quaidsTVPControlCreate` pages
   state this scope. No code, API or version change.
-- `sslib` baseline pinned to release tag **v2.1.1**
-  (`bf827aed3a72a5a3b541ce0a6a927c1665a9f992`, GAUSS 26.1.4+), installed
-  with `scripts/sync_sslib.ps1` after a hash-verified backup of the
-  previous v2.1.0 install. v2.1.0 (`7d0e042`) had been pinned first, as
-  the first release with the exact diffuse filter's diffuse-phase
-  termination fix. v2.1.1 adds two changes that `quaidsTVPFit()`
-  depends on:
+- Final `sslib` baseline pinned to release tag **v2.1.2**
+  (`a32885be37544c41e6379ffda1505f19b66855cb`, GAUSS 26.1.4+) on
+  2026-10-19. The shared installation was rebuilt from the immutable tag
+  after a full 263-file hash-verified backup of v2.1.1. All nine library
+  source files are byte-identical between v2.1.1 and v2.1.2; the patch
+  updates documentation, examples and package metadata. v2.1.0
+  (`7d0e042`) had been pinned first, as the first release with the exact
+  diffuse filter's diffuse-phase termination fix. v2.1.1 adds two
+  changes that `quaidsTVPFit()` depends on and v2.1.2 retains unchanged:
   - The exact diffuse filter no longer takes a spurious diffuse update
     with a **non-diagonal `H`** (found by P5, below). With a correlated
     `H`, log-likelihoods, `Q` estimates and state paths can differ from

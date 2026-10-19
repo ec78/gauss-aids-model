@@ -1,12 +1,12 @@
 {
     "package": "sslib",
     "sourceRepo": "gauss-state-space",
-    "pinnedCommit": "bf827aed3a72a5a3b541ce0a6a927c1665a9f992",
-    "pinnedTag": "v2.1.1",
-    "pinnedVersion": "2.1.1",
+    "pinnedCommit": "a32885be37544c41e6379ffda1505f19b66855cb",
+    "pinnedTag": "v2.1.2",
+    "pinnedVersion": "2.1.2",
     "installPath": "C:\\gauss26\\pkgs\\sslib",
     "verifiedFiles": {
-        "package.json": "1286f36ce6743f7f203711af91e7657b6ca9c3ca823835587903125585071065",
+        "package.json": "2932f652bae2b3569ca76e4df754f097a5114233b15de0027b4e1407b4597930",
         "src/ss.sdf": "f027bb7e70dca00055309d4a0049ff47ad0abbd08a582cdc48148230c328a78d",
         "src/ssarima.src": "be6ad3bff730c50ac6584c5692b7a41e34c7f9aaf00df05b9bb0f640079211b0",
         "src/ssdfm.src": "e0b4552d770a2f66f566fe47f3642cc9a0c70e232942e4be59bb28956866a10e",
@@ -17,6 +17,6 @@
         "src/ssstructural.src": "c9a4f6db343e615b928fdeddc4c5850337151ab0bdc380463d3cf8a996f84b73",
         "src/sstvp.src": "38d7210d37f4f6e51a06c6614dc8bf2eecd52f4832754f071c4228f484102496"
     },
-    "lastVerified": "2026-10-17",
-    "notes": "Pinned to gauss-state-space release tag v2.1.1 (bf827ae, GAUSS 26.1.4+) on 2026-10-17 (TVP-AIDS promotion Stage 1: adopt sslib v2.1.1, close P5). v2.1.1 is a patch release on v2.1.0 carrying 004c1be (the exact diffuse filters' diffuse test now runs in LDL-decorrelation units and counts diffuse directions from rank(P_inf_0), fixing the spurious mid-period diffuse update with a correlated/non-diagonal H that P5 case 3 found) and 717abb5 (ssFit/ssFitTVP convert the transformed-parameter covariance by the delta method instead of a second, untransformed CMLMT pass). Installed with scripts/sync_sslib.ps1 -SourceRepoPath <gauss-state-space checkout> -Commit bf827ae... (git archive of the tag commit, robocopy /MIR, lib/sslib.lcg rebuilt by build_lcg.ps1), after a hash-verified backup of the previous v2.1.0 install to C:\\Users\\eclow\\Documents\\sslib-backups\\sslib-pre-v2.1.1-20261017-194100 (+ .sha256.txt). History: v2.1.0 (7d0e042) was pinned 2026-10-15 by P2 (decision gate D0, option A) as the first tag containing 5c300b1's diffuse-phase termination fix. verifiedFiles covers ALL src/*.src and *.sdf files of the pinned commit plus package.json: sha256 of the installed files as written by sync_sslib.ps1, so verify_sslib_pin.ps1 compares raw bytes, and it also flags any installed src/*.src or *.sdf file not listed here. pinnedVersion is checked against the installed package.json. Boundary: lib/sslib.lcg is NOT hashed -- it is generated at install time (sync_sslib.ps1 rebuilds it with build_lcg.ps1) and byte-for-byte determinism of that catalog has not been established, so a hash would be a false-alarm source rather than a check. A stale catalog surfaces as a GAUSS undefined-symbol error, and sync_sslib.ps1 regenerates it."
+    "lastVerified": "2026-10-19",
+    "notes": "Pinned to gauss-state-space release tag v2.1.2 (a32885b, GAUSS 26.1.4+) on 2026-10-19 for TVP-AIDS promotion Stage 4. v2.1.2 is a documentation-and-examples patch on v2.1.1: all nine src/*.src and src/*.sdf files are byte-identical to v2.1.1; only package.json among the verified files changed. v2.1.1 carried 004c1be (the exact diffuse filters' diffuse test runs in LDL-decorrelation units and counts diffuse directions from rank(P_inf_0), fixing the spurious mid-period diffuse update with a correlated/non-diagonal H) and 717abb5 (ssFit/ssFitTVP convert the transformed-parameter covariance by the delta method instead of a second, untransformed CMLMT pass). Installed with scripts/sync_sslib.ps1 -SourceRepoPath <gauss-state-space checkout> -Commit a32885be37544c41e6379ffda1505f19b66855cb after a full 263-file hash-verified backup of v2.1.1 at C:\\Users\\eclow\\Documents\\sslib-backups\\sslib-pre-v2.1.2-20261019-054940 with manifest C:\\Users\\eclow\\Documents\\sslib-backups\\sslib-pre-v2.1.2-20261019-054940.sha256.txt. History: v2.1.0 (7d0e042) was pinned 2026-10-15 by P2 as the first tag containing 5c300b1's diffuse-phase termination fix; v2.1.1 (bf827ae) was pinned 2026-10-17 to close P5. verifiedFiles covers every src/*.src and src/*.sdf file plus package.json, and verify_sslib_pin.ps1 also flags unexpected GAUSS source files. lib/sslib.lcg is generated at install time and deliberately not hashed because byte-for-byte catalog determinism has not been established."
 }

@@ -775,3 +775,21 @@ matched (210/210).
   the owner's to do;
 - the recurring install-directory "in use" warning, which is harmless in
   both runs by content diff.
+
+### 2026-10-19: Stage 4 -- adopt SSLib v2.1.2 for the 0.4.0 release candidate
+
+- The immutable `v2.1.2` tag resolves to `a32885b`. All nine GAUSS
+  library source files are byte-identical to v2.1.1; the release changes
+  package metadata, documentation, and examples rather than runtime code.
+- Before repinning, the full 263-file shared v2.1.1 install was backed up
+  at
+  `C:\Users\eclow\Documents\sslib-backups\sslib-pre-v2.1.2-20261019-054940`.
+  Its sidecar SHA-256 manifest is the same path with `.sha256.txt`
+  appended and was verified after creation.
+- `scripts/sync_sslib.ps1` installed v2.1.2 and rebuilt the catalog;
+  `scripts/verify_sslib_pin.ps1 -Strict` passes. User-facing baseline
+  references now identify v2.1.2 without rewriting the historical P5/P6
+  measurements, which continue to apply because the runtime source is
+  byte-identical.
+- The full local adoption release gate is pending. Nothing in this Stage
+  4 adoption has been pushed, tagged, or published.
