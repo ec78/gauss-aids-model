@@ -381,7 +381,10 @@ call printQuaidsTVP(tvOut);
 Requires the [sslib](https://github.com/aptech/gauss-state-space)
 (`gauss-state-space`) package installed separately -- not a
 `library quaids;` dependency, so core estimation never requires it. The
-installed copy's commit (currently release v2.1.2) is tracked in
+supported baseline is v2.1.2. Until that version is listed in the GAUSS
+Package Manager, obtain it from the upstream
+[v2.1.2 tag](https://github.com/aptech/gauss-state-space/tree/v2.1.2) or
+from the package maintainer. The installed copy's commit is tracked in
 `sslib.pin.json` and kept in sync
 via `scripts/sync_sslib.ps1`/`scripts/verify_sslib_pin.ps1` (see that
 file's own comments). See `examples/14_tvp_aids_estimation.e` for a full

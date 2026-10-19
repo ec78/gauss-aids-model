@@ -4,7 +4,7 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
-## 0.4.0 - 2026-10-15
+## 0.4.0 - 2026-10-19
 
 ### Added
 

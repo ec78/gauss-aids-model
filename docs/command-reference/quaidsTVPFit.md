@@ -10,7 +10,9 @@ Silent, no printing -- see [printQuaidsTVP](printQuaidsTVP.md).
 
 **Requires the `sslib` (`gauss-state-space`) package**, installed
 separately -- not a `library quaids;` dependency, so core estimation
-never requires it. See
+never requires it. The supported baseline is v2.1.2; until GPM lists
+that version, obtain it from the upstream v2.1.2 tag or the package
+maintainer. See
 [Time-Varying-Parameter Estimation](../../README.md#time-varying-parameter-estimation-optional-sslib)
 in the README for setup and `examples/14_tvp_aids_estimation.e` for a
 full runnable example.
