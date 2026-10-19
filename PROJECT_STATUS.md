@@ -13,15 +13,23 @@ _Last updated: 2026-10-19 (Stage 4 / SSLib 2.1.2 adoption)_
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
 **`dev/TVP_PROMOTION_ROADMAP.md`**.
 
-**Stage 4 in progress (2026-10-19): adopt SSLib v2.1.2 for the 0.4.0
+**Stage 4 complete locally (2026-10-19): adopt SSLib v2.1.2 for the 0.4.0
 release candidate.** The immutable `v2.1.2` tag resolves to `a32885b`;
 all nine GAUSS library source files are byte-identical to v2.1.1. Before
 repinning, the 263-file shared install was backed up to
 `C:\Users\eclow\Documents\sslib-backups\sslib-pre-v2.1.2-20261019-054940`
 with a separately verified SHA-256 manifest. `scripts/sync_sslib.ps1`
 installed the tag and `scripts/verify_sslib_pin.ps1 -Strict` passes.
-Current user-facing references now identify v2.1.2; the local adoption
-release gate is pending. Nothing from this adoption has been pushed,
+Current user-facing references now identify v2.1.2. From clean commit
+`b91d733`, the full local release gate reported **GO** in 399 seconds:
+the complete source/guard suite passed (including TVP Stage 6 30/30 and
+the independent likelihood cross-check 12/12), the artifact and both
+installed-package tests passed, and all 15 examples passed. Example 14
+converged in 23 iterations. Artifact SHA-256:
+`D5BAF56BA1D2F8BD85018940214909857E79AD1B4375EB9F5FA3400AAFF03F37`;
+record: `release_records/0.4.0-20261019-060215.json` (gitignored). The
+known install-directory-in-use warning recurred, but verification
+completed successfully. Nothing from this adoption has been pushed,
 tagged, or published.
 
 **Progress 2026-10-15 (task `task_575ce63c08a6`, package 0.4.0, local

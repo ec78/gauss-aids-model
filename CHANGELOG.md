@@ -51,7 +51,10 @@ as internal milestone history and were never public compatibility promises.
   2026-10-19. The shared installation was rebuilt from the immutable tag
   after a full 263-file hash-verified backup of v2.1.1. All nine library
   source files are byte-identical between v2.1.1 and v2.1.2; the patch
-  updates documentation, examples and package metadata. v2.1.0
+  updates documentation, examples and package metadata. The full local
+  adoption release gate reported GO on 2026-10-19, including the complete
+  source/guard suite, artifact and installed-package verification, and
+  all 15 examples. v2.1.0
   (`7d0e042`) had been pinned first, as the first release with the exact
   diffuse filter's diffuse-phase termination fix. v2.1.1 adds two
   changes that `quaidsTVPFit()` depends on and v2.1.2 retains unchanged:

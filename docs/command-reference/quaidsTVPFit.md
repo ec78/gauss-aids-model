@@ -80,7 +80,7 @@ tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 
 **Support tier: Supported (scoped)** (TVP promotion P8, 2026-10-17;
 release-gated locally on `sslib` v2.1.1 and repinned to source-identical
-`sslib` v2.1.2, with the adoption re-gate pending). Support covers only
+`sslib` v2.1.2, with the adoption re-gate passed 2026-10-19). Support covers only
 this scope:
 - a fixed, **diagonal** `H`;
 - finite `tvpCtl.maxIters`/`tvpCtl.maxTime` (the defaults are

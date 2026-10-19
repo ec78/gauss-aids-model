@@ -791,5 +791,14 @@ matched (210/210).
   references now identify v2.1.2 without rewriting the historical P5/P6
   measurements, which continue to apply because the runtime source is
   byte-identical.
-- The full local adoption release gate is pending. Nothing in this Stage
-  4 adoption has been pushed, tagged, or published.
+- From clean commit `b91d733`, the full local adoption gate completed in
+  399 seconds and reported **GO**. The complete source/guard suite passed,
+  including TVP Stage 6 30/30 and the independent likelihood cross-check
+  12/12; artifact verification, both installed-package tests and all 15
+  examples passed. Example 14 converged in 23 iterations. Artifact
+  SHA-256:
+  `D5BAF56BA1D2F8BD85018940214909857E79AD1B4375EB9F5FA3400AAFF03F37`;
+  record: `release_records/0.4.0-20261019-060215.json` (gitignored).
+  The known install-directory-in-use warning recurred, but the release
+  verification completed successfully. Nothing in this Stage 4 adoption
+  has been pushed, tagged, or published.
