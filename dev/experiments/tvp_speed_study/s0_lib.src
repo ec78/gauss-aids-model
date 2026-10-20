@@ -1,0 +1,185 @@
+/*
+** s0_lib.src -- TVP speed study (Phase S0) helpers: the analytic-gradient
+** candidate and the instrumentation around it. Study-only code under
+** dev/experiments/tvp_speed_study; NOT package source, never listed in
+** package.json and never #include-d by src/. See PROTOCOL.md.
+**
+** Candidate: sslib v2.1.2's own documented analytic-gradient hook for
+** ssFitTVP() (ssControl.gradproc -> kalmanFilterDiffuseTVPGrad). For the
+** shipped TVP-AIDS model only Q varies with the parameters, and Q is
+** diagonal in natural units, Q_t = diag(q) for every t, so
+** dQ_t/dq_j = e_j*e_j' at every period and every other derivative field
+** (dZ, dd, dH, dT, dc, dR) is zero. sslib applies the positive_vars
+** chain rule (q = p^2) itself (_sstransformParmsJac). No algorithm or
+** API choice is made here: the objective, transform, init, filter and
+** optimizer are exactly those of the shipped numerical-gradient path.
+**
+** Requires the TVP #include chain (quaidstvp/kalman/mle/smooth/fit) and
+** `library cmlmt, tsmt, sslib;`.
+*/
+
+/* Instrumentation counters and the prebuilt constant dQ field. */
+_s0NUpd = 0;
+_s0NGrad = 0;
+_s0DQ = 0;
+
+/*
+** _s0BuildDQ: the (k*nobs)-page tvpModelGrad dQ field for a diagonal Q in
+** natural units -- page (j-1)*nobs + i (sslib's _tvpGradPage convention)
+** is e_j*e_j' for every period i.
+*/
+proc (1) = _s0BuildDQ(k, nobs);
+    local dq, j, i, e;
+    dq = arrayinit((k*nobs)|k|k, 0);
+    j = 1;
+    do while j <= k;
+        e = zeros(k, k);
+        e[j, j] = 1;
+        i = 1;
+        do while i <= nobs;
+            dq[(j-1)*nobs + i, ., .] = e;
+            i = i + 1;
+        endo;
+        j = j + 1;
+    endo;
+    retp(dq);
+endp;
+
+/* gradproc: dQ is constant in q, so it is copied from the prebuilt global. */
+proc (0) = _s0GradQ(struct tvpModelGrad *dtvpmod, p);
+    _s0NGrad = _s0NGrad + 1;
+    dtvpmod->dQ = _s0DQ;
+endp;
+
+/* Counting updateproc: the shipped _quaidsTVPQUpdate plus a call counter. */
+proc (0) = _s0CountQUpdate(struct tvpModel *tvpmod, p);
+    _s0NUpd = _s0NUpd + 1;
+    _quaidsTVPQUpdate(tvpmod, p);
+endp;
+
+/*
+** _s0Ctl: the ssControl _quaidsTVPMLEFit() builds (diffuse init, every Q
+** element positive, caps), plus -- for useGrad = 1 only -- the gradproc.
+** The prebuilt dQ global is refreshed for this model's k and nobs.
+*/
+proc (struct ssControl) = _s0Ctl(Zarr, H, q0, n1, maxIters, maxTime, useGrad);
+    local ord, nobs, k_states;
+    struct ssControl ssCtl;
+    ord = getorders(Zarr);
+    nobs = ord[1];
+    k_states = ord[3];
+    ssCtl = ssControlCreate(k_states, n1, k_states, nobs);
+    ssCtl.init = "diffuse";
+    ssCtl.positive_vars = seqa(1, 1, k_states);
+    ssCtl.ctl.maxIters = maxIters;
+    ssCtl.ctl.maxTime = maxTime;
+    ssCtl.tvp = _quaidsTVPBuildModel(Zarr, diagrv(eye(k_states), q0), H, n1);
+    if useGrad;
+        ssCtl.gradproc = &_s0GradQ;
+        _s0DQ = _s0BuildDQ(k_states, nobs);
+    endif;
+    retp(ssCtl);
+endp;
+
+/*
+** _s0MLEFit: src/quaidstvpmle.src's _quaidsTVPMLEFit() line for line
+** (same guards omitted: inputs come from the frozen harness), with the
+** counting updateproc and, for useGrad = 1, the analytic gradproc.
+** useGrad = 0 must reproduce the shipped path exactly (s0_equiv.e).
+*/
+proc (struct ssOut) = _s0MLEFit(Zarr, H, y, q0, n1, maxIters, maxTime, useGrad);
+    local param_vec0;
+    struct ssControl ssCtl;
+    struct ssOut sOut;
+    ssCtl = _s0Ctl(Zarr, H, q0, n1, maxIters, maxTime, useGrad);
+    param_vec0 = ssUntransformParms(q0, ssCtl);
+    sOut = ssFitTVP(&_s0CountQUpdate, param_vec0, y, ssCtl);
+    retp(sOut);
+endp;
+
+/*
+** _s0Eval: one objective evaluation exactly as CMLMT sees it (sslib's
+** _tvpLFNImpl at RAW parameter p, positive_vars transform applied).
+** useGrad = 0: plain diffuse filter, returns { total LL, 0 }.
+** useGrad = 1: gradient filter, returns { total LL, 1 x k total gradient
+** with respect to raw p }.
+*/
+proc (2) = _s0Eval(p, y, struct ssControl ssCtl, useGrad);
+    struct modelResults mm;
+    ssCtl.transformed = 1;
+    if useGrad;
+        ssCtl.tvpgrad = initTVPModelGrad(ssCtl.tvp.k_endog, ssCtl.tvp.k_states, ssCtl.tvp.k_posdef, ssCtl.tvp.nobs, rows(p));
+        mm = _tvpLFNImpl(p, y, &_s0CountQUpdate, &init_diffTVP, &_s0GradQ, 1, ssCtl);
+        retp(sumc(mm.function), sumc(mm.gradient)');
+    endif;
+    mm = _tvpLFNImpl(p, y, &_s0CountQUpdate, &init_diffTVP, &_s0GradQ, 0, ssCtl);
+    retp(sumc(mm.function), 0);
+endp;
+
+/*
+** _s0FDGrad: central finite differences of the plain-filter total LL at
+** raw p, step h_j = rel*|p_j| (every prespecified point has p_j > 0).
+*/
+proc (1) = _s0FDGrad(p, y, struct ssControl ssCtl, rel);
+    local k, g, j, h, pp, pm, fp, fm, dum;
+    k = rows(p);
+    g = zeros(1, k);
+    j = 1;
+    do while j <= k;
+        h = rel*abs(p[j]);
+        pp = p;
+        pm = p;
+        pp[j] = p[j] + h;
+        pm[j] = p[j] - h;
+        { fp, dum } = _s0Eval(pp, y, ssCtl, 0);
+        { fm, dum } = _s0Eval(pm, y, ssCtl, 0);
+        g[j] = (fp - fm)/(pp[j] - pm[j]);
+        j = j + 1;
+    endo;
+    retp(g);
+endp;
+
+/*
+** _s0Chain: ../tvp_conv_study/conv_chain.inc (quaidsTVPFit()'s private
+** chain, line for line) as a proc, with _quaidsTVPMLEFit() replaced by
+** _s0MLEFit(.., useGrad), so a job can repeat fits. Returns Qfit, the
+** CMLMT retcode, iterations, Fct, max |gradient| (CMLMT's stored
+** Gradient, raw parameters), bFinal, MLE-call seconds, whole-chain
+** seconds and the updateproc/gradproc call counts of the MLE call
+** (including ssFitTVP's final filter pass).
+*/
+proc (10) = _s0Chain(w, prices, totexp, H, q0, capIters, capTime, useGrad);
+    local tChain0, tMle0, n, n1, nobs, pricesRel, lx, Zarr, Qfit, rc, aTS, pTS, bFinal, mleSec, nUpd, nGrad;
+    struct ssOut sOut;
+    struct tvpModel tvpFinalChain;
+    tChain0 = hsec;
+    n = cols(prices);
+    n1 = n - 1;
+    nobs = rows(w);
+    pricesRel = prices[., 1:n1] - prices[., n];
+    lx = _quaidsTVPStoneIndex(w, prices, totexp, n);
+    Zarr = _quaidsTVPBuildZ(pricesRel, lx, n1);
+    _s0NUpd = 0;
+    _s0NGrad = 0;
+    tMle0 = hsec;
+    sOut = _s0MLEFit(Zarr, H, w[., 1:n1], q0, n1, capIters, capTime, useGrad);
+    mleSec = (hsec - tMle0)/100;
+    nUpd = _s0NUpd;
+    nGrad = _s0NGrad;
+    Qfit = sOut.final_params;
+    rc = sOut.mleResults.retcode;
+    aTS = 0;
+    pTS = 0;
+    tvpFinalChain = sOut.tvpFinal;
+    { aTS, pTS } = _quaidsTVPSmoothFit(tvpFinalChain, sOut.kfResults);
+    bFinal = quaidsTVPStateToFullB(aTS[., nobs], n1);
+    retp(Qfit, rc, sOut.mleResults.NumIterations, sOut.mleResults.Fct, maxc(abs(sOut.mleResults.Gradient)), bFinal, mleSec, (hsec - tChain0)/100, nUpd, nGrad);
+endp;
+
+/* _s0Zarr: the chain's Zarr, for independent LL re-evaluation. */
+proc (1) = _s0Zarr(w, prices, totexp);
+    local n, n1;
+    n = cols(prices);
+    n1 = n - 1;
+    retp(_quaidsTVPBuildZ(prices[., 1:n1] - prices[., n], _quaidsTVPStoneIndex(w, prices, totexp, n), n1));
+endp;
