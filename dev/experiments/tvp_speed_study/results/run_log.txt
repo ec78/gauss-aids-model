@@ -1,0 +1,26 @@
+﻿2026-10-20T07:27:59 [A] preflight start
+2026-10-20T07:28:12 [A] preflight PASS (HEAD c6fa0492fd14fc7868aeb3b20aa6960c9913bc6c, frozen hashes, Phase C harness+evidence unchanged, no other GAUSS, pin strict, Stage6 30/30, P5 12/12, numerical arm == quaidsTVPFit exactly)
+2026-10-20T07:28:16 [A] deriv-n12-t200-s1001-Horacle wall=1.68s derivative gate=True sec/plain=2.4000000003725291e-03 sec/grad=1.2000000000000000e-02
+2026-10-20T07:28:21 [A] deriv-n12-t200-s1001-Hstatic wall=1.69s derivative gate=True sec/plain=2.4000000003725291e-03 sec/grad=1.1599999999627471e-02
+2026-10-20T07:28:26 [A] deriv-n12-t500-s1001-Horacle wall=2.31s derivative gate=True sec/plain=5.6000000005587934e-03 sec/grad=2.8599999999627472e-02
+2026-10-20T07:28:42 [A] n12-t200-s1001-Horacle-q1 wall=12.46s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=20/20 dLL=1.13686837721616E-12 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=1.77300000000279/1.97100000000093 ratio=0.9
+2026-10-20T07:28:59 [A] n12-t200-s1001-Horacle-q10 wall=13.87s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=21/22 dLL=6.13908923696727E-12 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=1.91400000000373/2.275 ratio=0.841
+2026-10-20T07:29:15 [A] n12-t200-s1001-Horacle-q0.1 wall=12.32s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=21/20 dLL=0 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=1.87299999999814/1.83 ratio=1.023
+2026-10-20T07:29:28 [A] n12-t200-s1001-Hstatic-q1 wall=10.9s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=14/20 dLL=6.82121026329696E-12 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=1.365/1.84299999999814 ratio=0.741
+2026-10-20T07:29:53 [A] n12-t500-s1001-Horacle-q1 wall=20.99s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=8/18 dLL=-5.45696821063757E-12 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=2.6/3.95399999999907 ratio=0.658
+2026-10-20T07:29:53 [A] stage complete; elapsed 1.9 min
+2026-10-20T07:29:53 [B] preflight start
+2026-10-20T07:30:04 [B] preflight PASS (HEAD c6fa0492fd14fc7868aeb3b20aa6960c9913bc6c, frozen hashes, Phase C harness+evidence unchanged, no other GAUSS, pin strict, Stage6 30/30, P5 12/12, numerical arm == quaidsTVPFit exactly)
+2026-10-20T07:30:09 [B] deriv-n13-t200-s1001-Horacle wall=2.39s derivative gate=True sec/plain=3.4000000003725295e-03 sec/grad=2.6799999999813733e-02
+2026-10-20T07:30:15 [B] deriv-n13-t200-s1001-Hstatic wall=2.65s derivative gate=True sec/plain=3.3999999994412063e-03 sec/grad=2.6400000000372532e-02
+2026-10-20T07:30:59 [B] n13-t200-s1001-Horacle-q1 wall=40.76s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=20/24 dLL=9.09494701772928E-13 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=5.595/7.54700000000186 ratio=0.741
+2026-10-20T07:31:44 [B] n13-t200-s1001-Horacle-q10 wall=42.52s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=21/24 dLL=-9.54969436861575E-12 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=6.00300000000279/7.65399999999907 ratio=0.784
+2026-10-20T07:32:24 [B] n13-t200-s1001-Horacle-q0.1 wall=37.05s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=21/20 dLL=2.72848410531878E-12 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=6.06899999999907/5.725 ratio=1.06
+2026-10-20T07:32:57 [B] n13-t200-s1001-Hstatic-q1 wall=29.35s cat C/N/A=CONV-GLOBAL/CONV-GLOBAL/CONV-GLOBAL iters N/A=15/15 dLL=-9.09494701772928E-13 E0=True (exact=True) E1=True E2=True E3=True Qagree=True Bagree=True medMLE N/A=4.63099999999627/4.70300000000279 ratio=0.985
+2026-10-20T07:32:57 [B] stage complete; elapsed 5 min
+2026-10-20T07:32:57 [C] preflight start
+2026-10-20T07:33:08 [C] preflight PASS (HEAD c6fa0492fd14fc7868aeb3b20aa6960c9913bc6c, frozen hashes, Phase C harness+evidence unchanged, no other GAUSS, pin strict, Stage6 30/30, P5 12/12, numerical arm == quaidsTVPFit exactly)
+2026-10-20T07:33:16 [C] deriv-n14-t200-s1001-Horacle wall=5.3s derivative gate=True sec/plain=7.8000000007450582e-03 sec/grad=1.6659999999962746e-01
+2026-10-20T07:33:17 [C inclusion] elapsed=5.3 min, projected C fits=25.4 min, free memory=2 GB
+2026-10-20T07:33:17 [C inclusion] EXCLUDED: free memory 2 GB < 4 GB
+2026-10-20T07:33:17 run finished: stages done = A,B,C C excluded=True elapsed=5.3 min

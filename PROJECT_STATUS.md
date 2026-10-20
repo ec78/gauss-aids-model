@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-20 (TVP convergence study Phase C complete)_
+_Last updated: 2026-10-20 (TVP speed study Phase S0 complete)_
 
 ## Current Objective
 
@@ -43,9 +43,38 @@ only; no src/API/version change):**
 - **Open.** The capped-fit determinism replicate was never triggered,
   because no fit capped.
 
-Evidence: `dev/experiments/tvp_conv_study/RESULTS.md`. Next: Phase S
-(profiling, then any analytic-gradient candidate) per the protocol's
-entry gate. No speed claim has been made.
+Evidence: `dev/experiments/tvp_conv_study/RESULTS.md`.
+
+**Phase S0 done (2026-10-20, task `task_382ca289c40d`, local commits
+only; no src/API/version/docs change): analytic gradient correct, not
+faster.**
+- **Candidate.** sslib v2.1.2's existing `ssFitTVP` gradproc hook with a
+  constant diagonal `dQ`, held in the dev-only
+  `dev/experiments/tvp_speed_study/s0_lib.src`. It needs no algorithm or
+  API choice.
+- **Protocol.** `PROTOCOL.md` was frozen as v1 at `c6fa049` (freeze hash
+  `d8c2dc99...`) before any study-cell timing.
+- **Gates.** All three preflights passed: strict pin, Stage 6 30/30, P5
+  12/12, and the numerical arm equal to `quaidsTVPFit()` exactly.
+- **Derivatives.** All 30 points pass; the largest error against central
+  finite differences is 1.8e-8 (gate 1e-5).
+- **Endpoints.** All 9 pilot cells (`n1=2`: 5, `n1=3`: 4, seed 1001) pass
+  E0-E3. The numerical arm reproduces Phase C bit for bit. The analytic
+  arm gives the same rc and category, |dLL| <= 9.5e-12, Qfit within
+  3.2e-6 relative and bFinal within 6.5e-9.
+- **Speed.** No consistent difference for either `n1`. The ratio N/A
+  ranges 0.66-1.06, and the analytic arm was slower in 7 of 9 cells. It
+  makes 4-8x fewer objective evaluations, but each costs 5-8x a plain
+  evaluation (21x at `n1=4`).
+- **`n1=4`.** Its derivative gate passed, but its fits were excluded by
+  the frozen memory rule (2 GB free, below 4 GB). The P6 anchors were
+  excluded by design.
+
+Evidence: `dev/experiments/tvp_speed_study/RESULTS.md`. No speed claim.
+Next (owner decision): whether to pursue a material speed candidate, for
+example an `ind`-aware sslib objective (upstream), a smoother-based Q
+score, or a CMLMT algorithm change. Each would need its own frozen
+protocol.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:

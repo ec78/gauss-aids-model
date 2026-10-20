@@ -1,0 +1,17 @@
+﻿{
+    "secgrad_n14-t200-s1001-Horacle":  0.16659999999962746,
+    "freeze_head":  "c6fa0492fd14fc7868aeb3b20aa6960c9913bc6c",
+    "secgrad_n12-t500-s1001-Horacle":  0.028599999999627472,
+    "secgrad_n13-t200-s1001-Hstatic":  0.026400000000372532,
+    "secgrad_n12-t200-s1001-Hstatic":  0.011599999999627471,
+    "stopped":  false,
+    "secgrad_n12-t200-s1001-Horacle":  0.012,
+    "budget_start":  "2026-10-20T07:27:59.7878212-05:00",
+    "secgrad_n13-t200-s1001-Horacle":  0.026799999999813733,
+    "stages_done":  [
+                        "A",
+                        "B",
+                        "C"
+                    ],
+    "c_excluded":  true
+}
