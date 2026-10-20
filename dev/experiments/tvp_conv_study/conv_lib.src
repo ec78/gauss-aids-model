@@ -1,0 +1,71 @@
+/*
+** conv_lib.src -- TVP convergence-correctness study (Phase C) helpers.
+** Study-only code under dev/experiments/tvp_conv_study; not package
+** source. See PROTOCOL.md for the frozen design these procs encode.
+**
+** Requires the TVP #include chain (quaidstvp/kalman/mle/smooth/fit),
+** tests/quaidsfixtures.src (for _quaidsTVPRawSyntheticDGP) and
+** `library cmlmt, tsmt, sslib;`.
+*/
+
+/*
+** _convState0: the frozen period-1 state for each n1, in the layout
+** [alpha | gamma (row-major upper triangle) | beta].
+*/
+proc (1) = _convState0(n1);
+    if n1 == 2;
+        retp(.40|.30|.05|-.02|.04|-.04|.03);
+    elseif n1 == 3;
+        retp(.30|.25|.20|.05|-.02|-.01|.04|-.01|.04|-.04|.03|.02);
+    elseif n1 == 4;
+        retp(.25|.20|.20|.15|.05|-.02|-.01|-.01|.04|-.01|-.01|.04|-.01|.03|-.04|.03|.02|-.01);
+    endif;
+    errorlog "_convState0: n1 must be 2, 3 or 4.";
+    end;
+endp;
+
+/*
+** True Q: qscale times the draft truth (alpha block 1e-5, gamma and beta
+** blocks 1e-4). PROTOCOL.md records the frozen qscale and how it was
+** calibrated on reserve seeds only.
+*/
+proc (1) = _convTrueQ(n1, qscale);
+    local k;
+    k = 2*n1 + n1*(n1+1)/2;
+    retp(qscale*(1e-5*ones(n1, 1)|1e-4*ones(k-n1, 1)));
+endp;
+
+/* True H: 2.5e-5*eye(n1). */
+proc (1) = _convTrueH(n1);
+    retp(2.5e-5*eye(n1));
+endp;
+
+/*
+** _convStaticH: secondary H rule. Diagonal residual variances SSE/nobs
+** of a static homogeneous LA-AIDS, fitted equation by equation by OLS of
+** w_i (i = 1..n1) on [1, relative log prices, Stone-deflated log
+** expenditure], using exactly the regressors quaidsTVPFit() builds.
+*/
+proc (1) = _convStaticH(w, prices, totexp, n1);
+    local n, lx, pr, x, b, e;
+    n = n1 + 1;
+    lx = _quaidsTVPStoneIndex(w, prices, totexp, n);
+    pr = prices[., 1:n1] - prices[., n];
+    x = ones(rows(w), 1)~pr~lx;
+    b = w[., 1:n1]/x;
+    e = w[., 1:n1] - x*b;
+    retp(diagrv(eye(n1), sumc(e.^2)/rows(w)));
+endp;
+
+/*
+** _convLL: total exact-diffuse log-likelihood at a FIXED Q diagonal q
+** and H, through the production filter path (the P5-validated
+** _quaidsTVPBuildModel + _quaidsTVPKalmanFit(.., 1)).
+*/
+proc (1) = _convLL(Zarr, q, H, y, n1);
+    struct tvpModel tvpm;
+    struct kalmanResult rslt;
+    tvpm = _quaidsTVPBuildModel(Zarr, diagrv(eye(rows(q)), q), H, n1);
+    rslt = _quaidsTVPKalmanFit(tvpm, y', 1);
+    retp(sumc(rslt.loglikelihood));
+endp;
