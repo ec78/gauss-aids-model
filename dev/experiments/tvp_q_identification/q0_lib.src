@@ -1,0 +1,156 @@
+/*
+** q0_lib.src -- TVP-AIDS Q-identification and boundary-geometry study
+** (Phase Q0) helpers. Study-only code under
+** dev/experiments/tvp_q_identification; not package source. See
+** PROTOCOL.md for the frozen design these procs encode.
+**
+** Requires the TVP #include chain (q0_includes.inc), Phase C's
+** conv_lib.src (_convState0/_convTrueQ/_convTrueH/_convStaticH/_convLL,
+** reused unchanged) and `library cmlmt, tsmt, sslib;`.
+*/
+
+/*
+** Reduced-parameter (profile) state. _q0FixMask is k_states x 1, 1 for
+** an element held fixed at _q0FixVal, 0 for a free element. Globals are
+** read by _q0QUpdateReduced, which ssFitTVP calls as its updateproc.
+*/
+_q0FixMask = 0;
+_q0FixVal = 0;
+
+/*
+** _q0GroupIdx: element indices of variance group g (1 = alpha block,
+** 2 = gamma block, 3 = beta block) in the state layout
+** [alpha (n1) | gamma (n1*(n1+1)/2) | beta (n1)].
+*/
+proc (1) = _q0GroupIdx(n1, g);
+    local ng;
+    ng = n1*(n1+1)/2;
+    if g == 1;
+        retp(seqa(1, 1, n1));
+    elseif g == 2;
+        retp(seqa(n1+1, 1, ng));
+    elseif g == 3;
+        retp(seqa(n1+ng+1, 1, n1));
+    endif;
+    errorlog "_q0GroupIdx: g must be 1, 2 or 3.";
+    end;
+endp;
+
+/*
+** _q0QUpdateReduced: ssFitTVP updateproc for a profile fit. p holds only
+** the free elements (already squared by sslib's positive_vars transform,
+** exactly as _quaidsTVPQUpdate receives them); fixed elements come from
+** _q0FixVal. With no fixed element this writes the same Q as
+** _quaidsTVPQUpdate.
+*/
+proc (0) = _q0QUpdateReduced(struct tvpModel *tvpmod, p);
+    local ord, k_states, nobs, q, fr;
+
+    ord = getorders(tvpmod->Q);
+    nobs = ord[1];
+    k_states = ord[3];
+
+    q = _q0FixVal;
+    fr = selif(seqa(1, 1, k_states), _q0FixMask .== 0);
+    q[fr] = p;
+    tvpmod->Q = _quaidsTVPReplicateConstant(diagrv(eye(k_states), q), nobs);
+endp;
+
+/*
+** _q0MLEFitReduced: line-for-line copy of src/quaidstvpmle.src's
+** _quaidsTVPMLEFit, except that the CMLMT parameter vector holds only
+** the free elements (fixMask .== 0) and the updateproc inserts the fixed
+** ones. Same objective, positive_vars transform, diffuse init, CMLMT
+** algorithm and settings, caps and final filter pass. q0full is the full
+** k_states x 1 start; its fixed elements are the profile values. Returns
+** the ssOut; final_params holds the free elements only (use
+** _q0FullQ to rebuild the full vector).
+*/
+proc (struct ssOut) = _q0MLEFitReduced(Zarr, H, y, q0full, n1, fixMask, maxIters, maxTime);
+    local ord, nobs, k_states, param_vec0, fr;
+    struct ssControl ssCtl;
+    struct ssOut sOut;
+
+    ord = getorders(Zarr);
+    nobs = ord[1];
+    k_states = ord[3];
+
+    if rows(q0full) /= k_states or rows(fixMask) /= k_states or minc(q0full) <= 0;
+        errorlog "_q0MLEFitReduced: q0full and fixMask must be k_states x 1 and q0full strictly positive.";
+        end;
+    endif;
+    if sumc(fixMask .== 0) < 1;
+        errorlog "_q0MLEFitReduced: at least one element must be free.";
+        end;
+    endif;
+
+    fr = selif(seqa(1, 1, k_states), fixMask .== 0);
+    _q0FixMask = fixMask;
+    _q0FixVal = q0full;
+
+    ssCtl = ssControlCreate(k_states, n1, k_states, nobs);
+    ssCtl.init = "diffuse";
+    ssCtl.positive_vars = seqa(1, 1, rows(fr));
+    ssCtl.ctl.maxIters = maxIters;
+    ssCtl.ctl.maxTime = maxTime;
+
+    ssCtl.tvp = _quaidsTVPBuildModel(Zarr, diagrv(eye(k_states), q0full), H, n1);
+
+    param_vec0 = ssUntransformParms(q0full[fr], ssCtl);
+
+    sOut = ssFitTVP(&_q0QUpdateReduced, param_vec0, y, ssCtl);
+
+    retp(sOut);
+endp;
+
+/* _q0FullQ: full Q diagonal from a reduced fit's free elements. */
+proc (1) = _q0FullQ(qfree, q0full, fixMask);
+    local q;
+    q = q0full;
+    q[selif(seqa(1, 1, rows(q)), fixMask .== 0)] = qfree;
+    retp(q);
+endp;
+
+/*
+** _q0HessLog: central finite-difference gradient and Hessian of the
+** total log-likelihood in log-Q coordinates (theta = ln q) at q, step stp
+** in theta. Perturbed points are q .* exp(+-stp) elementwise, so the base
+** point is q exactly. Returns { ll0, g, Hm } (Hm symmetrized).
+*/
+proc (3) = _q0HessLog(Zarr, q, H, y, n1, stp);
+    local k, f0, fp, fm, g, Hm, i, j, ei, ej, fpp, fpm, fmp, fmm;
+    k = rows(q);
+    f0 = _convLL(Zarr, q, H, y, n1);
+    fp = zeros(k, 1);
+    fm = zeros(k, 1);
+    i = 1;
+    do while i <= k;
+        ei = zeros(k, 1);
+        ei[i] = stp;
+        fp[i] = _convLL(Zarr, q .* exp(ei), H, y, n1);
+        fm[i] = _convLL(Zarr, q .* exp(-ei), H, y, n1);
+        i = i + 1;
+    endo;
+    g = (fp - fm)/(2*stp);
+    Hm = zeros(k, k);
+    i = 1;
+    do while i <= k;
+        Hm[i, i] = (fp[i] - 2*f0 + fm[i])/(stp*stp);
+        j = i + 1;
+        do while j <= k;
+            ei = zeros(k, 1);
+            ei[i] = stp;
+            ej = zeros(k, 1);
+            ej[j] = stp;
+            fpp = _convLL(Zarr, q .* exp(ei + ej), H, y, n1);
+            fpm = _convLL(Zarr, q .* exp(ei - ej), H, y, n1);
+            fmp = _convLL(Zarr, q .* exp(-ei + ej), H, y, n1);
+            fmm = _convLL(Zarr, q .* exp(-ei - ej), H, y, n1);
+            Hm[i, j] = (fpp - fpm - fmp + fmm)/(4*stp*stp);
+            Hm[j, i] = Hm[i, j];
+            j = j + 1;
+        endo;
+        i = i + 1;
+    endo;
+    retp(f0, g, Hm);
+endp;

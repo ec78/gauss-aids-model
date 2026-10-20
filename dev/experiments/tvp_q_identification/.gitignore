@@ -1,0 +1,3 @@
+# study-local ignores (logs are already ignored repo-wide)
+results/work/
+results/_job_*
