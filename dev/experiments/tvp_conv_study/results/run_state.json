@@ -1,0 +1,13 @@
+﻿{
+    "n1_4_seeds":  2,
+    "stopped":  false,
+    "freeze_head":  "e61b0b9f736b47338ab221fcc58b64a42e4d996d",
+    "budget_start":  "2026-10-20T06:02:13.4242900-05:00",
+    "stages_done":  [
+                        "A",
+                        "B",
+                        "C",
+                        "ANCHOR"
+                    ],
+    "n1_3_seeds":  6
+}

@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-19 (0.4.0 release / next TVP boundary)_
+_Last updated: 2026-10-20 (TVP convergence study Phase C complete)_
 
 ## Current Objective
 
@@ -18,14 +18,34 @@ matching the final gate record
 The push-triggered CI run `39246013576` passed. Release URL:
 https://github.com/ec78/gauss-aids-model/releases/tag/v0.4.0.
 
-**Active next boundary: TVP convergence correctness, then speed.** A
-draft, not-yet-frozen protocol is at
-`dev/experiments/tvp_conv_study/PROTOCOL.md`. It uses known-truth DGPs
-and multi-start likelihood comparisons to distinguish a genuine best-found
-endpoint from a bare `mleRetcode == 0`. Speed work is gated on equivalent
-endpoints. No study grid has run and no shipped source/API has changed;
-the proposed factors, tolerance and six-hour budget need owner approval
-before the protocol is frozen and the small `n1=2` Stage A harness runs.
+**Active next boundary: TVP convergence correctness, then speed.**
+**Phase C done (2026-10-20, task `task_7acc920462f5`, local commits
+only; no src/API/version change):**
+- **Protocol.** `dev/experiments/tvp_conv_study/PROTOCOL.md` was frozen
+  as v1 at commit `e61b0b9`, with freeze hash `50f99a53...`
+  (`FREEZE.sha256`), before any grid fit.
+- **True Q rescaled before the freeze.** Under the draft true Q, shares
+  left (0,1), so the coordinator-approved reserve-seed calibration set
+  the true Q to 0.01x the draft.
+- **Gates.** Each stage's preflight passed: strict sslib v2.1.2 pin,
+  Stage 6 30/30, P5 12/12, and exact `quaidsTVPFit()`-vs-private-chain
+  equivalence. CMLMT's `Fct` is the total LL.
+- **Result: 120/120 grid fits CONV-GLOBAL.** All returned rc 0, every
+  dataset's three starts agree within tolerance, and LL(Qfit) >=
+  LL(Qtrue) on all 114 known-truth fits.
+- **P6 anchor.** `n1=3` converges with the 2000-iteration budget
+  (726-1050 iterations).
+- **Seeds and budget.** The frozen worst-case projection cut `n1=4` to 2
+  seeds, so the grid was 120 of 126 fits. The study took 66 of 360 min.
+- **Interruption.** Claude Code killed the driver once for low system
+  memory. That is not a protocol stop rule. Stage C was rerun under the
+  unchanged harness, and the rerun endpoints were byte-identical.
+- **Open.** The capped-fit determinism replicate was never triggered,
+  because no fit capped.
+
+Evidence: `dev/experiments/tvp_conv_study/RESULTS.md`. Next: Phase S
+(profiling, then any analytic-gradient candidate) per the protocol's
+entry gate. No speed claim has been made.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
