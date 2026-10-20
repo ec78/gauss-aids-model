@@ -1,9 +1,13 @@
 ﻿{
+    "stopped":  false,
+    "freeze_head":  "8f8ff9687591f9241431a4e927c39d955e0a951a",
+    "budget_start":  "2026-10-20T13:23:16.3330919-05:00",
+    "c_excluded":  true,
     "stages_done":  [
                         "A",
-                        "B"
+                        "B",
+                        "ANCHOR",
+                        "C"
                     ],
-    "stopped":  false,
-    "freeze_head":  "4a34c9d4a4e9ec600d020275793848a0d722caec",
-    "budget_start":  "2026-10-20T10:50:49.1963132-05:00"
+    "resume_note":  "Amendment 2: attempt-1 HEAD 4a34c9d4a4e9ec600d020275793848a0d722caec, original budget_start 2026-10-20T10:50:49.1963132-05:00, 34.9 min used before the 11:25:43 host-memory kill; resumed 2026-10-20T13:58:10"
 }

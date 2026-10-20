@@ -27,3 +27,10 @@ B-n13-t200-s1002-Horacle-geom,B,geom,n13-t200-s1002-Horacle,2026-10-20T10:55:47,
 B-n13-t200-s1002-Horacle-prof-g1,B,prof,n13-t200-s1002-Horacle,2026-10-20T10:55:55,22.42,2700,False,False,50,1.63,False,True,logs/B-n13-t200-s1002-Horacle-prof-g1.log
 B-n13-t200-s1002-Horacle-prof-g2,B,prof,n13-t200-s1002-Horacle,2026-10-20T10:56:21,15.73,2700,False,False,50,1.65,False,True,logs/B-n13-t200-s1002-Horacle-prof-g2.log
 B-n13-t200-s1002-Horacle-prof-g3,B,prof,n13-t200-s1002-Horacle,2026-10-20T10:56:40,24.68,2700,False,False,50,1.66,False,True,logs/B-n13-t200-s1002-Horacle-prof-g3.log
+ANCHOR-ANCHOR-n13-t500-s204-fit-q1,ANCHOR,fit,ANCHOR-n13-t500-s204,2026-10-20T13:58:45,514.21,2400,False,False,56,1.01,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-fit-q1.log
+ANCHOR-ANCHOR-n13-t500-s204-fit-q10,ANCHOR,fit,ANCHOR-n13-t500-s204,2026-10-20T14:07:23,643.27,2400,False,False,57,1.55,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-fit-q10.log
+ANCHOR-ANCHOR-n13-t500-s204-fit-q0.1,ANCHOR,fit,ANCHOR-n13-t500-s204,2026-10-20T14:18:09,491.04,2400,False,False,57,1.38,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-fit-q0.1.log
+ANCHOR-ANCHOR-n13-t500-s204-geom,ANCHOR,geom,ANCHOR-n13-t500-s204,2026-10-20T14:26:24,11.55,1800,False,False,48,1.26,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-geom.log
+ANCHOR-ANCHOR-n13-t500-s204-prof-g1,ANCHOR,prof,ANCHOR-n13-t500-s204,2026-10-20T14:26:39,219.79,3600,False,False,61,1.25,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-prof-g1.log
+ANCHOR-ANCHOR-n13-t500-s204-prof-g2,ANCHOR,prof,ANCHOR-n13-t500-s204,2026-10-20T14:30:22,111.56,3600,False,False,61,1.43,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-prof-g2.log
+ANCHOR-ANCHOR-n13-t500-s204-prof-g3,ANCHOR,prof,ANCHOR-n13-t500-s204,2026-10-20T14:32:16,200.97,3600,False,False,61,1.42,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-prof-g3.log

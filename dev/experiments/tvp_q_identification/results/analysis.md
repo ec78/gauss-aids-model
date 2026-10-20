@@ -10,9 +10,9 @@ Descriptive only. Loss = LL(qhat) - LL(point), total log-likelihood units. Slice
 | n12-t200-s1002-Horacle | 7 | True | 5.002E-12 | 0 | 0 | 1 | 0 | 0 | True | 3.181 | 26.01 | 80.53 | 0 | 0 | 1.046E-11 | 0.0006993 |
 | n13-t200-s1001-Horacle | 12 | True | 1.364E-12 | 2 | 3 | 8 | 2 | 0 | True | 7.109 | 46.07 | 82.05 | 0 | 0 | 1.442E-10 | 0.003426 |
 | n13-t200-s1002-Horacle | 12 | True | 6.821E-12 | 1 | 1 | 2 | 1 | 0 | True | 3.181 | 35.72 | 178.6 | 0 | 0 | 1.401E-10 | 0.0002863 |
-| ANCHOR-n13-t500-s204 | 12 | True | 9.01E-05 | 12 | 12 | 12 | 10 | 0 | True | n/a | 1221 | 0.1119 | 0 | 0 | 0 | n/a |
+| ANCHOR-n13-t500-s204 | 12 | True | 9.01E-05 | 12 | 12 | 12 | 10 | 0 | True | n/a | 1221 | 0.1119 | 0 | 0 | 3.48E-05 | 3.887E-07 |
 
-Jobs: 32; timeouts 0; memory kills 0; GAUSS errors 0; peak working set max 57 MB; min free memory at job start 1.52 GB; summed job wall 30.6 min.
+Jobs: 35; timeouts 0; memory kills 0; GAUSS errors 0; peak working set max 61 MB; min free memory at job start 1.01 GB; summed job wall 40.9 min.
 
 ## n12-t200-s1001-Horacle
 
@@ -332,6 +332,21 @@ Jobs: 32; timeouts 0; memory kills 0; GAUSS errors 0; peak working set max 57 MB
 
 | group | log10 c | slice loss | profile loss | start a rc/iters | start b rc/iters | |prof a - prof b| | prof a - slice | profile > qhat + tol | nuisance sums / qhat sums (other groups, best start) |
 |---|---|---|---|---|---|---|---|---|---|
+| alpha | -12 | -0.0002033 | -0.0002037 | 0/2 | 0/96 | 3.48E-05 | 3.887E-07 | False | gamma 1, beta 0.999 |
+| alpha | -4 | 0.7557 | 0.7208 | 0/39 | -- | n/a | 0.03492 | False | gamma 0.912, beta 2.37 |
+| alpha | -3 | 3.554 | 3.447 | 0/111 | -- | n/a | 0.1073 | False | gamma 0.82, beta 3.8 |
+| alpha | -2 | 13.16 | 13.03 | 0/64 | -- | n/a | 0.1255 | False | gamma 0.635, beta 4.34 |
+| alpha | -1 | 45.95 | 45.88 | 0/111 | -- | n/a | 0.06619 | False | gamma 0.00149, beta 2.4 |
+| gamma | -12 | 0.05153 | 0.04997 | 0/7 | 0/239 | 2.233E-06 | 0.001558 | False | alpha 0.794, beta 1.24 |
+| gamma | -4 | 2.929 | 2.92 | 0/13 | -- | n/a | 0.009512 | False | alpha 0.734, beta 0.359 |
+| gamma | -3 | 16.88 | 16.87 | 0/14 | -- | n/a | 0.01396 | False | alpha 0.259, beta 0.0769 |
+| gamma | -2 | 62.02 | 61.98 | 0/28 | -- | n/a | 0.03992 | False | alpha 1.69, beta 0.000176 |
+| gamma | -1 | 190.7 | 190.7 | 0/62 | -- | n/a | 0.04257 | False | alpha 1.02, beta 0.000109 |
+| beta | -12 | 0.0423 | 0.041 | 0/14 | 0/289 | 1.174E-05 | 0.001286 | False | alpha 0.657, gamma 1.2 |
+| beta | -4 | 7.698 | 7.677 | 0/16 | -- | n/a | 0.021 | False | alpha 0.284, gamma 0.225 |
+| beta | -3 | 30.99 | 30.95 | 0/17 | -- | n/a | 0.04224 | False | alpha 0.443, gamma 0.00401 |
+| beta | -2 | 90.25 | 90.14 | 0/21 | -- | n/a | 0.1121 | False | alpha 0.851, gamma 5.48E-05 |
+| beta | -1 | 216.7 | 216.6 | 0/23 | -- | n/a | 0.1366 | False | alpha 0.852, gamma 0.000126 |
 
 ### Local curvature in ln q (step 1 = 0.01; step 2 = 0.03 check)
 

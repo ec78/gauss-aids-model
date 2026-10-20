@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-20 (TVP Q-identification Phase Q0, partial)_
+_Last updated: 2026-10-20 (TVP Q-identification Phase Q0 complete)_
 
 ## Current Objective
 
@@ -76,35 +76,41 @@ example an `ind`-aware sslib objective (upstream), a smoother-based Q
 score, or a CMLMT algorithm change. Each would need its own frozen
 protocol.
 
-**Phase Q0 partly done (2026-10-20, task `task_14e632bafa54`, local
-commits only; no src/API/version/docs change): Q identification and
-boundary geometry.**
+**Phase Q0 done (2026-10-20, tasks `task_14e632bafa54` and
+`task_d62382cc106b`, local commits only; no src/API/version/docs change):
+Q identification and boundary geometry.**
 - **Protocol.** `dev/experiments/tvp_q_identification/PROTOCOL.md` was
-  frozen as v1 at `4a34c9d` (hash `7cecd9f9...`) before any measurement.
-  Calibration used only reserve seed 1101 and non-study example seed 205.
-  Profiles use a dev-only reduced-parameter refit (`q0_lib.src`): the
-  shipped objective and CMLMT settings, bit-identical when nothing is
-  fixed. Post-measurement Amendment 1 is an analyzer null-format fix.
-- **Measured.** `n1=2` and `n1=3` (seeds 1001/1002, oracle H) completely,
-  plus the anchor's fits and fixed-point geometry. All 15 start fits
-  reproduce Phase C exactly, and all 120 profile fits returned rc 0.
+  frozen as v1 at `4a34c9d` before any measurement. Calibration used only
+  reserve seed 1101 and non-study example seed 205. Profiles use a
+  dev-only reduced-parameter refit (`q0_lib.src`): the shipped objective
+  and CMLMT settings, bit-identical when nothing is fixed.
+- **Amendments.** Amendment 1 is an analyzer null-format fix. Amendment
+  2 (`8f8ff96`) is the owner-authorized resume after Claude Code's
+  memory reaper killed attempt 1's driver mid-ANCHOR. Attempt-1 rows were
+  kept separately, harness hashes are unchanged, and the original
+  300-minute budget clock was kept. The rerun was byte-identical to
+  attempt 1 where they overlap.
+- **Measured.** `n1=2` and `n1=3` (seeds 1001/1002, oracle H) and the P6
+  `n1=3` anchor, all complete.
+  - All 15 start fits reproduce Phase C exactly.
+  - All 138 profile fits returned rc 0, with none capped, and each
+    profile >= its slice.
+  - `n1=4` was excluded by the frozen gate (1.55 GB free < 4 GB).
 - **Findings (descriptive).**
-  - Boundary elements (0-2 per DGP endpoint) are flat to the floor and
-    are each endpoint's only flat curvature directions.
-  - Interior elements are weakly determined individually, while the joint
-    Q scale is sharp.
+  - On the DGPs, 0-2 boundary elements per endpoint are flat to the floor
+    and are the only flat log-Q directions.
+  - Interior elements are individually weak, while the joint Q scale is
+    sharp.
   - Profiles track slices within 2.8 LL. Variance groups trade off
     against each other, mostly gamma against alpha/beta.
-  - The P6 `n1=3` anchor is a full boundary corner: all-zero Q is within
-    0.11 LL, and 10 of 12 log-Q directions are flat.
-- **Not measured.** The anchor profiles were interrupted when Claude Code's
-  memory reaper killed the driver, and the coordinator did not answer the
-  resume question. `n1=4` was not reached (free memory < 4 GB anyway).
-  Resuming needs coordinator/owner approval: re-run the ANCHOR stage from
-  a fresh preflight, which requires an amendment because HEAD has moved.
+  - The anchor is a full boundary corner: all-zero Q is within 0.11 LL,
+    10 of 12 directions are flat, and every group's profile peaks at or
+    near zero (<= 0.05 LL).
 
 Evidence: `dev/experiments/tvp_q_identification/RESULTS.md`. No Q
-inference, intervals or identification claims.
+inference, intervals or identification claims. Next boundary item
+(owner decision): boundary-aware Q inference, which needs non-regular
+machinery.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
