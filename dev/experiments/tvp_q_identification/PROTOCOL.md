@@ -278,3 +278,76 @@ real anchor rows, after measurement. It does not touch any measured value.
 commit `4a34c9d`) governed every measured job. `FREEZE.sha256` was then
 regenerated for the amended analyzer, and the new hash is recorded in
 `RESULTS.md`. All measurement ran at HEAD `4a34c9d` under the v1 hashes.
+
+## Amendment 2 (2026-10-20): authorized resume of the interrupted ANCHOR stage
+
+**Authorization.** The owner, through the Orca coordinator (task
+`task_d62382cc106b`), authorized resuming the interrupted Phase Q0 run
+recorded at `067619f`, with no change to its scientific settings.
+
+**What happened.** At about 11:25, Claude Code's background-shell
+low-memory reaper killed the driver during the first ANCHOR profile job
+(`ANCHOR-ANCHOR-n13-t500-s204-prof-g1`). There was no GAUSS error, outer
+timeout, memory-cap breach or Phase C mismatch, so no protocol stop rule
+fired. Stages A and B were complete. ANCHOR's three fits and its geometry
+job were complete; its profiles were not. Stage C was never reached.
+
+**Preserving attempt 1.** Every ANCHOR row from attempt 1 moved out of the
+main result CSVs into `results/interrupted_ANCHOR_attempt1/` under the
+same file names. The killed job's printed profile rows are in
+`profiles_partial_prof_g1.csv`, and attempt 1's generated jobs are in
+`gen/`. Attempt 1's ANCHOR and preflight logs were renamed
+`results/logs/INTERRUPTED_attempt1_*` (gitignored, kept locally). The A
+and B rows are untouched. Attempt-1 rows are evidence of the interruption
+only. They enter no final table, but the resumed fits and geometry are
+compared with them.
+
+**What is unchanged.** All design, cells, starts, caps, levels, floor,
+Hessian steps, tolerances, thresholds, the profile method
+(`_q0MLEFitReduced`), the limits and the stop rules. Every GAUSS file and
+`run_q0.ps1` keeps its v1 hash from `4a34c9d`. These hashes are identical
+in v1's and the current `FREEZE.sha256`:
+
+| file | SHA-256 (CR-stripped) |
+|---|---|
+| q0_lib.src | 9c1207109000de2fab1d618e374ed5e7ca3d5fea8077d87321dabc751ecbcd97 |
+| q0_includes.inc | 2b80902e1103184a44843d6592dbb355c9ec2be3a31d2a6deb5af5cc804b32a6 |
+| q0_data.inc | c398b27e22ce42fef520173df68e6d4dcf021e44d82e2b41941137a8f481a7d1 |
+| q0_design.inc | 9c4383abbe8dd8f87e82b893f04d734f7e660882a82e9b523bc5a307429ccda8 |
+| q0_fit.template.e | c6e8374d9e79714f5a4e02f1453086d86564569dd0e48234658770e8c757657a |
+| q0_geom.template.e | 28860553f42e4e40ab83d88aae59c78c456fb34ea87b823bbcd9f5e6fdc3191f |
+| q0_prof.template.e | fe4d6e7bc51ea2634ffd7011e4669a3c8f52108fdacdecd0b6e972353f6df5c3 |
+| q0_equiv.e | d2bafdfcf995c6c79b9aab5d02a377150a886aefce782f4ff5b4ec1c22224d57 |
+| run_q0.ps1 | 74456073ae0438405bb383d08be4add6c53cd41f7a6ac28fc4e1bf9d9ad10be1 |
+
+Only `PROTOCOL.md` (these amendments) and `analyze_q0.ps1` (Amendment 1's
+formatting fix) differ from v1. `FREEZE.sha256` is regenerated for them.
+The v1 freeze hash was
+`7cecd9f9194513a972265f429c6ffc1820fd69dc370a5402e8a94262aeb69d38`.
+
+**Driver state, edited by hand and recorded in `results/run_log.txt`.**
+Two fields in `results/run_state.json` change; the driver code does not.
+- `freeze_head` becomes the new clean HEAD: this amendment's commit. The
+  driver's preflight requires HEAD to equal it and the tree to be clean
+  outside `results/`.
+- `budget_start` moves so that the **original 300-minute budget** still
+  counts the 34.9 minutes used before the kill (10:50:49 to the last
+  attempt-1 output at 11:25:43). The resumed run therefore has at most
+  265.1 minutes left, and the per-job budget guard applies unchanged.
+
+The edited state keeps `stages_done = [A, B]`, so A and B are skipped.
+
+**Resume run.**
+- A fresh strict preflight runs (all v1 gates), then the ANCHOR stage
+  from its beginning: three fits, which must again reproduce Phase C
+  exactly, then geometry and all three profile jobs. After that comes the
+  unchanged stage C gate (>= 4 GB free and the runtime projection);
+  otherwise C is recorded as excluded.
+- The driver is launched detached through Windows `Start-Process
+  -WindowStyle Hidden`, outside Claude Code's background shell. That is
+  process management, not a study setting.
+- One GAUSS process at a time.
+
+**Stop rule added for the resume.** A second host-memory kill of the
+driver ends the study as recorded, with no further resume. Every original
+stop rule still applies.

@@ -1,0 +1,5 @@
+job_id,stage,kind,endpoint,started,wall_s,outer_timeout_s,timed_out,mem_killed,peak_ws_mb,free_gb_at_start,gauss_error,done,log
+ANCHOR-ANCHOR-n13-t500-s204-fit-q1,ANCHOR,fit,ANCHOR-n13-t500-s204,2026-10-20T10:57:21,485.48,2400,False,False,56,1.66,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-fit-q1.log
+ANCHOR-ANCHOR-n13-t500-s204-fit-q10,ANCHOR,fit,ANCHOR-n13-t500-s204,2026-10-20T11:05:29,648.07,2400,False,False,57,1.68,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-fit-q10.log
+ANCHOR-ANCHOR-n13-t500-s204-fit-q0.1,ANCHOR,fit,ANCHOR-n13-t500-s204,2026-10-20T11:16:21,436.61,2400,False,False,56,1.63,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-fit-q0.1.log
+ANCHOR-ANCHOR-n13-t500-s204-geom,ANCHOR,geom,ANCHOR-n13-t500-s204,2026-10-20T11:23:40,9.02,1800,False,False,48,1.52,False,True,logs/ANCHOR-ANCHOR-n13-t500-s204-geom.log
