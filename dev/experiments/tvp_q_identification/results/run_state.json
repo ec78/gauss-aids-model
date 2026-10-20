@@ -1,0 +1,9 @@
+﻿{
+    "stages_done":  [
+                        "A",
+                        "B"
+                    ],
+    "stopped":  false,
+    "freeze_head":  "4a34c9d4a4e9ec600d020275793848a0d722caec",
+    "budget_start":  "2026-10-20T10:50:49.1963132-05:00"
+}

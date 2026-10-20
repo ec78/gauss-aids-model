@@ -1,0 +1,41 @@
+﻿2026-10-20T10:50:49 [A] preflight start
+2026-10-20T10:51:02 [A] preflight PASS (HEAD 4a34c9d4a4e9ec600d020275793848a0d722caec, frozen hashes, Phase C reused files unchanged, no other GAUSS, pin strict, Stage6 30/30, P5 12/12, reduced fit == quaidsTVPFit exactly, fixed element exact, Fct = LL)
+2026-10-20T10:51:09 [A] A-n12-t200-s1001-Horacle-fit-q1 wall=3.42s peak=44MB free@start=1.52GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:51:15 [A] A-n12-t200-s1001-Horacle-fit-q10 wall=3.45s peak=44MB free@start=1.52GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:51:22 [A] A-n12-t200-s1001-Horacle-fit-q0.1 wall=3.43s peak=44MB free@start=1.58GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:51:27 [A] A-n12-t200-s1001-Horacle-geom wall=2.3s peak=42MB free@start=1.56GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:51:37 [A] A-n12-t200-s1001-Horacle-prof-g1 wall=6.75s peak=46MB free@start=1.55GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:51:50 [A] A-n12-t200-s1001-Horacle-prof-g2 wall=8.97s peak=46MB free@start=1.56GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:52:04 [A] A-n12-t200-s1001-Horacle-prof-g3 wall=11.18s peak=46MB free@start=1.57GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:52:11 [A] A-n12-t200-s1002-Horacle-fit-q1 wall=3.4s peak=44MB free@start=1.52GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:52:17 [A] A-n12-t200-s1002-Horacle-fit-q10 wall=3.37s peak=44MB free@start=1.64GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:52:23 [A] A-n12-t200-s1002-Horacle-fit-q0.1 wall=2.27s peak=44MB free@start=1.63GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:52:28 [A] A-n12-t200-s1002-Horacle-geom wall=2.27s peak=42MB free@start=1.63GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:52:38 [A] A-n12-t200-s1002-Horacle-prof-g1 wall=6.75s peak=46MB free@start=1.61GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:52:48 [A] A-n12-t200-s1002-Horacle-prof-g2 wall=6.72s peak=46MB free@start=1.63GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:53:00 [A] A-n12-t200-s1002-Horacle-prof-g3 wall=9.01s peak=46MB free@start=1.63GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:53:00 [A] stage complete; elapsed 2.2 min
+2026-10-20T10:53:00 [B] preflight start
+2026-10-20T10:53:13 [B] preflight PASS (HEAD 4a34c9d4a4e9ec600d020275793848a0d722caec, frozen hashes, Phase C reused files unchanged, no other GAUSS, pin strict, Stage6 30/30, P5 12/12, reduced fit == quaidsTVPFit exactly, fixed element exact, Fct = LL)
+2026-10-20T10:53:23 [B] B-n13-t200-s1001-Horacle-fit-q1 wall=6.77s peak=48MB free@start=1.65GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:53:34 [B] B-n13-t200-s1001-Horacle-fit-q10 wall=7.87s peak=49MB free@start=1.66GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:53:45 [B] B-n13-t200-s1001-Horacle-fit-q0.1 wall=7.89s peak=47MB free@start=1.67GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:53:53 [B] B-n13-t200-s1001-Horacle-geom wall=4.49s peak=44MB free@start=1.69GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:54:26 [B] B-n13-t200-s1001-Horacle-prof-g1 wall=29.69s peak=50MB free@start=1.7GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:54:46 [B] B-n13-t200-s1001-Horacle-prof-g2 wall=16.82s peak=50MB free@start=1.67GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:55:18 [B] B-n13-t200-s1001-Horacle-prof-g3 wall=28.2s peak=50MB free@start=1.63GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:55:28 [B] B-n13-t200-s1002-Horacle-fit-q1 wall=6.76s peak=47MB free@start=1.68GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:55:37 [B] B-n13-t200-s1002-Horacle-fit-q10 wall=5.75s peak=48MB free@start=1.62GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:55:44 [B] B-n13-t200-s1002-Horacle-fit-q0.1 wall=4.53s peak=47MB free@start=1.64GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:55:52 [B] B-n13-t200-s1002-Horacle-geom wall=4.51s peak=44MB free@start=1.65GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:56:18 [B] B-n13-t200-s1002-Horacle-prof-g1 wall=22.42s peak=50MB free@start=1.63GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:56:37 [B] B-n13-t200-s1002-Horacle-prof-g2 wall=15.73s peak=50MB free@start=1.65GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:57:05 [B] B-n13-t200-s1002-Horacle-prof-g3 wall=24.68s peak=50MB free@start=1.66GB done=True gerr=False timeout=False memkill=False
+2026-10-20T10:57:05 [B] stage complete; elapsed 6.3 min
+2026-10-20T10:57:05 [ANCHOR] preflight start
+2026-10-20T10:57:17 [ANCHOR] preflight PASS (HEAD 4a34c9d4a4e9ec600d020275793848a0d722caec, frozen hashes, Phase C reused files unchanged, no other GAUSS, pin strict, Stage6 30/30, P5 12/12, reduced fit == quaidsTVPFit exactly, fixed element exact, Fct = LL)
+2026-10-20T11:05:26 [ANCHOR] ANCHOR-ANCHOR-n13-t500-s204-fit-q1 wall=485.48s peak=56MB free@start=1.66GB done=True gerr=False timeout=False memkill=False
+2026-10-20T11:16:17 [ANCHOR] ANCHOR-ANCHOR-n13-t500-s204-fit-q10 wall=648.07s peak=57MB free@start=1.68GB done=True gerr=False timeout=False memkill=False
+2026-10-20T11:23:37 [ANCHOR] ANCHOR-ANCHOR-n13-t500-s204-fit-q0.1 wall=436.61s peak=56MB free@start=1.63GB done=True gerr=False timeout=False memkill=False
+2026-10-20T11:23:49 [ANCHOR] ANCHOR-ANCHOR-n13-t500-s204-geom wall=9.02s peak=48MB free@start=1.52GB done=True gerr=False timeout=False memkill=False
+2026-10-20T13:50:00 MANUAL NOTE (not driver output): the driver process was killed at about 11:24 by Claude Code's low-system-memory reaper during ANCHOR-ANCHOR-n13-t500-s204-prof-g1 (no GAUSS error, timeout or stop rule). A resume was proposed to the coordinator (message msg_c73ffe86a3a8) and not answered within about 2 h 10 min; nothing was rerun. Partial rows: interrupted_ANCHOR_prof_g1.csv. Stage C not reached. See RESULTS.md.

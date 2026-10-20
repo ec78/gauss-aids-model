@@ -1,7 +1,8 @@
 # TVP-AIDS Phase Q0: Q identification and boundary geometry
 
-**Status: FROZEN v1 (2026-10-20, Orca task `task_14e632bafa54`).** Freeze
-hash and file hashes: `FREEZE.sha256` (see "Freeze"). The frozen files are
+**Status: FROZEN v1 (2026-10-20, Orca task `task_14e632bafa54`), with
+post-measurement Amendment 1 (analyzer formatting only; see the end of
+this file).** Freeze hash and file hashes: `FREEZE.sha256` (see "Freeze"). The frozen files are
 committed locally before any study measurement. Any later protocol or
 harness change needs a documented amendment section here and a new freeze
 hash.
@@ -258,3 +259,22 @@ powershell -ExecutionPolicy Bypass -File .\run_q0.ps1 -DryRun
 powershell -ExecutionPolicy Bypass -File .\run_q0.ps1 -Stage ALL
 powershell -ExecutionPolicy Bypass -File .\analyze_q0.ps1
 ```
+
+## Amendment 1 (2026-10-20, after measurement stopped; formatting only)
+
+**What changed.** `analyze_q0.ps1`'s number formatter `F()` now prints
+`n/a` for a missing (`$null`) or infinite value, as it already did for NaN.
+Nothing else changed: no constant, threshold, classification or table, and
+no GAUSS file or the driver.
+
+**Why.** The frozen analyzer crashed (`You cannot call a method on a
+null-valued expression`) on the anchor endpoint, which by design has no
+true-Q point (code 2). It would also have printed `Infinity` for an endpoint
+with no profile rows. This was found when the analyzer was first run on
+real anchor rows, after measurement. It does not touch any measured value.
+
+**Freeze.** v1's freeze hash
+(`7cecd9f9194513a972265f429c6ffc1820fd69dc370a5402e8a94262aeb69d38`,
+commit `4a34c9d`) governed every measured job. `FREEZE.sha256` was then
+regenerated for the amended analyzer, and the new hash is recorded in
+`RESULTS.md`. All measurement ran at HEAD `4a34c9d` under the v1 hashes.

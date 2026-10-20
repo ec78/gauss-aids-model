@@ -22,7 +22,7 @@ $STEP_REL_TOL = 1e-3    # Hessian step agreement: max|eig1-eig2| <= this x max(1
 $LOAD_MIN = 0.3         # eigenvector loading reported as "dominant"
 
 function D($s) { if ($null -eq $s -or $s -eq "" -or $s -eq ".") { return [double]::NaN }; return [double]::Parse($s, $inv) }
-function F($x, [string]$fmt = "G4") { if ([double]::IsNaN($x)) { return "n/a" }; return $x.ToString($fmt, $inv) }
+function F($x, [string]$fmt = "G4") { if ($null -eq $x -or [double]::IsInfinity($x) -or [double]::IsNaN($x)) { return "n/a" }; return $x.ToString($fmt, $inv) }
 function Load([string]$n) { $p = Join-Path $rd $n; if (Test-Path $p) { return @(Import-Csv $p) } else { return @() } }
 
 $fits = Load "fits.csv"; $best = Load "best.csv"; $starts = Load "starts.csv"; $elems = Load "elements.csv"
