@@ -31,6 +31,9 @@ function Invoke-D1Gauss([string]$script) {
         $p = Start-Process -FilePath $GaussExe -ArgumentList @("-b", $script) `
             -NoNewWindow -PassThru -RedirectStandardOutput $stdout `
             -RedirectStandardError $stderr
+        # Windows PowerShell 5.1 does not reliably populate ExitCode after
+        # WaitForExit unless the process handle is materialized first.
+        $processHandle = $p.Handle
         if (-not $p.WaitForExit($TimeoutSeconds * 1000)) {
             & taskkill.exe /PID $p.Id /T /F | Out-Null
             throw "GAUSS job timed out after $TimeoutSeconds seconds: $script"

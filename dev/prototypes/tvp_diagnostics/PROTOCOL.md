@@ -61,3 +61,8 @@ and optionally run the representative probe twice while preserving both tagged
 payloads and their SHA-256 hashes. No diagnostic calculation, fixture, start,
 threshold, tolerance or interpretation changed. Results are rerun from the
 amended frozen commit.
+
+The first amended preflight exposed a Windows PowerShell 5.1 process-object
+compatibility detail: `ExitCode` remains unset unless the handle is materialized
+before `WaitForExit`. The runner now does so. That failed before equivalence or
+probe measurement and changes no statistical work.
