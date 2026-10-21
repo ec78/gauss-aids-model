@@ -66,3 +66,12 @@ The first amended preflight exposed a Windows PowerShell 5.1 process-object
 compatibility detail: `ExitCode` remains unset unless the handle is materialized
 before `WaitForExit`. The runner now does so. That failed before equivalence or
 probe measurement and changes no statistical work.
+
+## Amendment 2: portable evidence bytes and final measurement boundary
+
+Final read-only review found that Windows PowerShell 5.1 emitted UTF-8 BOMs and
+retained GAUSS line-ending spaces in the stored probe payloads. The runner now
+trims only trailing whitespace on tagged output lines and writes UTF-8 without
+a BOM. The exact representative probe job is also covered by `FREEZE.sha256`.
+This changes evidence formatting and provenance protection only; no fixture,
+calculation, start, threshold, tolerance or interpretation changes.

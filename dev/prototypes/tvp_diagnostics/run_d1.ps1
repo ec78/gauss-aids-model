@@ -69,19 +69,24 @@ try {
         if ($ProbeN12) {
             $probe1 = Invoke-D1Gauss "results\gen\probe_n12.e"
             $probe2 = Invoke-D1Gauss "results\gen\probe_n12.e"
-            $tag1 = (($probe1.Text -split "`r?`n") | Where-Object { $_ -match "^TVPDIAG_PROBE" }) -join "`n"
-            $tag2 = (($probe2.Text -split "`r?`n") | Where-Object { $_ -match "^TVPDIAG_PROBE" }) -join "`n"
+            $tag1 = (($probe1.Text -split "`r?`n") |
+                Where-Object { $_ -match "^TVPDIAG_PROBE" } |
+                ForEach-Object { $_.TrimEnd() }) -join "`n"
+            $tag2 = (($probe2.Text -split "`r?`n") |
+                Where-Object { $_ -match "^TVPDIAG_PROBE" } |
+                ForEach-Object { $_.TrimEnd() }) -join "`n"
             if ($probe1.ExitCode -ne 0 -or $probe2.ExitCode -ne 0 -or
                 $tag1 -notmatch "TVPDIAG_PROBE_DONE" -or $tag1 -ne $tag2) {
                 throw "n1=2 probe failed deterministic tagged-output check"
             }
             $resultDir = Join-Path $here "results"
-            [IO.File]::WriteAllText((Join-Path $resultDir "probe_n12_run1.txt"), $tag1 + "`n", [Text.Encoding]::UTF8)
-            [IO.File]::WriteAllText((Join-Path $resultDir "probe_n12_run2.txt"), $tag2 + "`n", [Text.Encoding]::UTF8)
+            $utf8NoBom = New-Object Text.UTF8Encoding($false)
+            [IO.File]::WriteAllText((Join-Path $resultDir "probe_n12_run1.txt"), $tag1 + "`n", $utf8NoBom)
+            [IO.File]::WriteAllText((Join-Path $resultDir "probe_n12_run2.txt"), $tag2 + "`n", $utf8NoBom)
             $h1 = (Get-FileHash (Join-Path $resultDir "probe_n12_run1.txt") -Algorithm SHA256).Hash.ToLowerInvariant()
             $h2 = (Get-FileHash (Join-Path $resultDir "probe_n12_run2.txt") -Algorithm SHA256).Hash.ToLowerInvariant()
             [IO.File]::WriteAllText((Join-Path $resultDir "probe_n12.sha256"),
-                "$h1  probe_n12_run1.txt`n$h2  probe_n12_run2.txt`n", [Text.Encoding]::UTF8)
+                "$h1  probe_n12_run1.txt`n$h2  probe_n12_run2.txt`n", $utf8NoBom)
             Write-Host "TVPDIAG_PROBE_DETERMINISTIC PASS $h1"
             Write-Host $tag1
         }
