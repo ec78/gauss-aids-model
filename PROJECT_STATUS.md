@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-21 (TVP reliability-diagnostic Phase D0 complete)_
+_Last updated: 2026-10-21 (private tiered TVP diagnostic Phase D1 initial gate)_
 
 ## Current Objective
 
@@ -137,6 +137,25 @@ feasibility.**
 Evidence: `dev/experiments/tvp_reliability_diagnostics/RESULTS.md`.
 Next owner decision: whether to prototype only the cheap and multi-start
 layers as a private API candidate before considering any shipped change.
+
+**Phase D1 initial gate passed (2026-10-21, private prototype branch;
+no src/API/version/docs change): tiered TVP diagnostic candidate.**
+- Frozen commit `419319c` separates a cheap one-fit status/Q-scale layer
+  from an opt-in 0.1x/1x/10x multi-start LL-agreement layer. The code is
+  under `dev/prototypes/tvp_diagnostics/` and is not shipped.
+- Nine pure-logic GAUSS checks pass. The Stage-6 fixture's 1x arm is
+  bit-exact with `quaidsTVPFit()` in Qfit, retcode and total LL; its
+  three-start gap is `1.06e-11` versus tolerance `1.2e-4`.
+- The n1=2/seed=1001/oracle-H probe is deterministic and start-stable
+  (gap `5.00e-12` versus `2e-4`) while still reporting 1/1/2 start-
+  relative scale-collapse elements across its three arms. This is the
+  intended distinction between optimizer agreement and a scale caution.
+- No boundary/identification label, Q inference, Hessian/profile default,
+  transformed-score threshold or fixed-point claim is added.
+
+Evidence: `dev/prototypes/tvp_diagnostics/RESULTS.md`. Next bounded D1
+option: run the already-frozen P6 anchor probe, then review whether this
+private result shape is worth a separate public API proposal.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
