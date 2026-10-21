@@ -51,9 +51,9 @@ From this directory, under the repository's pinned SSLib installation:
 powershell -ExecutionPolicy Bypass -File .\run_d1.ps1 -Equivalence -ProbeN12
 ```
 
-The accepted measurement boundary is the post-review normalization commit
-recorded in this branch's history; it retains the original prototype freeze at
-`419319c` and includes the exact probe job in `FREEZE.sha256`. The tagged
+The accepted measurement boundary is `4a7a939`; it retains the original
+prototype freeze at `419319c` and includes the exact probe job in
+`FREEZE.sha256`. The tagged
 equivalence output is preserved in `results/equiv.txt`. Both exact
 probe payloads and their matching SHA-256 hashes are preserved in
 `results/probe_n12_run1.txt`, `results/probe_n12_run2.txt` and

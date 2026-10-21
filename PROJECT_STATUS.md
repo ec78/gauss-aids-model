@@ -143,9 +143,8 @@ no src/API/version/docs change): tiered TVP diagnostic candidate.**
 - Original prototype freeze `419319c` separates a cheap one-fit status/Q-scale layer
   from an opt-in 0.1x/1x/10x multi-start LL-agreement layer. The code is
   under `dev/prototypes/tvp_diagnostics/` and is not shipped.
-- Runner amendments through `f166753` preceded the accepted live rerun; the
-  final evidence-normalization commit is the measurement boundary recorded in
-  this branch's history.
+- Runner amendments through `f166753` preceded the accepted live rerun;
+  evidence-normalization commit `4a7a939` is the final measurement boundary.
 - Nine pure-logic GAUSS checks pass. The Stage-6 fixture's 1x arm is
   bit-exact with `quaidsTVPFit()` in Qfit, retcode and total LL; its
   three-start gap is `1.06e-11` versus tolerance `1.2e-4`.
