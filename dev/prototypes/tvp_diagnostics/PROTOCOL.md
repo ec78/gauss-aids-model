@@ -49,3 +49,15 @@ All live runs use the repository's GAUSS config override and pinned SSLib.
 Protocol, prototype, includes, unit/equivalence files and runner are hashed in
 `FREEZE.sha256` and committed before equivalence/probe measurement. A later
 public proposal requires a separate owner decision.
+
+## Amendment 1: bounded and auditable runner
+
+The first live gate exposed no numerical failure, but independent review found
+that `run_d1.ps1` did not itself enforce the protocol's environment claims and
+the two compared probe payloads were not both retained. Before accepting D1
+results, the runner was amended to verify `FREEZE.sha256`, require the strict
+repository SSLib pin, apply an outer per-job timeout with process-tree cleanup,
+and optionally run the representative probe twice while preserving both tagged
+payloads and their SHA-256 hashes. No diagnostic calculation, fixture, start,
+threshold, tolerance or interpretation changed. Results are rerun from the
+amended frozen commit.
