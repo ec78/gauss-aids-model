@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-20 (TVP Q-identification Phase Q0 complete)_
+_Last updated: 2026-10-21 (TVP reliability-diagnostic Phase D0 complete)_
 
 ## Current Objective
 
@@ -111,6 +111,32 @@ Evidence: `dev/experiments/tvp_q_identification/RESULTS.md`. No Q
 inference, intervals or identification claims. Next boundary item
 (owner decision): boundary-aware Q inference, which needs non-regular
 machinery.
+
+**Phase D0 done (2026-10-21, task `task_e13646b8facc`, isolated local
+branch; no src/API/version/docs change): reliability-diagnostic
+feasibility.**
+- The protocol and analyzer were frozen at `6382c3c` before analysis.
+  Amendment 1 only removes trailing spaces from generated Markdown.
+- D0 reuses the five Q0 endpoints and all 120 Phase C category rows; it
+  runs no new GAUSS fit or sweep. The analyzer's five classification
+  tests pass and both outputs regenerate byte-for-byte.
+- All five endpoints are stable across the three starts tried, but all
+  five receive the descriptive `GEOMETRY-CAUTION` label. Thus start
+  agreement and `mleRetcode == 0` do not resolve boundary/flat-geometry
+  risk. The anchor is the strongest example: 12 boundary elements, 10
+  flat directions and only 0.112 total-LL loss at the all-floor point.
+- One public fit can honestly support solver status and caller-start-
+  relative Q scale checks. Endpoint agreement needs extra starts and a
+  comparable objective; Hessian/profile diagnostics need private,
+  substantially more expensive work. No transformed-gradient threshold
+  or fixed-point residual is justified by the current implementation.
+- Recommended future shape: a separate, explicit-cost diagnostic result
+  (cheap single-fit checks; opt-in multi-start agreement; advanced
+  geometry), not added meaning on `mleRetcode` and not an inference claim.
+
+Evidence: `dev/experiments/tvp_reliability_diagnostics/RESULTS.md`.
+Next owner decision: whether to prototype only the cheap and multi-start
+layers as a private API candidate before considering any shipped change.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:

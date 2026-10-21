@@ -104,3 +104,11 @@ D0 may recommend a later public design, but cannot implement it. The default
 shape to assess is a separate diagnostic result/procedure rather than adding
 inferential meaning to `quaidsTVPOut`: a cheap single-fit status/scale layer,
 an opt-in multi-start layer, and explicitly advanced/private geometry work.
+
+## Amendment 1: generated Markdown whitespace
+
+After the first analysis run, three generated prose lines were found to end
+in spaces. The analyzer now omits those spaces so `git diff --check` can gate
+the results commit. No input, calculation, threshold, label, table value, or
+interpretation changed. The pre-amendment result hashes are recorded in the
+commit history/task log; the amended frozen hashes are in `FREEZE.sha256`.
