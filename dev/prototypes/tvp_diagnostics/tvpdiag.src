@@ -1,0 +1,166 @@
+/*
+** PRIVATE DEV PROTOTYPE -- not shipped and not public API.
+** See PROTOCOL.md. Requires the normal TVP include chain first.
+*/
+
+struct _quaidsTVPDiagSingleOut {
+    matrix experimental;
+    matrix status;              // 0 OK, 1 FIT-FAILED, 2 INVALID-Q, 3 SCALE-CAUTION
+    string statusLabel;
+    matrix fitOk;
+    matrix qValid;
+    matrix scaleRatio;
+    matrix nScaleCollapse;
+    matrix minQOverQ0;
+    matrix maxQOverQ0;
+};
+
+struct _quaidsTVPDiagMultiOut {
+    matrix experimental;
+    matrix status;              // 0 START-STABLE-OBSERVED, 1 FIT-FAILED, 2 START-SENSITIVE
+    string statusLabel;
+    matrix multipliers;         // fixed 0.1 | 1 | 10
+    matrix retcodes;
+    matrix loglikelihoods;      // total filter LL, common scale
+    matrix qfits;               // k_states x 3
+    matrix nScaleCollapse;      // relative to each arm's own start
+    matrix bestStart;
+    matrix bestLL;
+    matrix maxLLGap;
+    matrix tolerance;
+    matrix startStable;
+};
+
+proc (1) = _tvpDiagFinite(x);
+    if ismiss(x);
+        retp(0);
+    endif;
+    retp(maxc(abs(vec(x))) < 1e308);
+endp;
+
+/* Cheap tier: only fields already present in one public fit result. */
+proc (struct _quaidsTVPDiagSingleOut) = _quaidsTVPDiagSingle(
+    struct quaidsTVPOut tvOut, scaleRatio=1e-3);
+    local shapeOk, qValid, ratios;
+    struct _quaidsTVPDiagSingleOut dOut;
+
+    dOut.experimental = 1;
+    dOut.fitOk = tvOut.mleRetcode == 0;
+    dOut.scaleRatio = scaleRatio;
+    shapeOk = rows(tvOut.Qfit) == rows(tvOut.q0) and cols(tvOut.Qfit) == 1
+        and cols(tvOut.q0) == 1 and rows(tvOut.Qfit) > 0;
+    qValid = shapeOk;
+    if qValid;
+        qValid = _tvpDiagFinite(tvOut.Qfit) and _tvpDiagFinite(tvOut.q0)
+            and minc(tvOut.Qfit) > 0 and minc(tvOut.q0) > 0;
+    endif;
+    dOut.qValid = qValid;
+
+    if qValid;
+        ratios = tvOut.Qfit ./ tvOut.q0;
+        dOut.nScaleCollapse = sumc(ratios .< scaleRatio);
+        dOut.minQOverQ0 = minc(ratios);
+        dOut.maxQOverQ0 = maxc(ratios);
+    else;
+        dOut.nScaleCollapse = miss(0, 0);
+        dOut.minQOverQ0 = miss(0, 0);
+        dOut.maxQOverQ0 = miss(0, 0);
+    endif;
+
+    if not dOut.fitOk;
+        dOut.status = 1;
+        dOut.statusLabel = "FIT-FAILED";
+    elseif not dOut.qValid;
+        dOut.status = 2;
+        dOut.statusLabel = "INVALID-Q";
+    elseif dOut.nScaleCollapse > 0;
+        dOut.status = 3;
+        dOut.statusLabel = "SCALE-CAUTION";
+    else;
+        dOut.status = 0;
+        dOut.statusLabel = "OK";
+    endif;
+    retp(dOut);
+endp;
+
+/* Pure precedence/tolerance seam used by the unit test. */
+proc (5) = _tvpDiagMultiSummary(retcodes, ll, nobs);
+    local bestStart, bestLL, maxGap, tol, stable;
+    tol = 1e-6*nobs;
+    bestStart = maxindc(ll);
+    bestLL = ll[bestStart];
+    maxGap = maxc(bestLL - ll);
+    stable = (sumc(retcodes .== 0) == rows(retcodes)) and maxGap <= tol;
+    retp(stable, bestStart, bestLL, maxGap, tol);
+endp;
+
+/* Re-evaluate total LL through the production fixed-Q filter path. */
+proc (1) = _tvpDiagLL(Zarr, q, H, y, n1);
+    struct tvpModel tvpm;
+    struct kalmanResult rslt;
+    tvpm = _quaidsTVPBuildModel(Zarr, diagrv(eye(rows(q)), q), H, n1);
+    rslt = _quaidsTVPKalmanFit(tvpm, y', 1);
+    retp(sumc(rslt.loglikelihood));
+endp;
+
+/* Opt-in expensive tier: three complete Q-MLE fits. */
+proc (struct _quaidsTVPDiagMultiOut) = _quaidsTVPDiagMultiStart(
+    w, prices, totexp, H, q0, struct quaidsTVPControl tvpCtl,
+    scaleRatio=1e-3);
+    local maxIters, maxTime, n, n1, nobs, k, pricesRel, lx, Zarr,
+        mult, retcodes, ll, qfits, nCollapse, i, qStart,
+        stable, bestStart, bestLL, maxGap, tol;
+    struct ssOut sOut;
+    struct _quaidsTVPDiagMultiOut dOut;
+
+    { maxIters, maxTime } = _quaidsTVPResolveCaps(tvpCtl);
+    n = cols(prices);
+    n1 = n - 1;
+    nobs = rows(w);
+    k = 2*n1 + n1*(n1+1)/2;
+    pricesRel = prices[., 1:n1] - prices[., n];
+    lx = _quaidsTVPStoneIndex(w, prices, totexp, n);
+    Zarr = _quaidsTVPBuildZ(pricesRel, lx, n1);
+
+    mult = 0.1|1|10;
+    retcodes = zeros(3, 1);
+    ll = zeros(3, 1);
+    qfits = zeros(k, 3);
+    nCollapse = zeros(3, 1);
+    i = 1;
+    do while i <= 3;
+        qStart = mult[i]*q0;
+        sOut = _quaidsTVPMLEFit(Zarr, H, w[., 1:n1], qStart, n1,
+            maxIters, maxTime);
+        retcodes[i] = sOut.mleResults.retcode;
+        ll[i] = _tvpDiagLL(Zarr, sOut.final_params, H, w[., 1:n1], n1);
+        qfits[., i] = sOut.final_params;
+        nCollapse[i] = sumc((sOut.final_params ./ qStart) .< scaleRatio);
+        i = i + 1;
+    endo;
+
+    { stable, bestStart, bestLL, maxGap, tol } =
+        _tvpDiagMultiSummary(retcodes, ll, nobs);
+    dOut.experimental = 1;
+    dOut.multipliers = mult;
+    dOut.retcodes = retcodes;
+    dOut.loglikelihoods = ll;
+    dOut.qfits = qfits;
+    dOut.nScaleCollapse = nCollapse;
+    dOut.bestStart = bestStart;
+    dOut.bestLL = bestLL;
+    dOut.maxLLGap = maxGap;
+    dOut.tolerance = tol;
+    dOut.startStable = stable;
+    if sumc(retcodes .== 0) /= rows(retcodes);
+        dOut.status = 1;
+        dOut.statusLabel = "FIT-FAILED";
+    elseif not stable;
+        dOut.status = 2;
+        dOut.statusLabel = "START-SENSITIVE";
+    else;
+        dOut.status = 0;
+        dOut.statusLabel = "START-STABLE-OBSERVED";
+    endif;
+    retp(dOut);
+endp;
