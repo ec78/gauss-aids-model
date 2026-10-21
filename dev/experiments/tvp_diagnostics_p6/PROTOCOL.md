@@ -46,3 +46,12 @@ This is a bounded reproducibility and observed-start-agreement check. It is
 not evidence of global optimality, parameter identification, boundary
 inference or valid Q uncertainty estimates. Timings and iteration counts are
 not exposed by the unchanged D1 result schema and are deliberately excluded.
+
+## Amendment 1: pre-measurement Q-sum orientation correction
+
+Independent review before any live P6 execution found that the probe
+transposed `sumc(dOut.qfits)` even though GAUSS already returns the three
+column sums as a `3x1` vector. The extra transpose would make the comparison
+with the frozen `3x1` prior vector nonconformable. It was removed before
+measurement. The fixture, optimizer calls, thresholds, prior values and all
+acceptance semantics are unchanged.

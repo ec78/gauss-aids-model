@@ -30,7 +30,7 @@ screen on;
 
 priorLL = -6841.8654840494210|-6841.8655741471166|-6841.8654911245685;
 priorQSum = 0.0013269734775710979|0.0013406784859562100|0.0013243386530964532;
-qSums = sumc(dOut.qfits)';
+qSums = sumc(dOut.qfits);
 priorOk = maxc(abs(dOut.loglikelihoods - priorLL)) <= 1e-9 and
     maxc(abs(qSums - priorQSum)) <= 1e-12;
 accept = qOut.converged == 1 and sumc(dOut.retcodes .== 0) == 3 and
