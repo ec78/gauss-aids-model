@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-22 (public TVP diagnostic D4 integration complete)_
+_Last updated: 2026-10-22 (public TVP diagnostic D5 evidence complete)_
 
 ## Current Objective
 
@@ -192,8 +192,8 @@ timeout trial was correctly fenced. Independent review found no code blocker;
 its focused coverage requests were added and pass 27/27. D3 gates are
 satisfied.
 
-**Phase D4 public integration complete (2026-10-22; isolated branch, not
-merged/pushed/tagged).** Package, citation, and API inventory metadata now
+**Phase D4 public integration complete (2026-10-22; merged and pushed at
+`600ec16`, not tagged).** Package, citation, and API inventory metadata now
 target 0.5.0. Both diagnostics have full command-reference pages and are
 integrated into the README, usage guide, feature matrix, cross-links, changelog,
 and example 14. The example runs only the cheap post-fit tier; the three-fit
@@ -204,8 +204,20 @@ installed core and optional-TVP API checks, and all 15 examples passed on GAUSS
 26.1.4 with the strict SSLib 2.1.2 pin. The known Windows package-directory
 in-use warning recurred during replacement; installed metadata reports 0.5.0,
 the installed TVP source hash matches the branch, and a separate installed-TVP
-rerun passed. D5 remains the bounded P6 public-evidence rerun and final release
-gate/checksum/review; no 0.5.0 release claim has been made.
+rerun passed.
+
+**Phase D5 bounded public evidence passed (2026-10-22).** On the frozen
+`n1=3`, `tobs=500`, seed 204 P6 anchor, all three public multi-start fits
+returned rc 0 with valid Q and likelihoods and exactly reproduced the frozen
+private LL/Q evidence within its prespecified tolerances. The best tested start
+is 0.1 and the maximum LL gap is `9.00977e-5 < 5e-4`, so `startStable=1`.
+All three arms also collapse 12/12 Q elements relative to their own starts, so
+the public result correctly reports status 5 `SCALE-CAUTION` with
+`anyScaleCaution=1`. Strict SSLib 2.1.2 and frozen-private-evidence integrity
+checks passed before and after. Evidence:
+`dev/experiments/tvp_diagnostics_public_d5/RESULTS.md`. The final clean-tree
+v0.5.0 release gate/checksum/review is the remaining D5 step; no 0.5.0 release
+claim has been made.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
