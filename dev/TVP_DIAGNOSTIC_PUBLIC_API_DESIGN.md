@@ -176,7 +176,11 @@ The cheap tier requires `Qfit` and `q0` to be nonempty conformable column
 vectors whose entries are finite and strictly positive.
 
 The multi-start tier validates the base `q0` shape/finiteness/positivity before
-the first fit, in addition to existing TVP model guards. After each fit it
+the first fit, in addition to existing TVP model guards. It then constructs all
+three derived starts and validates each as conformable, finite and strictly
+positive before any optimizer call. This catches overflow or underflow caused
+by scaling an otherwise-valid extreme `q0` and prevents a partially executed
+diagnostic. After each fit it
 validates the returned Q vector **before assigning it** to a preallocated
 `k_states x 3` result. The result matrix begins all-missing. Only a conformable
 `k_states x 1`, finite, strictly positive vector is stored. This prevents a
@@ -278,6 +282,8 @@ Acceptance:
   before a fit for both public procedures;
 - malformed base q0 (empty, wrong rows/columns, missing, NaN, Inf, zero or
   negative) fails before the first fit;
+- a derived 0.1x, 1x or 10x start that becomes nonfinite or nonpositive through
+  scaling fails before any optimizer call;
 - wrong-shaped/invalid returned Q is neither assigned nor filtered, invalid LL
   is normalized to missing, and every overlapping retcode/Q/LL precedence case
   is covered;
