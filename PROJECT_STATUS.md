@@ -156,8 +156,23 @@ no src/API/version/docs change): tiered TVP diagnostic candidate.**
   transformed-score threshold or fixed-point claim is added.
 
 Evidence: `dev/prototypes/tvp_diagnostics/RESULTS.md`. Next bounded D1
-option: run the already-frozen P6 anchor probe, then review whether this
-private result shape is worth a separate public API proposal.
+option completed below; review whether this private result shape is worth a
+separate public API proposal.
+
+**Phase D1-P6 anchor passed (2026-10-21, private experiment branch;
+no src/API/version/docs change).** The prespecified n1=3/tobs=500/seed=204
+static-H anchor was run twice from each fixed 0.1x/1x/10x start. Both complete
+tagged payloads are byte-identical (`b3383657...`); all fits returned rc 0,
+and the maximum total-LL gap is `9.01e-5` versus tolerance `5e-4`, giving
+`START-STABLE-OBSERVED`. All 12 Q elements in every arm are also below
+`1e-3` times that arm's own start (12/12/12), so start agreement does not
+erase the start-relative scale caution. The prior frozen LLs and Q sums are
+reproduced within `1e-9` and `1e-12`, respectively. This remains descriptive,
+not a global-optimum, boundary, identification or inference claim.
+
+Evidence: `dev/experiments/tvp_diagnostics_p6/RESULTS.md`. Next decision:
+retain this as private diagnostic evidence, or separately design a public API
+proposal that first resolves input validation and invalid-Q/LL result states.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:
