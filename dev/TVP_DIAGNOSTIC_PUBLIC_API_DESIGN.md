@@ -80,18 +80,21 @@ struct quaidsTVPDiagOut {
 };
 ```
 
-Cheap-tier status codes and precedence:
+Field shapes are scalar except `statusLabel` (string). Both structs use the
+shared status vocabulary defined below; the cheap tier uses codes 0, 1, 2 and
+5:
 
 | code | label | meaning |
 |---:|---|---|
 | 0 | `OK` | converged, Q valid, no start-relative scale caution |
 | 1 | `FIT-FAILED` | `mleRetcode != 0` |
 | 2 | `INVALID-Q` | Qfit/q0 shape, finiteness or strict positivity failed |
-| 3 | `SCALE-CAUTION` | one or more `Qfit/q0 < scaleRatio` |
+| 5 | `SCALE-CAUTION` | one or more `Qfit/q0 < scaleRatio` |
 
 Precedence is `FIT-FAILED`, `INVALID-Q`, `SCALE-CAUTION`, `OK`. Independent
 fields preserve coexisting facts; for example, `qValid=0` remains visible when
-the overall status is `FIT-FAILED`.
+the overall status is `FIT-FAILED`. When Q is invalid, `scaleCaution`,
+`nScaleCollapse`, `minQOverQ0` and `maxQOverQ0` are missing rather than zero.
 
 ```gauss
 struct quaidsTVPMultiStartOut {
@@ -108,7 +111,7 @@ struct quaidsTVPMultiStartOut {
     matrix loglikelihoods;
     matrix qfits;
     matrix nScaleCollapse;
-    matrix bestStart;
+    matrix bestStartIndex;
     matrix bestMultiplier;
     matrix bestLL;
     matrix maxLLGap;
@@ -117,7 +120,17 @@ struct quaidsTVPMultiStartOut {
 };
 ```
 
-Multi-start status codes and precedence:
+Exact shapes are:
+
+- scalar: `status`, `scaleRatio`, `anyScaleCaution`, `bestStartIndex`,
+  `bestMultiplier`, `bestLL`, `maxLLGap`, `tolerance`, `startStable`;
+- string: `statusLabel`;
+- `3x1` columns in fixed 0.1/1/10 order: `multipliers`, `retcodes`, `fitOk`,
+  `qValid`, `llValid`, `scaleCaution`, `loglikelihoods`, `nScaleCollapse`;
+- `k_states x 3`: `qfits`, where column i corresponds to multiplier i.
+
+Both result structs share one numeric vocabulary so generic status handling
+cannot silently reinterpret a code. The multi-start tier uses all six codes:
 
 | code | label | meaning |
 |---:|---|---|
@@ -128,18 +141,24 @@ Multi-start status codes and precedence:
 | 4 | `START-SENSITIVE` | valid converged fits exceed the LL tolerance |
 | 5 | `SCALE-CAUTION` | starts agree in LL, but at least one arm has start-relative collapse |
 
-Precedence is `INVALID-Q`, `INVALID-LOGLIKELIHOOD`, `FIT-FAILED`,
-`START-SENSITIVE`, `SCALE-CAUTION`, `START-STABLE-OBSERVED`. Invalid numerical
-outputs outrank a solver code because the likelihood comparison is undefined.
-`fitOk`, `qValid`, `llValid`, `startStable`, `scaleCaution` and
+The shared meanings are 0 = tier-specific success, 1 = fit failed, 2 = invalid
+Q, 3 = invalid likelihood, 4 = start sensitive and 5 = scale caution. Cheap
+diagnostics never return codes 3 or 4.
+
+Precedence is `FIT-FAILED`, `INVALID-Q`, `INVALID-LOGLIKELIHOOD`,
+`START-SENSITIVE`, `SCALE-CAUTION`, `START-STABLE-OBSERVED`. Retaining the
+mandatory nonzero-retcode warning as the top-level hard status is consistent
+with `quaidsTVPFit()`, D0 and the cheap tier. `fitOk`, `qValid`, `llValid`,
+`startStable`, `scaleCaution` and
 `anyScaleCaution` preserve every independent fact. Thus the P6 pattern is
 reported honestly as `SCALE-CAUTION` with `startStable=1`, not as a claim that
 the warning disappeared.
 
-`bestStart`, `bestMultiplier`, `bestLL` and `maxLLGap` are missing whenever any
-arm has invalid Q or LL. No missing/nonfinite value is passed to `maxindc()`.
-An exact LL tie selects the first arm, matching GAUSS `maxindc()` and the frozen
-private behavior.
+`bestStartIndex`, `bestMultiplier`, `bestLL` and `maxLLGap` are missing whenever
+any arm has invalid Q or LL. `bestStartIndex` is the 1-based row index into the
+fixed multiplier vector, not a Q value. No missing/nonfinite value is passed to
+`maxindc()`. An exact LL tie selects the first arm, matching GAUSS `maxindc()`
+and the frozen private behavior.
 
 ## 4. Validation and numerical rules
 
@@ -158,9 +177,19 @@ vectors whose entries are finite and strictly positive.
 
 The multi-start tier validates the base `q0` shape/finiteness/positivity before
 the first fit, in addition to existing TVP model guards. After each fit it
-validates the returned Q vector. If an arm's Q is invalid, it does not call the
-Kalman filter for that arm; that arm's LL and collapse outputs are missing and
-its `qValid`/`llValid` flags are zero.
+validates the returned Q vector **before assigning it** to a preallocated
+`k_states x 3` result. The result matrix begins all-missing. Only a conformable
+`k_states x 1`, finite, strictly positive vector is stored. This prevents a
+wrong-shaped returned vector from causing a GAUSS assignment error. If an arm's
+Q is invalid, the implementation does not call the Kalman filter for that arm;
+its Q column, LL, collapse count and scale flag remain missing, while
+`qValid=0` and `llValid=0`.
+
+For a valid-Q arm, collapse is exactly
+`Qfit_i < scaleRatio*(multipliers[i]*q0)`. Its collapse count and 0/1 scale flag
+are populated even if the later LL is invalid. `anyScaleCaution=1` if any valid
+arm cautions; it is 0 only when all three Q vectors are valid and none cautions;
+otherwise it is missing.
 
 ### 4.3 Likelihood validity and comparison
 
@@ -168,7 +197,9 @@ Each valid-Q arm is re-evaluated through the production fixed-Q Kalman-filter
 path, and its total LL is the sum of per-observation filter log likelihoods.
 An LL is valid only if it is a finite, nonmissing scalar. A GAUSS/filter engine
 error can still abort the call; status code 3 covers returned invalid numerical
-values, not arbitrary engine exceptions that GAUSS cannot reliably trap.
+values, not arbitrary engine exceptions that GAUSS cannot reliably trap. An
+invalid returned LL is normalized to missing; its raw invalid value is not
+stored in the public result.
 
 When all three LLs are valid:
 
@@ -179,7 +210,10 @@ startStable = all(retcodes == 0) and maxLLGap <= tolerance
 ```
 
 The tolerance is inclusive. Nonzero-retcode arms may retain descriptive valid
-Q/LL values, but `startStable` is zero and overall status is `FIT-FAILED`.
+Q/LL values and comparison fields, but `startStable` is zero and overall status
+is `FIT-FAILED`. `startStable` is always a 0/1 scalar and is zero whenever any
+retcode is nonzero, Q/LL validity is incomplete, or the LL gap exceeds the
+tolerance; it is never missing.
 
 ## 5. Source and optional dependency placement
 
@@ -242,6 +276,13 @@ Acceptance:
 - missing/NaN/Inf Q and LL are never passed to summary operations;
 - bad scale ratios (zero, one, negative, missing, NaN, Inf, nonscalar) fail
   before a fit for both public procedures;
+- malformed base q0 (empty, wrong rows/columns, missing, NaN, Inf, zero or
+  negative) fails before the first fit;
+- wrong-shaped/invalid returned Q is neither assigned nor filtered, invalid LL
+  is normalized to missing, and every overlapping retcode/Q/LL precedence case
+  is covered;
+- `SCALE-CAUTION` code 5 can coexist with `startStable=1`, and each arm's
+  collapse comparison uses its own scaled start;
 - the Stage-6 fixture's 1x arm exactly matches `quaidsTVPFit()` in Q, retcode
   and common-scale LL;
 - private D1 files remain byte-identical.
@@ -279,4 +320,5 @@ Approve this contract before D3 modifies shipped source. The main owner choice
 is whether the multi-start overall status should surface scale caution as code 5
 while preserving `startStable=1` (this design), or retain the private prototype's
 code 0 and expose scale caution only in secondary fields. This design recommends
-code 5 because a public diagnostic should make the warning difficult to miss.
+shared code 5 because a public diagnostic should make the warning difficult to
+miss.
