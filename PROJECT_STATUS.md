@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-22 (public TVP diagnostic D2 design candidate)_
+_Last updated: 2026-10-22 (public TVP diagnostic D3 implementation complete)_
 
 ## Current Objective
 
@@ -174,20 +174,24 @@ Evidence: `dev/experiments/tvp_diagnostics_p6/RESULTS.md`. Next decision:
 retain this as private diagnostic evidence, or separately design a public API
 proposal that first resolves input validation and invalid-Q/LL result states.
 
-**Phase D2 public diagnostic design candidate (2026-10-22; design branch,
-no shipped/API/version/docs change yet).** The proposed 0.5.0 surface has two
-tiers: `quaidsTVPDiagnostics()` summarizes an existing fit without refitting;
-`quaidsTVPMultiStartDiagnostics()` performs the fixed 0.1x/1x/10x fits and
-compares common-scale total LL. The design adds strict scale-ratio validation,
-per-arm Q/LL validity, explicit invalid numerical states and a prominent
-multi-start `SCALE-CAUTION` status that may coexist with `startStable=1`.
-It preserves the existing optional-SSLib include strategy and makes no global-
-optimum, boundary, identification or inference claim.
+**Phase D3 public diagnostic implementation complete (2026-10-22; isolated
+design branch, not merged/pushed; version/docs integration remains D4).** The
+owner approved the D2 contract, including overall `SCALE-CAUTION` with
+`startStable=1`. The candidate now implements `quaidsTVPDiagnostics()` and
+`quaidsTVPMultiStartDiagnostics()`, their two plain result structs, strict
+validation/normalization, fixed 0.1x/1x/10x starts, and common-scale total-LL
+comparison. The focused suite passes 27/27 with exact Stage-6 1x parity; four
+public guards stop at the intended pre-fit validation point. The registered
+source suite passes with SSLib 2.1.2 pinned. Existing `quaidsTVPFit()`, the
+optional include strategy, package/version metadata, public docs/examples,
+and frozen D1/P6 evidence remain unchanged.
 
-Design: `dev/TVP_DIAGNOSTIC_PUBLIC_API_DESIGN.md`. Owner gate before D3:
-approve the public contract, especially the recommendation that stable starts
-with scale collapse receive overall status `SCALE-CAUTION` rather than the
-private prototype's `START-STABLE-OBSERVED` label.
+Design: `dev/TVP_DIAGNOSTIC_PUBLIC_API_DESIGN.md`. Implementation protocol:
+`dev/TVP_DIAGNOSTIC_D3_PROTOCOL.md`. The frozen P6 rerun passed both probes
+byte-identically at its original `b3383657...` hash after an earlier reduced-
+timeout trial was correctly fenced. Independent review found no code blocker;
+its focused coverage requests were added and pass 27/27. D3 gates are
+satisfied. D4 may now integrate public docs/API metadata and version 0.5.0.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:

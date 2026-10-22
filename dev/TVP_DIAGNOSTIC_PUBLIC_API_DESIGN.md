@@ -1,6 +1,6 @@
 # Public TVP diagnostic API design
 
-Status: **D2 design candidate — implementation not yet started.**
+Status: **D3 implementation complete; D4 public integration pending.**
 
 This design promotes the two evidence-backed diagnostic tiers from the private
 D1/P6 work without promoting its underspecified edges. The implementation is a
@@ -322,9 +322,7 @@ Acceptance:
 
 ## 8. Decision gate
 
-Approve this contract before D3 modifies shipped source. The main owner choice
-is whether the multi-start overall status should surface scale caution as code 5
-while preserving `startStable=1` (this design), or retain the private prototype's
-code 0 and expose scale caution only in secondary fields. This design recommends
-shared code 5 because a public diagnostic should make the warning difficult to
-miss.
+The owner approved this contract on 2026-10-22, including the decision that
+the multi-start overall status surfaces scale caution as code 5 while
+preserving `startStable=1`. D3 implements that frozen behavior. D4 remains the
+separate public documentation, API-inventory and version-integration gate.

@@ -693,4 +693,50 @@ struct quaidsTVPOut {
                                         //   values only, no standard errors
 };
 
+/*
+** quaidsTVPDiagOut -- inexpensive diagnostics for one completed
+** quaidsTVPFit() result. Status codes are shared with
+** quaidsTVPMultiStartOut: 0 success, 1 fit failed, 2 invalid Q,
+** 3 invalid likelihood, 4 start-sensitive and 5 scale caution.
+*/
+struct quaidsTVPDiagOut {
+    matrix status;
+    string statusLabel;
+    matrix mleRetcode;
+    matrix fitOk;
+    matrix qValid;
+    matrix scaleRatio;
+    matrix scaleCaution;
+    matrix nScaleCollapse;
+    matrix minQOverQ0;
+    matrix maxQOverQ0;
+};
+
+/*
+** quaidsTVPMultiStartOut -- fixed 0.1x/1x/10x starting-value diagnostic
+** for the TVP Q MLE. All fields are plain GAUSS matrices/strings so the
+** core quaids.sdf schema does not acquire an sslib struct dependency.
+*/
+struct quaidsTVPMultiStartOut {
+    matrix status;
+    string statusLabel;
+    matrix scaleRatio;
+    matrix multipliers;
+    matrix retcodes;
+    matrix fitOk;
+    matrix qValid;
+    matrix llValid;
+    matrix scaleCaution;
+    matrix anyScaleCaution;
+    matrix loglikelihoods;
+    matrix qfits;
+    matrix nScaleCollapse;
+    matrix bestStartIndex;
+    matrix bestMultiplier;
+    matrix bestLL;
+    matrix maxLLGap;
+    matrix tolerance;
+    matrix startStable;
+};
+
 #endif

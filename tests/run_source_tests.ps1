@@ -205,6 +205,8 @@ if (-not $SkipTVPKalman) {
     $gaussTests += "quaidstvp_smooth_test.e"
     $sslibTests += "quaidstvpfit_test.e"
     $gaussTests += "quaidstvpfit_test.e"
+    $sslibTests += "quaidstvpdiag_test.e"
+    $gaussTests += "quaidstvpdiag_test.e"
     $sslibTests += "quaidstvp_loglik_xcheck_test.e"
     $gaussTests += "quaidstvp_loglik_xcheck_test.e"
 }
@@ -512,6 +514,22 @@ if (-not $SkipTVPKalman) {
         Script = "guard_error_cases\tvpfit_nan_maxtime.e"
         Expected = "quaidsTVPFit: tvpCtl.maxTime must be a finite positive number of minutes"
     }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpdiag_bad_scale.e"
+        Expected = "quaidsTVPDiagnostics: scaleRatio must be a finite numeric scalar strictly between 0 and 1."
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpdiag_multi_bad_scale.e"
+        Expected = "quaidsTVPMultiStartDiagnostics: scaleRatio must be a finite numeric scalar strictly between 0 and 1."
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpdiag_multi_bad_q0.e"
+        Expected = "quaidsTVPMultiStartDiagnostics: q0 must be a finite, strictly positive k_states x 1 vector."
+    }
+    $guardTests += [pscustomobject]@{
+        Script = "guard_error_cases\tvpdiag_multi_bad_derived_start.e"
+        Expected = "quaidsTVPMultiStartDiagnostics: every derived 0.1x/1x/10x q0 start must remain finite and strictly positive."
+    }
 }
 
 $sslibGuardScripts = @(
@@ -533,7 +551,11 @@ $sslibGuardScripts = @(
     "guard_error_cases\tvpfit_missing_maxiters.e",
     "guard_error_cases\tvpfit_nan_maxiters.e",
     "guard_error_cases\tvpfit_missing_maxtime.e",
-    "guard_error_cases\tvpfit_nan_maxtime.e"
+    "guard_error_cases\tvpfit_nan_maxtime.e",
+    "guard_error_cases\tvpdiag_bad_scale.e",
+    "guard_error_cases\tvpdiag_multi_bad_scale.e",
+    "guard_error_cases\tvpdiag_multi_bad_q0.e",
+    "guard_error_cases\tvpdiag_multi_bad_derived_start.e"
 )
 
 foreach ($guard in $guardTests) {

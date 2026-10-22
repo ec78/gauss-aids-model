@@ -348,3 +348,354 @@ proc 0 = printQuaidsTVP(struct quaidsTVPOut tvOut);
     print;
 
 endp;
+
+
+/* ========================================================================== */
+/* Public TVP diagnostics (v0.5.0 candidate).                                  */
+/* ========================================================================== */
+
+/* True only for a nonempty numeric matrix containing finite values. */
+proc (1) = _quaidsTVPDiagFinite(x);
+    if type(x) /= 6 or rows(x) == 0 or cols(x) == 0;
+        retp(0);
+    endif;
+    if ismiss(x);
+        retp(0);
+    endif;
+    if sumc(vec(x .== x)) /= rows(x)*cols(x);
+        retp(0);
+    endif;
+    if maxc(abs(vec(x))) == __INFp;
+        retp(0);
+    endif;
+    retp(1);
+endp;
+
+
+/* Pure predicate plus fail-loud resolver for the shared scale marker. */
+proc (1) = _quaidsTVPDiagScaleRatioValid(scaleRatio);
+    if type(scaleRatio) /= 6 or rows(scaleRatio) /= 1 or cols(scaleRatio) /= 1;
+        retp(0);
+    endif;
+    if scalmiss(scaleRatio) or scaleRatio /= scaleRatio or
+        abs(scaleRatio) == __INFp or scaleRatio <= 0 or scaleRatio >= 1;
+        retp(0);
+    endif;
+    retp(1);
+endp;
+
+
+proc (1) = _quaidsTVPDiagResolveScaleRatio(scaleRatio, caller);
+    if not _quaidsTVPDiagScaleRatioValid(scaleRatio);
+        errorlog caller $+ ": scaleRatio must be a finite numeric scalar strictly between 0 and 1.";
+        end;
+    endif;
+    retp(scaleRatio);
+endp;
+
+
+/* Shape/finiteness/strict-positivity predicate used before every summary. */
+proc (1) = _quaidsTVPDiagQValid(q, expectedRows);
+    if type(q) /= 6 or rows(q) /= expectedRows or cols(q) /= 1 or expectedRows < 1;
+        retp(0);
+    endif;
+    if not _quaidsTVPDiagFinite(q);
+        retp(0);
+    endif;
+    retp(minc(q) > 0);
+endp;
+
+
+/* Normalize a candidate Q to a safe, conformable all-missing fallback. */
+proc (2) = _quaidsTVPDiagNormalizeQ(q, expectedRows);
+    local valid, normalized;
+    normalized = miss(zeros(expectedRows, 1), 0);
+    valid = _quaidsTVPDiagQValid(q, expectedRows);
+    if valid;
+        normalized = q;
+    endif;
+    retp(valid, normalized);
+endp;
+
+
+/* Strict start-relative collapse count and flag for one already-valid arm. */
+proc (2) = _quaidsTVPDiagScaleCaution(qFit, qStart, scaleRatio);
+    local nScaleCollapse, scaleCaution;
+    nScaleCollapse = sumc(qFit .< scaleRatio*qStart);
+    scaleCaution = nScaleCollapse > 0;
+    retp(scaleCaution, nScaleCollapse);
+endp;
+
+
+/* A valid common-scale total log likelihood is one finite scalar. */
+proc (1) = _quaidsTVPDiagLLValid(ll);
+    if type(ll) /= 6 or rows(ll) /= 1 or cols(ll) /= 1;
+        retp(0);
+    endif;
+    retp(_quaidsTVPDiagFinite(ll));
+endp;
+
+
+/* Invalid LL values are never retained in a public result. */
+proc (2) = _quaidsTVPDiagNormalizeLL(ll);
+    local valid, normalized;
+    valid = _quaidsTVPDiagLLValid(ll);
+    if valid;
+        normalized = ll;
+    else;
+        normalized = miss(0, 0);
+    endif;
+    retp(valid, normalized);
+endp;
+
+
+/* Shared numeric status label. */
+proc (1) = _quaidsTVPDiagStatusLabel(status, successLabel);
+    if status == 0;
+        retp(successLabel);
+    elseif status == 1;
+        retp("FIT-FAILED");
+    elseif status == 2;
+        retp("INVALID-Q");
+    elseif status == 3;
+        retp("INVALID-LOGLIKELIHOOD");
+    elseif status == 4;
+        retp("START-SENSITIVE");
+    elseif status == 5;
+        retp("SCALE-CAUTION");
+    endif;
+    retp("UNKNOWN");
+endp;
+
+
+/* Pure multi-start precedence seam used by focused tests. */
+proc (1) = _quaidsTVPDiagMultiStatus(
+    retcodes, qValid, llValid, anyScaleCaution, maxLLGap, tolerance);
+
+    if sumc(retcodes .== 0) /= rows(retcodes);
+        retp(1);
+    elseif sumc(qValid .== 1) /= rows(qValid);
+        retp(2);
+    elseif sumc(llValid .== 1) /= rows(llValid);
+        retp(3);
+    elseif maxLLGap > tolerance;
+        retp(4);
+    elseif anyScaleCaution == 1;
+        retp(5);
+    endif;
+    retp(0);
+endp;
+
+
+/* Pure fixed-grid LL comparison seam; callers pass three valid scalars. */
+proc (5) = _quaidsTVPDiagCompareLL(retcodes, loglikelihoods, nobs);
+    local bestStartIndex, bestLL, maxLLGap, tolerance, startStable;
+
+    tolerance = 1e-6*nobs;
+    bestStartIndex = maxindc(loglikelihoods);
+    bestLL = loglikelihoods[bestStartIndex];
+    maxLLGap = maxc(bestLL - loglikelihoods);
+    startStable = sumc(retcodes .== 0) == rows(retcodes) and
+        maxLLGap <= tolerance;
+
+    retp(startStable, bestStartIndex, bestLL, maxLLGap, tolerance);
+endp;
+
+
+/*
+** quaidsTVPDiagnostics
+**
+** Summarize an existing fit without refitting or invoking a Kalman filter.
+** A scale caution is start-relative and is not a boundary, identification
+** or inference claim.
+*/
+proc (struct quaidsTVPDiagOut) = quaidsTVPDiagnostics(struct quaidsTVPOut tvOut, scaleRatio=1e-3);
+
+    local expectedRows, ratios;
+    struct quaidsTVPDiagOut dOut;
+
+    scaleRatio = _quaidsTVPDiagResolveScaleRatio(
+        scaleRatio, "quaidsTVPDiagnostics");
+
+    dOut.mleRetcode = tvOut.mleRetcode;
+    dOut.fitOk = tvOut.mleRetcode == 0;
+    dOut.scaleRatio = scaleRatio;
+    expectedRows = rows(tvOut.q0);
+    dOut.qValid = _quaidsTVPDiagQValid(tvOut.q0, expectedRows) and
+        _quaidsTVPDiagQValid(tvOut.Qfit, expectedRows);
+
+    if dOut.qValid;
+        ratios = tvOut.Qfit ./ tvOut.q0;
+        dOut.nScaleCollapse = sumc(ratios .< scaleRatio);
+        dOut.scaleCaution = dOut.nScaleCollapse > 0;
+        dOut.minQOverQ0 = minc(ratios);
+        dOut.maxQOverQ0 = maxc(ratios);
+    else;
+        dOut.scaleCaution = miss(0, 0);
+        dOut.nScaleCollapse = miss(0, 0);
+        dOut.minQOverQ0 = miss(0, 0);
+        dOut.maxQOverQ0 = miss(0, 0);
+    endif;
+
+    if not dOut.fitOk;
+        dOut.status = 1;
+    elseif not dOut.qValid;
+        dOut.status = 2;
+    elseif dOut.scaleCaution;
+        dOut.status = 5;
+    else;
+        dOut.status = 0;
+    endif;
+    dOut.statusLabel = _quaidsTVPDiagStatusLabel(dOut.status, "OK");
+
+    retp(dOut);
+endp;
+
+
+/* Re-evaluate total LL through the production fixed-Q diffuse filter. */
+proc (1) = _quaidsTVPDiagTotalLL(Zarr, q, H, y, n1);
+    struct tvpModel tvpm;
+    struct kalmanResult rslt;
+
+    tvpm = _quaidsTVPBuildModel(
+        Zarr, diagrv(eye(rows(q)), q), H, n1);
+    rslt = _quaidsTVPKalmanFit(tvpm, y', 1);
+    retp(sumc(rslt.loglikelihood));
+endp;
+
+
+/*
+** quaidsTVPMultiStartDiagnostics
+**
+** Run three complete Q-MLE fits from the fixed 0.1x/1x/10x grid and compare
+** their common-scale fixed-Q filter likelihoods. Observed agreement is not a
+** global-optimum claim. Only maxIters/maxTime from tvpCtl are used.
+*/
+proc (struct quaidsTVPMultiStartOut) = quaidsTVPMultiStartDiagnostics(w, prices, totexp, H, q0, struct quaidsTVPControl tvpCtl, scaleRatio=1e-3);
+
+    local maxIters, maxTime, n, n1, nobs, k_states, pricesRel, lx, Zarr,
+        multipliers, qStarts, retcodes, fitOk, qValid, llValid,
+        scaleCaution, loglikelihoods, qfits, nScaleCollapse,
+        i, qFitRaw, qFit, qIsValid, armScaleCaution, armScaleCollapse,
+        llRaw, ll, llIsValid,
+        nValidQ, anyCaution, bestStartIndex,
+        bestLL, maxLLGap, tolerance, startStable, status;
+    struct ssOut sOut;
+    struct quaidsTVPMultiStartOut dOut;
+
+    scaleRatio = _quaidsTVPDiagResolveScaleRatio(
+        scaleRatio, "quaidsTVPMultiStartDiagnostics");
+
+    n = cols(prices);
+    n1 = n - 1;
+    nobs = rows(w);
+    k_states = 2*n1 + n1*(n1+1)/2;
+    if not _quaidsTVPDiagQValid(q0, k_states);
+        errorlog "quaidsTVPMultiStartDiagnostics: q0 must be a finite, strictly positive k_states x 1 vector.";
+        end;
+    endif;
+
+    multipliers = 0.1|1|10;
+    qStarts = q0*multipliers';
+    i = 1;
+    do while i <= 3;
+        if not _quaidsTVPDiagQValid(qStarts[., i], k_states);
+            errorlog "quaidsTVPMultiStartDiagnostics: every derived 0.1x/1x/10x q0 start must remain finite and strictly positive.";
+            end;
+        endif;
+        i = i + 1;
+    endo;
+
+    { maxIters, maxTime } = _quaidsTVPResolveCaps(tvpCtl);
+    pricesRel = prices[., 1:n1] - prices[., n];
+    lx = _quaidsTVPStoneIndex(w, prices, totexp, n);
+    Zarr = _quaidsTVPBuildZ(pricesRel, lx, n1);
+
+    retcodes = miss(zeros(3, 1), 0);
+    fitOk = zeros(3, 1);
+    qValid = zeros(3, 1);
+    llValid = zeros(3, 1);
+    scaleCaution = miss(zeros(3, 1), 0);
+    loglikelihoods = miss(zeros(3, 1), 0);
+    qfits = miss(zeros(k_states, 3), 0);
+    nScaleCollapse = miss(zeros(3, 1), 0);
+
+    i = 1;
+    do while i <= 3;
+        sOut = _quaidsTVPMLEFit(Zarr, H, w[., 1:n1], qStarts[., i], n1,
+            maxIters, maxTime);
+        retcodes[i] = sOut.mleResults.retcode;
+        fitOk[i] = retcodes[i] == 0;
+        qFitRaw = sOut.final_params;
+        { qIsValid, qFit } = _quaidsTVPDiagNormalizeQ(qFitRaw, k_states);
+        qValid[i] = qIsValid;
+        qfits[., i] = qFit;
+
+        if qValid[i];
+            { armScaleCaution, armScaleCollapse } =
+                _quaidsTVPDiagScaleCaution(qFit, qStarts[., i], scaleRatio);
+            scaleCaution[i] = armScaleCaution;
+            nScaleCollapse[i] = armScaleCollapse;
+            llRaw = _quaidsTVPDiagTotalLL(Zarr, qFit, H, w[., 1:n1], n1);
+            { llIsValid, ll } = _quaidsTVPDiagNormalizeLL(llRaw);
+            llValid[i] = llIsValid;
+            loglikelihoods[i] = ll;
+        endif;
+        i = i + 1;
+    endo;
+
+    nValidQ = sumc(qValid);
+    anyCaution = 0;
+    i = 1;
+    do while i <= 3;
+        if qValid[i];
+            if scaleCaution[i] == 1;
+                anyCaution = 1;
+            endif;
+        endif;
+        i = i + 1;
+    endo;
+    if not anyCaution and nValidQ /= 3;
+        anyCaution = miss(0, 0);
+    endif;
+
+    tolerance = 1e-6*nobs;
+    bestStartIndex = miss(0, 0);
+    bestLL = miss(0, 0);
+    maxLLGap = miss(0, 0);
+    startStable = 0;
+    if sumc(qValid) == 3 and sumc(llValid) == 3;
+        { startStable, bestStartIndex, bestLL, maxLLGap, tolerance } =
+            _quaidsTVPDiagCompareLL(retcodes, loglikelihoods, nobs);
+    endif;
+
+    status = _quaidsTVPDiagMultiStatus(
+        retcodes, qValid, llValid, anyCaution, maxLLGap, tolerance);
+
+    dOut.status = status;
+    dOut.statusLabel = _quaidsTVPDiagStatusLabel(
+        status, "START-STABLE-OBSERVED");
+    dOut.scaleRatio = scaleRatio;
+    dOut.multipliers = multipliers;
+    dOut.retcodes = retcodes;
+    dOut.fitOk = fitOk;
+    dOut.qValid = qValid;
+    dOut.llValid = llValid;
+    dOut.scaleCaution = scaleCaution;
+    dOut.anyScaleCaution = anyCaution;
+    dOut.loglikelihoods = loglikelihoods;
+    dOut.qfits = qfits;
+    dOut.nScaleCollapse = nScaleCollapse;
+    dOut.bestStartIndex = bestStartIndex;
+    if scalmiss(bestStartIndex);
+        dOut.bestMultiplier = miss(0, 0);
+    else;
+        dOut.bestMultiplier = multipliers[bestStartIndex];
+    endif;
+    dOut.bestLL = bestLL;
+    dOut.maxLLGap = maxLLGap;
+    dOut.tolerance = tolerance;
+    dOut.startStable = startStable;
+
+    retp(dOut);
+endp;
