@@ -47,5 +47,6 @@ call printQuaidsTVP(tvOut);
 
 ## See Also
 
-[quaidsTVPFit](quaidsTVPFit.md), [printQuaidsTrend](printQuaidsTrend.md)
+[quaidsTVPFit](quaidsTVPFit.md), [quaidsTVPDiagnostics](quaidsTVPDiagnostics.md),
+[printQuaidsTrend](printQuaidsTrend.md)
 (the closest existing precedent this printer's layout follows)

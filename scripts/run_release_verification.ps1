@@ -3,9 +3,9 @@
 # Milestone 7: end-to-end release pipeline orchestrator -- source-tree
 # tests, build (or verify an existing) release artifact, optionally install
 # it into a GAUSS package directory, then run the installed-package public
-# API gate (tests/package_public_api.e) against the INSTALLED copy via
-# `library quaids;` (not the source tree via #include, which every other
-# test in this repo uses). Adapted from gauss-qardl's
+# API gates against the INSTALLED copy: the main and core-only
+# `library quaids;` checks plus the optional SSLib TVP surface (not the source
+# tree via ../src includes). Adapted from gauss-qardl's
 # scripts/run_release_verification.ps1, scaled down: this repo does not yet
 # have gauss-qardl's separate new-model-benchmark/validation-benchmark/
 # examples-smoke scripts -- the equivalent validation already lives inside
@@ -53,6 +53,7 @@ function Invoke-GaussBatch {
     param(
         [string]$Exe,
         [string[]]$Arguments,
+        [string]$Gauss26Cfg = $null,
         [int]$TimeoutSeconds = $TestTimeoutSeconds
     )
 
@@ -72,6 +73,9 @@ function Invoke-GaussBatch {
     $psi.UseShellExecute = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
+    if ($Gauss26Cfg) {
+        $psi.EnvironmentVariables["GAUSS26_CFG"] = $Gauss26Cfg
+    }
 
     $proc = [System.Diagnostics.Process]::new()
     $proc.StartInfo = $psi
@@ -199,7 +203,7 @@ if ($InstallArtifact) {
 
 if (-not $SkipInstalledPackageTest) {
     Invoke-Step "Installed-package public API test" {
-        # Two separate wrapper invocations, not one wrapper chaining two
+        # Separate wrapper invocations, not one wrapper chaining multiple
         # `run` statements -- confirmed directly that GAUSS's `run` does
         # not return to the calling script afterward (closer to exec than
         # call/return): a wrapper with `run "a.e"; new; run "b.e";` only
@@ -215,7 +219,7 @@ if (-not $SkipInstalledPackageTest) {
         # just means this specific step will not find the package unless
         # GAUSS is separately configured to look there.
         $gaussTestsDir = $testsDir -replace "\\", "/"
-        $installedPackageTests = @("package_public_api.e", "package_public_api_core_only.e")
+        $installedPackageTests = @("package_public_api.e", "package_public_api_core_only.e", "package_public_api_tvp.e")
 
         foreach ($testFile in $installedPackageTests) {
             $wrapper = Join-Path ([System.IO.Path]::GetTempPath()) ("quaids_pkg_" + [System.Guid]::NewGuid().ToString("N") + ".e")
@@ -226,7 +230,11 @@ if (-not $SkipInstalledPackageTest) {
             )
 
             try {
-                $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-nb", "-b", "-x", $wrapper)
+                $cfgForThis = $null
+                if ($testFile -eq "package_public_api_tvp.e") {
+                    $cfgForThis = Join-Path $testsDir "gauss26_cfg_override"
+                }
+                $result = Invoke-GaussBatch -Exe $GaussExe -Arguments @("-nb", "-b", "-x", $wrapper) -Gauss26Cfg $cfgForThis
                 $result.Output
                 if ($result.TimedOut) {
                     Write-Host "FAIL  $testFile timed out after $TestTimeoutSeconds s"

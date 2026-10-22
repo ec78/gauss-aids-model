@@ -117,6 +117,21 @@ if tvOut.mleRetcode /= 0;
     print "NOTE: the Q MLE stopped at a cap or did not converge (mleRetcode above) -- treat the fit with caution.";
 endif;
 
+/* Cheap post-fit diagnostics: this reads tvOut only. It performs no
+   additional fit or Kalman-filter call, so it keeps routine example smoke
+   bounded. The three-fit quaidsTVPMultiStartDiagnostics() is documented but
+   deliberately not run here. */
+dOut = quaidsTVPDiagnostics(tvOut);
+print "TVP diagnostic status:" dOut.statusLabel;
+if dOut.qValid;
+    print "Fitted/start Q ratio range:" dOut.minQOverQ0 dOut.maxQOverQ0;
+    if dOut.scaleCaution;
+        print "NOTE: at least one fitted Q is small relative to its q0 start; this is a start-relative caution, not a zero-variance test.";
+    endif;
+else;
+    print "NOTE: the fitted or starting Q vector is invalid; ratio summaries are unavailable.";
+endif;
+
 /* ---------------------------------------------------------------------
 ** Elasticities at the final period's smoothed state.
 ** --------------------------------------------------------------------- */

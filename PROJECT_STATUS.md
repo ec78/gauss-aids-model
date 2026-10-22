@@ -5,7 +5,7 @@ status`) at the start of a new session instead of relying on prior chat
 history. See `CLAUDE.md` for durable project knowledge and
 `dev/GOLD_STANDARD_TODO.md` for the full historical decision log.
 
-_Last updated: 2026-10-22 (public TVP diagnostic D3 implementation complete)_
+_Last updated: 2026-10-22 (public TVP diagnostic D4 integration complete)_
 
 ## Current Objective
 
@@ -174,8 +174,7 @@ Evidence: `dev/experiments/tvp_diagnostics_p6/RESULTS.md`. Next decision:
 retain this as private diagnostic evidence, or separately design a public API
 proposal that first resolves input validation and invalid-Q/LL result states.
 
-**Phase D3 public diagnostic implementation complete (2026-10-22; isolated
-design branch, not merged/pushed; version/docs integration remains D4).** The
+**Phase D3 public diagnostic implementation complete (2026-10-22).** The
 owner approved the D2 contract, including overall `SCALE-CAUTION` with
 `startStable=1`. The candidate now implements `quaidsTVPDiagnostics()` and
 `quaidsTVPMultiStartDiagnostics()`, their two plain result structs, strict
@@ -191,7 +190,22 @@ Design: `dev/TVP_DIAGNOSTIC_PUBLIC_API_DESIGN.md`. Implementation protocol:
 byte-identically at its original `b3383657...` hash after an earlier reduced-
 timeout trial was correctly fenced. Independent review found no code blocker;
 its focused coverage requests were added and pass 27/27. D3 gates are
-satisfied. D4 may now integrate public docs/API metadata and version 0.5.0.
+satisfied.
+
+**Phase D4 public integration complete (2026-10-22; isolated branch, not
+merged/pushed/tagged).** Package, citation, and API inventory metadata now
+target 0.5.0. Both diagnostics have full command-reference pages and are
+integrated into the README, usage guide, feature matrix, cross-links, changelog,
+and example 14. The example runs only the cheap post-fit tier; the three-fit
+tier remains opt-in. A new installed-artifact TVP smoke reproduces the frozen
+`n1=2` result: the 1x arm matches `quaidsTVPFit()` exactly and the three starts
+are observed-stable. The complete source suite, archive build/verification,
+installed core and optional-TVP API checks, and all 15 examples passed on GAUSS
+26.1.4 with the strict SSLib 2.1.2 pin. The known Windows package-directory
+in-use warning recurred during replacement; installed metadata reports 0.5.0,
+the installed TVP source hash matches the branch, and a separate installed-TVP
+rerun passed. D5 remains the bounded P6 public-evidence rerun and final release
+gate/checksum/review; no 0.5.0 release claim has been made.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:

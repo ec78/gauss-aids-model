@@ -1,6 +1,6 @@
 # Public TVP diagnostic API design
 
-Status: **D3 implementation complete; D4 public integration pending.**
+Status: **D4 public integration complete on an isolated branch; D5 release gate pending.**
 
 This design promotes the two evidence-backed diagnostic tiers from the private
 D1/P6 work without promoting its underspecified edges. The implementation is a

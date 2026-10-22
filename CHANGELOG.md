@@ -4,6 +4,35 @@ All notable changes to this project are documented here. Public semantic
 versioning begins with `0.1.0`; the higher-numbered entries below are retained
 as internal milestone history and were never public compatibility promises.
 
+## 0.5.0 - 2026-10-22
+
+### Added
+
+- `quaidsTVPDiagnostics()` and `quaidsTVPDiagOut`: a cheap, no-refit
+  post-estimation check for optimizer success, usable fitted/starting `Q`,
+  and start-relative `Q` scale collapse.
+- `quaidsTVPMultiStartDiagnostics()` and `quaidsTVPMultiStartOut`: an opt-in,
+  bounded three-fit diagnostic over the fixed `0.1x`, `1x`, and `10x` `q0`
+  grid. It compares common-scale fixed-`Q` filter likelihoods at tolerance
+  `1e-6*nobs` and reports start-relative scale caution independently.
+- Public command-reference pages, usage guidance, example-14 coverage, API
+  inventory entries, and installed optional-TVP smoke coverage for both
+  diagnostics.
+
+### Changed
+
+- Example 14 now runs the cheap diagnostic after its primary TVP fit. The
+  three-fit diagnostic remains opt-in and is not part of routine example
+  smoke because it can cost roughly three complete MLE fits.
+
+### Compatibility
+
+- Additive relative to 0.4.0. Existing procedures, structures, estimation
+  behavior, the optional TVP include chain, and core package dependencies are
+  unchanged. The diagnostics require the existing optional `sslib` TVP module.
+- Neither diagnostic proves global optimality, identifies a statistical
+  boundary, supplies `Q` inference, or requires fitted `Q` vectors to agree.
+
 ## 0.4.0 - 2026-10-19
 
 ### Added

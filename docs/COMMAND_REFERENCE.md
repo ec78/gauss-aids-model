@@ -64,6 +64,8 @@ example.
 - [quaidsTVPControlCreate](command-reference/quaidsTVPControlCreate.md)
 - [quaidsTVPStateToFullB](command-reference/quaidsTVPStateToFullB.md)
 - [quaidsTVPElasFit](command-reference/quaidsTVPElasFit.md)
+- [quaidsTVPDiagnostics](command-reference/quaidsTVPDiagnostics.md)
+- [quaidsTVPMultiStartDiagnostics](command-reference/quaidsTVPMultiStartDiagnostics.md)
 
 ## Elasticities and Diagnostics
 

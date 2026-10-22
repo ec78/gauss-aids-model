@@ -144,6 +144,8 @@ a fit is unbounded and identical to one made before 0.4.0. A
 non-converging fit could previously run for close to an hour per CMLMT
 pass. With finite caps it returns at the cap with `mleRetcode /= 0`.
 Always check `mleRetcode`, as [printQuaidsTVP](printQuaidsTVP.md) does.
+[quaidsTVPDiagnostics](quaidsTVPDiagnostics.md) packages that mandatory check
+with fitted/starting `Q` validity and a cheap start-relative scale warning.
 
 The caps apply **per CMLMT pass**. With the pinned `sslib` v2.1.2,
 `ssFitTVP()` runs one CMLMT pass (the covariance of the transformed `Q`
@@ -261,5 +263,7 @@ call printQuaidsTVP(tvOut);   // flags mleRetcode /= 0
 
 [printQuaidsTVP](printQuaidsTVP.md), [quaidsTVPControlCreate](quaidsTVPControlCreate.md),
 [quaidsTVPStateToFullB](quaidsTVPStateToFullB.md), [quaidsTVPElasFit](quaidsTVPElasFit.md),
+[quaidsTVPDiagnostics](quaidsTVPDiagnostics.md),
+[quaidsTVPMultiStartDiagnostics](quaidsTVPMultiStartDiagnostics.md),
 [quaidsTrendFit](quaidsTrendFit.md) (the cheap screening diagnostic to run
 before committing to a full TVP-AIDS fit), [quaidsFit](quaidsFit.md)

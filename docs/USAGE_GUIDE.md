@@ -570,6 +570,46 @@ See the [command reference](COMMAND_REFERENCE.md#reporting-optional-requires-pub
 for each adapter proc, and `examples/13_pubtable_reporting.e` for a full
 runnable example.
 
+## TVP Diagnostics (optional, `sslib`)
+
+After a [quaidsTVPFit](command-reference/quaidsTVPFit.md), run the cheap
+diagnostic first. It reads the completed result only; it performs no refit and
+no extra Kalman-filter call:
+
+```gauss
+tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
+dOut = quaidsTVPDiagnostics(tvOut);
+
+print dOut.statusLabel;
+if not dOut.fitOk;
+    print "Do not use this fit: the Q optimizer did not converge.";
+endif;
+```
+
+`SCALE-CAUTION` means that at least one fitted process variance is below
+`scaleRatio*q0` (default ratio `1e-3`). Because `q0` is caller-chosen, this is
+a practical start-relative warning, not a test that a variance is zero.
+
+When the cost is justified, the multi-start diagnostic runs three complete,
+sequential fits from the fixed `0.1x`, `1x`, and `10x` starts:
+
+```gauss
+tvpCtl.maxIters = 500;
+tvpCtl.maxTime = 5;
+msOut = quaidsTVPMultiStartDiagnostics(w, prices, totexp, H, q0, tvpCtl);
+
+print msOut.statusLabel;
+print msOut.multipliers~msOut.retcodes~msOut.loglikelihoods;
+```
+
+The worst-case optimizer budget is about three times the per-fit caps. A
+`START-STABLE-OBSERVED` result means that these three fits converged and their
+fixed-`Q` filter likelihoods agree within `1e-6*nobs`; it does not establish a
+global optimum or `Q` identification. Fitted `Q` vectors need not agree, and
+`SCALE-CAUTION` can coexist with `startStable == 1`. See the full pages for
+[quaidsTVPDiagnostics](command-reference/quaidsTVPDiagnostics.md) and
+[quaidsTVPMultiStartDiagnostics](command-reference/quaidsTVPMultiStartDiagnostics.md).
+
 ## Limitations
 
 See the [Troubleshooting and Interpretation Guide](TROUBLESHOOTING_GUIDE.md)

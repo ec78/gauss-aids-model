@@ -13,7 +13,7 @@ Use cases: consumer demand estimation, welfare analysis, elasticity
 calculation, testing demand-theory restrictions (homogeneity, symmetry,
 overidentification).
 
-This library is a **public alpha** (package version `0.3.0`). Its public
+This library is a **public alpha** (package version `0.5.0`). Its public
 API is usable, documented, and tested, but has not yet reached the
 compatibility guarantees of a `1.0.0` release -- see
 [Compatibility Policy](#compatibility-policy) below. The full feature set
@@ -375,8 +375,20 @@ tvpCtl.maxTime = 5;      // ... or 5 minutes (one CMLMT pass with sslib v2.1.2);
 tvOut = quaidsTVPFit(w, prices, totexp, H, q0, tvpCtl);
 call printQuaidsTVP(tvOut);
 
+// Cheap post-fit check: no refit and no additional Kalman-filter call.
+dOut = quaidsTVPDiagnostics(tvOut);
+print dOut.statusLabel;
+
 { er, ep, epc } = quaidsTVPElasFit(tvOut.smoothedState[., tvOut.nobs], n1, prices[tvOut.nobs, .]', totexp[tvOut.nobs], aCtl);
 ```
+
+For a stronger but materially more expensive check, opt in to
+`quaidsTVPMultiStartDiagnostics()`. It runs three bounded fits from fixed
+`0.1x`, `1x`, and `10x` starts and compares their common-scale likelihoods.
+Observed likelihood agreement is not a global-optimum or identification
+claim, and a `SCALE-CAUTION` result can coexist with `startStable == 1`.
+See [quaidsTVPDiagnostics](docs/command-reference/quaidsTVPDiagnostics.md)
+and [quaidsTVPMultiStartDiagnostics](docs/command-reference/quaidsTVPMultiStartDiagnostics.md).
 
 Requires the [sslib](https://github.com/aptech/gauss-state-space)
 (`gauss-state-space`) package installed separately -- not a
@@ -392,7 +404,9 @@ runnable example.
 
 Support tier: **Supported (scoped)**. This covers a fixed diagonal `H`,
 finite caps and a mandatory `tvOut.mleRetcode == 0` check, with no
-convergence guarantee. See
+convergence guarantee. Use `quaidsTVPDiagnostics()` after a fit to summarize
+optimizer convergence, fitted/starting-`Q` validity, and start-relative
+fitted-`Q` scale; it does not validate `H` or the chosen caps. See
 [Model & Feature Support Tiers](#model--feature-support-tiers) for the
 exact scope.
 

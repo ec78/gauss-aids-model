@@ -68,7 +68,7 @@ note and in its own header comment -- the same requirement
 | 11 | [`11_survey_weighted_estimation.e`](11_survey_weighted_estimation.e) | `quaidsFit`'s `weight=` argument, `quaidsSurveyWorkflowFit` -- naive vs. weighted estimation on an informatively-sampled dataset | -- |
 | 12 | [`12_applied_workflow.e`](12_applied_workflow.e) | `quaidsWorkflowFit`/`quaidsWorkflowScenarioFit` -- preflight, fit, shares/elasticities, robust SE, and a CV/EV scenario in one call | -- |
 | 13 | [`13_pubtable_reporting.e`](13_pubtable_reporting.e) | `ptFromQuaids`, `ptTablesFromQuaidsElas`, `ptTablesFromQuaidsWorkflow` -- LaTeX/Markdown/CSV export | `pubtable` |
-| 14 | [`14_tvp_aids_estimation.e`](14_tvp_aids_estimation.e) | `quaidsTVPFit`/`printQuaidsTVP`, `quaidsTVPControlCreate`, `quaidsTVPElasFit` -- genuine time-varying-parameter AIDS estimation via a Kalman filter, filtered vs. smoothed state paths | `sslib` |
+| 14 | [`14_tvp_aids_estimation.e`](14_tvp_aids_estimation.e) | `quaidsTVPFit`/`printQuaidsTVP`, `quaidsTVPControlCreate`, `quaidsTVPElasFit`, `quaidsTVPDiagnostics` -- genuine time-varying-parameter AIDS estimation, filtered vs. smoothed paths, and the cheap post-fit diagnostic (the expensive multi-start diagnostic is documented but not run) | `sslib` |
 
 See [docs/USAGE_GUIDE.md](../docs/USAGE_GUIDE.md) for the prose reference
 each example pairs with, and

@@ -101,4 +101,6 @@ endif;
 
 ## See Also
 
-[quaidsTVPFit](quaidsTVPFit.md), [quaidsControlCreate](quaidsControlCreate.md)
+[quaidsTVPFit](quaidsTVPFit.md),
+[quaidsTVPMultiStartDiagnostics](quaidsTVPMultiStartDiagnostics.md),
+[quaidsControlCreate](quaidsControlCreate.md)
