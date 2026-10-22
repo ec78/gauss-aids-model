@@ -215,9 +215,10 @@ All three arms also collapse 12/12 Q elements relative to their own starts, so
 the public result correctly reports status 5 `SCALE-CAUTION` with
 `anyScaleCaution=1`. Strict SSLib 2.1.2 and frozen-private-evidence integrity
 checks passed before and after. Evidence:
-`dev/experiments/tvp_diagnostics_public_d5/RESULTS.md`. The final clean-tree
-v0.5.0 release gate/checksum/review is the remaining D5 step; no 0.5.0 release
-claim has been made.
+`dev/experiments/tvp_diagnostics_public_d5/RESULTS.md`. The exact final tracked
+commit must pass the clean-tree v0.5.0 release gate immediately before any tag;
+the generated release record and coordinator handoff carry that post-commit
+result. No 0.5.0 release claim has been made.
 
 **PRIORITY 1 (set 2026-10-15): promote TVP-AIDS out of
 Experimental. Done 2026-10-17 (P8): Supported (scoped).** Plan, evidence, decision gate and acceptance criteria:

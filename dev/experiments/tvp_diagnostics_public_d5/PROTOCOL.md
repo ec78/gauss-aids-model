@@ -16,7 +16,9 @@ optimality or identification.
 - Static seed: homogeneous linear QUAIDS fit; `H` is diagonal with entries
   `homogSse[1:3]/nobs`.
 - TVP seed: `q0 = 0.1 * mean(diag(H)) * ones(12, 1)`.
-- Fit caps: `maxIters=2000`, `maxTime=600` seconds per arm.
+- Optimizer caps: `maxIters=2000`, `maxTime=600` minutes per arm (the
+  `quaidsTVPControl.maxTime`/CMLMT unit). The runner imposes the effective
+  bounded wall-clock limit: 2,400 seconds for the complete GAUSS process.
 - Starts: the public API's fixed `0.1|1|10` multipliers.
 - One public-API execution. The frozen private gate already ran this anchor
   twice with byte-identical payloads; D5 is a bounded parity check, not a
